@@ -20,8 +20,11 @@ def closed(path):
 
 def continuity(t,old,park,finish,deployment,preparation_sha):
     previous=old.get('runtime',{});current=t.receipt['runtime']
+    fixture=old.get('class_actor',{})
+    eligible=(fixture.get('guid')==5 and tuple(fixture.get(k) for k in
+        ['character_name','race','class','level','account_id'])==('Harnessctrl',1,9,10,2))
     if (old.get('phase')!='await_owned_class_lobby_review' or
-        old.get('origin_actor',{}).get('guid')!=2 or old.get('class_actor',{}).get('guid')!=4 or
+        old.get('origin_actor',{}).get('guid')!=2 or (fixture.get('guid')!=4 and not eligible) or
         old.get('actor')!=t.fixture or old.get('origin_actor')!=t.fixture or
         park.get('actor')!=old.get('class_actor') or finish.get('actor')!=t.fixture or
         park.get('runtime')!=previous or finish.get('runtime')!=previous or
@@ -68,6 +71,10 @@ def prepare(t,preparation,parked,origin_finish,deployment_path):
         retained_character=character(guid,account)==park['retained_class_fixture'],
         retained_saved_rows=saved(guid)==park['retained_class_saved'],
         retained_pets=pets(guid)==park['retained_class_pets'],origin_registration=actors.load()==t.fixture)
+    if guid==5:
+        retained=old['retained_level_one']
+        checks.update(retained_level_one_character=character(4,2)==retained['character'],
+            retained_level_one_saved=saved(4)==retained['saved'],retained_level_one_pets=pets(4)==retained['pets'])
     if not all(checks.values()):raise RuntimeError('retained class or original saved state changed')
     sources=[preparation,parked,origin_finish,deployment_path]
     t.receipt.update(sources=[{'path':str(p),'sha256':lab.sha256(p)} for p in sources],
@@ -76,6 +83,7 @@ def prepare(t,preparation,parked,origin_finish,deployment_path):
         natural_saved=park['retained_class_saved'],retained_class_pets=park['retained_class_pets'],
         checks=checks,qualified_scope='Retained native-account class fixture continuity only; no gameplay qualification.')
     t.persist()
+    if guid==5:t.receipt['retained_level_one']=old['retained_level_one']
     if actors.register(guid)!=fixture:raise RuntimeError('retained class registration differs')
     t.receipt.update(completed=True,phase='await_owned_class_lobby_review',frame=shot(t.out/'owned_lobby.png'))
 

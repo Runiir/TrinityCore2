@@ -25,6 +25,19 @@ def test_only_verified_bridge_replacement_preserves_fixture_continuity():
     continuity(t,old,park,finish,d,'source')
 
 
+@pytest.mark.parametrize('change',['none','name','race','class','level','account','guid'])
+def test_eligible_fixture_crosses_only_with_its_exact_identity(change):
+    t,old,park,finish,d=data()
+    fixture={'guid':5,'account_id':2,'character_name':'Harnessctrl','race':1,'class':9,'level':10}
+    if change!='none':
+        key={'name':'character_name','account':'account_id'}.get(change,change)
+        fixture[key]='Harnessone' if key=='character_name' else 99
+    old['class_actor']=fixture;park['actor']=fixture
+    if change=='none':continuity(t,old,park,finish,d,'source')
+    else:
+        with pytest.raises(RuntimeError):continuity(t,old,park,finish,d,'source')
+
+
 @pytest.mark.parametrize('change',['class_actor','origin_actor','park_actor','park_source','finish_source',
     'park_phase','park_checks','finish_checks','new_native','new_client','before_bridge','after_bridge',
     'unchanged_bridge','unfinished_deployment','failed_primary','scout_world_entry','missing_actor'])
