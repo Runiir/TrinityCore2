@@ -53,7 +53,8 @@ def test_blocked_travel_moves_only_along_the_short_recovery_laya_selected(monkey
     r=row();r['archaeology'].update(site_id=None,falling=False,loot_open=False,grounded=True)
     target={'instance':1,'north':4,'west':0}
     graph=tmp_path/'graph.json';farm_graph.transition(graph,'flight',r,target=target)
-    monkeypatch.setattr(recovery.escape_route,'candidates',lambda *_:{'step_left':{'target':target}})
+    monkeypatch.setattr(recovery.escape_route,'candidates',lambda *_:{'step_left':{
+        'target':target,'reference_collision_clear':True}})
     def choose(state,instructions,options):
         assert 'step_left' in options and state['grounded'] is True
         return 'step_left',{'selected':'step_left'},{'choice':'step_left'}
