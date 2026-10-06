@@ -4,7 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_social import actor
 from .interaction_trial import Trial
-from .interaction_spellbook_navigation import detail
+from .interaction_spellbook_navigation import detail,wire_known
 from .interaction_owned_class_fixture import prepared,origin_checks,SCRIPT_BOUNDARY
 from .observation.journal import entries
 from .world.native_objects import records
@@ -26,18 +26,40 @@ def summon_source(t,source,session):
     return e
 
 
-def suite(t,preparation,source):
+def entry_source(t,source,session,preparation):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires an owned class entry receipt')
+    e=json.loads(source.read_text())
+    keys={'original_character','original_saved_rows','native_worldserver','owned_name','solo',
+        'no_lua_errors','no_blocked_actions','ordinary_login','native_login'}
+    if (e.get('completed') is not True or e.get('failure') is not None or not e.get('finished_at') or
+        e.get('phase')!='owned_class_entered' or e.get('actor')!=t.fixture or
+        e.get('runtime')!=t.receipt['runtime'] or e.get('native_session')!=session or
+        e.get('fixture_source',{}).get('sha256')!=lab.sha256(preparation) or
+        set(e.get('checks',{}))!=keys or not all(e['checks'].values())):
+        raise RuntimeError('pet recon requires a closed same-runtime owned class entry')
+    return e
+
+
+def suite(t,preparation,source,from_entry=False):
     old=prepared(t,preparation);source=source.resolve()
-    e=summon_source(t,source,actors.session_entry(t.fixture)['session'])
+    session=actors.session_entry(t.fixture)['session']
+    e=entry_source(t,source,session,preparation) if from_entry else summon_source(t,source,session)
     t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},
         input_sent=False,qualification_added=False,
-        native_evidence_scope='Same owned native session through the closed summon; existing pets may precede the cast.')
+        native_evidence_scope='Same owned native session through the closed entry; no summon input.' if from_entry else
+            'Same owned native session through the closed summon; existing pets may precede the cast.')
+    if from_entry:
+        learned=wire_known(t,session)
+        t.receipt['native_control_demon_known']=93375 in learned
     captured=[]
     def word(fields,name):
         return fields.get(INDEX[name],0) | fields.get(INDEX[name]+1,0)<<32
     for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
         if (p.get('session')!=e['native_session'] or p.get('direction')!='from_native' or
-                p.get('name')!='SMSG_UPDATE_OBJECT' or p['time']>e['finished_at']):continue
+                p.get('name')!='SMSG_UPDATE_OBJECT' or p['time']>e['finished_at'] or
+                (from_entry and p['time']<e['started_at'])):continue
         bound=[]
         for r in records(bytes.fromhex(p['body'])):
             fields=r.get('fields',{})
@@ -47,7 +69,7 @@ def suite(t,preparation,source):
             if r.get('guid')==t.fixture['guid'] and INDEX['UNIT_FIELD_SUMMON'] in fields:
                 bound.append({'kind':'owned_player_summon','record':r,'summon_guid':word(fields,'UNIT_FIELD_SUMMON')})
         if bound:captured.append({'packet':p,'bound_records':bound})
-    probe=detail(t,'public_pet_after_summon')
+    probe=detail(t,'public_pet_after_entry' if from_entry else 'public_pet_after_summon')
     checks=origin_checks(old)
     t.receipt.update(native_pet_packets=captured,public_pet=probe['pet'],origin_checks=checks,
         phase='native_pet_public_comparison',completed=all(checks.values()))
@@ -59,10 +81,10 @@ def suite(t,preparation,source):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--preparation',type=Path,required=True);p.add_argument('--source',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--from-entry',action='store_true');a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:suite(t,a.preparation,a.source)
+        try:suite(t,a.preparation,a.source,a.from_entry)
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ['completed','failure','public_pet','origin_checks']}),flush=True)
