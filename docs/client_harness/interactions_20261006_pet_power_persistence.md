@@ -1,0 +1,15 @@
+# Owned Imp mana and logout persistence
+
+Two scoped operations pass: selected owned Imp mana and saved pet identity/name across ordinary logout and reentry. Coverage is 428/916, with 488 open. Pet commands, the pet tab, training and other variants remain open.
+
+Native and client mana both read 155/155 and power type0. The reviewed target frame shows a full blue mana bar; the telemetry strip obscures numeric text, so exact numbers come from native fields and passive public APIs. All nine power checks and nine cleanup checks pass. Targeting and health were already qualified and add no coverage.
+
+Normal class logout saves pet id1, entry416, owner4 and name Volrot. Reviewed normal reentry creates native counter7 after counter6, while the same logical saved pet and name remain. The current public pet GUID, native ownership and player summon pointer agree. All seven persistence outcomes and nine preservation checks pass. Both original Harnesstwo finishes pass all five checks, and the class and pet remain retained offline.
+
+The first mana trial fails with KeyError target because the detailed spellbook page omits general target fields. Its nine cleanup checks pass; the whole attempt stays failed and excluded. The checker now joins the detailed pet reading with a separate fresh core observation. The final focused selection passes98 tests. A new ledger regression initially fails1/passes3 because the UI112 target/health record was saved in the plan but omitted from the source ledger. Restoring that exact reviewed record preserves all426 earlier qualifications; all4 metadata checks pass. Earlier native protocol failures remain in the [pet repair report](interactions_20261006_pet_repair.md).
+
+Closing inspection finds the primary already at character selection, before this batch sends it any input. The trace records an ordinary logout request and completion; the cause is not inferred from its prior AFK flag. Source-bound normal reentry passes six entry and nine native restoration checks, restoring its seated world state and original AFK flag. The scout's final scene shows Harnesstwo selected. Native worldserver, bridge and both existing client processes remain unchanged on HDMI-1. No C++ change, build, restart, extra client or model job occurs. Only the offline scout receives passive observer129; the primary keeps128.
+
+Custom scripts remain blocked by the user's earlier choice. The original softTargetInteract0 remains unrestored at stock-disabled1. This is a testing boundary, not a requirement for pet mana or persistence. Known setup/cleanup Lua and the ordinary inputs under test are distinct; permission is not changed by the later explanatory question.
+
+The clean committed checkpoint checkout isolates other work in the shared branch. The [DVC archive](../../artifacts/client_harness/442_interactions_20261006_113.tar.gz.dvc) contains 202,305,816 bytes, SHA-256 f3e61b5eda64659c73ef2a02d025122dc3504f231efd9f14b6243fc5ca704fc6. Remote and archive review verify39 JSON receipts and85 attributed images across21 closed episodes. The failed mana attempt and read-only primary preflight remain excluded.
