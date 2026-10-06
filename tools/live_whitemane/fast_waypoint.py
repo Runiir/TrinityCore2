@@ -46,6 +46,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
     tolerance=(6 if flying else 4) if tolerance is None else tolerance
+    original_target=dict(target)
     route=list((guidance or {}).get('ground_route') or [])
     if route and (flying or any(p['instance']!=target['instance'] for p in route)):
         raise ValueError('ground route requires one grounded world instance')
@@ -63,7 +64,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         steering=CameraSteering();current_decision=None;look_sequence=None
         pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
         survey_generation=None;artifact_before=None;forward_started=False;terrain_wait=False
-        swimming_mode=None
+        swimming_mode=None;ground_plan=None;planned=False
         try:
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
@@ -87,6 +88,17 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                             'swimming_now':current_swimming,'retained_destination':target})
                         raise RuntimeError('unexpected movement mode during continuous approach: swimming changed')
                 if sticky.interrupted:raise RuntimeError(sticky.interrupted)
+                if not planned:
+                    planned=True
+                    if (not flying and not route and
+                            (guidance or {}).get('source')!='Laya-selected short obstacle recovery'):
+                        from . import terrain_context
+                        ground_plan=terrain_context.approach(row,original_target)
+                        if ground_plan.get('available'):
+                            route=list(ground_plan['points']);target=route[0]
+                            # Planning precedes all held inputs. Recheck the
+                            # owned client/mode on a new sample before moving.
+                            continue
                 # Rendering can be slower than the local control tick. An
                 # unchanged but still-valid public frame retains the accepted
                 # command; observe() rejects frames after their freshness bound.
@@ -132,7 +144,9 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 artifact_before=artifact
                 if distance<=tolerance:
                     receipts.append({'observed_at':row['observed_at'],'distance_yards':distance,
-                        'heading_error':error,'outcome':'waypoint_arrived','model_decision_reused':True})
+                        'heading_error':error,'outcome':'ground_route_prefix_reached' if ground_plan and ground_plan.get('available')
+                            and not ground_plan.get('prefix_reaches_original_destination') else 'waypoint_arrived',
+                        'model_decision_reused':True,'retained_original_destination':original_target})
                     return list(receipts)
                 new_decision=current_decision is None or changed_artifact
                 retained=False
@@ -234,3 +248,4 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 'transport':row['source'] if row else None,'decision_period_seconds':.1,'input_lease_seconds':sticky.lease,
                 'steering':'right_button_relative_mouselook','yaw_samples':list(steering.samples),
                 'pitch_samples':list(pitch_steering.samples)})
+            if ground_plan:runtime.write(folder/'ground_approach.json',ground_plan)

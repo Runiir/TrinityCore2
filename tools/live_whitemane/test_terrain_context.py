@@ -52,6 +52,25 @@ def test_detour_prefix_keeps_original_destination_and_stays_in_the_site(monkeypa
     assert [(p['north'],p['west']) for p in route['points']]==[(0,5),(19,5)]
 
 
+def test_later_wall_keeps_a_checked_prefix_without_claiming_destination_arrival(monkeypatch):
+    r,target=path_setup(monkeypatch)
+    monkeypatch.setattr(terrain_context.model_collision,'clear_body_segment',
+        lambda _,start,end:end[0]<=10)
+    route=terrain_context.detour(r,target,maximum_yards=150,allow_clear_prefix=True)
+    assert route['available'] and route['points'][-1]['north']==0
+    assert route['points'][-1]['west']==5
+    assert route['original_destination']==target
+    assert not route['reference_path_complete'] and not route['prefix_reaches_original_destination']
+    assert route['stopped_before_unchecked_continuation']
+
+
+def test_approach_requires_measured_departure_floor_agreement(monkeypatch):
+    r,target=path_setup(monkeypatch);r['archaeology']['grounded']=True
+    monkeypatch.setattr(terrain_context,'facts',lambda *_:{'departure_floor_agrees':False})
+    monkeypatch.setattr(terrain_context,'detour',lambda *_ ,**__:pytest.fail('other floor must not route'))
+    assert not terrain_context.approach(r,target)['available']
+
+
 @pytest.mark.parametrize('bad',['other_floor','wall','outside_site'])
 def test_detour_does_not_admit_a_different_floor_wall_or_outside_segment(monkeypatch,bad):
     r,target=path_setup(monkeypatch)
@@ -65,7 +84,8 @@ def test_detour_does_not_admit_a_different_floor_wall_or_outside_segment(monkeyp
     assert not route['available'] and route.get('reference_error')
 
 
-def test_retained_detour_passes_a_corner_with_one_input_device_and_model_intent(monkeypatch,tmp_path):
+@pytest.mark.parametrize('automatic',[False,True])
+def test_retained_detour_passes_a_corner_with_one_input_device_and_model_intent(monkeypatch,tmp_path,automatic):
     r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,0)
     r['archaeology'].update(flying=False,mounted=False,grounded=True)
     r['archaeology']['world']['west']=5
@@ -82,9 +102,15 @@ def test_retained_detour_passes_a_corner_with_one_input_device_and_model_intent(
         return fresh
     monkeypatch.setattr(fast_waypoint,'observe',observe)
     points=[{'instance':1,'north':0,'west':0},{'instance':1,'north':5,'west':0}]
-    result=fast_waypoint.walk(tmp_path,points[-1],tolerance=.5,guidance={'ground_route':points},
-        approved_intent=('follow_detour',{}, {},{}))
-    assert result[-1]['outcome']=='waypoint_arrived' and not calls
+    target={'instance':1,'north':10,'west':0} if automatic else points[-1]
+    if automatic:
+        monkeypatch.setattr(terrain_context,'approach',lambda row,goal:{'available':True,
+            'points':points,'prefix_reaches_original_destination':False,'original_destination':goal})
+    result=fast_waypoint.walk(tmp_path,target,tolerance=.5,
+        guidance={} if automatic else {'ground_route':points},
+        approved_intent=('forward_long' if automatic else 'follow_detour',{}, {},{}))
+    assert result[-1]['outcome']==('ground_route_prefix_reached' if automatic else 'waypoint_arrived')
+    assert result[-1]['retained_original_destination']==target and not calls
     assert events.count(('press','Up'))==events.count(('release','Up'))==1
     assert events.count(('button_press',3))==events.count(('button_release',3))==1
 

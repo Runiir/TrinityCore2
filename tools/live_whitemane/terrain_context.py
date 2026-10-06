@@ -35,7 +35,7 @@ def facts(row,target=None,*,climb_yards=8):
     return result
 
 
-def detour(row,target,*,maximum_yards=24):
+def detour(row,target,*,maximum_yards=24,allow_clear_prefix=False):
     """Return a connected, checked prefix toward the retained original target."""
     a=row['archaeology'];pose=row.get('owned_pose') or {};world=a.get('world')
     result={'available':False,'live_asset_match_verified':False,
@@ -44,6 +44,7 @@ def detour(row,target,*,maximum_yards=24):
             or a.get('swimming') or a.get('flying') or pose.get('height_yards') is None):return result
     start=[world['north'],world['west'],pose['height_yards']]
     if math.hypot(target['north']-start[0],target['west']-start[1])>150:return result
+    accepted=[start];length=0
     try:
         route=ground_navigation.route(world['instance'],start,[target['north'],target['west'],start[2]])
         points=route.get('points') or []
@@ -51,7 +52,6 @@ def detour(row,target,*,maximum_yards=24):
             raise RuntimeError('reference ground path is incomplete')
         if math.dist(start[:2],points[0][:2])>2 or abs(start[2]-points[0][2])>2.5:
             raise RuntimeError('reference path projects the player to a different floor')
-        accepted=[start];length=0
         site=boundaries.sites().get(str(a.get('site_id'))) if a.get('can_survey') else None
         if a.get('can_survey') and (not site or site['map']!=world['instance']):
             raise RuntimeError('reference detour has no active site perimeter')
@@ -76,7 +76,28 @@ def detour(row,target,*,maximum_yards=24):
             'west':p[1],'height_yards':p[2]} for p in accepted[1:]],
             length_yards=length,original_destination=target,reference_path_complete=True,
             prefix_reaches_original_destination=math.dist(accepted[-1][:2],[target['north'],target['west']])<=1)
-    except (RuntimeError,OSError,ValueError) as error:result['reference_error']=str(error)
+    except (RuntimeError,OSError,ValueError) as error:
+        result['reference_error']=str(error)
+        if allow_clear_prefix and len(accepted)>1 and length>.5:
+            result.update(available=True,
+                points=[{'instance':world['instance'],'north':p[0],'west':p[1],
+                    'height_yards':p[2]} for p in accepted[1:]],
+                length_yards=length,original_destination=target,
+                reference_path_complete=False,prefix_reaches_original_destination=False,
+                stopped_before_unchecked_continuation=True)
+    return result
+
+
+def approach(row,target):
+    """Route an already selected ground destination through checked corners."""
+    a=row['archaeology']
+    if (a.get('flying') or a.get('swimming') or not a.get('grounded')
+            or not row.get('owned_pose')):return {'available':False}
+    observed=facts(row,target)
+    result={'available':False,'terrain':observed}
+    if not observed.get('departure_floor_agrees'):return result
+    path=detour(row,target,maximum_yards=150,allow_clear_prefix=True)
+    result.update(**path,terrain=observed)
     return result
 
 
