@@ -34,17 +34,17 @@ def learn_relation():
         return [list(r) for r in q.fetchall()]
 
 
-def catalog(session,since):
+def catalog(session,since,*,entry=906,trainer_id=154):
     found=None
     for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
         if (p.get('session')!=session or p.get('time',0)<since or p.get('direction')!='from_native' or
             p.get('name')!='SMSG_TRAINER_LIST'):continue
         r=Reader(bytes.fromhex(p['body']));guid,kind,trainer,count=r.unpack('QIII')
-        if (guid>>32)&0xfffff!=906 or trainer!=154:continue
+        if (guid>>32)&0xfffff!=entry or trainer!=trainer_id:continue
         if count>4096:raise RuntimeError('trainer count exceeds native bound')
         rows=[r.unpack('IBIBII2iII') for _ in range(count)]
         found={'packet':p,'guid':guid,'trainer':trainer,'kind':kind,'rows':[list(x) for x in rows]}
-    if found is None:raise RuntimeError('owned native warlock trainer catalog absent')
+    if found is None:raise RuntimeError('owned native trainer catalog absent')
     return found
 
 

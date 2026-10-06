@@ -230,7 +230,7 @@ def settled_entry(t,path,failed_path):
         not failed.get('finished_at') or failed.get('phase')!='owned_class_entry_started' or
         failed.get('actor')!=t.fixture or failed.get('runtime')!=t.receipt['runtime'] or
         failed.get('fixture_source',{}).get('sha256')!=lab.sha256(path) or
-        (t.fixture['character_name'],t.fixture['class'],t.fixture['level'])!=('Harnessctrl',9,10) or
+        not entry_identity(t.fixture) or t.fixture['level']!=10 or
         character(t.fixture['guid'],t.fixture['account_id'])['online']!=1):
         raise RuntimeError('failed eligible entry differs; never replay login input')
     session=actors.session_entry(t.fixture)['session']
@@ -239,7 +239,7 @@ def settled_entry(t,path,failed_path):
         r.get('name') in ['CMSG_PLAYER_LOGIN','SMSG_LOGIN_VERIFY_WORLD']]
     state,frame=t.observe('entry_settled')
     oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll();checks=origin_checks(old)
-    checks.update(owned_name=state['player']=='Harnessctrl' and state['level']==10,solo=state['group']['members']==0,
+    checks.update(owned_name=state['player']==t.fixture['character_name'] and state['level']==10,solo=state['group']['members']==0,
         no_lua_errors=not state.get('lua_errors'),no_blocked_actions=not state.get('blocked_actions'),
         ordinary_login=any(r['name']=='CMSG_PLAYER_LOGIN' and r['direction']=='from_client' for r in login),
         native_login=any(r['name']=='SMSG_LOGIN_VERIFY_WORLD' and r['direction']=='from_native' for r in login))
