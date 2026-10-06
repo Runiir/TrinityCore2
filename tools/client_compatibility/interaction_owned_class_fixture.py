@@ -235,7 +235,7 @@ if __name__=='__main__':
     if a.action=='lobby' and not a.stage:p.error('requires one reviewed lobby stage')
     if a.action=='settle-enter' and not a.failed_source:p.error('requires the closed failed entry')
     with actor('scout'):
-        t=Trial(a.output,controller='code',chat_key_hold=1.2)
+        t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='prepare':prepare(t,a.source,a.review)
