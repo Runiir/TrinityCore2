@@ -85,3 +85,31 @@ def test_named_portal_can_interact_before_reaching_an_obstructed_exact_coordinat
     result=portal.run(tmp_path/'portal',{'key':'org-uldum','from':{'instance':1,'north':5,'west':0},
         'to':destination,'destination':'Ramkahen (Uldum)'},approved_intent=('portal','Laya',{},{}))
     assert result['completed'] and result['approach']['exact_coordinate_required'] is False
+
+
+def test_verified_portal_view_approaches_the_successful_standing_position(monkeypatch,tmp_path):
+    from . import portal_view
+    before=row();before['archaeology']['falling']=False
+    before['farm_ui']['soft_interact']['name']=None
+    entrance={'instance':1,'north':21,'west':0}
+    hint={'world':{'instance':1,'north':4,'west':2},'facing_radians':1.2,'zoom':None}
+    destination={'instance':732,'north':-601,'west':1382}
+    after=copy.deepcopy(before);after['archaeology']['world']=destination
+    frames=iter([before,before,before,before,after])
+    monkeypatch.setattr(portal,'observe',lambda _:next(frames))
+    monkeypatch.setattr(portal,'stationary',lambda *_:None)
+    monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
+    monkeypatch.setattr(portal_view,'read',lambda *_:hint)
+    monkeypatch.setattr(portal_view,'remember',lambda *_ ,**__:False)
+    walks=[]
+    monkeypatch.setattr(portal,'walk',lambda folder,target,**_:walks.append(target) or [])
+    def align(folder,row,target,**kwargs):
+        assert not kwargs['reset_view']
+        assert target==portal_view.aim(hint,row)
+        return []
+    monkeypatch.setattr(portal,'align',align)
+    monkeypatch.setattr(portal.interact,'use',lambda *_:{'completed':True})
+    monkeypatch.setattr(portal.time,'sleep',lambda _:None)
+    result=portal.run(tmp_path/'portal',{'key':'verified','from':entrance,
+        'to':destination,'destination':'Tol Barad'},approved_intent=('portal','Laya',{},{}))
+    assert result['completed'] and walks==[hint['world']]

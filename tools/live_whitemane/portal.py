@@ -2,6 +2,7 @@
 import math
 import time
 from . import runtime, inputs, interact,action_queue
+from . import portal_view
 from .observe import observe
 from .decisions import choose
 from .fast_waypoint import walk
@@ -38,10 +39,22 @@ def run(folder,portal,*,approved_intent=None):
         result['approach']={'source':'confirmed public named portal interaction',
             'exact_coordinate_required':False}
     else:
-        result['approach']=walk(folder/'approach',target,tolerance=.4,
+        hint=portal_view.read(portal,fresh)
+        approach_target=hint['world'] if hint else target
+        result['learned_view_hint']=hint
+        result['approach']=walk(folder/'approach',approach_target,tolerance=.4,
             guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
         row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
-        result['camera_view']=align(folder/'view',row,target,reset_view=True)
+        if hint:
+            desired_zoom=hint.get('zoom');current_zoom=row.get('farm_ui',{}).get('camera_zoom')
+            if desired_zoom is not None and current_zoom is not None and abs(desired_zoom-current_zoom)>1:
+                zoom='CameraZoomOut' if desired_zoom>current_zoom else 'CameraZoomIn'
+                result['view_zoom_input']=inputs.execute('World of Warcraft','command',{
+                    'text':'/run '+zoom+'('+str(round(abs(desired_zoom-current_zoom),2))+')',
+                    'frame_period_seconds':1/max(1,row.get('farm_ui',{}).get('frame_rate') or 1)})
+                row=observe(folder/'zoom_ready.png')
+            result['camera_view']=align(folder/'view',row,portal_view.aim(hint,row),reset_view=False)
+        else:result['camera_view']=align(folder/'view',row,target,reset_view=True)
         row=observe(folder/'view_ready.png')
     result['interaction']=interact.use(folder/'interaction',row,names)
     for index in range(25):
@@ -56,6 +69,9 @@ def run(folder,portal,*,approved_intent=None):
             result.update(completed=True,after=after);break
     runtime.write(folder/'portal.json',result)
     if not result['completed']:raise RuntimeError('portal interaction did not confirm destination arrival')
+    result['view_hint_saved']=portal_view.remember(portal,row,result['interaction'],result['after'],
+        evidence=str(folder/'portal.json'))
+    runtime.write(folder/'portal.json',result)
     return result
 
 
