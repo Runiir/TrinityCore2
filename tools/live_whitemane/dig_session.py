@@ -15,7 +15,7 @@ from .dig_decisions import choose
 from . import guide as routes
 from .smooth_move import walk
 from .boundaries import constrain
-from . import interact,pending_find,minimap_finds,farm_graph,dig_context,dig_feedback
+from . import interact,pending_find,minimap_finds,farm_graph,dig_context,dig_feedback,pickup_intent
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
@@ -103,6 +103,16 @@ def run(args):
             session.pop('telescope_target',None)
         if pending and pending.get('travel_mode')=='red_flight' and not pending['completed']:
             current=observe(output/'resume_precheck.png')
+            a=current['archaeology']
+            grounded_here=(a['can_survey'] and a['site_id']==session.get('site_id')
+                and not a['mounted'] and not a['flying'] and not a['falling']
+                and not pending_find.load(current))
+            if grounded_here:
+                pending.update(completed=True,finished_at=time.time(),after=current,
+                    outcome='grounded_digsite_discard_interrupted_flight_estimate')
+                session.update(marker_fallback=True,marker_target=None,walked_since_survey=True)
+                session.pop('telescope_target',None)
+                runtime.write(path,session)
             if current['archaeology']['mounted'] or current['archaeology']['flying']:
                 folder=output/f"step_{pending['index']:04d}"
                 pending['arrow']['resume_to_survey_on_ground']=True
@@ -177,7 +187,9 @@ def run(args):
                 if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
                     raise RuntimeError('hovered object is not a confirmed archaeology find')
             state=dig_context.model_state(before,guide,bool(args.loot_at) or visible_find,value,session['steps'])
-            action,model,request,result=choose(state)
+            retained=pickup_intent.retained(session,before,value)
+            action,model,request,result=retained or choose(state)
+            pickup_intent.offer(session,before,value,action,model,request,result)
             guidance=guide['source'] if guide else 'awaiting Survey'
             step={'index':index,'started_at':time.time(),'before':before,'state':state,
                 'action':action,'model':model,'request':request,'response':result,
@@ -349,6 +361,7 @@ def run(args):
                     args.loot_at=None
                     routes.pickup(session)
                     pending_find.clear();session.pop('pending_find',None)
+                    session.pop('accepted_pickup_intent',None)
                     session['observed_find_count']=after['archaeology']['looted_finds']
             if action.startswith('forward_'):
                 if walked<.25 and guide['arrived']:

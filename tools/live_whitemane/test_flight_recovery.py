@@ -146,7 +146,7 @@ def test_grounded_descent_accepts_two_fresh_facts_past_estimated_endpoint(monkey
     from . import smooth_move
     from tools.client_compatibility import native_input_adapter
     from types import SimpleNamespace
-    (tmp_path/'run').mkdir();monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
+    (tmp_path/'run').mkdir();monkeypatch.setattr(smooth_move.runtime,'ROOT',tmp_path)
     monkeypatch.setattr(smooth_move.inputs,'focus',lambda _: {})
     events=[];sequence=[0]
     class Sender:

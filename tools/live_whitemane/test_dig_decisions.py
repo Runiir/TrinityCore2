@@ -36,6 +36,13 @@ def test_normal_decisions_keep_the_model_choice(monkeypatch):
     assert dig_decisions.explore('loot',{}, {}, {'consecutive_turns_without_approach':2})=='loot'
 
 
+def test_a_new_movement_choice_is_not_randomized_because_camera_actions_stalled(monkeypatch):
+    monkeypatch.setattr(dig_decisions.random,'choices',lambda *a,**k:pytest.fail('new useful choice'))
+    state={'consecutive_actions_without_progress':5,
+        'recent_outcomes':[{'action':'camera_ground','moved_yards':0}]*3}
+    assert dig_decisions.explore('forward_long',{}, {},state)=='forward_long'
+
+
 def test_ready_marker_uses_existing_navigation_head_without_an_expert_veto(monkeypatch):
     state={'task':'recover an archaeology find','available':True,'casting':False,
         'artifact_visible':False,'instrument_current':False,'telescope':None,

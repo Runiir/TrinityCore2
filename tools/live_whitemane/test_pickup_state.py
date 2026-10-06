@@ -43,12 +43,30 @@ def test_a_tooltip_search_miss_is_given_to_laya_as_an_unfinished_pickup():
 
 def test_survey_is_a_next_state_action_after_the_pending_find_is_collected(monkeypatch):
     state={'available':True,'casting':False,'artifact_visible':True,'can_survey':True,
-        'survey_ready':True,'telescope':None,'pickup':{'uncollected':True}}
-    def choose(_,instructions,options):
-        assert 'loot' in options and 'survey' not in options
-        return 'loot',{},{}
-    monkeypatch.setattr(dig_decisions.laya_ui,'choose',choose)
+        'survey_ready':True,'telescope':None,'pickup':{'uncollected':True},
+        'task':'recover an archaeology find','instrument_current':False}
+    def choose(observed):
+        assert observed['artifact_visible'] and not observed['instrument_current']
+        assert dig_decisions.decisions.archaeology_policy.label(observed)=='loot'
+        return 'loot',{}, {},{}
+    monkeypatch.setattr(dig_decisions.decisions,'choose',choose)
     assert dig_decisions.choose(state)[0]=='loot'
+
+
+def test_range_error_uses_compact_facts_without_changing_legal_action_choices(monkeypatch):
+    state={'available':True,'casting':False,'artifact_visible':True,'can_survey':True,
+        'survey_ready':True,'named_artifact':'Troll Archaeology Find',
+        'telescope':{'color':'green','heading_relative_to_player':'aligned','distance_yards':.5},
+        'guide_arrived':False,'pickup':{'uncollected':True,'interaction_in_range':False},
+        'recent_outcomes':[{'action':'camera_ground'}]*3}
+    def choose(observed,instructions,options):
+        assert observed['in_range'] is False and observed['distance_yards']==.5
+        assert 'recent_outcomes' not in observed
+        assert set(options)=={'observe','inspect','camera_forward','camera_ground',
+            'loot','forward_short','forward_long'}
+        return 'forward_short',{},{}
+    monkeypatch.setattr(dig_decisions.laya_ui,'choose',choose)
+    assert dig_decisions.choose(state)[0]=='forward_short'
 
 
 def test_combat_fact_preempts_pickup_and_preserves_it_for_after_combat():
