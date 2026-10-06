@@ -1,0 +1,15 @@
+# Owned offline friend note persistence
+
+UI105 `note_prepare02` plus `note_finish02` qualifies only `friends.note_persist`. The short ASCII note `Owned offline scout note UI105` on the original offline Harnesstwo friend survives normal Harnessone logout and reentry. Native and modern reloaded contacts, public Friends and the actual stock hover tooltip agree on the note. No note rewrite occurs after login.
+
+All 5 logout, 5 reentry and 10 persistence checks pass. Empty-note restoration uses the stock Set Note dialog and passes 10 checks. All 9 native and 12 friend restoration checks pass against the original pre-logout values, including social rows, inventory/money, quest/header/selection, native quests, group, resources, stats, spells, actions, pose, AFK and position. The source baseline is carried through reentry; the final session is recorded separately. Primary, scout, bridge and native server lifetimes remain unchanged. The scout stays offline on HDMI-1; no client is added. Closure records 15,927,752 KiB available memory and zero memory-pressure averages.
+
+The first `note_prepare01` logged out successfully but failed when the existing observer decoder assumed one race-unlock row and rejected the live 12-row trailer. It remains whole failed and excluded. The reader now consumes the declared count, and the adapter uses the pinned packed realm address `0x01010001`. Read-only diagnosis and `note_recovery01` restore the original empty note and all 21 fixture checks; they provide no qualification. The fresh trial begins only after that complete cleanup.
+
+Verification retains the earlier failures. The first 45 checks passed but did not cover the shared enumeration reader. New regressions fail 3 and pass 1 against the old reader; the corrected intermediate selection passes 56. A misplaced truncation assertion then causes 12 test NameErrors with 57 passes. That test edit is corrected before live input, and the final focused selection passes 69 in 0.29 seconds. No C++ change or rebuild is needed; the prior UI104 full foundation result of 1786 remains recorded without being rerun.
+
+One unchanged input-bound lobby review incorrectly says the equipped character model is visible. The actual frame precedes model rendering and shows the selected Harnessone name, level 85 Warrior and Badlands. A separate caption correction records this limit; GUID1 and all 19 gear slots are packet proof. The reentry guard uses the visible selected name/level and verified owned HDMI-1 surface.
+
+Script permission remains blocked. The historical original `softTargetInteract=0` remains unrestored at stock-disabled `1`, as requested. Full-client restart, account-service persistence, online-note and other social variants remain open.
+
+DVC pointer: `artifacts/client_harness/442_interactions_20261006_105.tar.gz.dvc`. The 323,231,747-byte archive has SHA-256 `ba707c68a9327fe4b391ab1442f261c539b04b9a1d6d0531c76f0542487910bb` and DVC MD5 `47725a54909fc4010209c1c1109df1a1`. Cloud and archive checks pass for 18 JSON receipts and 187 attributed images. Generated frames and the local archive/cache are removed only after this proof.
