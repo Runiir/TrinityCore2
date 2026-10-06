@@ -19,6 +19,7 @@ from .observation.journal import Cursor
 SPELL=1515
 TRAINER=40
 NAME='Benjamin Foxworthy'
+PRICE=646 # Native quote: the680 base cost with the current friendly discount.
 
 
 def baseline(t,preparation):
@@ -90,7 +91,8 @@ def open_trainer(t,preparation,source,review_path):
 def select(t,preparation,source):
     old,session=baseline(t,preparation);e=prior(t,source,session,'hunter_trainer_open')
     rows=[r for r in e['native_catalog']['rows'] if r[0]==SPELL]
-    if len(rows)!=1 or rows[0][1:4]!=[1,680,10]:raise RuntimeError('native Tame Beast lesson unavailable')
+    # Native class trainers omit ReqLevel once the player satisfies it.
+    if len(rows)!=1 or rows[0][1:4]!=[1,PRICE,0]:raise RuntimeError('native Tame Beast lesson unavailable')
     state,_=t.observe('tame_selection_before')
     if 'ClassTrainerFrame' not in state['panels']:raise RuntimeError('stock Hunter trainer no longer open')
     for attempt in range(8):
@@ -106,8 +108,8 @@ def select(t,preparation,source):
     def selected(b,a,s):
         service=a.get('trainer',{}).get('service',{})
         checks={'ordinary_select':bool(s),'name':service.get('name')=='Tame Beast',
-            'available':service.get('state')=='available','cost':service.get('cost')==680,
-            'level':service.get('level')==10,'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+            'available':service.get('state')=='available','cost':service.get('cost')==PRICE,
+            'level':service.get('level')==rows[0][3],'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
         return {'status':'tame_lesson_selected_pass' if all(checks.values()) else 'client_or_protocol_failure',
             'oracle':{'checks':checks,'native':rows[0],'public':service}}
     require(click_case(t,'hunter.select_tame','Select the observed available Tame Beast lesson.',
@@ -130,7 +132,7 @@ def learned_checks(rows,guid,before_spells,after_spells,before,after,relation):
         'modern_learned':len(modern)==1,'direct_native_lesson':relation==[],
         'saved_tame':not any(r[0]==SPELL for r in before_spells) and
             after_spells==sorted(before_spells+[[SPELL,1,0]]),
-        'exact_charge_inventory':after=={**before,'money':before['money']-680}}
+        'exact_charge_inventory':after=={**before,'money':before['money']-PRICE}}
 
 
 def learn(t,preparation,source):
@@ -140,10 +142,10 @@ def learn(t,preparation,source):
     oracle=Inventory(lab.ROOT,session,6).poll();before=resources(oracle)
     state,_=t.observe('tame_purchase_before');service=state.get('trainer',{}).get('service',{})
     if (before!=e['resources'] or known(6)!=e['saved_spells'] or any(r[0]==SPELL for r in known(6)) or
-        service.get('name')!='Tame Beast' or service.get('state')!='available' or service.get('cost')!=680 or
-        before['money']<=680):raise RuntimeError('selected untrained Tame Beast or resources differ')
+        service.get('name')!='Tame Beast' or service.get('state')!='available' or service.get('cost')!=PRICE or
+        before['money']<=PRICE):raise RuntimeError('selected untrained Tame Beast or resources differ')
     started=time.time();t.receipt.update(native_session=session,before=before,native_lesson=e['native_lesson'],
-        purchase_started_at=started,retained_change='Normally purchased Tame Beast and its exact native680 copper charge.')
+        purchase_started_at=started,retained_change='Normally purchased Tame Beast and its exact quoted646 copper charge.')
     def learned(b,a,s):
         lab.server_command('saveall');time.sleep(1);oracle.poll();after=resources(oracle)
         safe={'CMSG_TRAINER_BUY_SPELL','SMSG_TRAINER_BUY_SUCCEEDED','SMSG_TRAINER_BUY_FAILED',

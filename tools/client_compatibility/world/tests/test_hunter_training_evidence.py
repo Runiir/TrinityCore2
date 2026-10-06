@@ -13,7 +13,7 @@ def evidence():
         ('to_native','CMSG_TRAINER_BUY_SPELL',struct.pack('<QII',GUID,40,1515)),
         ('from_native','SMSG_LEARNED_SPELL',struct.pack('<II',1515,0)),
         ('to_client','SMSG_LEARNED_SPELLS',struct.pack('<IIBIB',1,0,0,1515,0)))]
-    return rows,[],[[1515,1,0]],{'money':10000,'items':[6948]}, {'money':9320,'items':[6948]},[]
+    return rows,[],[[1515,1,0]],{'money':10000,'items':[6948]}, {'money':9354,'items':[6948]},[]
 
 
 def check(data):
@@ -35,7 +35,7 @@ def test_hunter_training_refuses_borrowed_duplicate_or_incomplete_proof(fault):
     elif fault=='missing_delivery':rows.pop()
     elif fault=='duplicate_purchase':rows.append(copy.deepcopy(rows[0]))
     elif fault=='duplicate_learn':rows.append(copy.deepcopy(rows[1]))
-    elif fault=='wrong_cost':after['money']=9319
+    elif fault=='wrong_cost':after['money']=9353
     elif fault=='inventory_change':after['items']=[]
     elif fault=='saved_child':after_spells[:]=[[93375,1,0]]
     elif fault=='dependent_relation':relation.append([1515,93375,1])
