@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 433 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 435 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -928,9 +928,9 @@ Fixture: `pet_class_variants`.
 - [x] `pets.command_follow` (qualified variant; [evidence](#owned_trained_imp_stay_follow))
 - [x] `pets.command_stay` (qualified variant; [evidence](#owned_trained_imp_stay_follow))
 - [ ] `pets.command_move_to`
-- [ ] `pets.passive`
+- [x] `pets.passive` (qualified variant; [evidence](#owned_trained_imp_passive_assist))
 - [ ] `pets.defensive`
-- [ ] `pets.assist`
+- [x] `pets.assist` (qualified variant; [evidence](#owned_trained_imp_passive_assist))
 - [ ] `pets.autocast_toggle`
 - [ ] `pets.spell_cast`
 - [x] `pets.pet_target` (qualified variant; [evidence](#owned_imp_target_and_health))
@@ -3086,3 +3086,20 @@ Remaining limits: Pet coordinates and UnitDistanceSquared are unavailable; range
 - [442_interactions_20261006_125.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc), member `evidence/client_interactions_20261006_ui125/primary_native_close01/episode.json`, SHA-256 `ce6f965afff3e7dbb0d3cf6338918a9265a1158bcf2c4f60684d3daae261f30d`.
 - [442_interactions_20261006_125.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc), member `evidence/client_interactions_20261006_ui125/pet_commands_whole_review01.json`, SHA-256 `99c6c91dd975d34207db2cd81168c1c1376b50d667382b3a59159d7acb8f2ad4`.
 - [442_interactions_20261006_125.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc), member `evidence/client_interactions_20261006_ui125/verification.json`, SHA-256 `16ea4e6db6d7f86318889228fa9f1b5b44aaded6156f6dad8a25b4ee30a5bd0a`.
+
+### owned_trained_imp_passive_assist
+
+One idle trained level10 warlock and retained Imp2. Stock Passive and observed stock Assist button8 each send one exact owned native reaction command under released native catalog and owner/summon authority. Ordinary reload delivers real native pet-info requests and catalogs with Passive0 and Assist3; native persisted Reactstate and public selection agree. Each mode passes15 checks; whole original resources, saved rows, position, vitals, money9354, trained80388, pose/AFK, pet/bar and protected actors restore through17 checks. Original scout5, primary9 and runtime14 closure checks pass.
+
+Remaining limits: Mode control/readback only for this idle owned Imp. Combat reaction behavior, Defensive, aggressive, attack, autocast, other pets/classes and complete pet family remain open. UI126 unsupported petassist whole trial stays failed and excluded. Two expected old-codec prebuild failures retained; final175 focused and2540 foundation pass, later48 Python readback/geometry tests pass. Twenty episodes close successfully. Remote DVC127 review verifies39 JSON/112 referenced images;135 frames217378971 bytes and exact239212141-byte archive/cache copies offloaded. Native and both client lifetimes preserved through bridge-only deployment; two clients on HDMI-1. Scripts blocked; original softTargetInteract0 remains unrestored at1. Native pet savetime advances on real save/logout; every other retained field is exact.
+
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/class_prepare01/episode.json`, SHA-256 `0c09a2209b6d29feffe45956d5822f0ded1d8b5fcdce9aed248df9459e108650`.
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/class_enter01/episode.json`, SHA-256 `fc9d52a0d2f12d89d2e19ee2f5318244187d5962c0277d7f1378f0a276aaefd8`.
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/pet_command_probe01/episode.json`, SHA-256 `08eca6c9856a741318f1e4deb66730994a2dbf0fd30558b44b313f932823cd06`.
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/react_modes01/episode.json`, SHA-256 `b008e732ff0825ca76ca58ea02d72055ebba40e4b3ef83158eb4f3040c8b2618`.
+  Checked cases: `pets.passive` (owned_native_react_mode_pass), `pets.assist` (owned_native_react_mode_pass).
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/class_park01/episode.json`, SHA-256 `df391a64eb8109ec687e05ecd25e0ad7a789e22b7c1d4aecd7d58390178352dd`.
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/origin_finish01/episode.json`, SHA-256 `59901397cd882a9636263e30bf00cb8bf2a7bcea4e90dc1eef53ca67405a9ca0`.
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/primary_native_close01/episode.json`, SHA-256 `3666c0164c23935d1c27f4ef06e2d040f11d00a968dd11af9f622c92e6b91cab`.
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/react_modes_whole_review01.json`, SHA-256 `80d22cd5941666d8b0306af7cedbb6d73cd7debc4893929881d8ff5397fe72c1`.
+- [442_interactions_20261006_127.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_127.tar.gz.dvc), member `evidence/client_interactions_20261006_ui127/verification.json`, SHA-256 `07ad78847ed98f2523f501389668a2e532b370cef392a776004cf1e50eec80de`.
