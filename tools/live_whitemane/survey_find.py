@@ -17,17 +17,24 @@ def collected(find):
     return receipt['runtime']==find.get('runtime') and find['observed_at']<=receipt['observed_at']
 
 
-def created(reader,payload):
+def created(reader,payload,diagnostics=None):
     # Same supported 60895 stationary CreateObject layout as the telescope
     # reader. Values updates and every other object type are ignored.
     r=reader.Reader(payload);instance,count,flags=r.u16(),r.u32(),r.byte()
-    if count!=1 or flags!=0x80:return None
+    def note(reason):
+        if diagnostics is not None:
+            if reason in diagnostics or len(diagnostics)<16:diagnostics[reason]=diagnostics.get(reason,0)+1
+    if count!=1 or flags!=0x80:
+        note(f'update_header_count_{count}_flags_{flags}');return None
     if r.u32()!=len(payload)-r.offset:raise ValueError('visible find update size mismatch')
     kind,guid=r.byte(),r.guid()
     if kind not in (1,2) or r.byte()!=8:return None
     entry=(guid[1]>>6)&0x7fffff
     if entry not in FINDS:return None
-    if r.take(3) not in (b'\x82\x10\x00',b'\xc2\x10\x00'):return None
+    note(f'known_find_entry_{entry}')
+    movement=r.take(3)
+    if movement not in (b'\x82\x10\x00',b'\xc2\x10\x00'):
+        note('known_find_movement_flags_'+movement.hex());return None
     pauses=r.u32()
     if pauses>32:raise ValueError('visible find pause bound')
     north,west,height,angle=struct.unpack('<ffff',r.take(16))
@@ -35,7 +42,9 @@ def created(reader,payload):
         raise ValueError('invalid visible find position')
     r.take(8+pauses*4);fields=reader.Reader(r.take(r.u32()))
     if r.offset!=len(payload):raise ValueError('trailing visible find data')
-    if fields.take(5)!=b'\x00\x00\x07\xff\x01':return None
+    prefix=fields.take(5)
+    if prefix!=b'\x00\x00\x07\xff\x01':
+        note('known_find_fields_prefix_'+prefix.hex());return None
     if fields.u32()!=entry:raise ValueError('visible find entry mismatch')
     fields.take(28);effects=fields.u32()
     if effects>32:raise ValueError('visible find effect bound')
@@ -43,11 +52,15 @@ def created(reader,payload):
     return {'entry':entry,'name':FINDS[entry],'instance':instance,'north':north,'west':west,'owner':owner}
 
 
-def owned(reader,window,direction,opcode,payload,stamp):
+def owned(reader,window,direction,opcode,payload,stamp,diagnostics=None):
     if (direction!='server_to_client' or opcode!=0x4B0000 or not window.active
         or window.player is None or not 0<=stamp-window.requested<=8):return None
-    try:record=created(reader,payload)
-    except (ValueError,struct.error,IndexError):return None
+    try:record=created(reader,payload,diagnostics)
+    except (ValueError,struct.error,IndexError) as error:
+        if diagnostics is not None:
+            reason='parse_rejected_'+str(error)[:80]
+            if reason in diagnostics or len(diagnostics)<16:diagnostics[reason]=diagnostics.get(reason,0)+1
+        return None
     if not record or record.pop('owner')!=window.player:return None
     return {**record,'observed_at':stamp,'source':'owned_authenticated_visible_find_create_after_own_survey'}
 

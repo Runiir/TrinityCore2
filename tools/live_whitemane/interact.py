@@ -10,7 +10,7 @@ def search_points(maximum):
     # Small finds near the character's feet can lie between 40-pixel rows.
     # Interleave a denser local scan with the broader ground search.
     center=[(640,y) for y in range(260,621,24)]
-    fine=[(x,y) for x in range(520,761,20) for y in range(400,621,20)]
+    fine=[(x,y) for x in range(480,781,20) for y in range(400,801,20)]
     broad=[(x,y) for x in range(380,781,40) for y in range(220,661,40)]
     fine.sort(key=lambda p:(p[0]-640)**2+(p[1]-500)**2)
     broad.sort(key=lambda p:(p[0]-640)**2+(p[1]-430)**2)

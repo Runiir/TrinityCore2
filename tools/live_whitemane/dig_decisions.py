@@ -37,6 +37,7 @@ def choose(state):
         'inspect':'Search the minimap if an artifact was discovered but cannot be located'}
     if state['available'] and not state['casting']:
         options['camera_forward']='Restore the camera if it has not been aligned recently'
+        options['camera_ground']='Look down toward the nearby ground if artifact tooltip searches missed the pending find'
         if state['artifact_visible'] or (state.get('pickup') or {}).get('uncollected'):
             options['loot']='Interact if a discovered artifact is uncollected and nearby; verify gathering cast or fragments'
         if state.get('mouseover_artifact'):

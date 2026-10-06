@@ -54,6 +54,8 @@ def model_state(row, guide, visible_find, pending, steps):
     state['recent_outcomes'] = recent
     state['camera_recently_aligned'] = any(step['action']=='camera_forward' and step.get('completed')
         for step in steps[-3:])
+    state['ground_view_recently_adjusted'] = any(step['action']=='camera_ground' and step.get('completed')
+        for step in steps[-3:])
     turns = 0
     for step in reversed(steps):
         if (not step.get('completed') or not step['action'].startswith('turn_')

@@ -212,9 +212,9 @@ def run(args):
                 from .camera_navigation import align
                 step['camera_alignment']=align(folder/'camera',before,guide['world'])
                 step['inputs']=[]
-            elif action=='camera_forward':
+            elif action in ('camera_forward','camera_ground'):
                 from .camera_navigation import align
-                step['camera_alignment']=align(folder/'camera',before)
+                step['camera_alignment']=align(folder/'camera',before,ground_view=action=='camera_ground')
                 step['inputs']=[]
             elif action in ('forward_short','forward_long'):
                 if not guide: raise RuntimeError('movement requires a selected addon guide')

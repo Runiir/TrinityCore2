@@ -1,6 +1,7 @@
 """Execute a Laya-selected forward camera view using measured owned yaw."""
 import fcntl
 import math
+import statistics
 import time
 from . import inputs,runtime,native_control
 from .observe import observe
@@ -8,7 +9,7 @@ from .camera_steering import CameraSteering,angle
 from .sticky_input import StickyInput
 
 
-def align(folder,before,target=None):
+def align(folder,before,target=None,*,ground_view=False):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     from .camera_input import Input
@@ -19,12 +20,18 @@ def align(folder,before,target=None):
     if target:
         world=before['archaeology']['world']
         desired=math.atan2(target['west']-world['west'],target['north']-world['north'])
-    rows=[];steering=CameraSteering();started=time.monotonic()
+    rows=[];steering=CameraSteering();started=time.monotonic();ground_pixels=None
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=Input();sticky=StickyInput(sender)
         try:
             sticky.renew();sender.move(640,150);sticky.button(3,True)
+            if ground_view:
+                if before['archaeology']['flying'] or before['archaeology']['falling']:
+                    raise RuntimeError('ground camera view requires a grounded character')
+                steering.pending={'facing':before['movement']['facing_radians'],
+                    'uptime':before['movement']['client_uptime_ms'],'pixels':-8}
+                sticky.relative(-8,0)
             last_sequence=before['movement']['sequence'];aligned=0
             while time.monotonic()-started<8:
                 row=observe(folder/'view.png');m=row['movement'];a=row['archaeology']
@@ -37,6 +44,12 @@ def align(folder,before,target=None):
                 pixels,info=steering.update(m['facing_radians'],m['client_uptime_ms'],error,1,.18)
                 rows.append({'observed_at':row['observed_at'],**info})
                 if pixels:sticky.relative(pixels,0)
+                if ground_view and ground_pixels is None and steering.samples:
+                    sensitivity=abs(statistics.median(steering.samples))
+                    ground_pixels=min(1024,round(math.pi/4/sensitivity))
+                    sticky.relative(0,ground_pixels)
+                    rows[-1].update(ground_view_relative_pixels=ground_pixels,
+                        vertical_basis='45 degree view adjustment using measured mouse sensitivity; camera pitch not directly observed')
                 aligned=aligned+1 if abs(error)<=.18 and not steering.pending else 0
                 if aligned>=2:return rows
                 time.sleep(.1)
@@ -45,4 +58,5 @@ def align(folder,before,target=None):
             sticky.close()
             runtime.write(folder/'camera_view.json',{'identity':identity,'observations':rows,
                 'alignment_heading_radians':desired,'yaw_samples':list(steering.samples),
-                'keyboard_turns':0,'forward_key_presses':0})
+                'keyboard_turns':0,'forward_key_presses':0,'ground_view':ground_view,
+                'ground_view_relative_pixels':ground_pixels})

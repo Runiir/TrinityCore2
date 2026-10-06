@@ -113,6 +113,8 @@ def main():
     mailbox.clear();relay=addon_relay.Assembler()
     relay_file=Path(addon_relay.__file__);relay_hash=hashlib.sha256(relay_file.read_bytes()).hexdigest()
     session['addon_decoder_sha256']=relay_hash
+    find_file=Path(survey_find.__file__);find_hash=hashlib.sha256(find_file.read_bytes()).hexdigest()
+    session['find_decoder_sha256']=find_hash
     try:
         library = reader.crypto.load_native(runtime)
         keys, scanned, _, limited = reader.crypto.schedules(library, scope['game_pid'], 4096, 45)
@@ -148,7 +150,8 @@ def main():
                 write(ROOT/'run/bearing_reader.json',session)
                 print('Session ready. Authenticated owned-client feed active. Stops after 30 minutes of gameplay inactivity.',flush=True)
             window.packet(direction, opcode, payload, stamp)
-            find=survey_find.owned(reader,window,direction,opcode,payload,stamp)
+            find=survey_find.owned(reader,window,direction,opcode,payload,stamp,
+                session.setdefault('visible_find_diagnostics',{}))
             if find:
                 write(ROOT/'run/visible_find.json',{**find,'runtime':scope['runtime'],
                     'reader_pid':os.getpid(),'reader_start_ticks':session['start_ticks']})
@@ -191,6 +194,10 @@ def main():
             validate(scope)
             window.expire(time.time())
             if time.monotonic() - heartbeat >= 2:
+                candidate_hash=hashlib.sha256(find_file.read_bytes()).hexdigest()
+                if candidate_hash!=find_hash:
+                    importlib.reload(survey_find);find_hash=candidate_hash
+                    session['find_decoder_sha256']=find_hash
                 candidate_hash=hashlib.sha256(relay_file.read_bytes()).hexdigest()
                 if candidate_hash!=relay_hash:
                     importlib.reload(addon_relay);relay_hash=candidate_hash
