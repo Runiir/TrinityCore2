@@ -182,6 +182,37 @@ def park(t,path):
             'original account roster is intentionally expanded, not restored.')
 
 
+def settled_park(t,path,failed_path):
+    """Finish registration after an interrupted, already completed logout."""
+    old=prepared(t,path);failed_path=failed_path.resolve()
+    if failed_path.name!='episode.json' or not failed_path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires a closed interrupted owned parking receipt')
+    failed=json.loads(failed_path.read_text())
+    if (failed.get('completed') is not False or not failed.get('finished_at') or
+        failed.get('failure')!='InterruptedError: parking process terminated by SIGTERM (exit 143)' or
+        failed.get('actor')!=t.fixture or failed.get('runtime')!=t.receipt['runtime'] or
+        failed.get('fixture_source',{}).get('sha256')!=lab.sha256(path)):
+        raise RuntimeError('closed interrupted parking source differs')
+    session=actors.session_entry(t.fixture)['session']
+    packets=[{k:r[k] for k in ('time','session','name','direction')} for r in
+        entries(lab.ROOT/'evidence/world_packets.jsonl') if r.get('session')==session and
+        failed['started_at']<=r.get('time',0)<=failed['finished_at'] and
+        r.get('name') in ('CMSG_LOGOUT_REQUEST','SMSG_LOGOUT_COMPLETE')]
+    checks=origin_checks(old)
+    checks.update(class_offline=character(t.fixture['guid'],t.fixture['account_id'])['online']==0,
+        ordinary_logout=any(r['name']=='CMSG_LOGOUT_REQUEST' and r['direction']=='from_client' for r in packets),
+        native_logout=any(r['name']=='SMSG_LOGOUT_COMPLETE' and r['direction']=='from_native' for r in packets),
+        delivered_logout=any(r['name']=='SMSG_LOGOUT_COMPLETE' and r['direction']=='to_client' for r in packets))
+    if not all(checks.values()):raise RuntimeError('interrupted logout did not complete with original preservation')
+    if actors.register(2)!=old['origin_actor']:raise RuntimeError('original actor registration differs')
+    t.receipt.update(interrupted_source={'path':str(failed_path),'sha256':lab.sha256(failed_path)},
+        logout_packets=packets,checks=checks,phase='await_original_selection_review',
+        frame=shot(t.out/'origin_selection.png'),retained_class_fixture=character(t.fixture['guid'],t.fixture['account_id']),
+        retained_class_saved=saved(t.fixture['guid']),retained_class_pets=pets(t.fixture['guid']),
+        input_sent=False,completed=True,qualified_scope='Observed completed logout after interrupted parking; '
+            'original registration restored without replaying input. Interrupted receipt stays excluded.')
+
+
 def settled_entry(t,path,failed_path):
     old=prepared(t,path);failed_path=failed_path.resolve()
     if failed_path.name!='episode.json' or not failed_path.is_relative_to(lab.ROOT/'evidence'):
@@ -226,14 +257,14 @@ def finish(t,path,review_path):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','capture','lobby','enter','settle-enter','park','finish'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','capture','lobby','enter','settle-enter','park','settle-park','finish'])
     p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--returning',action='store_true')
     p.add_argument('--failed-source',type=Path)
     p.add_argument('--stage',choices=['dismiss','reconnect','realm','character']);a=p.parse_args()
     if a.action in ['prepare','lobby','enter','finish'] and not a.review:p.error('requires a fresh owned visual review')
     if a.action=='lobby' and not a.stage:p.error('requires one reviewed lobby stage')
-    if a.action=='settle-enter' and not a.failed_source:p.error('requires the closed failed entry')
+    if a.action in ['settle-enter','settle-park'] and not a.failed_source:p.error('requires the closed failed source')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
@@ -244,6 +275,7 @@ if __name__=='__main__':
             elif a.action=='enter':enter(t,a.source,a.review)
             elif a.action=='settle-enter':settled_entry(t,a.source,a.failed_source)
             elif a.action=='park':park(t,a.source)
+            elif a.action=='settle-park':settled_park(t,a.source,a.failed_source)
             else:finish(t,a.source,a.review)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
