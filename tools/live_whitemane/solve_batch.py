@@ -27,7 +27,7 @@ def run(folder, batches=None, *, race_id=None):
     receipt={'started_at':time.time(),'solves':[],'steps':[],'finished':False}
     def record():runtime.write(folder/'batch.json',receipt)
     def click(row,path,goal,expected):
-        result=click_choice(folder/f"ui_{len(receipt['steps']):03d}",row,path,goal,expected)
+        result=click_choice(folder/f"ui_{len(receipt['steps']):03d}",row,path,goal,expected,matching_only=True)
         receipt['steps'].append(result);record()
         if not result['executed']:raise RuntimeError('Laya waited during a ready solve batch')
         return result['after']

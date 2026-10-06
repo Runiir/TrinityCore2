@@ -33,3 +33,28 @@ def test_a_project_that_never_settles_stops_before_any_solve(monkeypatch,tmp_pat
     with pytest.raises(RuntimeError,match='journal selection'):
         solve_batch.settled_project(snapshot(),8,tmp_path)
     assert 3<=now[0]<3.2
+
+
+def test_keystone_choice_only_offers_the_requested_visible_socket(monkeypatch,tmp_path):
+    from . import farm_actions,runtime
+    from .test_farm_loop import row
+    r=row();r['farm_ui']['journal']={'keystones':[
+        {'index':1,'label':'Socket 1','enabled':True,'x':.4,'y':.5},
+        {'index':2,'label':'Socket 2','enabled':True,'x':.5,'y':.5}]}
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    monkeypatch.setattr(farm_actions,'observe',lambda _:copy.deepcopy(r))
+    def choose(state,instructions,options):
+        assert set(options)=={'button_1','wait'}
+        return 'button_1',{},{}
+    monkeypatch.setattr(farm_actions.laya_ui,'choose',choose)
+    events=[];monkeypatch.setattr(farm_actions.inputs,'execute',lambda *args:events.append(args) or {'completed':True})
+    monkeypatch.setattr(farm_actions.time,'sleep',lambda _:None)
+    result=farm_actions.click_choice(tmp_path/'socket',r,['journal','keystones'],
+        'Add keystone in socket 2',{'index':2},matching_only=True)
+    assert result['selected']['index']==2 and events[0][-1]['x']==640
+
+
+def test_mismatched_ui_selection_returns_to_recovery_instead_of_stopping_farm():
+    from . import recovery
+    assert recovery.retryable(RuntimeError('Laya selected a control inconsistent with the requested goal'))
+    assert recovery.retryable(RuntimeError('RuntimeError: Laya selected a control inconsistent with the requested goal'))

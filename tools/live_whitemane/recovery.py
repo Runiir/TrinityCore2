@@ -37,6 +37,7 @@ RETRYABLE=(
     'movement decision lease expired',
     'waiting for a boundary-verified public addon arrow',
     'Laya waited during a ready solve batch',
+    'Laya selected a control inconsistent with the requested goal',
     'Laya waited at flight master ride option',
     'Laya waited before Tol Barad teleport',
     'instant taxi did not confirm requested arrival',
