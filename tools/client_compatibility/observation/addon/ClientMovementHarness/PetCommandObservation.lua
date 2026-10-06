@@ -45,6 +45,7 @@ function Client442ObservePetCommands()
             texture=ok and texture or nil,is_token=ok and not not token or false,
             active=ok and not not active or false,autocast_allowed=ok and not not autoAllowed or false,
             autocast_enabled=ok and not not autoEnabled or false,spell_id=ok and spell or nil,
+            usable=call(GetPetActionSlotUsable,slot),
             frame=frame(slot,width,height)}
     end
     local player,pet=position('player'),position('pet')
@@ -65,6 +66,7 @@ function Client442ObservePetCommands()
         distance=math.sqrt((player.x-pet.x)^2+(player.y-pet.y)^2+(player.z-pet.z)^2)
     end
     return {owner_guid=call(UnitGUID,'player'),pet_guid=call(UnitGUID,'pet'),
+        modified_click=call(IsModifiedClick),
         actions=rows,viewport={width=width,height=height,basis='scaled_game_ui_screen'},
         player_position=player,pet_position=pet,distance=distance,
         interaction_ranges=ranges,distance_squared=squared,pet_visible=call(UnitIsVisible,'pet'),
