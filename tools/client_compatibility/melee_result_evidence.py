@@ -34,8 +34,9 @@ def pairs(packets,owner,victim,map_id):
     used=set();matched=[]
     for p in packets:
         if p.get('name')!='SMSG_ATTACKER_STATE_UPDATE' or p.get('direction')!='from_native':continue
-        result=translated(bytes.fromhex(p['body']),map_id)
-        if (result['attacker'],result['victim'])!=(owner,victim):continue
+        body=bytes.fromhex(p['body']);r=Reader(body);r.unpack('I')
+        if (guid(r),guid(r))!=(owner,victim):continue
+        result=translated(body,map_id)
         index=next((i for i,c in enumerate(delivered) if i not in used and c['body']==result['body'] and
             0<=c['time']-p['time']<2),None)
         if index is not None:used.add(index)

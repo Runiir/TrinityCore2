@@ -1,4 +1,5 @@
 import pytest
+import struct
 from tools.client_compatibility.melee_result_evidence import translated,pairs
 from tools.client_compatibility.world.tests.test_owned_melee_results import CAPTURE,MODERN,VICTIM
 
@@ -7,6 +8,13 @@ def test_captured_physical_vector_has_independent_exact_oracle():
     result=translated(CAPTURE,0)
     assert result['body']==MODERN and result['attacker']==5 and result['victim']==VICTIM
     assert result['damage']==6 and result['overkill']==-1 and result['hit_info']==2
+
+
+def test_foreign_optional_layout_does_not_enter_owned_damage_parser():
+    # Same native opcode can broadcast nearby NPC combat with another layout.
+    body=bytearray(CAPTURE);body[5]=6;struct.pack_into('<I',body,0,0x20)
+    native={'name':'SMSG_ATTACKER_STATE_UPDATE','direction':'from_native','time':1.,'body':bytes(body).hex()}
+    assert pairs([native],5,VICTIM,0)==([],[])
 
 
 @pytest.mark.parametrize('fault',[None,'missing','duplicate','wrong_body','too_late'])
