@@ -80,5 +80,26 @@
     "original_restored": false
   },
   "script_permission": "blocked",
-  "pet_talents": "Native points and ranked catalog become one modern pet-marked group, with no player spec or glyph allocation. Captured empty Warlock packet 010000000000 must not terminate entry. Talent mutations remain unqualified."
+  "pet_talents": "Native points and ranked catalog become one modern pet-marked group, with no player spec or glyph allocation. Captured empty Warlock packet 010000000000 must not terminate entry. Talent mutations remain unqualified.",
+  "pet_name_timestamp": {
+    "native_response": "uint32",
+    "modern_response": "WorldPackets::Timestamp<> signed64",
+    "modern_UnitData_field": "uint32",
+    "sources": [
+      {
+        "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/PacketUtilities.h",
+        "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+        "sha256": "ab7310c56ec6660078f66b6740de8e027213e7b5c3786e5910e44473c633ad5f",
+        "bytes": 21426,
+        "file": "PacketUtilities.h"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/QueryPackets.h",
+        "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+        "sha256": "b001fe1164efaae2cf09b62aebbe8f0ddb314f9581ecc3e45d1785c3783a8c8e",
+        "bytes": 13324,
+        "file": "QueryPackets.h"
+      }
+    ]
+  }
 }

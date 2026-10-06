@@ -5,10 +5,14 @@ from . import actors,lab_runtime as lab
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .interaction_spellbook_navigation import detail,wire_known
-from .interaction_owned_class_fixture import prepared,origin_checks,SCRIPT_BOUNDARY
+from .interaction_owned_class_fixture import prepared,origin_checks,saved,SCRIPT_BOUNDARY
 from .observation.journal import entries
 from .world.native_objects import records
 from .world.objects import INDEX
+from .interaction_operations import click_case
+from .interaction_macros import require
+from .observation.inventory import Inventory
+from .interaction_spellbook_recon import resources
 
 
 def summon_source(t,source,session):
@@ -51,6 +55,9 @@ def suite(t,preparation,source,from_entry=False):
         native_evidence_scope='Same owned native session through the closed entry; no summon input.' if from_entry else
             'Same owned native session through the closed summon; existing pets may precede the cast.')
     if from_entry:
+        oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
+        if resources(oracle)!=e['resources'] or saved(t.fixture['guid'])!=e['entered_saved']:
+            raise RuntimeError('owned entry resources changed before the passive pet probe')
         learned=wire_known(t,session)
         t.receipt['native_control_demon_known']=93375 in learned
     captured=[]
@@ -69,7 +76,22 @@ def suite(t,preparation,source,from_entry=False):
             if r.get('guid')==t.fixture['guid'] and INDEX['UNIT_FIELD_SUMMON'] in fields:
                 bound.append({'kind':'owned_player_summon','record':r,'summon_guid':word(fields,'UNIT_FIELD_SUMMON')})
         if bound:captured.append({'packet':p,'bound_records':bound})
-    probe=detail(t,'public_pet_after_entry' if from_entry else 'public_pet_after_summon')
+    if from_entry:
+        t.receipt['input_sent']=True
+        t.receipt['input_scope']='Stock spellbook open and close only; no summon or pet command.'
+        try:
+            require(click_case(t,'spellbook.pet_entry.open','Open the observed stock spellbook for passive pet diagnostics.',
+                lambda c:c['name']=='SpellbookMicroButton',lambda b,a,s:{'status':'spellbook_open_pass' if s and
+                    'SpellBookFrame' in a['panels'] and not a.get('lua_errors') and not a.get('blocked_actions') else
+                    'client_or_protocol_failure'}),'spellbook_open_pass')
+            probe=detail(t,'public_pet_after_entry')
+        finally:
+            t.clean_panels()
+            t.receipt['native_resources_preserved']=resources(oracle)==e['resources'] and saved(t.fixture['guid'])==e['entered_saved']
+            t.persist()
+            if not t.receipt['native_resources_preserved']:
+                raise RuntimeError('passive pet diagnostics changed native resources or saved rows')
+    else:probe=detail(t,'public_pet_after_summon')
     checks=origin_checks(old)
     t.receipt.update(native_pet_packets=captured,public_pet=probe['pet'],origin_checks=checks,
         phase='native_pet_public_comparison',completed=all(checks.values()))

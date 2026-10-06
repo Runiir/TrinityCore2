@@ -124,8 +124,18 @@ def test_pet_name_read_is_bound_to_visible_guid_number_and_native_reply(codec):
     r=Reader(bytes.fromhex(rows[1][1]));assert list(r.guid())==IDENTITY
     assert r.bits(1)==1 and r.bits(8)==3 and r.bits(1)==1
     assert [r.bits(7) for _ in range(5)]==[1]*5
-    assert bytes(r.raw(5))==b'abcde' and r.unpack('I')==(123,) and bytes(r.raw(3))==b'Pip';r.end()
+    assert bytes(r.raw(5))==b'abcde' and r.unpack('q')==(123,) and bytes(r.raw(3))==b'Pip';r.end()
     assert rows[2] is None
+
+
+def test_pet_name_timestamp_is_pinned_signed64_even_without_declined_names(codec):
+    query=action('pet_request','CMSG_QUERY_PET_NAME',Writer().guid(*IDENTITY).finish())
+    native=struct.pack('<I',1)+b'Flatom\0'+struct.pack('<IB',1791258000,0)
+    reply=run(codec,[query,action('pet_response','SMSG_PET_NAME_QUERY_RESPONSE',native)])[1]
+    r=Reader(bytes.fromhex(reply[1]));assert list(r.guid())==IDENTITY
+    assert r.bits(1)==1 and r.bits(8)==6 and r.bits(1)==0
+    assert [r.bits(7) for _ in range(5)]==[0]*5
+    assert r.unpack('q')==(1791258000,) and bytes(r.raw(6))==b'Flatom';r.end()
 
 
 @pytest.mark.parametrize('change',['unseen','forged','no_number','extra'])

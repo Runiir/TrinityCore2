@@ -116,7 +116,9 @@ Reply pet_response(Protocol const &p, State &owner, std::string const &name, Vie
         w.bits(pet_name.size(),8).bits(declined,1);
         for(auto const &n:names)w.bits(n.size(),7);
         for(auto const &n:names)w.raw(n);
-        w.pack("I",{timestamp}).raw(pet_name);
+        // QueryPetNameResponse uses Timestamp<> (signed64). UnitData's separate
+        // PetNameTimestamp field remains uint32 on this pinned client.
+        w.pack("q",{timestamp}).raw(pet_name);
     }
     return Packet{"SMSG_QUERY_PET_NAME_RESPONSE",w.finish()};
 }
