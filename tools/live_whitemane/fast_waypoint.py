@@ -74,6 +74,10 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     if flying and a['mounted'] and a['grounded']:raise GroundContact(row)
                     raise RuntimeError('unexpected movement mode during continuous approach')
                 if sticky.interrupted:raise RuntimeError(sticky.interrupted)
+                # Rendering can be slower than the local control tick. An
+                # unchanged but still-valid public frame retains the accepted
+                # command; observe() rejects frames after their freshness bound.
+                sticky.renew()
                 if m['sequence']==last_sequence:
                     time.sleep(.01);continue
                 last_sequence=m['sequence']

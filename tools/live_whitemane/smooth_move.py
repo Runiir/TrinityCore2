@@ -152,7 +152,7 @@ def ascend(folder, ceiling, *, site_id=None):
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         code,_=sender._keycode(sender.XK.string_to_keysym('space'))
-        held=False;rows=[];started=time.time();last_height=None;stalled=0
+        held=False;rows=[];started=time.time();last_height=None;stalled=0;last_pose_tick=None
         observation_seconds=[];missing_height=0
         try:
             for index in range(150):
@@ -194,10 +194,12 @@ def ascend(folder, ceiling, *, site_id=None):
                         sender._send(sender.X.KeyRelease,code);held=False
                         time.sleep(.15)
                         continue
-                if held and last_height is not None:
+                pose_tick=pose.get('client_uptime_ms',pose.get('observed_at',row['observed_at']))
+                new_pose=pose_tick!=last_pose_tick
+                if held and last_height is not None and new_pose:
                     stalled=stalled+1 if pose['height_yards']<=last_height+.1 else 0
                     if stalled>=6:raise RuntimeError('calculated ascent made no height progress')
-                last_height=pose['height_yards']
+                if new_pose:last_height=pose['height_yards'];last_pose_tick=pose_tick
                 if not held:sender._send(sender.X.KeyPress,code);held=True
                 time.sleep(.1)
             raise RuntimeError('calculated ascent did not reach route clearance')

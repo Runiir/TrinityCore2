@@ -122,3 +122,24 @@ def test_short_on_foot_fall_releases_forward_then_resumes_the_same_intent(monkey
     assert sum(r.get('outcome')=='awaiting_ground' for r in rows)==2
     assert events.count(('press','Up'))==2 and events.count(('release','Up'))==2
     assert not calls and rows[-1]['outcome']=='waypoint_arrived'
+
+
+def test_retained_input_survives_slow_but_valid_public_frames(monkeypatch,tmp_path):
+    r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,100)
+    index=[0]
+    def observe(_):
+        index[0]+=1;now[0]+=.1;controllers[0].tick()
+        sequence=1+index[0]//10
+        row=copy.deepcopy(r);row['observed_at']=now[0]
+        row['movement'].update(sequence=sequence,client_uptime_ms=sequence*1000)
+        row['archaeology']['sequence']=sequence
+        row['owned_pose']={'pitch_radians':0,'client_uptime_ms':sequence*1000}
+        if index[0]>=30:row['archaeology']['world']['north']=0
+        return row
+    monkeypatch.setattr(fast_waypoint,'observe',observe)
+    rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True)
+    assert rows[-1]['outcome']=='waypoint_arrived'
+    assert controllers[0].interrupted is None
+    assert events.count(('press','Up'))==1 and events.count(('release','Up'))==1
+    assert events.count(('button_press',3))==1 and events.count(('button_release',3))==1
+    assert len(calls)==1
