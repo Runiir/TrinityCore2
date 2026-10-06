@@ -234,7 +234,8 @@ def run(args):
                     if value:
                         value['approach']=None;value['out_of_range']=False
                         runtime.write(runtime.ROOT/'run/pending_find.json',value)
-                elif guide['color']=='red' or (guide['source']=='GatherMate marker' and guide['distance_yards']>20):
+                elif guide['color']=='red' or (guide['distance_yards']>20 and
+                        (guide['color']=='yellow' or guide['source']=='GatherMate marker')):
                     arrow={'endpoint':guide['world'],'source':guide['source'],'site_id':guide['boundary_site_id']}
                     step['travel_mode']='red_flight'
                     step['arrow']=arrow
