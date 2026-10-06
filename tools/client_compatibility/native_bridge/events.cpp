@@ -1,6 +1,7 @@
 #include "events.hpp"
 #include "chat_channels.hpp"
 #include "chat_probe.hpp"
+#include "pet_rename_probe.hpp"
 #include <chrono>
 #include <fstream>
 #include <sys/stat.h>
@@ -203,6 +204,12 @@ void Events::marker_placed(std::string const &session,Value const &location)
 void Events::packet(std::string const &direction, std::string const &name, View body,
                     std::string const &session)
 {
+    if(owned_pet_rename_probe(root_,direction,name,body,session,now()))
+    {
+        append(root_/"evidence/owned_pet_rename_packets.jsonl",Object{{"time",now()},
+            {"session",session},{"direction",direction},{"name",name},{"body",hex(body)}});
+        return;
+    }
     bool movement_probe=name=="SMSG_MOVE_UPDATE" &&
         std::filesystem::is_regular_file(root_/"run/capture_public_movement");
     if (!capture(name) && !public_chat_probe(name,body) && !public_channel_probe(name,body) && !movement_probe)

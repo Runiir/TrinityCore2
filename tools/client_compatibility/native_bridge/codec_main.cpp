@@ -6,6 +6,7 @@
 #include "archaeology.hpp"
 #include "reputation_fields.hpp"
 #include "events.hpp"
+#include "pet_rename_probe.hpp"
 #include "ready_check.hpp"
 #include "chat.hpp"
 #include "chat_channels.hpp"
@@ -88,6 +89,10 @@ int main(int argc, char **argv)
                     Events events(str(get(request,"root")));
                     events.packet("from_client",str(get(request,"name")),data("body"),"fixture");result=true;
                 }
+                else if(op=="owned_pet_rename_probe")
+                    result=owned_pet_rename_probe(str(get(request,"root")),str(get(request,"direction")),
+                        str(get(request,"name")),data("body"),str(get(request,"session")),
+                        number(get(request,"now")));
                 else if(op=="chat_context")
                 {
                     require_chat_character(truth(get(request,"created")),truth(get(request,"active_world")));result=true;
