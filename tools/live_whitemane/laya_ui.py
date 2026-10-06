@@ -5,12 +5,13 @@ import urllib.error
 import time
 from .ui_choice import MODEL, REVISION
 ENDPOINT='http://127.0.0.1:8004'
+RELOAD_RETRY_SECONDS=45
 
 
 def read_json(request,*,timeout):
     """Keep the actor alive during a short, owned decision-service reload."""
     from . import runtime
-    deadline=time.monotonic()+45;delay=.2
+    deadline=time.monotonic()+RELOAD_RETRY_SECONDS;delay=.2
     while True:
         if (runtime.ROOT/'run/stop_dig').exists():
             raise RuntimeError('supervisor stop requested')

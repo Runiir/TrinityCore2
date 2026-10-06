@@ -94,7 +94,7 @@ def test_combat_root_choice_uses_immediate_facts_and_preserves_all_legal_actions
     assert farm_policy.choose(r,SolveBatches(),session)[0]=='combat'
 
 
-def test_travel_context_fits_immediate_route_facts_without_dropping_legal_choices(monkeypatch):
+def test_travel_receives_full_movement_and_pickup_payload_with_all_legal_choices(monkeypatch):
     from . import farm_policy
     r=row();r['archaeology'].update(falling=False,swimming=False,grounded=True)
     r['farm_ui']['route'].update(kind='taxi',instruction='Approach Doras then take instant taxi',
@@ -103,14 +103,16 @@ def test_travel_context_fits_immediate_route_facts_without_dropping_legal_choice
     legal=farm_policy.legal_actions(r,SolveBatches())
     def choose(state,instructions,options):
         assert set(options)==set(legal)
-        assert state['next_waypoint_is_flight_master'] and state['grounded']
-        assert state['task']=='Follow addon next leg: Approach Doras then take instant taxi'
-        assert 'fragments' not in state
+        assert state['route']=='taxi' and state['grounded']
+        assert state['route_instruction']=='Approach Doras then take instant taxi'
+        assert state['fragments'][0]['fragments']==149
+        assert state['pickup']['uncollected'] is False
+        assert state['swimming'] is False and state['ground_approach_blocked'] is False
         return 'flight',{},{}
     monkeypatch.setattr(farm_policy.laya_ui,'choose',choose)
     action,target,decision=farm_policy.choose(r,SolveBatches(),session)
     assert action=='flight' and target['north']==100
-    assert decision['observed_state']['fragments'][0]['fragments']==149
+    assert decision['state']['fragments'][0]['fragments']==149
 
 
 def test_shortcut_keeps_a_future_flight_master_out_of_the_active_route_leg():
