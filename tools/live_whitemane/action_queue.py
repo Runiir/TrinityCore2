@@ -58,6 +58,22 @@ def wait_ready(folder,before,observer,*,uses_gcd=True):
     return row
 
 
+def wait_stopped(folder,before,observer):
+    """After owned movement, wait for release and the displayed position cache."""
+    deadline=time.monotonic()+5;row=before;stationary=None
+    while True:
+        validate(row,before)
+        m,a=row['movement'],row['archaeology']
+        if m.get('speed',0)==0 and not a.get('falling') and not busy(row):
+            world=a.get('world')
+            if stationary and newer(row,stationary) and world==stationary['archaeology'].get('world'):
+                return row
+            stationary=row
+        else:stationary=None
+        if time.monotonic()>=deadline:raise RuntimeError('selected client action invalidated: movement did not settle')
+        time.sleep(POLL_SECONDS);row=observer(folder/'stopped.png')
+
+
 def run(folder,before,action,send,complete,observer,*,allowed=None,uses_gcd=True,failure=None):
     """Execute a previously selected command once, then retain it until settled."""
     if not _active.acquire(blocking=False):raise RuntimeError('a selected client command is already pending')

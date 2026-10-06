@@ -1,7 +1,7 @@
 """A retained Laya travel decision approaches and uses the addon's named portal."""
 import math
 import time
-from . import runtime, inputs, interact
+from . import runtime, inputs, interact,action_queue
 from .observe import observe
 from .decisions import choose
 from .fast_waypoint import walk
@@ -29,8 +29,10 @@ def run(folder,portal,*,approved_intent=None):
     fresh=observe(folder/'precheck.png');stationary(before,fresh)
     result['approach']=walk(folder/'approach',target,tolerance=2,
         guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
-    row=observe(folder/'approached.png')
-    result['interaction']=interact.use(folder/'interaction',row,{'Portal to '+portal['destination']})
+    row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
+    names={'Portal to '+portal['destination']}
+    if portal.get('key')=='org-uldum':names.add('Portal to Uldum')
+    result['interaction']=interact.use(folder/'interaction',row,names)
     for index in range(25):
         time.sleep(.4)
         try:after=observe(folder/'arrival.png')

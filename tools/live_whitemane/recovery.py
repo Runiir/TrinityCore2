@@ -9,6 +9,7 @@ from .observe import observe
 RETRYABLE=(
     'selected client action invalidated',
     'selected client action readiness timed out',
+    'character or owned client unavailable for UI input',
     'continuous waypoint exceeded its calculated emergency bound',
     'continuous waypoint movement is blocked',
     'calculated ascent made no height progress',
