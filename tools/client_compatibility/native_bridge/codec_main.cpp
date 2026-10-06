@@ -27,6 +27,7 @@
 #include "item_text.hpp"
 #include "who.hpp"
 #include "pet_packets.hpp"
+#include "control_skill_metadata.hpp"
 #include <iostream>
 #include <memory>
 
@@ -49,6 +50,8 @@ int main(int argc, char **argv)
                 auto data = [&](std::string_view key) { return unhex(str(get(request, key))); };
                 if (op == "public_chat_probe")
                     result = public_chat_probe(str(get(request, "name")), data("body"));
+                else if (op == "control_skill_hotfixes")
+                    result = control_skill_hotfixes(data("native"),get(request,"config"));
                 else if (op == "public_channel_probe")
                     result = public_channel_probe(str(get(request, "name")), data("body"));
                 else if (op == "actionbar_toggle_request")

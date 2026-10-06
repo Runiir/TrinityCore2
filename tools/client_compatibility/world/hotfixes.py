@@ -4,6 +4,7 @@ import json
 from .. import lab_runtime as lab
 from ..auth.realms import ADDRESS
 from .buffer import Reader,Writer
+from .control_skill_metadata import records as control_skills
 
 
 @lru_cache(maxsize=1)
@@ -14,7 +15,7 @@ def records():
     if len(rows)!=2 or {(row['table_hash'],row['record_id']) for row in rows}!={(0x1A5081E1,4352),(0x1A5081E1,4354)}:
         raise ValueError('public hotfix allowlist mismatch')
     if any(len(bytes.fromhex(row['data']))!=55 for row in rows):raise ValueError('public portal hotfix layout mismatch')
-    return rows
+    return rows+control_skills()
 
 
 def available():

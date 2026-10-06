@@ -1,0 +1,55 @@
+{
+  "schema": "client442_control_skill_metadata_v1",
+  "client_build": 60895,
+  "native_build": 15595,
+  "table_hash": 4282664694,
+  "layout_hash": "738BFEE1",
+  "native_source_sha256": "6b71b4746e0a950ba0414f53905c308119f0485429240651733747c252fcaadf",
+  "native_source": "Installed isolated native15595 SkillLineAbility.dbc; positive rows in DVC118",
+  "wire_layout_source": "https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/HotfixHandler.cs",
+  "limits": "Two native warlock class-skill metadata records only. No learned spell, aura, level, money, trainer eligibility or pet ownership grant. Modern-only Flags/category/skillup/character points fields default to zero. Native next-rank field is zero in both records, avoiding next/previous rank interpretation. Live trainer acceptance remains required.",
+  "records": [
+    {
+      "record_id": 21975,
+      "push_id": 60895004,
+      "unique_id": 60895004,
+      "native_values": [
+        21975,
+        354,
+        80388,
+        0,
+        256,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "record_id": 23872,
+      "push_id": 60895005,
+      "unique_id": 60895005,
+      "native_values": [
+        23872,
+        354,
+        93375,
+        0,
+        256,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

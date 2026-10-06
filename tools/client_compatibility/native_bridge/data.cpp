@@ -1,4 +1,5 @@
 #include "data.hpp"
+#include "control_skill_metadata.hpp"
 #include <algorithm>
 #include <ctime>
 #include <fstream>
@@ -128,6 +129,9 @@ PublicData::PublicData(std::filesystem::path const &root, std::filesystem::path 
             !expected.erase(integer(get(row, "record_id"))) || unhex(str(get(row, "data"))).size() != 55)
             throw std::runtime_error("public portal hotfix layout mismatch");
     }
+    auto skills=control_skill_hotfixes(read_file(directory/"SkillLineAbility.dbc"),
+        load_json(repo/"experiments/configs/client_harness/control_skill_metadata_v1.json"));
+    for (auto &row:skills)hotfixes.push_back(std::move(row));
 }
 Bytes PublicData::available() const
 {
