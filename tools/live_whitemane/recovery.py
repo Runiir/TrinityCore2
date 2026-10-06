@@ -26,6 +26,7 @@ RETRYABLE=(
     'descent did not confirm landing',
     'character drifted away from landing destination',
     'Survey result did not receive fresh public facts',
+    'Mouse Button 4 did not produce a successful Survey',
     'artifact interaction did not confirm fragment pickup',
     'key-1 combat has made no target-health progress',
     'current-target facing remained blocked',

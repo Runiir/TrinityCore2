@@ -65,6 +65,12 @@ def execute(title, action, arguments):
             elif action == 'button':
                 button=arguments['button']
                 if button not in (1,3,8,9):raise ValueError('unsupported owned mouse button')
+                if 'x' in arguments or 'y' in arguments:
+                    x,y=arguments['x'],arguments['y']
+                    period=arguments.get('frame_period_seconds',1/30)
+                    if not 0<=x<runtime.WIDTH or not 0<=y<runtime.HEIGHT or not 0<period<=2:
+                        raise ValueError('button positioning is outside the owned viewport or frame period')
+                    sender.move(x,y);time.sleep(period)
                 sender._send(sender.X.ButtonPress,button)
                 try:time.sleep(.15)
                 finally:sender._send(sender.X.ButtonRelease,button)

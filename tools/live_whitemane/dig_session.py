@@ -228,7 +228,9 @@ def run(args):
                 session.pop('telescope_target',None)
                 # WoW Mouse Button 4 is X button 8 / Linux BTN_SIDE (275).
                 step['command_queue']=dig_feedback.survey(folder/'survey_command',fresh,
-                    lambda _:inputs.execute('World of Warcraft','button',{'button':8}),
+                    lambda row:inputs.execute('World of Warcraft','button',{'button':8,
+                        'x':runtime.WIDTH//2,'y':int(runtime.HEIGHT*.3),
+                        'frame_period_seconds':1/max(1,(row.get('farm_ui') or {}).get('frame_rate') or 1)}),
                     observe,lambda row:telescope(row,session))
                 step['inputs']=step['command_queue']['inputs']
             elif action in ('turn_left','turn_right'):
