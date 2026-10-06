@@ -5,6 +5,7 @@ import struct
 from pathlib import Path
 from . import lab_runtime as lab
 from .client_spell_tables import TABLES, public_sections
+from .client_spell_visual_table import LAYOUT as VISUAL_LAYOUT
 
 
 FIELDS = {
@@ -12,6 +13,10 @@ FIELDS = {
         5:'EffectAura', 17:'EffectTriggerSpell'},
     'SkillLineAbility': {1:'ID', 2:'SkillLine', 3:'Spell', 4:'MinSkillLineRank',
         5:'ClassMask', 6:'SupercedesSpell', 7:'AcquireMethod', 10:'Flags'},
+    'SpellXSpellVisual': {0:'ID', 1:'DifficultyID', 2:'SpellVisualID', 3:'ProbabilityBits',
+        4:'Flags', 5:'Priority', 6:'SpellIconFileID', 7:'ActiveIconFileID',
+        8:'ViewerUnitConditionID', 9:'ViewerPlayerConditionID',
+        10:'CasterUnitConditionID', 11:'CasterPlayerConditionID'},
 }
 
 
@@ -37,7 +42,7 @@ def records(directory, name, spells):
     if (manifest.get('build') != 60895 or manifest.get('prefix_sha256') != lab.sha256(path) or
         manifest.get('verified_prefix_bytes') != len(data)):
         raise ValueError('verified public prefix identity differs')
-    h, sections = public_sections(data, TABLES[name])
+    h, sections = public_sections(data, VISUAL_LAYOUT if name=='SpellXSpellVisual' else TABLES[name])
     if sections != manifest.get('sections') or list(h) != manifest.get('header'):
         raise ValueError('public section proof differs')
     fields = h[1];start = 204+40*h[-1]+4*fields
@@ -76,7 +81,7 @@ def records(directory, name, spells):
             row_id = identifiers[index] if identifiers is not None else scalar(bits, columns[h[10]], 0, [], {})
             if row_id <= 0 or row_id in seen:raise ValueError('invalid public row ID')
             seen.add(row_id)
-            spell = relations.get(index) if name == 'SpellEffect' else scalar(bits, columns[3], row_id,
+            spell = relations.get(index) if name in ('SpellEffect','SpellXSpellVisual') else scalar(bits, columns[3], row_id,
                 palettes.get(3, []), commons.get(3, {}))
             if spell not in spells:continue
             row = {'ID':row_id, 'SpellID':spell, 'section':section['index']}
@@ -85,6 +90,8 @@ def records(directory, name, spells):
                 if col[3] != 2 and col[0]+col[1] > h[2]*8:
                     raise ValueError('selected field exceeds record')
                 row[label] = scalar(bits, col, row_id, palettes.get(i, []), commons.get(i, {}))
+            if name=='SpellXSpellVisual':
+                row['Probability']=struct.unpack('<f',struct.pack('<I',row['ProbabilityBits']))[0]
             if name == 'SkillLineAbility' and relations.get(index) != row['SkillLine']:
                 raise ValueError('inline skill relationship differs')
             selected.append(row)
