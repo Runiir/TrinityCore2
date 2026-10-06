@@ -79,13 +79,17 @@ def test_unobserved_or_malformed_dismiss_shapes_never_reach_native(codec,body):
     assert rows[0][0]=='SMSG_PET_SPELLS_MESSAGE' and 'error' in rows[1]
 
 
-@pytest.mark.parametrize('clear',['empty_catalog','replacement_pending','destroy','logout'])
+@pytest.mark.parametrize('clear',['empty_catalog','replacement_pending','destroy','sparse_removal','logout'])
 def test_catalog_clear_replacement_removal_and_logout_revoke_dismiss(codec,clear):
     if clear=='empty_catalog':revoke=action('pet_response','SMSG_PET_SPELLS',struct.pack('<Q',0))
     elif clear=='replacement_pending':
         replacement=bytearray(CATALOG);struct.pack_into('<Q',replacement,0,PET+1)
         revoke=action('pet_response','SMSG_PET_SPELLS',replacement)
     elif clear=='destroy':revoke=action('destroy','SMSG_DESTROY_OBJECT',struct.pack('<QB',PET,0))
+    elif clear=='sparse_removal':
+        raw=PET.to_bytes(8,'little');mask=sum(bool(x)<<i for i,x in enumerate(raw))
+        body=Writer().pack('HIBIB',0,1,3,1,mask).raw(bytes(x for x in raw if x)).finish()
+        revoke=action('object_updates','SMSG_UPDATE_OBJECT',body)
     else:revoke=action('logout_complete','')
     rows=run_owned(codec,[action('pet_response','SMSG_PET_SPELLS',CATALOG),revoke,
         action('pet_request','CMSG_PET_ACTION',CAPTURED)])

@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "pet_packets.hpp"
 
 namespace bridge
 {
@@ -201,6 +202,7 @@ Reply Protocol::destroy_object(State &owner, View body)
     auto native = r.take<std::uint64_t>();
     r.take<std::uint8_t>();
     r.end();
+    pet_removed(owner,native);
     Value record;
     if (auto pos = owner.visible_gameobjects.find(native); pos != owner.visible_gameobjects.end())
     {

@@ -77,7 +77,7 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         native_send(*who_request(state,name,body));return;
     }
     if(Protocol::bank_close(state,name,body))return;
-    if(name=="CMSG_REQUEST_PET_INFO" || name=="CMSG_QUERY_PET_NAME")
+    if(name=="CMSG_REQUEST_PET_INFO" || name=="CMSG_QUERY_PET_NAME" || name=="CMSG_PET_ACTION")
     {
         if(!state.created || !active_world)throw std::runtime_error("pet read without active owned world");
         native_send(*pet_request(protocol,state,name,body));return;

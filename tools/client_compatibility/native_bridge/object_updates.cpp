@@ -1,4 +1,5 @@
 #include "protocol.hpp"
+#include "pet_packets.hpp"
 #include "reputation_fields.hpp"
 
 namespace bridge
@@ -129,6 +130,7 @@ Reply Protocol::object_updates(State &owner, View body,Array const &players) con
             for (auto const &id : get(record, "removed").as_array())
             {
                 auto removed_guid = integer(id);
+                pet_removed(owner,removed_guid);
                 if (owner.visible_gameobjects.erase(removed_guid) || owner.visible_units.erase(removed_guid) || owner.inventory_items.erase(removed_guid))
                     removed.push_back(removed_guid);
             }

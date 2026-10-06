@@ -1,4 +1,5 @@
 #include "pet_packets.hpp"
+#include <algorithm>
 
 namespace bridge
 {
@@ -8,6 +9,7 @@ struct PetState
     std::unordered_map<unsigned, std::deque<NameQuery>> names;
     unsigned name_count=0;
     std::uint64_t pending_guid=0;
+    std::uint64_t controlled_guid=0; // Granted by a released native control catalog.
     Bytes pending_spells;
 };
 namespace
@@ -73,26 +75,42 @@ Reply pet_ready(Protocol const &p, State &owner)
     auto &s=*owner.pet_state;auto found=owner.visible_units.find(s.pending_guid);
     if(found==owner.visible_units.end())return {};
     auto const &unit=found->second;
-    // A session's native catalog grants no commands or fabricated ownership.
-    // Creation and both native owner/summon links must first agree.
+    // Creation and both native owner/summon links must first agree before
+    // the native control catalog becomes visible and grants command authority.
     if(integer(get(unit,"kind"))!=3 || s.pending_guid>>52!=0xf14 ||
        field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")!=owner.guid() ||
        !p.field(unit,"UNIT_FIELD_PETNUMBER") || owner.self_snapshot.is_null() ||
        field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=s.pending_guid)return {};
-    Bytes message;message.swap(s.pending_spells);s.pending_guid=0;
+    Bytes message;message.swap(s.pending_spells);s.controlled_guid=s.pending_guid;s.pending_guid=0;
     return Packet{"SMSG_PET_SPELLS_MESSAGE",std::move(message)};
 }
 Reply pet_request(Protocol const &p, State &owner, std::string const &name, View body)
 {
-    if(name!="CMSG_REQUEST_PET_INFO" && name!="CMSG_QUERY_PET_NAME")return {};
+    if(name!="CMSG_REQUEST_PET_INFO" && name!="CMSG_QUERY_PET_NAME" && name!="CMSG_PET_ACTION")return {};
     if(!owner.created || owner.character.is_null())throw std::runtime_error("pet read without owned character");
     if(name=="CMSG_REQUEST_PET_INFO")
     {
         Reader(body).end();return Packet{name,{}};
     }
-    Reader r(body);auto guid=owned_unit(owner,r.guid());r.end();
+    Reader r(body);auto guid=owned_unit(owner,r.guid());
     auto const &unit=owner.visible_units.at(guid);
     auto number=p.field(unit,"UNIT_FIELD_PETNUMBER");
+    if(name=="CMSG_PET_ACTION")
+    {
+        auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
+        // Only the captured stock Dismiss shape is admitted. Never replace an
+        // empty/foreign client GUID, or turn Dismiss into destructive ABANDON.
+        if(command!=0x03800003u || target!=Array{0,0} ||
+           std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;}))
+            throw std::runtime_error("unsupported pet action shape");
+        if(!owner.pet_state || owner.pet_state->controlled_guid!=guid ||
+           integer(get(unit,"kind"))!=3 || guid>>52!=0xf14 || !number ||
+           field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")!=owner.guid() || owner.self_snapshot.is_null() ||
+           field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=guid)
+            throw std::runtime_error("pet action without current native control authority");
+        return Packet{name,Writer().pack("QIQfff",{guid,0x07000003,0,0.0,0.0,0.0}).finish()};
+    }
+    r.end();
     if(guid>>52!=0xf14 || !number)throw std::runtime_error("name query requires a visible numbered pet");
     for(auto const &[other,record]:owner.visible_units)
         if(other!=guid && other>>52==0xf14 && p.field(record,"UNIT_FIELD_PETNUMBER")==number)
@@ -106,8 +124,8 @@ Reply pet_response(Protocol const &p, State &owner, std::string const &name, Vie
 {
     if(name=="SMSG_PET_SPELLS")
     {
+        auto &s=pet_state(owner);s.pending_spells.clear();s.pending_guid=0;s.controlled_guid=0;
         std::uint64_t guid=0;auto message=spell_message(body,owner.map(),guid);
-        auto &s=pet_state(owner);s.pending_spells.clear();s.pending_guid=0;
         if(!guid)return Packet{"SMSG_PET_SPELLS_MESSAGE",std::move(message)};
         s.pending_guid=guid;s.pending_spells=std::move(message);
         return pet_ready(p,owner);
@@ -139,5 +157,17 @@ Reply pet_response(Protocol const &p, State &owner, std::string const &name, Vie
         w.pack("q",{timestamp}).raw(pet_name);
     }
     return Packet{"SMSG_QUERY_PET_NAME_RESPONSE",w.finish()};
+}
+void pet_removed(State &owner, std::uint64_t guid)
+{
+    if(!owner.pet_state)return;
+    auto &s=*owner.pet_state;
+    if(s.controlled_guid==guid)s.controlled_guid=0;
+    if(s.pending_guid==guid){s.pending_guid=0;s.pending_spells.clear();}
+    for(auto it=s.names.begin();it!=s.names.end();)
+    {
+        s.name_count-=std::erase_if(it->second,[guid](auto const &query){return query.guid==guid;});
+        if(it->second.empty())it=s.names.erase(it);else ++it;
+    }
 }
 }
