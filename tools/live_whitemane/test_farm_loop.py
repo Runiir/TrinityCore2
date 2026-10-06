@@ -122,6 +122,7 @@ def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tm
     from . import observed_state
     monkeypatch.setattr(farm_loop.runtime,'ROOT',tmp_path)
     (tmp_path/'run').mkdir();r=row()
+    monkeypatch.setattr(farm_loop.runtime,'owned_process',lambda:r['runtime'])
     r['archaeology'].update(site_id=None,loot_open=False,falling=False)
     monkeypatch.setattr(farm_loop.resources,'enable',lambda:None)
     monkeypatch.setattr(farm_loop.resources,'check',lambda **_:None)

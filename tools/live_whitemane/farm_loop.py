@@ -12,6 +12,7 @@ from .farm_actions import click_choice, command_choice
 from .navigation import orient
 from .flight import fly
 from .dig_policy import SolveBatches
+from . import observation_wait
 
 
 def distance(world,target):
@@ -94,6 +95,7 @@ def run(output,stop_on='recipe'):
     session.update(status='running',failure=None,stop_on=stop_on)
     session['selection_mode']='Laya current state and legal actions'
     graph=output/'graph.json'
+    def sample(output):return observation_wait.sample(output,session,reader=observe)
     from .observed_state import ensure
     ensure(graph)
     with (runtime.ROOT/'run/farm_loop.lock').open('a') as lock:
@@ -107,7 +109,7 @@ def run(output,stop_on='recipe'):
                 folder=output/f'step_{index:05d}'
                 while folder.exists():index+=1;folder=output/f'step_{index:05d}'
                 folder.mkdir(exist_ok=False)
-                row=observe(folder/'before.png')
+                row=sample(folder/'before.png')
                 pending=pending_find.update(row,{})
                 row['pending_find']=pending
                 action,target,decision=farm_policy.choose(row,batches,session)
@@ -159,14 +161,14 @@ def run(output,stop_on='recipe'):
                         args=SimpleNamespace(output=Path(session['dig_output']),steps=1,loot_at=None,auto_loot=True,graph=graph)
                         step['result']=dig_session.run(args)
                         if step['result'].get('failure'):
-                            interrupted=observe(folder/'dig_interrupt.png')
+                            interrupted=sample(folder/'dig_interrupt.png')
                             if not interrupted['movement']['in_combat']:raise RuntimeError(step['result']['failure'])
                             step['combat_interruption']=True
                         if step['result'].get('finished'):
-                            final=observe(folder/'final_pickup_check.png')
+                            final=sample(folder/'final_pickup_check.png')
                             if pending_find.can_leave(final):session.update(via_tolbarad=True,dig_output=None,dig_site=None)
                 except RuntimeError as error:
-                    interrupted=observe(folder/'interrupted.png')
+                    interrupted=sample(folder/'interrupted.png')
                     if action!='combat' and interrupted['movement']['in_combat']:
                         step.update(combat_interruption=True,interrupted_error=str(error))
                     elif recovery.retryable(error):
@@ -181,7 +183,7 @@ def run(output,stop_on='recipe'):
                                 'at':time.time(),'failure':str(recovery_error),'choice':'reobserve',
                                 'world':interrupted['archaeology']['world']}])[-8:]
                     else:raise
-                after=observe(folder/'after.png');step.update(after=after,completed=True,finished_at=time.time())
+                after=sample(folder/'after.png');step.update(after=after,completed=True,finished_at=time.time())
                 farm_graph.transition(graph,'observe',after,pending=pending_find.load(after))
                 before_a,after_a=row['archaeology'],after['archaeology']
                 finds=int(action=='dig' and pending_find.gained(pending_find.fragments(row),after))
@@ -201,6 +203,8 @@ def run(output,stop_on='recipe'):
                 session['active_races']=sorted(batches.active_races);runtime.write(path,session)
                 resources.phase_boundary(output,session)
                 print(json.dumps({'phase':action,'finds':session['looted_finds'],'sites':session['completed_sites']}),flush=True)
+        except observation_wait.InactiveObservation:
+            session.update(status='inactive_30_minutes',failure=None)
         except Exception as error:
             if (runtime.ROOT/'run/stop_dig').exists():session.update(status='supervisor_stopped',failure=None)
             else:session.update(status='repair_required',failure=f'{type(error).__name__}: {error}')
