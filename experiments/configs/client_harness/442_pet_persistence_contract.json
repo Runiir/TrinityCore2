@@ -1,0 +1,13 @@
+{
+  "schema": "client442_pet_persistence_contract_v1",
+  "actor": {"guid": 4, "account_id": 2, "class": 9, "level": 1},
+  "fixture": "The native Imp already verified by a closed whole pet-power check, saved as pet number1, entry416, owner4, named Volrot.",
+  "inputs": ["Normal owned class logout", "Reviewed original scout selection", "Reviewed retained class selection and normal reentry", "Stock spellbook open and close for passive pet identity"],
+  "outcomes": ["The full saved pet row remains attributable through the closed offline restoration chain", "New native pet creation retains entry416, pet number1 and owner4, with a new runtime counter", "Player summon pointer and passive public pet GUID identify the new creation", "Saved name, previous public name, current public name and visible pet name agree"],
+  "restoration": ["Original scout full row and saved state", "Native inventory and money", "Saved spells, skills, actions and quests", "Empty selection, idle position, closed panels and clean UI", "Retained offline class and pet", "Original scout selected", "Unchanged native, bridge and two existing clients on HDMI-1"],
+  "controller": "code",
+  "model": null,
+  "custom_scripts": "blocked",
+  "softTargetInteract": {"original": "0", "current_stock_disabled": "1", "original_restored": false},
+  "limits": "One owned Imp identity/name across normal logout and reentry only. Pet behavior modes, action bars, talent/autocast changes, combat and other classes/levels remain open. No spell/aura grant, level change, client launch or server restart."
+}
