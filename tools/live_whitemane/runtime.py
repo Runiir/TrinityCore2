@@ -108,7 +108,7 @@ def start():
                SDL_VIDEO_WINDOW_POS=f"{target['x'] + 320},{target['y'] + 80}",
                VK_DRIVER_FILES='/usr/share/vulkan/icd.d/nvidia_icd.json')
     command = ['gamescope', '-w', str(WIDTH), '-h', str(HEIGHT), '-W', str(WIDTH),
-               '-H', str(HEIGHT), '-r', '60', '-o', '60', '--backend', 'sdl',
+               '-H', str(HEIGHT), '-r', '30', '-o', '30', '--backend', 'sdl',
                '--force-windows-fullscreen',
                '--', str(LAUNCHER)]
     with (ROOT / 'logs/launcher.console.log').open('ab') as log:
