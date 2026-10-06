@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "archeolog_rlvr_rollout_v1",
+  "title": "Future on-policy rollout evidence; historical SFT rows do not qualify",
+  "type": "object",
+  "required": ["policy", "input_sha256", "rollout_source", "behavior_policy_probabilities", "selected_action_probability", "intervention_ledger", "transition_gap_free", "terminal_state", "transition"],
+  "properties": {
+    "policy": {
+      "type": "object",
+      "required": ["weights_sha256", "config_sha256"],
+      "properties": {
+        "weights_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "selected_action_probability": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+    "rollout_source": {"const": "on_policy"},
+    "behavior_policy_probabilities": {"type": "object", "minProperties": 2, "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "intervention_ledger": {
+      "type": "object", "required": ["complete", "events"],
+      "properties": {"complete": {"const": true}, "events": {"type": "array", "maxItems": 0}}
+    },
+    "transition_gap_free": {"const": true},
+    "terminal_state": {"enum": ["progress", "clear", "no_progress", "death", "interrupted"]},
+    "transition": {
+      "type": "object",
+      "required": ["action", "started_at", "finished_at", "before", "after", "request", "input_evidence"],
+      "properties": {
+        "action": {"type": "string"},
+        "started_at": {"type": "number"},
+        "finished_at": {"type": "number"},
+        "input_evidence": {"const": true},
+        "before": {"type": "object"},
+        "after": {"type": "object"},
+        "request": {"type": "object", "required": ["state", "questions"]}
+      }
+    }
+  },
+  "$comment": "Schema conformance alone never establishes a reward. archeolog_dataset.rlvr_admission independently validates freshness, lifetime, original input identity, executed action, target retention and measured outcomes. Deployment requires a separate reviewed live experiment."
+}

@@ -224,6 +224,57 @@ def candidate(step, source):
     return result, None
 
 
+def rlvr_admission(trajectory):
+    """Fail closed on future rollout records; historical SFT rows cannot pass.
+
+    This admits a measured transition for RL experimentation, not an automatic
+    model update. Runtime errors/stale telemetry are quarantined instead of
+    becoming a reward that teaches the policy to exploit an observer failure.
+    """
+    attribution = trajectory.get('intervention_ledger') or {}
+    if attribution.get('complete') is not True or attribution.get('events') != []:
+        return None, 'rlvr_intervention_ledger_incomplete_or_assisted'
+    policy = trajectory.get('policy') or {}
+    if not all(isinstance(policy.get(key), str) and len(policy[key]) == 64
+               and all(char in '0123456789abcdef' for char in policy[key])
+               for key in ('weights_sha256', 'config_sha256')):
+        return None, 'rlvr_policy_identity_missing'
+    if (trajectory.get('transition_gap_free') is not True or trajectory.get('terminal_state')
+            not in ('progress', 'clear', 'no_progress', 'death', 'interrupted')):
+        return None, 'rlvr_trajectory_gap_or_terminal_state_missing'
+    probability = trajectory.get('selected_action_probability')
+    if not isinstance(probability, (int, float)) or not math.isfinite(probability) or not 0 < probability <= 1:
+        return None, 'rlvr_original_action_probability_missing'
+    step = trajectory.get('transition') or {}
+    request = step.get('request') or {}
+    question = (request.get('questions') or {}).get('action') or {}
+    options = question.get('criteria') or {}
+    action = step.get('action')
+    if not isinstance(options, dict) or len(options) < 2 or action not in options or not request.get('state'):
+        return None, 'rlvr_original_complete_input_missing'
+    distribution = trajectory.get('behavior_policy_probabilities') or {}
+    if (trajectory.get('rollout_source') != 'on_policy' or set(distribution) != set(options)
+            or any(not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0
+                   for v in distribution.values())
+            or abs(sum(distribution.values()) - 1.) > .0001
+            or abs(distribution.get(action, -1.) - probability) > .000001):
+        return None, 'rlvr_on_policy_distribution_missing_or_inconsistent'
+    if trajectory.get('input_sha256') != digest({'state': request['state'], 'question': question}):
+        return None, 'rlvr_input_identity_mismatch'
+    if not step.get('input_evidence'):
+        return None, 'rlvr_executed_input_evidence_missing'
+    reward, reason = verifier(step, action)
+    if reason in ('no_measured_approach', 'no_measured_bearing_improvement'):
+        reward = {'kind': 'valid_executed_no_progress', 'reward': 0.}
+        reason = None
+    if reason:
+        return None, reason
+    return {'schema': 'archeolog_rlvr_verified_transition_v1', 'input_sha256': trajectory['input_sha256'],
+            'policy': policy, 'action': action, 'selected_action_log_probability': math.log(probability),
+            'outcome': reward, 'terminal_state': trajectory['terminal_state'],
+            'assistance': 'complete_ledger_no_interventions'}, None
+
+
 def archive_rows(path, repo, limits):
     import dvc.api
     observations, steps = {}, []

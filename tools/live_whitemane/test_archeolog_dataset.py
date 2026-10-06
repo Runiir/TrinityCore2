@@ -2,7 +2,7 @@
 import copy
 import unittest
 
-from .archeolog_dataset import candidate, group_splits, verifier
+from .archeolog_dataset import candidate, digest, group_splits, rlvr_admission, verifier
 
 
 def observation(at, north, facing=0, surveys=0, finds=0, fragments=0):
@@ -98,6 +98,39 @@ class ArcheologAdmissionTests(unittest.TestCase):
         self.assertEqual([row['id'] for row in splits['test']], ['c'])
         self.assertEqual([row['id'] for row in purged], ['b'])
         self.assertEqual(splits['validation'], [])
+
+    def test_rlvr_requires_gap_free_unassisted_on_policy_evidence(self):
+        transition = step()
+        question = transition['request']['questions']['action']
+        trajectory = {'policy': {'weights_sha256': 'a' * 64, 'config_sha256': 'b' * 64},
+            'intervention_ledger': {'complete': True, 'events': []},
+            'transition_gap_free': True, 'terminal_state': 'progress',
+            'input_sha256': digest({'state': transition['request']['state'], 'question': question}),
+            'selected_action_probability': .8, 'rollout_source': 'on_policy',
+            'behavior_policy_probabilities': {'forward_short': .8, 'observe': .2},
+            'transition': transition}
+        self.assertIsNone(rlvr_admission(trajectory)[1])
+        unknown = copy.deepcopy(trajectory)
+        unknown['intervention_ledger']['complete'] = False
+        self.assertEqual(rlvr_admission(unknown)[1], 'rlvr_intervention_ledger_incomplete_or_assisted')
+        fabricated = copy.deepcopy(trajectory)
+        fabricated['selected_action_probability'] = 1.
+        self.assertEqual(rlvr_admission(fabricated)[1], 'rlvr_on_policy_distribution_missing_or_inconsistent')
+
+    def test_rlvr_valid_no_progress_has_zero_reward_but_failure_is_quarantined(self):
+        transition = step()
+        transition['after']['archaeology']['world']['north'] = 0
+        question = transition['request']['questions']['action']
+        trajectory = {'policy': {'weights_sha256': 'a' * 64, 'config_sha256': 'b' * 64},
+            'intervention_ledger': {'complete': True, 'events': []},
+            'transition_gap_free': True, 'terminal_state': 'no_progress',
+            'input_sha256': digest({'state': transition['request']['state'], 'question': question}),
+            'selected_action_probability': .8, 'rollout_source': 'on_policy',
+            'behavior_policy_probabilities': {'forward_short': .8, 'observe': .2},
+            'transition': transition}
+        self.assertEqual(rlvr_admission(trajectory)[0]['outcome']['reward'], 0.)
+        transition['failure'] = 'stale frame'
+        self.assertEqual(rlvr_admission(trajectory)[1], 'runtime_or_action_failure')
 
 
 if __name__ == '__main__':
