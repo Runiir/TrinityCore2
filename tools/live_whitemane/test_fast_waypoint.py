@@ -42,7 +42,7 @@ def test_stationary_near_arrival_retries_after_position_updates_with_a_measured_
         result=copy.deepcopy(r);result['movement'].update(sequence=index[0],client_uptime_ms=index[0]*100)
         result['archaeology']['sequence']=index[0];result['observed_at']=now[0]
         result['owned_pose']={'pitch_radians':0,'client_uptime_ms':index[0]*100}
-        if index[0]==6:result['archaeology']['world']['north']=4
+        if index[0]>=6:result['archaeology']['world']['north']=4
         return result
     monkeypatch.setattr(fast_waypoint,'observe',observe)
     rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True,
@@ -143,6 +143,7 @@ def test_steep_descent_keeps_forward_held_with_delayed_public_map_samples(monkey
         fresh['owned_pose']={'pitch_radians':-1.42,'height_yards':100,'client_uptime_ms':count[0]*100}
         fresh['channel_ages']['A']=[.075,.175,.3,.375][count[0]%4]
         fresh['archaeology']['world']['north']=16.4-max(0,count[0]-2)*.44 if count[0]<18 else 5.5
+        if count[0]>=19:fresh['movement']['speed']=0
         return fresh
     monkeypatch.setattr(fast_waypoint,'observe',observe)
     result=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True,
@@ -208,7 +209,8 @@ def test_camera_probe_waits_for_public_mouse_look_activation(monkeypatch,tmp_pat
         fresh['movement'].update(sequence=count[0],client_uptime_ms=count[0]*100,
             facing_radians=yaw[0])
         fresh['archaeology']['sequence']=count[0]
-        fresh['farm_ui']['camera_input']={'mouselooking':count[0]>=15,'right_down':count[0]>=15}
+        fresh['farm_ui']['camera_input']={'mouselooking':3 in controllers[0].buttons and count[0]>=15,
+            'right_down':3 in controllers[0].buttons and count[0]>=15}
         if count[0]>=23:fresh['archaeology']['world']['north']=0
         return fresh
     monkeypatch.setattr(fast_waypoint,'observe',observe)

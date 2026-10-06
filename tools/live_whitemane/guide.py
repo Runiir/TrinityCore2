@@ -4,6 +4,13 @@ import math
 GREEN_ADVANCE_YARDS=10
 
 
+def flight_arrow(guide):
+    """Use the digging waypoint's tolerance for its flight approach too."""
+    return {'endpoint':guide['world'],'source':guide['source'],
+        'site_id':guide['boundary_site_id'],
+        'arrival_tolerance_yards':guide['arrival_tolerance_yards']}
+
+
 def fresh_guidance(row, tool):
     """The arrow and candidate facts must describe this Survey, not the last."""
     if not tool:return False
@@ -84,23 +91,21 @@ def select(row, session, tool):
             'distance_yards':distance,'height_error_yards':vertical,
             'arrived':distance<=tolerance and (vertical is None or abs(vertical)<=.5),'arrival_tolerance_yards':tolerance,
             'heading_relative_to_player':'aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'},error
-    visited=session.setdefault('visited_marker_ids',[])
     target=session.get('marker_target')
     if target and target['world']['instance'] != world['instance']:
         raise RuntimeError('marker target belongs to another world instance')
+    if target and target.get('recorded_marker_matches') is not True:
+        # Older sessions could pick an arbitrary pin before Survey. Retire
+        # that estimate without marking the untested saved location failed.
+        session['marker_target']=None;target=None
     if target is None:
         target=matching_marker(row,session,tool)
         if target:
             session['marker_target']=target
             session['marker_failed_surveys']=0
             session.pop('telescope_target',None)
-    if not session.get('marker_fallback') and target is None:
-        for marker in a['visible_markers']:
-            if marker['marker_id'] in visited: continue
-            target=marker_target(world,marker)
-            session['marker_target']=target
-            session['marker_failed_surveys']=0
-            break
+    # A displayed marker is a past find, not the current artifact's position.
+    # Only the fresh Survey's saved-candidate match can select a new one.
     if target:
         endpoint=target['world']; distance=math.hypot(endpoint['north']-world['north'],endpoint['west']-world['west'])
         heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])

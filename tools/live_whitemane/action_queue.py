@@ -58,13 +58,15 @@ def wait_ready(folder,before,observer,*,uses_gcd=True):
     return row
 
 
-def wait_stopped(folder,before,observer):
+def wait_stopped(folder,before,observer,*,camera_released=False):
     """After owned movement, wait for release and the displayed position cache."""
     deadline=time.monotonic()+5;row=before;stationary=None
     while True:
         validate(row,before)
         m,a=row['movement'],row['archaeology']
-        if m.get('speed',0)==0 and not a.get('falling') and not busy(row):
+        camera=(row.get('farm_ui') or {}).get('camera_input') or {}
+        released=not camera_released or not (camera.get('right_down') or camera.get('mouselooking'))
+        if m.get('speed',0)==0 and not a.get('falling') and not busy(row) and released:
             world=a.get('world')
             if stationary and newer(row,stationary) and world==stationary['archaeology'].get('world'):
                 return row

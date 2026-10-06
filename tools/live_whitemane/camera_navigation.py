@@ -2,6 +2,7 @@
 import fcntl
 import json
 import math
+import sys
 import time
 from . import inputs,runtime,native_control,camera_zoom
 from .observe import observe
@@ -44,7 +45,7 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
     if target:
         world=before['archaeology']['world']
         desired=math.atan2(target['west']-world['west'],target['north']-world['north'])
-    rows=[];steering=CameraSteering();started=time.monotonic()
+    rows=[];row=None;steering=CameraSteering();started=time.monotonic()
     pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
     desired_pitch=math.pi/4 if ground_view else 0
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
@@ -98,13 +99,26 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
                 time.sleep(.1)
             else:raise RuntimeError('camera view did not reach forward alignment')
         finally:
-            sticky.close()
+            interrupted=sys.exc_info()[0] is not None
+            release={}
+            def settled():
+                if row is None:return
+                from .action_queue import wait_stopped
+                try:
+                    stopped=wait_stopped(folder,row,observe,camera_released=True)
+                    release.update(confirmed=True,observed_at=stopped['observed_at'])
+                except Exception as error:
+                    release.update(confirmed=False,failure=str(error))
+            try:sticky.close(after_release=settled)
+            finally:runtime.write(folder/'camera_release.json',release)
             runtime.write(folder/'camera_view.json',{'identity':identity,'observations':rows,
                 'alignment_heading_radians':desired,'yaw_samples':list(steering.samples),
                 'keyboard_turns':0,'forward_key_presses':0,'ground_view':ground_view,
                 'desired_pitch_radians':desired_pitch,'pitch_samples':list(pitch_steering.samples),
                 'view_preset_input':view,
                 'pitch_basis':'client view preset on ground; owned movement pitch only while airborne'})
+            if not interrupted and release.get('confirmed') is False:
+                raise RuntimeError(release['failure'])
     if view and desired_zoom is not None:
         zoom=camera_zoom.restore(folder/'zoom',row,desired_zoom,save_preset=preset)
         saved=json.loads((folder/'camera_view.json').read_text());saved['preserved_zoom']=zoom

@@ -64,3 +64,17 @@ def test_a_fresh_continuous_hold_cancels_the_old_pulse_but_keeps_the_feed_lease(
     assert events==[('press','Up')] and 'Up' in sticky.held
     now[0]=.41;sticky.tick()
     assert events==[('press','Up'),('release','Up')] and sticky.interrupted
+
+
+@pytest.mark.parametrize('failed',[False,True])
+def test_sender_survives_until_client_release_feedback_even_if_feedback_fails(failed):
+    sticky,events,now=controller();sticky.hold('Up',True);sticky.button(3,True)
+    def released():
+        assert not sticky.held and not sticky.buttons
+        assert ('close',None) not in events
+        events.append(('observed_release',None))
+        if failed:raise RuntimeError('feed unavailable')
+    if failed:
+        with pytest.raises(RuntimeError,match='feed unavailable'):sticky.close(after_release=released)
+    else:sticky.close(after_release=released)
+    assert events[-4:]==[('release','Up'),('button_release',3),('observed_release',None),('close',None)]

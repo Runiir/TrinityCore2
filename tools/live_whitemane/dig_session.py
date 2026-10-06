@@ -273,7 +273,7 @@ def run(args):
                         runtime.write(runtime.ROOT/'run/pending_find.json',value)
                 elif not a.get('swimming') and (guide['color']=='red' or (guide['distance_yards']>20 and
                         (guide['color']=='yellow' or guide['source']=='GatherMate marker'))):
-                    arrow={'endpoint':guide['world'],'source':guide['source'],'site_id':guide['boundary_site_id']}
+                    arrow=routes.flight_arrow(guide)
                     step['travel_mode']='red_flight'
                     step['arrow']=arrow
                     if graph:step['graph_path']=str(graph)

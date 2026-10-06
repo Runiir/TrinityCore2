@@ -1,4 +1,5 @@
 import math
+import pytest
 from tools.client_compatibility.observation.telemetry import checksum
 from . import guide, snapshot
 from .motion import turn_duration
@@ -32,7 +33,9 @@ def test_arrow_timestamp_does_not_replace_survey_uptime_and_altitude_is_not_terr
 
 
 def test_marker_endpoint_survives_motion_and_changed_minimap_order():
-    session={}
+    target={'source':'GatherMate marker','marker_id':'first',
+        'world':{'instance':1,'north':20,'west':0},'recorded_marker_matches':True}
+    session={'marker_target':target}
     row={'movement':{'facing_radians':0},'archaeology':{'world':{'instance':1,'north':0,'west':0},
          'visible_markers':[{'marker_id':'first','distance_yards':20,'heading_radians':0}],
          'arrow':None}}
@@ -43,6 +46,27 @@ def test_marker_endpoint_survives_motion_and_changed_minimap_order():
     assert second['marker_id']=='first'
     assert second['world']==first['world']
     assert second['distance_yards']==5
+
+
+@pytest.mark.parametrize('cached',[False,True])
+def test_visible_saved_markers_without_a_survey_match_are_not_destinations(cached):
+    row={'movement':{'facing_radians':0},'archaeology':{
+        'world':{'instance':1,'north':0,'west':0},'arrow':None,
+        'visible_markers':[{'marker_id':'old','distance_yards':150,'heading_radians':1}]}}
+    session={'marker_target':{'source':'GatherMate marker','marker_id':'old',
+        'world':{'instance':1,'north':80,'west':70}}} if cached else {}
+    assert guide.select(row,session,None)==(None,None)
+    assert session.get('marker_target') is None
+    assert not session.get('failed_marker_ids')
+
+
+@pytest.mark.parametrize('tolerance',[.5,4,6])
+def test_flight_uses_the_selected_dig_waypoints_arrival_tolerance(tolerance):
+    point={'instance':1,'north':20,'west':0}
+    route={'world':point,'source':'GatherMate marker','boundary_site_id':574,
+        'arrival_tolerance_yards':tolerance}
+    assert guide.flight_arrow(route)=={'endpoint':point,'source':'GatherMate marker',
+        'site_id':574,'arrival_tolerance_yards':tolerance}
 
 
 def test_one_positive_telescope_at_a_marker_moves_search_on_without_a_second_survey():

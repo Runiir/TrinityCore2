@@ -140,12 +140,15 @@ def test_fresh_addon_bearing_survives_the_packet_mailbox_lifetime(monkeypatch,tm
     assert dig_session.telescope(r,session) is None
 
 
-def test_nearby_unvisited_marker_is_approached_before_survey():
+def test_nearby_matching_marker_is_approached_before_the_next_survey():
     r=row();r['movement']['facing_radians']=0
-    r['archaeology'].update(world={'instance':1,'north':0,'west':0},
-        visible_markers=[{'marker_id':'nearby','distance_yards':2,'heading_radians':0}])
+    origin={'instance':1,'north':0,'west':0}
+    r['archaeology'].update(world=origin,
+        visible_markers=[{'marker_id':'nearby','distance_yards':2,'heading_radians':0}],
+        arrow={'origin':origin,'heading_radians':0,'observed_at':100,'boundary_verified':True})
+    r['farm_ui']['survey_guidance']={'at':100,'candidate_matches':True,'candidate_along_yards':2}
     session={}
-    target,_=guide.select(r,session,None)
+    target,_=guide.select(r,session,{'entry':204272,'observed_at':100,'facing_radians':0})
     assert target['marker_id']=='nearby' and not target['arrived']
     assert target['arrival_tolerance_yards']==.5
     r['archaeology']['world']['north']=1.7

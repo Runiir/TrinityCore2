@@ -3,6 +3,7 @@ import fcntl
 import json
 import math
 import statistics
+import sys
 import time
 from collections import deque
 from . import runtime, inputs, native_control, guide, camera_zoom
@@ -264,7 +265,20 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     receipt['calculated_forward_seconds']=max(0,remaining)
                 index+=1;time.sleep(max(0,.1-(time.monotonic()-cycle)))
         finally:
-            sticky.close()
+            interrupted=sys.exc_info()[0] is not None
+            release={}
+            def settled():
+                if row is None:return
+                from .action_queue import wait_stopped
+                try:
+                    stopped=wait_stopped(folder,row,observe,camera_released=True)
+                    release.update(confirmed=True,observed_at=stopped['observed_at'],
+                        world=stopped['archaeology']['world'],speed=stopped['movement'].get('speed',0))
+                except Exception as error:
+                    release.update(confirmed=False,failure=str(error))
+            try:sticky.close(after_release=settled)
+            finally:
+                runtime.write(folder/'movement_release.json',release)
             runtime.write(folder/'smooth_walk.json',{'identity':identity,'sender':sender.initialization,
                 'started_at':started,'finished_at':time.time(),'observations':list(receipts),'decision_count':decision_count,
                 'retained_decisions':retained_decisions,
@@ -272,3 +286,5 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 'steering':'right_button_relative_mouselook','yaw_samples':list(steering.samples),
                 'pitch_samples':list(pitch_steering.samples)})
             if ground_plan:runtime.write(folder/'ground_approach.json',ground_plan)
+            if not interrupted and release.get('confirmed') is False:
+                raise RuntimeError(release['failure'])

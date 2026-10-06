@@ -17,7 +17,7 @@ def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
     monkeypatch.setattr(camera_navigation.camera_zoom,'restore',lambda folder,row,desired,**kw:
         zoom_restored.append((desired,kw['save_preset'])) or {'confirmed':True})
     monkeypatch.setattr(camera_navigation.time,'sleep',lambda _:None)
-    actual={'yaw':0,'pitch':starting_pitch,'sequence':0};deltas=[]
+    actual={'yaw':0,'pitch':starting_pitch,'sequence':0,'released':False};deltas=[]
     class Sender:
         initialization={}
         def move(self,*_):pass
@@ -28,7 +28,9 @@ def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
         def relative(self,x,y):
             if mouselook_after is not None:assert actual['sequence']>=mouselook_after
             deltas.append((x,y));actual['yaw']-=x*.006;actual['pitch']+=y*sensitivity
-        def close(self):pass
+        def close(self,after_release=None):
+            actual['released']=True
+            if after_release:after_release()
     monkeypatch.setattr(camera_input,'Input',Sender)
     monkeypatch.setattr(camera_navigation,'StickyInput',Sticky)
     monkeypatch.setattr(camera_navigation,'observation_lease',lambda _:1)
@@ -40,8 +42,8 @@ def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
             'archaeology':{'casting':False,'flying':False,'falling':False},
             'owned_pose':{'pitch_radians':actual['pitch'],'client_uptime_ms':actual['sequence']*100}}
         if mouselook_after is not None:value['farm_ui']={'camera_input':{
-            'mouselooking':actual['sequence']>=mouselook_after,
-            'right_down':actual['sequence']>=mouselook_after}}
+            'mouselooking':actual['sequence']>=mouselook_after and not actual['released'],
+            'right_down':actual['sequence']>=mouselook_after and not actual['released']}}
         return value
     def observe(_):actual['sequence']+=1;return row()
     monkeypatch.setattr(camera_navigation,'observe',observe)
@@ -66,7 +68,8 @@ def test_ground_turn_does_not_require_or_steer_a_stale_body_pitch(monkeypatch,tm
         def renew(self):pass
         def button(self,*_):pass
         def relative(self,x,y):deltas.append((x,y));state['yaw']-=x*.006
-        def close(self):pass
+        def close(self,after_release=None):
+            if after_release:after_release()
     monkeypatch.setattr(camera_input,'Input',Sender);monkeypatch.setattr(camera_navigation,'StickyInput',Sticky)
     def row():
         state['sequence']+=1
@@ -97,7 +100,8 @@ def test_interrupted_yaw_does_not_reset_the_same_submitted_camera_preset_again(m
         def renew(self):pass
         def button(self,*_):pass
         def relative(self,*_):pass
-        def close(self):pass
+        def close(self,after_release=None):
+            if after_release:after_release()
     monkeypatch.setattr(camera_input,'Input',Sender);monkeypatch.setattr(camera_navigation,'StickyInput',Sticky)
     stopped={'movement':{'in_world':True,'dead':False,'in_combat':False,'on_taxi':False,'speed':7},
         'archaeology':{'casting':False}}
@@ -131,7 +135,8 @@ def test_portal_retry_keeps_one_zoom_goal_in_the_saved_view(monkeypatch,tmp_path
         def renew(self):pass
         def button(self,*_):pass
         def relative(self,x,y):actual['yaw']-=x*.006
-        def close(self):pass
+        def close(self,after_release=None):
+            if after_release:after_release()
     monkeypatch.setattr(camera_input,'Input',Sender)
     monkeypatch.setattr(camera_navigation,'StickyInput',Sticky)
     monkeypatch.setattr(camera_navigation,'observation_lease',lambda _:1)

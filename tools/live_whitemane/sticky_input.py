@@ -71,11 +71,14 @@ class StickyInput:
             except Exception as error:
                 self.interrupted='owned input watchdog failed: '+str(error);break
 
-    def close(self):
+    def close(self,after_release=None):
         self.stop.set()
         if self.worker:self.worker.join(timeout=1)
         try:
             with self.lock:
                 for name in list(self.held):self.hold(name,False)
                 for button in list(self.buttons):self.button(button,False)
+            # Delivery acknowledgement precedes client processing. Keep the
+            # EI device alive while the caller observes the released state.
+            if after_release:after_release()
         finally:self.sender.close()

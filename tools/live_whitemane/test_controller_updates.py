@@ -3,6 +3,26 @@ import types
 from . import controller_updates
 
 
+def test_queue_signature_changes_reload_their_camera_and_movement_consumers(monkeypatch,tmp_path):
+    names=('action_queue','camera_navigation','fast_waypoint')
+    assert all(name in controller_updates.COMPONENTS for name in names)
+    modules={}
+    for name,source in zip(names,('def wait_stopped():pass\n',
+            'def align():\n from .action_queue import wait_stopped\n',
+            'def walk():\n from .action_queue import wait_stopped\n')):
+        path=tmp_path/(name+'.py');path.write_text(source)
+        module=types.ModuleType(controller_updates.__package__+'.'+name);module.__file__=str(path)
+        modules[name]=module;monkeypatch.setitem(sys.modules,module.__name__,module)
+    monkeypatch.setattr(controller_updates,'COMPONENTS',names)
+    monkeypatch.setattr(controller_updates.runtime,'ROOT',tmp_path)
+    calls=[];monkeypatch.setattr(controller_updates.importlib,'reload',lambda m:calls.append(m.__name__))
+    updates=controller_updates.SourceUpdates()
+    (tmp_path/'action_queue.py').write_text('def wait_stopped(*,camera_released=False):pass\n')
+    assert updates.refresh()==[]
+    assert updates.refresh()==list(names)
+    assert calls==[modules[name].__name__ for name in names]
+
+
 def test_source_updates_load_between_actions_and_refresh_dependent_function_aliases(monkeypatch,tmp_path):
     names=('test_leaf','test_consumer');modules={}
     for name,source in zip(names,('value=1\n','from .test_leaf import value\n')):
