@@ -98,9 +98,9 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     if(name=="CMSG_PET_ACTION")
     {
         auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
-        // Only the captured stock Dismiss shape is admitted. Never replace an
-        // empty/foreign client GUID, or turn Dismiss into destructive ABANDON.
-        if(command!=0x03800003u || target!=Array{0,0} ||
+        // Admit the actual stock Follow and Dismiss captures only. Preserve
+        // the submitted GUID and never substitute destructive ABANDON.
+        if((command!=0x03800001u && command!=0x03800003u) || target!=Array{0,0} ||
            std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;}))
             throw std::runtime_error("unsupported pet action shape");
         if(!owner.pet_state || owner.pet_state->controlled_guid!=guid ||
@@ -108,7 +108,8 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
            field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")!=owner.guid() || owner.self_snapshot.is_null() ||
            field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=guid)
             throw std::runtime_error("pet action without current native control authority");
-        return Packet{name,Writer().pack("QIQfff",{guid,0x07000003,0,0.0,0.0,0.0}).finish()};
+        auto native_command=command==0x03800001u ? 0x07000001u : 0x07000003u;
+        return Packet{name,Writer().pack("QIQfff",{guid,native_command,0,0.0,0.0,0.0}).finish()};
     }
     r.end();
     if(guid>>52!=0xf14 || !number)throw std::runtime_error("name query requires a visible numbered pet");
@@ -119,6 +120,13 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     if(s.name_count>=64)throw std::runtime_error("pet name queries exceed bound");
     s.names[number].push_back({guid,static_cast<unsigned>(integer(get(unit,"map")))});++s.name_count;
     return Packet{"CMSG_PET_NAME_QUERY",Writer().pack("IQ",{number,guid}).finish()};
+}
+PetActionTranslation translate_pet_action(Protocol const &p, State &owner, View body)
+{
+    // A rejected translation sends no native command and keeps the healthy
+    // session available. Native transport failures remain outside this guard.
+    try {return {pet_request(p,owner,"CMSG_PET_ACTION",body),{}};}
+    catch(std::exception const &e) {return {{},e.what()};}
 }
 Reply pet_response(Protocol const &p, State &owner, std::string const &name, View body)
 {

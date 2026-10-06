@@ -360,6 +360,14 @@ int main(int argc, char **argv)
                         try
                         {
                             if(fn=="pet_request")reply=pet_request(protocol,state,name,body);
+                            else if(fn=="translate_pet_action")
+                            {
+                                auto translation=translate_pet_action(protocol,state,body);
+                                replies.push_back(Object{{"packet",translation.packet ?
+                                    Value(Array{translation.packet->first,hex(translation.packet->second)}) : Value(nullptr)},
+                                    {"rejection",translation.rejection}});
+                                continue;
+                            }
                             else if(fn=="pet_response")reply=pet_response(protocol,state,name,body);
                             else if(fn=="pet_ready")reply=pet_ready(protocol,state);
                             else if(fn=="combat_request")

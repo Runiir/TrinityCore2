@@ -1,0 +1,50 @@
+{
+  "schema": "client442_actual_owned_follow_ui123_v1",
+  "pointer": "artifacts/client_harness/442_interactions_20261006_123.tar.gz.dvc",
+  "archive_sha256": "a4d3a1a5534952b83ecf005e4a925ddf45ce1ab707fda58de132f1d952fb9a38",
+  "receipt_member": "evidence/client_interactions_20261006_ui123/follow_disconnect_recovery02/episode.json",
+  "receipt_sha256": "04fe5f0e2373947dccb4ddddd6742c98bff59a8cfb840f4a6bbf329ab55a7230",
+  "source": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261006_ui123/follow_disconnect_recovery02/episode.json",
+    "sha256": "04fe5f0e2373947dccb4ddddd6742c98bff59a8cfb840f4a6bbf329ab55a7230"
+  },
+  "character": {
+    "guid": 5,
+    "map": 0
+  },
+  "native_pet_guid": 17383896348356509717,
+  "native_pet_number": 2,
+  "modern_request": {
+    "packet": {
+      "time": 1791284104.6527338,
+      "session": "c03d6414",
+      "direction": "from_client",
+      "name": "CMSG_PET_ACTION",
+      "body": "01a215680428010080030000000000000000000000000000"
+    },
+    "pet_guid": [
+      21,
+      2882308159563655168
+    ],
+    "action": 58720257,
+    "type": 7,
+    "value": 1,
+    "target_guid": [
+      0,
+      0
+    ],
+    "position": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "native_catalog_packet": {
+    "time": 1791283795.911508,
+    "session": "c03d6414",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "15000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "limits": "Failed diagnostic capture only. Original Follow caused instance rejection and native cancellation; no native command, movement outcome or whole restoration. No qualification."
+}
