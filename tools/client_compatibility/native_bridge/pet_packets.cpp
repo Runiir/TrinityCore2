@@ -22,6 +22,22 @@ std::uint64_t field_guid(Protocol const &p, Value const &s, char const *name)
     return static_cast<std::uint64_t>(p.field(s,name)) |
         (static_cast<std::uint64_t>(p.field(s,name,1))<<32);
 }
+std::uint32_t modern_pet_action(std::uint32_t native)
+{
+    auto action=native&0x00ffffffu;
+    if(action>0x007fffffu)throw std::runtime_error("native pet action exceeds modern value width");
+    unsigned type=native>>24;
+    // Native ActiveStates are eight bits; the pinned Cata ReadPetAction uses
+    // nine bits above the23-bit value. Castable/autocast flags also move.
+    switch(type)
+    {
+        case 0:case 1:case 6:case 7:break;
+        case 0x81:type=0x101;break;
+        case 0xc1:type=0x181;break;
+        default:throw std::runtime_error("unsupported native pet action type");
+    }
+    return (type<<23)|action;
+}
 Bytes spell_message(View body, unsigned map, std::uint64_t &guid)
 {
     Reader r(body);guid=r.take<std::uint64_t>();
@@ -34,9 +50,11 @@ Bytes spell_message(View body, unsigned map, std::uint64_t &guid)
     auto family=r.take<std::uint16_t>();auto duration=r.take<std::uint32_t>();
     auto react=r.take<std::uint8_t>(),command=r.take<std::uint8_t>();
     auto flags=r.take<std::uint16_t>();
-    if(react>2 || command>3 || flags>255)throw std::runtime_error("unsupported native pet mode");
+    if(react>3 || command>4 || flags>255)throw std::runtime_error("unsupported native pet mode");
     auto buttons=r.unpack("10I");
     auto count=r.take<std::uint8_t>();auto actions=r.unpack(std::string(count,'I'));
+    for(auto &button:buttons)button=modern_pet_action(static_cast<std::uint32_t>(integer(button)));
+    for(auto &action:actions)action=modern_pet_action(static_cast<std::uint32_t>(integer(action)));
     auto cooldown_count=r.take<std::uint8_t>();
     w.pack("HHIBBB",{family,0,duration,command,flags,react}).pack("10I",buttons)
         .pack("III",{count,cooldown_count,0}).pack(std::string(count,'I'),actions);

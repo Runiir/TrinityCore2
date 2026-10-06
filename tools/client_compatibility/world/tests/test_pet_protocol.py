@@ -69,12 +69,61 @@ def test_pet_sparse_fields_include_public_zero_resets(codec,field,index,value,fm
 
 def test_native_pet_spells_preserve_actions_and_convert_cooldown_widths(codec):
     rows=run(codec,[action('pet_response','SMSG_PET_SPELLS',spells())])
-    assert rows[0] and rows[0][0]=='SMSG_PET_SPELLS_MESSAGE'
+    assert isinstance(rows[0],list) and rows[0][0]=='SMSG_PET_SPELLS_MESSAGE',rows[0]
     r=Reader(bytes.fromhex(rows[0][1]));assert list(r.guid())==IDENTITY
     assert r.unpack('HHIBBB')==(23,0,1000,1,0,2)
     assert r.unpack('10I')==tuple(range(10))
     assert r.unpack('3I')==(2,1,0) and r.unpack('2I')==(3110,6307)
     assert r.unpack('iiifH')==(3110,900,800,1.0,7);r.end()
+
+
+def test_captured_trained_imp_assist_catalog_uses_pinned_modern_action_types(codec):
+    fixture=json.loads((Path(__file__).parent/'fixtures/native_control_pet_ui119.json').read_text())
+    pet=fixture['decoded']['guid'];body=bytes.fromhex(fixture['packet']['body'])
+    rows=result(codec,op='stateful',character={'guid':5,'map':0},snapshot=snapshot(guid=5,pet=pet),
+        units=[unit(owner=5,guid=pet,number=2)],gameobjects=[],
+        actions=[action('pet_response','SMSG_PET_SPELLS',body)])
+    assert rows[0] and rows[0][0]=='SMSG_PET_SPELLS_MESSAGE'
+    r=Reader(bytes.fromhex(rows[0][1]));assert r.guid()==(13,IDENTITY[1])
+    assert r.unpack('HHIBBB')==(23,0,0,1,0,3)
+    assert r.unpack('10I')==(0x03800002,0x03800001,0x03800004,0xc0800c26,0xc08018a3,
+        0x00800000,0x00800000,0x03000003,0x03000001,0x03000000)
+    assert r.unpack('3I')==(4,0,0)
+    assert r.unpack('4I')==(0x00816636,0x00807de9,0xc08018a3,0xc0800c26);r.end()
+
+
+@pytest.mark.parametrize('react',range(4))
+@pytest.mark.parametrize('command',range(5))
+def test_native_declared_pet_modes_include_assist_and_move_to(codec,react,command):
+    body=bytearray(spells());body[14]=react;body[15]=command
+    row=run(codec,[action('pet_response','SMSG_PET_SPELLS',body)])[0]
+    assert row[0]=='SMSG_PET_SPELLS_MESSAGE'
+    r=Reader(bytes.fromhex(row[1]));r.guid();assert r.unpack('HHIBBB')==(23,0,1000,command,0,react)
+
+
+@pytest.mark.parametrize('offset',[18,59])
+@pytest.mark.parametrize('native,modern',[(0x00000c26,0x00000c26),(0x01000000,0x00800000),
+    (0x06000003,0x03000003),(0x07000003,0x03800003),(0x81000c26,0x80800c26),
+    (0xc1000c26,0xc0800c26),(0x017fffff,0x00ffffff)])
+def test_pet_bar_and_spell_list_reencode_types_without_losing_action(codec,offset,native,modern):
+    body=bytearray(spells());struct.pack_into('<I',body,offset,native)
+    row=run(codec,[action('pet_response','SMSG_PET_SPELLS',body)])[0]
+    r=Reader(bytes.fromhex(row[1]));r.guid();r.unpack('HHIBBB');buttons=r.unpack('10I')
+    assert r.unpack('3I')==(2,1,0);actions=r.unpack('2I')
+    assert (buttons[0] if offset==18 else actions[0])==modern
+
+
+@pytest.mark.parametrize('offset',[18,59])
+@pytest.mark.parametrize('word',[0x00800000,0x01800000,0x027fffff,0xff000001])
+def test_pet_action_width_or_unknown_native_type_refuses_catalog(codec,offset,word):
+    body=bytearray(spells());struct.pack_into('<I',body,offset,word)
+    assert 'error' in run(codec,[action('pet_response','SMSG_PET_SPELLS',body)])[0]
+
+
+@pytest.mark.parametrize('offset,value',[(14,4),(15,5),(17,1)])
+def test_undefined_native_pet_modes_remain_refused(codec,offset,value):
+    body=bytearray(spells());body[offset]=value
+    assert 'error' in run(codec,[action('pet_response','SMSG_PET_SPELLS',body)])[0]
 
 
 def test_captured_pet_creation_and_later_owner_link_release_deferred_native_catalog(codec):

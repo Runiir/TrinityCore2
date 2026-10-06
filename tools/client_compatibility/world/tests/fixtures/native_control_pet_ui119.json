@@ -1,0 +1,57 @@
+{
+  "schema": "client442_native_control_pet_fixture_v1",
+  "source": {
+    "archive_pointer": "artifacts/client_harness/442_interactions_20261006_119.tar.gz.dvc",
+    "episode": "evidence/client_interactions_20261006_ui119/training_disconnect01/episode.json",
+    "episode_sha256": "f459c34d25e30543ee7a870b5a77496b4d848c0476bd280f2ca02e1e1cbcd0a0",
+    "failed_episode_sha256": "8b25626e126096517eeabc15c9acec7cea9187719675f1504f4b8879a834a8fb",
+    "bridge_build": {
+      "schema": "client442_native_bridge_build_v1",
+      "engine": "cpp",
+      "source_digest": "42f21c22ce8fcb8ebb6814766a68d1cd11e66c42ff330f7bf355bb57bedccf91",
+      "binary_sha256": "e01718beeff778da20d8b262e7c813297e4b1a40963214890b8a79fd4e698f75",
+      "sanitizers": false,
+      "build_jobs": 1,
+      "available_memory_kib_before": 15114548,
+      "source_revision": "a0e5dafdcd3b92c8bef5876b97035e44611a077f"
+    },
+    "session": "578f0e27",
+    "owner": 5,
+    "pet_number": 2,
+    "archive_sha256": "d64bcd7fc006357ed539e8cd5d9e4af0d6cc6cb5befd5f570b030507ad20a93a"
+  },
+  "packet": {
+    "time": 1791275686.223225,
+    "session": "578f0e27",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "0d000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "decoded": {
+    "guid": 17383896348356509709,
+    "family": 23,
+    "duration": 0,
+    "react": 3,
+    "command": 1,
+    "flags": 0,
+    "buttons": [
+      117440514,
+      117440513,
+      117440516,
+      3238005798,
+      3238008995,
+      16777216,
+      16777216,
+      100663299,
+      100663297,
+      100663296
+    ],
+    "actions": [
+      16868918,
+      16809449,
+      3238008995,
+      3238005798
+    ],
+    "cooldowns": []
+  }
+}
