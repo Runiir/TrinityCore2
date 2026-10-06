@@ -44,9 +44,10 @@ class AttackPresence(SpellPresence):
             if self.target and self.target['guid'] in r.get('removed',[]):self.target=None
 
 
-def restore(t,o,inventory,old,fixture,original,original_position):
+def restore(t,o,inventory,old,fixture,original,original_position,after_follow=None):
     def before_whole():
         try:
+            if after_follow is not None:after_follow()
             state,_=t.observe('attack_selection_cleanup')
             if state['target'].get('exists'):t.execute({'kind':'chat','value':'/cleartarget'})
         finally:
