@@ -26,6 +26,24 @@ STABLE=('guid','account','name','race','class','gender','level','money','map','z
     'position_x','position_y','position_z','orientation')
 
 
+def public_presence_matches(rows,connected):
+    # The installed client retains the last observed level after status3.
+    return public(rows)==[{'name':FRIEND,'connected':connected,'level':1,'notes':''}]
+
+
+def cache_reset_required(receipt):
+    from .interaction_friend_cache_recovery import NATIVE,FRIENDS
+    native=receipt.get('bridge_native_restoration',{}).get('checks',{})
+    friends=receipt.get('friend_restoration',{}).get('checks',{})
+    cases={c['id']:c['status'] for c in receipt.get('cases',[])}
+    return (set(native)==NATIVE and all(v is True for v in native.values()) and set(friends)==FRIENDS and
+        friends['public_friends'] is False and all(v is True for k,v in friends.items() if k!='public_friends') and
+        receipt.get('original_public_friends')==[{'name':FRIEND,'connected':False,'level':0,'notes':''}] and
+        cases.get('friends.online_presence')=='owned_friend_presence_pass' and
+        cases.get('friends.whisper')=='owned_friend_whisper_pass' and
+        cases.get('fixture.friend_offline_transition')=='owned_friend_presence_pass')
+
+
 def source_matches(old,current):
     return (old.get('completed') is True and old.get('failure') is None and bool(old.get('finished_at')) and
         old.get('actor')==current.get('actor') and old.get('runtime')==current.get('runtime') and
@@ -54,8 +72,7 @@ def wire_checks(rows,connected,area=12):
 def presence(t,packets,started,connected,area):
     label='friend_online' if connected else 'friend_offline';state,frame=t.observe(label,seconds=60)
     rows=[r for r in packets.since(started) if r['name']=='SMSG_FRIEND_STATUS']
-    checks=wire_checks(rows,connected,area);checks.update(public_presence=public(state.get('friends'))==[
-        {'name':FRIEND,'connected':connected,'level':1 if connected else 0,'notes':''}],
+    checks=wire_checks(rows,connected,area);checks.update(public_presence=public_presence_matches(state.get('friends'),connected),
         friends_ready=state.get('friends_ready') is True,stock_window='FriendsFrame' in state['panels'],
         native_social=social()==t.receipt['original_social'],group=state['group']==t.receipt['original_group'],
         chat_closed=not state.get('chat_edit_open'),no_lua_errors=not state.get('lua_errors'),
@@ -177,7 +194,13 @@ def run(out,source,review):
                         if not pending(state,'') and not (token and pending(state,token)):
                             raise RuntimeError('friend cleanup refuses unrelated pending chat')
                         p.execute({'kind':'key','value':'Escape','hold':1.2})
-                    close_friends(p);restored(p,p.receipt)
+                    close_friends(p)
+                    try:restored(p,p.receipt)
+                    except RuntimeError:
+                        if not cache_reset_required(p.receipt):raise
+                        p.receipt['friend_cache_restore_required']=True
+                        p.receipt['qualified_scope']='Prepared online presence and stock friend whisper only. Exact source-bound primary offline cache reset remains required before qualification.'
+                        report['phase']='await_original_primary_friend_cache_reset';p.persist()
                     if 'original_chat' in p.receipt:
                         current=chat_detail(p,'friend_presence_primary_chat_restored');checks={
                             'original_chat_settings':signature(current)==signature(p.receipt['original_chat'])}

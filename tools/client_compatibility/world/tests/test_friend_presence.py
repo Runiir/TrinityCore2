@@ -1,8 +1,8 @@
 """Owned friend transitions and pending stock whispers bind to exact identities."""
 import copy,struct
 import pytest
-from tools.client_compatibility.interaction_friend_presence import wire_checks,source_matches,original_position,HIGH
-from tools.client_compatibility.interaction_friend_whisper import pending
+from tools.client_compatibility.interaction_friend_presence import wire_checks,source_matches,original_position,public_presence_matches,cache_reset_required,HIGH
+from tools.client_compatibility.interaction_friend_whisper import pending,owned_online_row
 from tools.client_compatibility.world.buffer import Writer
 
 
@@ -81,3 +81,43 @@ def test_original_database_position_uses_its_actual_list_shape():
     assert original_position([-8914.86,-135.609,80.4425,5.83261,0],row)
     assert not original_position([-8913.86,-135.609,80.4425,5.83261,0],row)
     assert not original_position([-8914.86,-135.609,80.4425,5.83261,1],row)
+
+
+def test_actual_online_control_label_includes_level_and_class():
+    c={'kind':'Button','name':'FriendsFrameFriendsScrollFrameButton1','text':'Harnesstwo, Level 1 Warrior'}
+    assert owned_online_row(c)
+    for text in ['Harnesstwo','Harnesstwo, Level 85 Warrior','Anotherplayer, Level 1 Warrior',
+            'Harnesstwo, Level 1 Mage','Harnesstwo-Anotherrealm, Level 1 Warrior']:
+        assert not owned_online_row({**c,'text':text})
+
+
+@pytest.mark.parametrize('connected',[False,True])
+def test_post_online_public_cache_retains_the_verified_level_when_offline(connected):
+    row={'name':'Harnesstwo','connected':connected,'level':1,'notes':''}
+    assert public_presence_matches([row],connected)
+    assert not public_presence_matches([{**row,'level':0}],connected)
+    assert not public_presence_matches([{**row,'notes':'changed'}],connected)
+
+
+def cache_pending():
+    from tools.client_compatibility.world.tests.test_friend_cache_recovery import fixture
+    old=fixture(True);old['cases']=[{'id':id,'status':status} for id,status in [
+        ('friends.online_presence','owned_friend_presence_pass'),('friends.whisper','owned_friend_whisper_pass'),
+        ('fixture.friend_offline_transition','owned_friend_presence_pass')]]
+    return old
+
+
+def test_only_cache_difference_after_all_feature_cases_routes_to_required_reset():
+    assert cache_reset_required(cache_pending())
+
+
+@pytest.mark.parametrize('change',['failed_whisper','missing_offline','other_native','other_friend','different_original','already_reset'])
+def test_partial_or_other_restoration_failures_cannot_route_as_cache_only(change):
+    old=cache_pending()
+    if change=='failed_whisper':old['cases'][1]['status']='client_or_protocol_failure'
+    elif change=='missing_offline':old['cases'].pop()
+    elif change=='other_native':old['bridge_native_restoration']['checks']['stats']=False
+    elif change=='other_friend':old['friend_restoration']['checks']['inventory_money']=False
+    elif change=='different_original':old['original_public_friends'][0]['level']=1
+    else:old['friend_restoration']['checks']['public_friends']=True
+    assert not cache_reset_required(old)

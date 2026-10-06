@@ -10,6 +10,11 @@ from .interaction_reply_chat import delivered
 FRIEND='Harnesstwo'
 
 
+def owned_online_row(control):
+    return (control.get('kind')=='Button' and control.get('name','').startswith('FriendsFrameFriendsScrollFrameButton') and
+        control.get('text')==FRIEND+', Level 1 Warrior')
+
+
 def pending(state,text):
     return bool(state.get('chat_edit_open') and state.get('chat_edit_focused') and
         state.get('chat_edit_type')=='WHISPER' and
@@ -19,10 +24,9 @@ def pending(state,text):
 def send(primary,scout,packets):
     token='TC442UI:friend_'+hashlib.sha256(str(primary.out).encode()).hexdigest()[:8]
     with actor('primary'):
-        row=target(primary,'fixture.friend_whisper.row',lambda c:c['kind']=='Button' and
-            c['name'].startswith('FriendsFrameFriendsScrollFrameButton') and c['text']==FRIEND)
+        row=target(primary,'fixture.friend_whisper.row',owned_online_row)
         require(click(primary,'fixture.friend_whisper.select','Select only the owned online friend row.',
-            lambda c:c['name']==row['name'] and c['text']==FRIEND,lambda b,a,s:
+            lambda c:c['name']==row['name'] and c['text']==row['text'],lambda b,a,s:
             {'status':'friend_whisper_selected' if s and any(c['name']=='FriendsFrameSendMessageButton' and
                 c['enabled'] for c in controls(primary)) else 'client_or_protocol_failure'}),'friend_whisper_selected')
         require(click(primary,'fixture.friend_whisper.open','Open the stock Send Message edit for the owned friend.',
