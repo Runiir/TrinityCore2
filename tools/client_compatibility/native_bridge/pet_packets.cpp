@@ -1,5 +1,6 @@
 #include "pet_packets.hpp"
 #include <algorithm>
+#include <cmath>
 #include <unordered_set>
 
 namespace bridge
@@ -130,13 +131,17 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     if(name=="CMSG_PET_ACTION")
     {
         auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
-        // Captured stock commands, reactions and the remotely reviewed UI131
-        // idle enabled Blood Pact form. Preserve the submitted current GUID.
+        // Captured stock commands, reactions, UI131 idle Blood Pact and the
+        // remotely reviewed UI135 Move To destination. Preserve current GUID.
         bool command_action=command==0x03800000u || command==0x03800001u || command==0x03800003u;
         bool react_action=command==0x03000000u || command==0x03000001u || command==0x03000003u;
         bool blood_pact=command==0xc08018a3u;
-        if((!command_action && !react_action && !blood_pact) || target!=Array{0,0} ||
-           std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;}))
+        bool move_to=command==0x03800004u;
+        bool nonzero=std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;});
+        bool invalid_position=std::any_of(position.begin(),position.end(),[](Value const &v)
+        {auto n=bridge::number(v);return !std::isfinite(n) || std::abs(n)>17067;});
+        if((!command_action && !react_action && !blood_pact && !move_to) || target!=Array{0,0} ||
+           invalid_position || (move_to ? !nonzero : nonzero))
             throw std::runtime_error("unsupported pet action shape");
         if(!owner.pet_state || owner.pet_state->controlled_guid!=guid ||
            integer(get(unit,"kind"))!=3 || guid>>52!=0xf14 || !number ||
@@ -146,9 +151,14 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
         if(blood_pact && (owner.pet_state->controlled_buttons[4]!=0xc10018a3u ||
                          !owner.pet_state->controlled_autocast.contains(6307)))
             throw std::runtime_error("pet spell without current enabled native spell and slot authority");
+        if(move_to && (owner.pet_state->controlled_buttons[2]!=0x07000004u ||
+                      !p.field(unit,"UNIT_FIELD_HEALTH") ||
+                      !p.field(owner.self_snapshot,"UNIT_FIELD_HEALTH") ||
+                      integer(get(unit,"map"))!=owner.map()))
+            throw std::runtime_error("pet Move To without current live native command and map authority");
         auto native_command=blood_pact?0xc10018a3u:
             (react_action?0x06000000u:0x07000000u) | (command&0x007fffffu);
-        return Packet{name,Writer().pack("QIQfff",{guid,native_command,0,0.0,0.0,0.0}).finish()};
+        return Packet{name,Writer().pack("QIQfff",{guid,native_command,0,position[0],position[1],position[2]}).finish()};
     }
     r.end();
     if(guid>>52!=0xf14 || !number)throw std::runtime_error("name query requires a visible numbered pet");
