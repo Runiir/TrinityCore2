@@ -18,7 +18,7 @@ from .world.buffer import Reader
 from .world.native_objects import guid
 from .world.gameobjects import modern_guid
 from .interaction_macros import require
-from .melee_result_evidence import pairs as hit_pairs
+from .melee_result_evidence import pairs as hit_pairs,public_events
 from .interaction_observation import read_page
 from .interaction_operations import command
 
@@ -99,18 +99,7 @@ def run(t,preparation,entry,stage_path,review_path,require_feedback=False):
             delivered=[p for p in packets if p.get('direction')=='to_client' and p.get('name')=='SMSG_ATTACKER_STATE_UPDATE']
             matched,orphaned=(hit_pairs(packets,5,target['guid'],0) if require_feedback else ([],[]))
             if require_feedback:
-                events=public['probe']['events'];destination=after['target']['guid']
-                matching=[v for v in events if v.get('sequence',0)>public['before_sequence'] and
-                    v.get('event')=='SWING_DAMAGE' and v.get('source_guid')==t.guid and
-                    v.get('destination_guid')==destination and any(p['client'] and
-                        v.get('amount')==p['expected']['damage']>0 and
-                        v.get('school')==1 and v.get('overkill')==p['expected']['overkill'] and
-                        isinstance(v.get('timestamp'),(int,float)) and
-                        abs(v['timestamp']-p['native']['time'])<2 and
-                        bool(v.get('critical'))==bool(p['expected']['hit_info']&0x200) and
-                        bool(v.get('offhand'))==bool(p['expected']['hit_info']&4) and
-                        bool(v.get('glancing'))==bool(p['expected']['hit_info']&0x10000) and
-                        bool(v.get('crushing'))==bool(p['expected']['hit_info']&0x20000) for p in matched)]
+                matching=public_events(public['probe'],public['before_sequence'],matched,t.guid,after['target']['guid'])
                 public['matching_owned_events']=matching
                 checks.update(all_native_hit_results_delivered=bool(matched) and all(p['client'] for p in matched),
                     no_orphan_or_duplicate_hits=not orphaned,public_owned_swing_result=bool(matching),

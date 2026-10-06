@@ -42,3 +42,26 @@ def pairs(packets,owner,victim,map_id):
         if index is not None:used.add(index)
         matched.append({'native':p,'expected':result,'client':delivered[index] if index is not None else None})
     return matched,[p for i,p in enumerate(delivered) if i not in used]
+
+
+def public_events(probe,before_sequence,matched,source,destination):
+    return [v for v in probe.get('events',[]) if v.get('sequence',0)>before_sequence and
+        v.get('event')=='SWING_DAMAGE' and v.get('source_guid')==source and
+        v.get('destination_guid')==destination and any(p['client'] and
+            v.get('amount')==p['expected']['damage']>0 and v.get('school')==1 and
+            v.get('overkill')==p['expected']['overkill'] and
+            isinstance(v.get('timestamp'),(int,float)) and
+            abs(v['timestamp']-p['native']['time'])<2 and
+            all(bool(v.get(name))==bool(p['expected']['hit_info']&flag) for name,flag in
+                (('critical',0x200),('offhand',4),('glancing',0x10000),('crushing',0x20000)))
+            for p in matched)]
+
+
+def health_checks(before,after,matched,public_health,foreign_hits):
+    damage=sum(p['expected']['damage'] for p in matched)
+    return {'positive_owned_damage':damage>0,
+        'all_owned_results_delivered':bool(matched) and all(p['client'] for p in matched),
+        'target_alive':0<after<before,
+        'exact_native_health_loss':before-after==damage,
+        'exact_public_health':public_health==after,
+        'no_foreign_target_hits':not foreign_hits}

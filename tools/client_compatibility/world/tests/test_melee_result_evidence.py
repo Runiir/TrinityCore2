@@ -1,6 +1,6 @@
 import pytest
 import struct
-from tools.client_compatibility.melee_result_evidence import translated,pairs
+from tools.client_compatibility.melee_result_evidence import translated,pairs,public_events,health_checks
 from tools.client_compatibility.world.tests.test_owned_melee_results import CAPTURE,MODERN,VICTIM
 
 
@@ -30,3 +30,31 @@ def test_packet_pairing_requires_one_timely_exact_client_delivery(fault):
     assert len(matched)==1
     assert bool(matched[0]['client'])==(fault in (None,'duplicate'))
     assert bool(orphaned)==(fault in ('duplicate','wrong_body','too_late'))
+
+
+@pytest.mark.parametrize('fault',[None,'source','destination','old_sequence','amount','overkill','school','timestamp',
+    'critical','offhand','glancing','crushing','missing_delivery'])
+def test_public_damage_requires_owned_identity_freshness_and_exact_native_outcome(fault):
+    event={'event':'SWING_DAMAGE','sequence':2,'source_guid':'player','destination_guid':'target',
+        'amount':6,'overkill':-1,'school':1,'timestamp':1.1,
+        'critical':False,'offhand':False,'glancing':False,'crushing':False}
+    matched=[{'native':{'time':1.},'expected':{'damage':6,'overkill':-1,'hit_info':2},'client':{'time':1.05}}]
+    if fault in ('source','destination'):event[fault+'_guid']='another'
+    elif fault=='old_sequence':event['sequence']=1
+    elif fault in ('amount','overkill','school'):event[fault]=99
+    elif fault=='timestamp':event['timestamp']=3.
+    elif fault in ('critical','offhand','glancing','crushing'):event[fault]=True
+    elif fault=='missing_delivery':matched[0]['client']=None
+    assert bool(public_events({'events':[event]},1,matched,'player','target'))==(fault is None)
+
+
+@pytest.mark.parametrize('fault',[None,'calculated_only','foreign_damage','stale_public_health','dead_target','missing_delivery'])
+def test_applied_damage_requires_living_target_and_exact_native_public_health_loss(fault):
+    before,after,public,foreign=142,136,136,[]
+    matched=[{'expected':{'damage':6},'client':{'time':1.1}}]
+    if fault=='calculated_only':after=public=142
+    elif fault=='foreign_damage':foreign=[{'attacker':9}]
+    elif fault=='stale_public_health':public=142
+    elif fault=='dead_target':after=public=0
+    elif fault=='missing_delivery':matched[0]['client']=None
+    assert all(health_checks(before,after,matched,public,foreign).values())==(fault is None)

@@ -1,0 +1,206 @@
+"""Prove ordinary owner melee reduces one existing target's native/public health."""
+import argparse,copy,json,math,struct,time
+from pathlib import Path
+from . import actors,lab_runtime as lab
+from .interaction_social import actor
+from .interaction_trial import Trial
+from .interaction_owned_class_fixture import prepared,reviewed,SCRIPT_BOUNDARY,saved,character
+from .interaction_spellbook_pet_recon import entry_source
+from .interaction_retained_class_fixture import closed
+from .interaction_pet_commands import eligibility,PET_KEYS
+from .interaction_pet_spell import SpellPresence,pet_vitals
+from .interaction_pet_dismiss import vitals
+from .interaction_pet_command_probe import read,follow_row
+from .interaction_pet_react_modes import mode,public_bar,active_mode
+from .interaction_sit_stand import pose,afk
+from .interaction_spellbook_recon import resources
+from .interaction_ground_movement import position
+from .interaction_pet_control_training import protected
+from .interaction_pet_target import pair
+from .interaction_bridge_deploy import shot
+from .interaction_macros import require
+from .interaction_observation import read_page
+from .interaction_operations import command
+from .interaction_pet_attack_capture import restore
+from .melee_health_fixture import MeleeHealthFixture,native_target
+from .pet_attack_capture_evidence import target_guid
+from .melee_result_evidence import pairs as hit_pairs,public_events,health_checks
+from .pet_attack_evidence import combat_pairs
+from .observation.inventory import Inventory
+from .observation.journal import entries
+from .world.native_objects import records,guid
+from .world.buffer import Reader
+from .world.gameobjects import modern_guid
+from .world.objects import INDEX
+from .pet_attack_landing import acknowledgement
+
+
+class HealthPresence(SpellPresence):
+    def __init__(self,*args):super().__init__(*args);self.target=None
+
+    def inspect_packet(self,p):
+        super().inspect_packet(p)
+        if p.get('direction')!='from_native' or p.get('name')!='SMSG_UPDATE_OBJECT':return
+        for r in records(bytes.fromhex(p['body'])):
+            if native_target(r):
+                if self.target and self.target['guid']!=r['guid']:raise RuntimeError('ambiguous health target creation')
+                self.target=r
+            elif self.target and r.get('guid')==self.target['guid']:self.target['fields'].update(r.get('fields',{}))
+            if self.target and self.target['guid'] in r.get('removed',[]):self.target=None
+
+
+def health(o):return o.target['fields'][INDEX['UNIT_FIELD_HEALTH']]
+
+
+def stage(t,preparation,entry):
+    old,e,base,inventory,identity=eligibility(t,preparation,entry);t.clean_panels()
+    o=HealthPresence(base.session,5,e['started_at']).poll();sample=read(t,'health_original_bar')
+    state,_=t.observe('health_original_scene');row=follow_row(sample['probe'])
+    if (state.get('observer_version')!=138 or state['owner_melee']['active'] or not row or not row['active'] or
+        not active_mode(sample['probe'],'PET_MODE_ASSIST') or not sample['ui_clean']):
+        raise RuntimeError('requires original idle Assist/Follow and loaded passive melee observer138')
+    baseline={'resources':resources(inventory),'saved':e['entered_saved'],'position':position(5),
+        'vitals':vitals(o),'pet':{k:identity[k] for k in PET_KEYS},'pose':pose(inventory),'afk':afk(inventory),
+        'money':character(5,2)['money'],'public_bar':public_bar(sample['probe'])}
+    original={'auras':copy.deepcopy(o.auras),'public_buffs':state.get('buffs',{}),'pet_vitals':pet_vitals(o)}
+    # Use the shared spell parser's canonical public aura identity.
+    from .pet_spell_evidence import buffs
+    original['public_buffs']=buffs(state)
+    if 6307 in original['public_buffs']:raise RuntimeError('requires the restored original aura baseline')
+    t.receipt.update(baseline=baseline,original_position=baseline['position'],original_spell=original,
+        qualification_added=False);t.persist();fixture=MeleeHealthFixture(t.out,t.fixture)
+    try:
+        mode(t,o,0,'fixture.health_pet_passive')
+        staged=fixture.prepare();t.receipt['baseline']['position']=staged;t.persist()
+        t.execute({'kind':'chat','value':'/targetexact Training Dummy'})
+        state,_=t.observe('health_selected_target');o.poll();sample=read(t,'health_passive_control');o.poll()
+        frozen=position(5);time.sleep(.5)
+        checks={'exact_native_target':native_target(o.target),'native_selection':o.selected()==o.target['guid'] if o.target else False,
+            'exact_public_target':bool(o.target and state['target'].get('guid')==target_guid(o.target)),
+            'undamaged_target':bool(o.target and health(o)==o.target['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]),
+            'safe_target_health':bool(o.target and health(o)>=100),
+            'public_health':bool(o.target and state['target'].get('health')==health(o)),
+            'in_melee_range':bool(o.target and math.dist(frozen[:3],o.target['movement']['position'][:3])<4),
+            'stable_position':position(5)==frozen,'native_passive':o.catalogs[-1]['react']==0,
+            'public_passive':active_mode(sample['probe'],'PET_MODE_PASSIVE'),
+            'idle_pet':not sample['probe']['pet_combat'] and not sample['probe']['pet_target_exists'],
+            'original_vitals':vitals(o)==baseline['vitals'],'original_saved':saved(5)==baseline['saved'],
+            'protected':all(protected(old).values()),'ui_clean':sample['ui_clean']}
+        ack=acknowledgement(entries(lab.ROOT/'evidence/world_packets.jsonl'),o.session,t.receipt['started_at'],
+            time.time(),5,fixture.rows[1][1:6])
+        t.receipt.update(checks=checks,native_target=copy.deepcopy(o.target),native_pet=copy.deepcopy(o.pet),
+            staged_position=frozen,teleport_acknowledgement=ack,
+            fixture_file={'path':str(t.out/'melee_health_fixture.json'),'sha256':lab.sha256(t.out/'melee_health_fixture.json')},
+            frame=shot(t.out/'health_review_ready.png'));t.persist()
+        if not all(checks.values()):raise RuntimeError('reviewed damageable target staging differs')
+        t.receipt.update(completed=True,phase='await_owned_melee_health_review',
+            qualified_scope='Pose staging and Passive preparation only; no melee or applied damage qualification.')
+    except Exception:
+        fixture.restore();t.receipt['baseline']['position']=baseline['position']=t.receipt['original_position']
+        restore(t,o,inventory,old,fixture,original,t.receipt['original_position']);raise
+
+
+def run(t,preparation,entry,stage_path,review_path):
+    old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session'];e=entry_source(t,entry,session,preparation)
+    d=closed(stage_path)
+    if (d.get('phase')!='await_owned_melee_health_review' or d.get('actor')!=t.fixture or d.get('runtime')!=t.receipt['runtime'] or
+        d.get('native_session')!=session or len(d.get('checks',{}))!=15 or not all(d['checks'].values()) or
+        [s['sha256'] for s in d.get('sources',[])]!=[lab.sha256(p) for p in (preparation,entry)] or
+        d['fixture_file']['sha256']!=lab.sha256(Path(d['fixture_file']['path']))):raise RuntimeError('closed health staging differs')
+    fixture=MeleeHealthFixture.resume(t.out,t.fixture,Path(d['fixture_file']['path']))
+    o=HealthPresence(session,5,e['started_at']).poll();inventory=Inventory(lab.ROOT,session,5).poll()
+    t.receipt.update(baseline=copy.deepcopy(d['baseline']),native_session=session,qualification_added=False,
+        stage_source={'path':str(stage_path),'sha256':lab.sha256(stage_path)});t.persist();since=None;stopped=False
+    target=d['native_target'];owner={'guid':5,'map':0}
+    try:
+        checked=reviewed(t,review_path,'owned_melee_health_target')
+        if (checked.get('stage_source_sha256')!=lab.sha256(stage_path) or checked.get('target_visible') is not True or
+            checked['frame']['sha256']!=d['frame']['sha256'] or position(5)!=d['staged_position'] or
+            not o.target or o.target['guid']!=target['guid'] or health(o)!=target['fields'][INDEX['UNIT_FIELD_HEALTH']] or
+            o.catalogs[-1]['react']!=0):raise RuntimeError('fresh selected damageable target or Passive preparation differs')
+        image=review_path.parent/checked['frame']['file']
+        def admit():
+            nonlocal since
+            age=time.time()-image.stat().st_mtime;accepted=0<=age<110 and lab.sha256(image)==checked['frame']['sha256']
+            if accepted:since=time.time()
+            return {'accepted':accepted,'age_seconds':age,'maximum_seconds':110,'frame':checked['frame'],
+                'source':str(review_path),'source_sha256':lab.sha256(review_path),'checked_at':time.time()}
+        with t.bounded_combat_observation(60):
+            def started(before,after,selected):
+                o.poll();checks={'public_active':after['owner_melee']['active'] is True,
+                    'public_target':after['target'].get('guid')==target_guid(target),'native_health_loss':0<health(o)<target['fields'][INDEX['UNIT_FIELD_HEALTH']]}
+                return {'status':'owned_melee_health_started_pass' if all(checks.values()) else 'client_or_protocol_failure','oracle':checks}
+            require(t.step('combat.autoattack_health','Apply ordinary owner melee damage to the reviewed existing target.',
+                {'attack':{'kind':'chat','value':'/startattack'}},started,diagnostic_action='attack',before_input=admit),
+                'owned_melee_health_started_pass')
+            stop_since=time.time();t.execute({'kind':'chat','value':'/stopattack'});stopped=True
+            public,frame=read_page(t,'health_public_swings','combat_log','/tcui combat_log')
+            command(t,'/tcui state');state,health_frame=t.observe('health_stopped_outcome');o.poll();until=time.time()
+            packets=[p for p in entries(lab.ROOT/'evidence/world_packets.jsonl') if p.get('session')==session and since<=p.get('time',0)<=until]
+            matched,orphaned=hit_pairs(packets,5,target['guid'],0);foreign=[];petcasts=[]
+            for p in packets:
+                if p.get('direction')!='from_native':continue
+                if p.get('name')=='SMSG_ATTACKER_STATE_UPDATE':
+                    r=Reader(bytes.fromhex(p['body']));r.unpack('I');attacker,victim=guid(r),guid(r)
+                    if victim==target['guid'] and attacker!=5:foreign.append(p)
+                elif p.get('name') in ('SMSG_SPELL_START','SMSG_SPELL_GO'):
+                    r=Reader(bytes.fromhex(p['body']));caster=guid(r);guid(r);_,spell=r.unpack('BI')
+                    if caster==d['native_pet']['guid'] and spell==3110:petcasts.append(p)
+            swing_events=public_events(public['melee_probe'],t.receipt['cases'][0]['before']['owner_melee']['event_sequence'],
+                matched,t.guid,target_guid(target))
+            checks=health_checks(target['fields'][INDEX['UNIT_FIELD_HEALTH']],health(o),matched,state['target'].get('health'),foreign)
+            starts=combat_pairs(packets,session,since,until,owner,target,'SMSG_ATTACK_START')
+            stops=combat_pairs(packets,session,stop_since,until,owner,target,'SMSG_ATTACK_STOP')
+            modern=[p for p in packets if p.get('name')=='CMSG_ATTACK_SWING' and p.get('direction')=='from_client']
+            native=[p for p in packets if p.get('name')=='CMSG_ATTACK_SWING' and p.get('direction')=='to_native']
+            identity=None
+            if len(modern)==1:r=Reader(bytes.fromhex(modern[0]['body']));identity=r.guid();r.end()
+            checks.update(one_owned_modern_attack=len(modern)==1 and identity==modern_guid(target['guid'],0),
+                one_exact_native_attack=len(native)==1 and native[0]['body']==struct.pack('<Q',target['guid']).hex(),
+                one_modern_stop=sum(p.get('name')=='CMSG_ATTACK_STOP' and p.get('direction')=='from_client' and
+                    p['time']>=stop_since for p in packets)==1,
+                one_native_stop=sum(p.get('name')=='CMSG_ATTACK_STOP' and p.get('direction')=='to_native' and
+                    p['time']>=stop_since and p['body']=='' for p in packets)==1,
+                attack_start_delivered=bool(starts) and all(p['client'] for p in starts),
+                attack_stop_delivered=bool(stops) and all(p['client'] for p in stops),
+                final_public_target=state['target'].get('guid')==target_guid(target),
+                target_max_health_unchanged=o.target['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]==target['fields'][INDEX['UNIT_FIELD_MAXHEALTH']],
+                native_pet_passive=o.catalogs[-1]['react']==0,
+                native_pet_target_empty=pair(o.pet['fields'],'UNIT_FIELD_TARGET')==0,
+                public_autoattack_stopped=state['owner_melee']['active'] is False,no_orphan_hits=not orphaned,
+                public_swing_damage=bool(swing_events),no_pet_firebolt=not petcasts,
+                owner_alive=vitals(o)['UNIT_FIELD_HEALTH']>0,owner_position=position(5)==d['staged_position'],
+                ui_clean=not state.get('lua_errors') and not state.get('blocked_actions'))
+            t.receipt['health_outcome']={'checks':checks,'native_before':target,'native_after':copy.deepcopy(o.target),
+                'health_loss':target['fields'][INDEX['UNIT_FIELD_HEALTH']]-health(o),'hit_pairs':matched,'orphan_hits':orphaned,
+                'foreign_hits':foreign,'pet_firebolts':petcasts,'public_events':swing_events,'public_probe':public['melee_probe'],
+                'public_frame':frame,'state':state,'health_frame':health_frame,'start_pairs':starts,'stop_pairs':stops};t.persist()
+            if not all(checks.values()):raise RuntimeError('native/public owner applied damage differs')
+    finally:
+        try:
+            if since is not None and not stopped:
+                with t.bounded_combat_observation(60):t.execute({'kind':'chat','value':'/stopattack'})
+        finally:
+            # Move out of combat before the shared Follow/Assist/aura cleanup.
+            t.receipt['early_pose_restoration']=fixture.restore();t.receipt['baseline']['position']=d['original_position'];t.persist()
+            restore(t,o,inventory,old,fixture,d['original_spell'],d['original_position'])
+    t.receipt.update(completed=True,phase='owned_melee_health_complete',qualified_scope=
+        'Ordinary owner autoattack on one existing level-three SmartAI target, exact native/public health loss, '
+        'delivered owner hit feedback and public SWING_DAMAGE, ordinary Stop, no pet damage, and whole actor restoration. '
+        'Earned target damage is retained. Other classes, kills, ability damage and cadence remain open.')
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('stage','run'))
+    for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--stage',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
+    if a.action=='run' and (a.stage is None or a.review is None):p.error('run requires closed staging and fresh review')
+    with actor('scout'):
+        t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
+        t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
+        try:
+            if a.action=='stage':stage(t,a.preparation,a.entry)
+            else:run(t,a.preparation,a.entry,a.stage,a.review)
+        except Exception as error:t.receipt.update(completed=False,failure=f'{type(error).__name__}: {error}')
+        finally:t.receipt['finished_at']=time.time();t.persist()
+        print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure','phase','restoration_checks')}),flush=True)
