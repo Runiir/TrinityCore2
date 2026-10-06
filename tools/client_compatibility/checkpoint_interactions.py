@@ -1,5 +1,6 @@
 """Archive closed player-interaction evidence with DVCLive and push it to DVC."""
 import argparse
+import gzip
 import hashlib
 from collections import Counter
 import json
@@ -119,6 +120,18 @@ SAFE_BODY_NAMES={
     'SMSG_ALL_ACHIEVEMENT_DATA','SMSG_CRITERIA_UPDATE','SMSG_ACHIEVEMENT_EARNED'}
 
 
+def archive_digest(path):
+    # Reading through gzip EOF validates the compressed stream's CRC and size.
+    with gzip.open(path,'rb') as stream:
+        while stream.read(1024*1024):pass
+    return lab.sha256(path)
+
+
+def unchanged_archive(path,expected):
+    if lab.sha256(path)!=expected:
+        raise RuntimeError('workspace checkpoint archive changed after source integrity verification')
+
+
 def initialize(directory):
     directory=directory.resolve()
     if directory.parent!=lab.ROOT/'evidence' or not re.fullmatch(r'[A-Za-z0-9_]+',directory.name):
@@ -212,13 +225,15 @@ def checkpoint(directory,name):
             with archive.extractfile(record['path']) as file:
                 digest=hashlib.file_digest(file,'sha256').hexdigest()
             if digest!=record['sha256']:raise RuntimeError('checkpoint archive hash mismatch: '+record['path'])
+    verified_sha256=archive_digest(target)
     for command in [['dvc','add',relative],['dvc','status',pointer],['dvc','push',pointer]]:
         subprocess.run(command,cwd=lab.REPO,check=True)
+        unchanged_archive(target,verified_sha256)
     cloud=json.loads(subprocess.check_output(['dvc','status','--cloud','--json',pointer],cwd=lab.REPO,text=True))
     if cloud:raise RuntimeError('checkpoint is not synchronized with the DVC remote')
-    lab.private_write(directory/'checkpoint_receipt.json',json.dumps({'file':relative,'sha256':lab.sha256(target),
+    lab.private_write(directory/'checkpoint_receipt.json',json.dumps({'file':relative,'sha256':verified_sha256,
         'bytes':target.stat().st_size,'cloud_verified':True,'file_manifest':manifest},indent=2)+'\n')
-    print(json.dumps({'pointer':pointer,'bytes':target.stat().st_size,'sha256':lab.sha256(target)}))
+    print(json.dumps({'pointer':pointer,'bytes':target.stat().st_size,'sha256':verified_sha256}))
 
 
 def main():
