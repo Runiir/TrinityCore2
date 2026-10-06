@@ -31,7 +31,9 @@ def run(t,preparation,entry,stage_path,review_path):
         [s['sha256'] for s in d.get('sources',[])]!=[lab.sha256(p) for p in (preparation,entry)] or
         len(d.get('checks',{}))!=10 or not all(d['checks'].values()) or
         d.get('custom_script_permission')!='blocked_by_user' or d.get('softTargetInteract')!=SCRIPT_BOUNDARY or
-        d.get('qualification_added') is not False or d['fixture_file']['sha256']!=lab.sha256(Path(d['fixture_file']['path']))):
+        d.get('qualification_added') is not False or d['fixture_file']['sha256']!=lab.sha256(Path(d['fixture_file']['path'])) or
+        len(d.get('position_freeze',{}).get('checks',{}))!=4 or not all(d['position_freeze']['checks'].values()) or
+        d['position_freeze']['accepted']!=d['staged_position']):
         raise RuntimeError('closed reviewed selected pet Attack fixture differs')
     fixture=PetAttackFixture.resume(t.out,t.fixture,Path(d['fixture_file']['path']))
     o=capture.AttackPresence(session,5,e['started_at']).poll();inventory=Inventory(lab.ROOT,session,5).poll()
@@ -72,6 +74,9 @@ def run(t,preparation,entry,stage_path,review_path):
             sample['probe'].get('pet_combat') is not False):
             raise RuntimeError('reviewed current owned Attack authority or passive combat reads differ')
         pet=copy.deepcopy(o.pet);target=copy.deepcopy(o.target)
+        image=review_path.parent/checked['frame']['file']
+        if not 0<=time.time()-image.stat().st_mtime<120:
+            raise RuntimeError('reviewed Attack image aged during passive preflight; no Attack submitted')
         since=time.time();t.receipt.update(native_pet=pet,native_target=target,attack_started_at=since);t.persist()
         def outcome(b,a,s):
             sample=read(t,'attack_native_combat');public_samples=[sample]
@@ -84,6 +89,9 @@ def run(t,preparation,entry,stage_path,review_path):
             until=time.time();packets=list(entries(lab.ROOT/'evidence/world_packets.jsonl'))
             checks,requests=request_checks(packets,session,since,until,pet,target)
             cast_checks,pairs=firebolt_checks(packets,session,since,until,pet,target);checks.update(cast_checks)
+            public_identity=sample['probe'].get('pet_cast',{}).get('cast_id')
+            checks['public_pet_cast_delivered']=any(p['client'] and p['client']['name']=='SMSG_SPELL_START' and
+                public_identity==f"Cast-3-1-{pet['map']}-0-3110-{p['decoded_client']['cast'][0]:010X}" for p in pairs)
             rejection=latest(lab.ROOT/'logs/modern_world.jsonl',lambda r:r.get('session')==session and
                 since<=r.get('time',0)<=until and r.get('event')=='pet_action_translation_rejected')
             owner=vitals(o)

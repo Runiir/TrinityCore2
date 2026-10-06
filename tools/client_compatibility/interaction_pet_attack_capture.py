@@ -21,9 +21,11 @@ from .interaction_pet_control_training import protected
 from .interaction_pet_follow_capture import follow_request
 from . import interaction_pet_moveto_capture as cleanup
 from .pet_attack_fixture import PetAttackFixture
+from .pet_attack_landing import acknowledgement,landing_checks
+from .interaction_bridge_deploy import shot
 from .pet_attack_capture_evidence import button,target_checks,native_dummy
 from .observation.inventory import Inventory
-from .observation.journal import latest
+from .observation.journal import latest,entries
 from .world.native_objects import records
 from .world.gameobjects import modern_guid
 from .interaction_macros import require
@@ -92,6 +94,15 @@ def stage(t,preparation,entry):
         row,point=button(sample['probe'],o.pet);checks=target_checks(o.target,state,o.player)
         checks.update(current_owned_pet=o.present(),owner_vitals=vitals(o)==baseline['vitals'],
             saved=saved(5)==baseline['saved'],protected=all(protected(old).values()),ui_clean=sample['ui_clean'])
+        proof=acknowledgement(entries(lab.ROOT/'evidence/world_packets.jsonl'),base.session,
+            t.receipt['started_at'],time.time(),5,fixture.rows[1][1:6])
+        accepted=position(5);landing=landing_checks(staged_position,accepted)
+        time.sleep(.5);stable=position(5);landing['stable_native_pose']=stable==accepted
+        if not all(landing.values()):raise RuntimeError('dummy landing changed horizontal pose or did not settle')
+        t.receipt['position_freeze']={'initial':staged_position,'accepted':accepted,'checks':landing,
+            'acknowledgement':proof,'frozen_at':time.time()}
+        staged_position=accepted;t.receipt['baseline']['position']=accepted
+        frame=shot(t.out/'attack_review_ready.png')
         t.receipt.update(checks=checks,staged_position=staged_position,native_target=copy.deepcopy(o.target),
             native_pet=copy.deepcopy(o.pet),observed_button=row,attack_point=point,frame=frame,
             fixture_file={'path':str(t.out/'pet_attack_fixture.json'),'sha256':lab.sha256(t.out/'pet_attack_fixture.json')})

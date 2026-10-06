@@ -1,0 +1,50 @@
+{
+  "schema": "captured_owned_pet_landing_ack_ui139_v1",
+  "owner": 5,
+  "session": "captured-owned",
+  "since": 1791314297.778428,
+  "until": 1791314439.2543612,
+  "initial": [
+    -8959.05,
+    -157.16,
+    81.5856,
+    3.14159,
+    0
+  ],
+  "settled": [
+    -8959.05,
+    -157.16,
+    81.5034,
+    3.14159,
+    0
+  ],
+  "packets": [
+    {
+      "name": "SMSG_MOVE_TELEPORT",
+      "direction": "to_client",
+      "time": 1791314354.7762568,
+      "body": "01a00504080200000033fc0bc6f6281dc3d42ba342d00f49400000",
+      "session": "captured-owned"
+    },
+    {
+      "name": "CMSG_MOVE_TELEPORT_ACK",
+      "direction": "from_client",
+      "time": 1791314354.9289377,
+      "body": "01a0050408020000000d75cb1b",
+      "session": "captured-owned"
+    },
+    {
+      "name": "MSG_MOVE_TELEPORT_ACK",
+      "direction": "to_native",
+      "time": 1791314354.9290922,
+      "body": "020000000d75cb1b4004",
+      "session": "captured-owned"
+    }
+  ],
+  "source": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261006_ui139/stage02_teleport_ack_diagnostic01.json",
+    "sha256": "63409da3d14a6a44837975c133ac301741c3c0477be08abf74ebf7921aff9d96",
+    "checkpoint_pending": "442_interactions_20261006_139"
+  },
+  "qualification_added": false
+}
