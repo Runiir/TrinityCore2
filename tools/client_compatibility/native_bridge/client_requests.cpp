@@ -333,7 +333,18 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if (name == "CMSG_CANCEL_AURA")
     {
         require_world();
-        owner.native->send(name, Protocol::aura_cancel(state, body));
+        Reply translated;
+        try
+        {
+            translated=pet_aura_cancel(protocol,state,body);
+            if(!translated)translated=Packet{name,Protocol::aura_cancel(state,body)};
+        }
+        catch(std::exception const &error)
+        {
+            service.events.event("aura_cancel_translation_rejected",{{"session",owner.id},{"error",error.what()}});
+            return;
+        }
+        native_send(*translated);
         return;
     }
     if (movement_supported(name) || name == "CMSG_MOVE_SET_FACING_HEARTBEAT")

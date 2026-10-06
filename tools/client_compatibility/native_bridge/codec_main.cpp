@@ -397,7 +397,10 @@ int main(int argc, char **argv)
                             else if (fn == "aura_response")
                                 reply = Protocol::aura_response(state, name, body);
                             else if (fn == "aura_cancel")
-                                reply = Packet{name, Protocol::aura_cancel(state, body)};
+                            {
+                                reply=pet_aura_cancel(protocol,state,body);
+                                if(!reply)reply=Packet{name,Protocol::aura_cancel(state,body)};
+                            }
                             else if (fn == "initialize")
                                 reply = Protocol::initialize_response(state, name, body);
                             else if (fn == "currency")

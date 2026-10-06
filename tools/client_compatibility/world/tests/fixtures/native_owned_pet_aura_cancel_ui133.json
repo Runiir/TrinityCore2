@@ -1,0 +1,176 @@
+{
+  "schema": "client442_native_owned_pet_aura_cancel_ui133_v1",
+  "source_checkpoint": "artifacts/client_harness/442_interactions_20261006_133.tar.gz.dvc",
+  "source_checkpoint_sha256": "cfa6a86bcf0ab0627c49e6e36eac492edf472d0b8b193068fda5d52db0ab0161",
+  "source_receipts": [
+    {
+      "file": "buff_cancel_whole_review01.json",
+      "sha256": "05d376558b21e66878a334e1beb504c8c827e8af7a84b8c44bf4d41f77c8a21f"
+    },
+    {
+      "file": "buff_cancel_capture01/episode.json",
+      "sha256": "2c2fc39ce64ebca53f0369552a0e8279a3da1af0aefdc83e7579d270a3646a77"
+    },
+    {
+      "file": "class_enter01/episode.json",
+      "sha256": "0057d99ed5c72bc51b8f18f6e41c33f3c2c5cdbdcd8d4fe621277660ed47de47"
+    }
+  ],
+  "source_scope": "Actual ordinary owner cancellation diagnostic against unrestored UI132 Blood Pact; native player cancellation has no effect. No operation qualification.",
+  "character": {
+    "guid": 5,
+    "map": 0
+  },
+  "native_pet_guid": 17383896348356509731,
+  "native_pet_create": {
+    "guid": 17383896348356509731,
+    "map": 0,
+    "update_type": 2,
+    "kind": 3,
+    "movement": {
+      "flags": 0,
+      "flags2": 0,
+      "position": [
+        -9472.578125,
+        -9.563446044921875,
+        49.79469299316406,
+        2.408560037612915
+      ],
+      "pitch": 0,
+      "time": 185184198,
+      "speeds": [
+        2.5,
+        8.0,
+        4.5,
+        4.722221851348877,
+        2.5,
+        7.0,
+        4.5,
+        3.1415939331054688,
+        3.140000104904175
+      ]
+    },
+    "flags": {
+      "hover": 0,
+      "greeting": 0,
+      "rotation": 0,
+      "animkit": 0,
+      "victim": 0,
+      "self": 0,
+      "vehicle": 0,
+      "movement": 1,
+      "birth": 0,
+      "transport": 0,
+      "stationary": 0,
+      "area": 0,
+      "portals": 0,
+      "time": 0
+    },
+    "fields": {
+      "0": 35,
+      "1": 4047503776,
+      "4": 9,
+      "5": 416,
+      "6": 1065353216,
+      "16": 5,
+      "18": 5,
+      "25": 133120,
+      "26": 534,
+      "27": 298,
+      "32": 534,
+      "33": 298,
+      "48": 10,
+      "49": 1,
+      "53": 8,
+      "54": 2048,
+      "56": 2000,
+      "57": 2000,
+      "59": 1065353216,
+      "60": 1069547520,
+      "61": 4449,
+      "62": 4449,
+      "64": 1096361106,
+      "65": 1099731529,
+      "69": 2,
+      "70": 1791302585,
+      "73": 0,
+      "74": 1065353216,
+      "75": 1065353216,
+      "76": 688,
+      "77": 0,
+      "79": 29,
+      "80": 10,
+      "81": 35,
+      "82": 33,
+      "83": 31,
+      "94": 191,
+      "115": 147,
+      "116": 223,
+      "117": 1,
+      "118": 18,
+      "143": 1065353216,
+      "38": 1085344247,
+      "43": 1075713147,
+      "55": 4194304,
+      "86": 11,
+      "101": 11,
+      "119": 21
+    }
+  },
+  "native_owner_snapshot": {
+    "fields": {
+      "10": 35,
+      "11": 4047503776,
+      "20": 0,
+      "21": 0
+    }
+  },
+  "native_catalog_packet": {
+    "time": 1791302585.8344293,
+    "session": "3e9f653b",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "23000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "native_aura_packet": {
+    "time": 1791302586.3219705,
+    "session": "3e9f653b",
+    "direction": "from_native",
+    "name": "SMSG_AURA_UPDATE",
+    "body": "010500a318000051000a00f123a00140f10b000000"
+  },
+  "native_owned_aura": {
+    "slot": 0,
+    "spell": 6307,
+    "flags": 81,
+    "level": 10,
+    "applications": 0,
+    "caster": 17383896348356509731,
+    "duration": null,
+    "points": [
+      11
+    ]
+  },
+  "modern_request": {
+    "time": 1791302702.741385,
+    "session": "3e9f653b",
+    "direction": "from_client",
+    "name": "CMSG_CANCEL_AURA",
+    "body": "a318000001a0050408"
+  },
+  "decoded_actual_request": {
+    "spell": 6307,
+    "caster": [
+      5,
+      576465150349934592
+    ],
+    "exact_end": true
+  },
+  "ignored_native_player_request": {
+    "time": 1791302702.7415202,
+    "session": "3e9f653b",
+    "direction": "to_native",
+    "name": "CMSG_CANCEL_AURA",
+    "body": "a3180000"
+  }
+}

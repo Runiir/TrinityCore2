@@ -4,6 +4,7 @@
 namespace bridge
 {
 Reply pet_request(Protocol const &protocol, State &owner, std::string const &name, View body);
+Reply pet_aura_cancel(Protocol const &protocol, State &owner, View body);
 struct PetActionTranslation
 {
     Reply packet;

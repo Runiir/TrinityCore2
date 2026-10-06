@@ -110,6 +110,7 @@ bool capture(std::string const &name)
                                                           "SMSG_AURA_UPDATE",
                                                           "SMSG_AURA_UPDATE_ALL",
                                                           "CMSG_CANCEL_AURA",
+                                                          "CMSG_PET_CANCEL_AURA",
                                                           "CMSG_CANCEL_MOUNT_AURA",
                                                           "CMSG_QUERY_GAME_OBJECT",
                                                           "SMSG_QUERY_GAME_OBJECT_RESPONSE",

@@ -160,6 +160,41 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     s.names[number].push_back({guid,static_cast<unsigned>(integer(get(unit,"map")))});++s.name_count;
     return Packet{"CMSG_PET_NAME_QUERY",Writer().pack("IQ",{number,guid}).finish()};
 }
+Reply pet_aura_cancel(Protocol const &p, State &owner, View body)
+{
+    Reader r(body);auto spell=r.take<std::uint32_t>();
+    if(spell!=6307)return {};
+    Value const *aura=nullptr;
+    for(auto const &[slot,entry]:owner.visible_auras)
+        if(integer(get(entry,"spell"))==spell)
+        {
+            if(aura)throw std::runtime_error("ambiguous visible Blood Pact aura");
+            aura=&entry;
+        }
+    if(!aura)return {};
+    auto guid=integer(get(*aura,"caster"));
+    if(guid==owner.guid())return {};
+    auto caster=r.guid();r.end();
+    // UI133 stock owner-buff cancellation submits the player GUID. Resolve
+    // its native area-aura owner only through current pet/control authority.
+    auto canonical=Writer().put(spell).guid(owner.guid(),player_high()).finish();
+    if(caster!=Array{owner.guid(),player_high()} ||
+       body.size()!=canonical.size() || !std::equal(body.begin(),body.end(),canonical.begin()))
+        throw std::runtime_error("unsupported pet-owned aura cancellation shape");
+    auto found=owner.visible_units.find(guid);
+    if(!owner.created || owner.character.is_null() || !owner.pet_state ||
+       owner.pet_state->controlled_guid!=guid || found==owner.visible_units.end() ||
+       integer(get(found->second,"kind"))!=3 || guid>>52!=0xf14 ||
+       !p.field(found->second,"UNIT_FIELD_PETNUMBER") ||
+       !p.field(found->second,"UNIT_FIELD_HEALTH") ||
+       field_guid(p,found->second,"UNIT_FIELD_SUMMONEDBY")!=owner.guid() ||
+       owner.self_snapshot.is_null() || field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=guid ||
+       !(integer(get(*aura,"flags"))&16) ||
+       owner.pet_state->controlled_buttons[4]!=0xc10018a3u ||
+       !owner.pet_state->controlled_autocast.contains(spell))
+        throw std::runtime_error("pet-owned aura cancellation lacks current native authority");
+    return Packet{"CMSG_PET_CANCEL_AURA",Writer().pack("QI",{guid,spell}).finish()};
+}
 PetActionTranslation translate_pet_action(Protocol const &p, State &owner, View body)
 {
     // A rejected translation sends no native command and keeps the healthy
