@@ -13,3 +13,5 @@ The recovery adapter passes17 focused checks, including the actual UI123 request
 Custom scripts remain blocked by the user's choice; passive addon Lua runs normally. Original softTargetInteract0 remains unrestored at1. The script-permission boundary does not cause the Follow failure.
 
 Coverage remains431/916, with485 operations open. Next, repair the captured Follow translation while preserving native catalog and owner authority, keep rejected pet commands from closing a healthy session, and capture Stay before admitting its shape. Fresh native movement and public mode outcomes with complete restoration are required before either command qualifies. Earlier failures remain in the [Summon report](interactions_20261006_pet_summon.md) and its linked predecessors.
+
+DVC123 remote/archive review verifies31 JSON/37 attributed images;91732082 bytes,SHA256a4d3a1a5534952b83ecf005e4a925ddf45ce1ab707fda58de132f1d952fb9a38,MD5f54b8887e4f80e5637fdba02f3ebeb85.43 PNG/66812481 bytes and exact archive/cache offloaded; scoped DVC status records intentional missing cache and push confirms up to date.
