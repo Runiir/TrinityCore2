@@ -13,7 +13,7 @@ from .interaction_spellbook_professions import skills
 from .interaction_spellbook_actions import saved_actions
 from .observation.inventory import Inventory
 from .interaction_spellbook_recon import resources
-from .observation.journal import Cursor
+from .observation.journal import Cursor,entries
 
 
 SCRIPT_BOUNDARY={'original':'0','current_stock_disabled':'1','original_restored':False}
@@ -182,6 +182,38 @@ def park(t,path):
             'original account roster is intentionally expanded, not restored.')
 
 
+def settled_entry(t,path,failed_path):
+    old=prepared(t,path);failed_path=failed_path.resolve()
+    if failed_path.name!='episode.json' or not failed_path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires a closed owned failed entry')
+    failed=json.loads(failed_path.read_text())
+    if (failed.get('completed') or failed.get('failure')!='RuntimeError: interaction fixture is unsafe' or
+        not failed.get('finished_at') or failed.get('phase')!='owned_class_entry_started' or
+        failed.get('actor')!=t.fixture or failed.get('runtime')!=t.receipt['runtime'] or
+        failed.get('fixture_source',{}).get('sha256')!=lab.sha256(path) or
+        (t.fixture['character_name'],t.fixture['class'],t.fixture['level'])!=('Harnessctrl',9,10) or
+        character(t.fixture['guid'],t.fixture['account_id'])['online']!=1):
+        raise RuntimeError('failed eligible entry differs; never replay login input')
+    session=actors.session_entry(t.fixture)['session']
+    login=[{k:r[k] for k in ['time','session','name','direction']} for r in entries(lab.ROOT/'evidence/world_packets.jsonl')
+        if r.get('session')==session and failed['started_at']<=r.get('time',0)<=failed['finished_at'] and
+        r.get('name') in ['CMSG_PLAYER_LOGIN','SMSG_LOGIN_VERIFY_WORLD']]
+    state,frame=t.observe('entry_settled')
+    oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll();checks=origin_checks(old)
+    checks.update(owned_name=state['player']=='Harnessctrl' and state['level']==10,solo=state['group']['members']==0,
+        no_lua_errors=not state.get('lua_errors'),no_blocked_actions=not state.get('blocked_actions'),
+        ordinary_login=any(r['name']=='CMSG_PLAYER_LOGIN' and r['direction']=='from_client' for r in login),
+        native_login=any(r['name']=='SMSG_LOGIN_VERIFY_WORLD' and r['direction']=='from_native' for r in login))
+    t.receipt.update(failed_entry_source={'path':str(failed_path),'sha256':lab.sha256(failed_path)},
+        checks=checks,native_session=session,login_packets=login,state=state,frame=frame,
+        entered_native=character(t.fixture['guid'],t.fixture['account_id']),entered_saved=saved(t.fixture['guid']),
+        resources=resources(oracle),input_sent=False,phase='owned_class_entered',
+        qualified_scope='Read-only settling of the actual earlier ordinary entry; failed whole entry stays excluded. '
+            'No extra login, health grant or gameplay qualification.')
+    if not all(checks.values()):raise RuntimeError('settled entry or original preservation differs')
+    t.receipt['completed']=True
+
+
 def finish(t,path,review_path):
     old=prepared(t,path,True);d=reviewed(t,review_path,'Harnesstwo')
     if (d.get('selected_character'),d.get('selected_level'))!=('Harnesstwo',1):
@@ -194,12 +226,14 @@ def finish(t,path,review_path):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','capture','lobby','enter','park','finish'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','capture','lobby','enter','settle-enter','park','finish'])
     p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--returning',action='store_true')
+    p.add_argument('--failed-source',type=Path)
     p.add_argument('--stage',choices=['dismiss','reconnect','realm','character']);a=p.parse_args()
     if a.action in ['prepare','lobby','enter','finish'] and not a.review:p.error('requires a fresh owned visual review')
     if a.action=='lobby' and not a.stage:p.error('requires one reviewed lobby stage')
+    if a.action=='settle-enter' and not a.failed_source:p.error('requires the closed failed entry')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
@@ -208,6 +242,7 @@ if __name__=='__main__':
             elif a.action=='capture':capture(t,a.source,a.returning)
             elif a.action=='lobby':lobby(t,a.source,a.review,a.stage,a.returning)
             elif a.action=='enter':enter(t,a.source,a.review)
+            elif a.action=='settle-enter':settled_entry(t,a.source,a.failed_source)
             elif a.action=='park':park(t,a.source)
             else:finish(t,a.source,a.review)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
