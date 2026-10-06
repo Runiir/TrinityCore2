@@ -1,0 +1,253 @@
+{
+  "adapter_sha256": "1f831b63969885d26816baaab785e11d167ab3327155bf86463abf98c53d19a1",
+  "archive_sha256": "4f479b20328cdec23bdd586bb6005ccbbaddb19fc9e623f09c20b3c1303a795b",
+  "artifact": "artifacts/client_harness/archeolog_v0_20261006.tar.gz",
+  "audit": {
+    "actions": {
+      "forward_long": 10,
+      "forward_short": 8,
+      "loot": 12,
+      "mouseover_interact": 1,
+      "survey": 3,
+      "turn_left": 12,
+      "turn_right": 17
+    },
+    "archives": 36,
+    "candidate_occurrences": 1775,
+    "deduplicated_inputs": 63,
+    "missing_site_ids_by_split": {
+      "test": 8,
+      "train": 1,
+      "validation": 0
+    },
+    "quarantine_reasons": {
+      "missing_before_or_after_observation": 48,
+      "missing_original_candidates": 41,
+      "no_measured_approach": 62,
+      "no_measured_bearing_improvement": 29,
+      "no_reviewed_outcome_verifier": 209,
+      "pickup_not_independently_attributed": 12,
+      "runtime_or_action_failure": 212,
+      "stale_or_nonmonotonic_observations": 24,
+      "stale_public_channel": 25,
+      "survey_not_fresh_or_not_successful": 62
+    },
+    "quarantine_unique": 724,
+    "site_overlap_train_purged_count": 10,
+    "split_actions": {
+      "test": {
+        "forward_long": 5,
+        "loot": 10,
+        "mouseover_interact": 1,
+        "survey": 2,
+        "turn_left": 1,
+        "turn_right": 1
+      },
+      "train": {
+        "forward_long": 5,
+        "forward_short": 6,
+        "loot": 2,
+        "turn_left": 9,
+        "turn_right": 11
+      },
+      "validation": {}
+    },
+    "split_counts": {
+      "test": 20,
+      "train": 33,
+      "validation": 0
+    },
+    "split_known_sites": {
+      "test": [
+        179,
+        201,
+        315,
+        321,
+        578
+      ],
+      "train": [
+        183,
+        187,
+        331,
+        493
+      ],
+      "validation": []
+    },
+    "unique_measured_outcome_actions": 466,
+    "verifiers": {
+      "fresh_successful_survey": 3,
+      "interaction_fragment_increase": 13,
+      "retained_destination_approach": 18,
+      "retained_destination_bearing": 29
+    }
+  },
+  "autonomous_improvement_proven": false,
+  "baseline": {
+    "accuracy": 0.45,
+    "brier": 0.7506240777671337,
+    "by_action": {
+      "forward_long": {
+        "accuracy": 0.2,
+        "count": 5
+      },
+      "loot": {
+        "accuracy": 0.3,
+        "count": 10
+      },
+      "mouseover_interact": {
+        "accuracy": 1,
+        "count": 1
+      },
+      "survey": {
+        "accuracy": 1,
+        "count": 2
+      },
+      "turn_left": {
+        "accuracy": 1,
+        "count": 1
+      },
+      "turn_right": {
+        "accuracy": 1,
+        "count": 1
+      }
+    },
+    "by_task": {
+      "fresh_successful_survey": {
+        "accuracy": 1,
+        "count": 2
+      },
+      "interaction_fragment_increase": {
+        "accuracy": 0.36363636363636365,
+        "count": 11
+      },
+      "retained_destination_approach": {
+        "accuracy": 0.2,
+        "count": 5
+      },
+      "retained_destination_bearing": {
+        "accuracy": 1,
+        "count": 2
+      }
+    },
+    "count": 20,
+    "ece": 0.25605257973074913,
+    "nll": 1.5947885632514953
+  },
+  "bytes": 48827615,
+  "calibration_comparison_limit": "Baseline uses original parent option-bucket temperatures; candidate uses uncalibrated temperature 1. There is no independent validation data for calibration.",
+  "candidate": {
+    "accuracy": 0.45,
+    "brier": 0.7231301795691252,
+    "by_action": {
+      "forward_long": {
+        "accuracy": 0.2,
+        "count": 5
+      },
+      "loot": {
+        "accuracy": 0.3,
+        "count": 10
+      },
+      "mouseover_interact": {
+        "accuracy": 1,
+        "count": 1
+      },
+      "survey": {
+        "accuracy": 1,
+        "count": 2
+      },
+      "turn_left": {
+        "accuracy": 1,
+        "count": 1
+      },
+      "turn_right": {
+        "accuracy": 1,
+        "count": 1
+      }
+    },
+    "by_task": {
+      "fresh_successful_survey": {
+        "accuracy": 1,
+        "count": 2
+      },
+      "interaction_fragment_increase": {
+        "accuracy": 0.36363636363636365,
+        "count": 11
+      },
+      "retained_destination_approach": {
+        "accuracy": 0.2,
+        "count": 5
+      },
+      "retained_destination_bearing": {
+        "accuracy": 1,
+        "count": 2
+      }
+    },
+    "count": 20,
+    "ece": 0.17177103236317637,
+    "nll": 1.5132927618920804
+  },
+  "closed_at": 1791275600.0888731,
+  "code_commit": "782580e3864256f35bbb3e76fb1b9ea9d1a29901",
+  "context": {
+    "both_fit_count": 12,
+    "count": 12,
+    "coverage": {
+      "focused_1024": {
+        "scored": 12
+      },
+      "full_1024": {
+        "scored": 12
+      },
+      "full_2048": {
+        "scored": 12
+      }
+    },
+    "disagreements": 0,
+    "interpretation": "Identical-candidate CPU parent-model comparison. Only the recorded action has an observed transition; disagreement alone does not establish a regression, and no alternate-action counterfactual outcome exists."
+  },
+  "context_sampling_limit": "Paired rows are adjacent snapshots of one travel situation. None has an admitted independently attributed action outcome; they establish identical-candidate agreement only.",
+  "cpu_decision_latency_seconds": {
+    "count": 53,
+    "median": 0.9106424300116487,
+    "p95": 3.2320945549872704
+  },
+  "dataset_sha256": "8f2f33cfb5b9c6412fadd0cc19e3310d301e299459873dc480ae44caf3ef9611",
+  "dvc_pointer": "artifacts/client_harness/archeolog_v0_20261006.tar.gz.dvc",
+  "earlier_attempt_failure": "Meta initialization omitted deterministic rotary buffers; corrected before the completed run.",
+  "feature_cache_bytes": 1441792,
+  "interpretation": "Small nonrandom historical positive-outcome SFT pilot. Accuracy is agreement with successful observed actions, not counterfactual optimality or live success. Missing task coverage and intervention attribution prevent promotion.",
+  "local_status_after_offload": {
+    "artifacts/client_harness/archeolog_v0_20261006.tar.gz.dvc": [
+      {
+        "changed outs": {
+          "artifacts/client_harness/archeolog_v0_20261006.tar.gz": "not in cache"
+        }
+      }
+    ]
+  },
+  "local_status_before_offload": {},
+  "maximum_rss_mib": 3098.71484375,
+  "model": "archeolog-v0",
+  "post_offload_status_interpretation": "DVC reports a local/remote difference after intentional workspace/cache pruning. The exact remote object remains present and verified; cloud status was empty before pruning.",
+  "promoted": false,
+  "remote_cloud_status": {},
+  "remote_cloud_status_after_offload": {
+    "artifacts/client_harness/archeolog_v0_20261006.tar.gz": "deleted"
+  },
+  "remote_md5": "6d30e2a802b13cac6686e136cffc9f41",
+  "remote_object_verification_after_offload": {
+    "bytes": 48827615,
+    "etag_matches_md5": true,
+    "exists": true,
+    "md5": "6d30e2a802b13cac6686e136cffc9f41",
+    "remote_object_deleted": false
+  },
+  "schema": "archeolog_offline_pilot_summary_v1",
+  "served": false,
+  "tests": {
+    "archeolog_admission_passed": 12
+  },
+  "training_kind": "outcome_filtered_supervised_warm_start",
+  "true_rlvr": false,
+  "trusted_unassisted_rlvr_trajectories": 0
+}
