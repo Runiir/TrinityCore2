@@ -1,0 +1,301 @@
+{
+  "source": {
+    "episode_sha256": "ddb92307defee42dff310007dc34c179e622eefe2bb5e0e0bbdbb3140a07b5e6",
+    "spell_rows_sha256": "659bfde54ba4b3a2e11bdc281a47c562f66d93a021290b846534858679905db7",
+    "failed_whole_trial": true
+  },
+  "book": {
+    "book_type": "pet",
+    "book_types": {
+      "pet": "pet",
+      "profession": "professions",
+      "spell": "spell"
+    },
+    "chat_link_dispatch": true,
+    "flyout": {
+      "buttons": {},
+      "visible": false
+    },
+    "lifecycle": {
+      "events": {},
+      "transitions": {}
+    },
+    "max_pages": 1,
+    "page": 1,
+    "page_text": "Page 1",
+    "pages": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 1
+    },
+    "pet": {
+      "exists": true,
+      "guid": "Pet-0-1-0-0-416-000000000E",
+      "max_power": 298,
+      "name": "Yaztog",
+      "power": 298,
+      "power_type": 0
+    },
+    "rows": [
+      {
+        "action": 50331651,
+        "api_id": 50331651,
+        "api_kind": "PETACTION",
+        "button": "SpellButton1",
+        "kind": "PETACTION",
+        "name": "Assist",
+        "passive": false,
+        "rank": "Pet Stance",
+        "shown_name": "Assist",
+        "slot": 1,
+        "trainer": false
+      },
+      {
+        "action": 58720257,
+        "api_id": 58720257,
+        "api_kind": "PETACTION",
+        "button": "SpellButton2",
+        "kind": "PETACTION",
+        "name": "Follow",
+        "passive": false,
+        "rank": "Pet Command",
+        "shown_name": "Follow",
+        "slot": 7,
+        "trainer": false
+      },
+      {
+        "action": 58720258,
+        "api_id": 58720258,
+        "api_kind": "PETACTION",
+        "button": "SpellButton3",
+        "kind": "PETACTION",
+        "name": "Attack",
+        "passive": false,
+        "rank": "Pet Command",
+        "shown_name": "Attack",
+        "slot": 2,
+        "trainer": false
+      },
+      {
+        "action": 58720260,
+        "api_id": 58720260,
+        "api_kind": "PETACTION",
+        "button": "SpellButton4",
+        "kind": "PETACTION",
+        "name": "Move To",
+        "passive": false,
+        "rank": "Pet Command",
+        "shown_name": "Move To",
+        "slot": 8,
+        "trainer": false
+      },
+      {
+        "action": 8420841,
+        "api_id": 8420841,
+        "api_kind": "PETACTION",
+        "button": "SpellButton5",
+        "id": 32233,
+        "kind": "PETACTION",
+        "known": true,
+        "name": "Avoidance",
+        "passive": true,
+        "rank": "Passive",
+        "shown_name": "Avoidance",
+        "shown_rank": "Passive",
+        "slot": 3,
+        "trainer": false
+      },
+      {
+        "action": 50331648,
+        "api_id": 50331648,
+        "api_kind": "PETACTION",
+        "button": "SpellButton6",
+        "kind": "PETACTION",
+        "name": "Passive",
+        "passive": false,
+        "rank": "Pet Stance",
+        "shown_name": "Passive",
+        "slot": 9,
+        "trainer": false
+      },
+      {
+        "action": 3229620387,
+        "api_id": 3229620387,
+        "api_kind": "PETACTION",
+        "button": "SpellButton7",
+        "id": 6307,
+        "kind": "PETACTION",
+        "known": true,
+        "name": "Blood Pact",
+        "passive": false,
+        "rank": "Special Ability",
+        "shown_name": "Blood Pact",
+        "shown_rank": "Special Ability",
+        "slot": 4,
+        "trainer": false
+      },
+      {
+        "action": 58720256,
+        "api_id": 58720256,
+        "api_kind": "PETACTION",
+        "button": "SpellButton8",
+        "kind": "PETACTION",
+        "name": "Stay",
+        "passive": false,
+        "rank": "Pet Command",
+        "shown_name": "Stay",
+        "slot": 10,
+        "trainer": false
+      },
+      {
+        "action": 50331649,
+        "api_id": 50331649,
+        "api_kind": "PETACTION",
+        "button": "SpellButton9",
+        "kind": "PETACTION",
+        "name": "Defensive",
+        "passive": false,
+        "rank": "Pet Stance",
+        "shown_name": "Defensive",
+        "slot": 5,
+        "trainer": false
+      },
+      {
+        "button": "SpellButton10",
+        "passive": true,
+        "shown_name": "Mr. Popularity",
+        "shown_rank": "Rank 2",
+        "trainer": false
+      },
+      {
+        "action": 3229617190,
+        "api_id": 3229617190,
+        "api_kind": "PETACTION",
+        "button": "SpellButton11",
+        "id": 3110,
+        "kind": "PETACTION",
+        "known": true,
+        "name": "Firebolt",
+        "passive": false,
+        "rank": "Basic Attack",
+        "shown_name": "Firebolt",
+        "shown_rank": "Basic Attack",
+        "slot": 6,
+        "trainer": false
+      },
+      {
+        "button": "SpellButton12",
+        "passive": true,
+        "shown_name": "Reinforce",
+        "shown_rank": "Rank 2",
+        "trainer": false
+      }
+    ],
+    "skill_line": 1,
+    "tabs": [
+      {
+        "checked": true,
+        "count": 27,
+        "guild": false,
+        "hidden": false,
+        "index": 1,
+        "name": "General",
+        "offset": 0,
+        "offspec": 0
+      },
+      {
+        "checked": false,
+        "count": 14,
+        "guild": false,
+        "hidden": false,
+        "index": 2,
+        "name": "Affliction",
+        "offset": 27,
+        "offspec": 0
+      },
+      {
+        "checked": false,
+        "count": 27,
+        "guild": false,
+        "hidden": false,
+        "index": 3,
+        "name": "Demonology",
+        "offset": 41,
+        "offspec": 0
+      },
+      {
+        "checked": false,
+        "count": 9,
+        "guild": false,
+        "hidden": false,
+        "index": 4,
+        "name": "Destruction",
+        "offset": 69,
+        "offspec": 0
+      }
+    ],
+    "tooltip": {
+      "always_compare": false,
+      "line_count": 1,
+      "lines": [
+        {
+          "left": "Pet |cffffd100(SHIFT-I)|r"
+        }
+      ],
+      "owner": "SpellBookFrameTabButton3",
+      "shift_down": false,
+      "visible": true
+    },
+    "visible": true
+  },
+  "native_catalog": {
+    "guid": 17383896348356509710,
+    "family": 23,
+    "duration": 0,
+    "react": 3,
+    "command": 1,
+    "flags": 0,
+    "buttons": [
+      117440514,
+      117440513,
+      117440516,
+      3238005798,
+      3238008995,
+      16777216,
+      16777216,
+      100663299,
+      100663297,
+      100663296
+    ],
+    "actions": [
+      16868918,
+      16809449,
+      3238008995,
+      3238005798
+    ],
+    "cooldowns": []
+  },
+  "spell_rows": {
+    "3110": {
+      "id": 3110,
+      "name": "Firebolt",
+      "attributes": 65536
+    },
+    "6307": {
+      "id": 6307,
+      "name": "Blood Pact",
+      "attributes": 65536
+    },
+    "32233": {
+      "id": 32233,
+      "name": "Avoidance",
+      "attributes": 134545488
+    },
+    "91702": {
+      "id": 91702,
+      "name": "Tamed Pet Passive 07 (DND)",
+      "attributes": 262608
+    }
+  }
+}
