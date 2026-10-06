@@ -9,6 +9,7 @@ from .observe import observe
 
 RETRYABLE=(
     'selected client action invalidated',
+    'client changed, casting started, or supervisor moved before input',
     'selected client action readiness timed out',
     'character or owned client unavailable for UI input',
     'continuous waypoint exceeded its calculated emergency bound',

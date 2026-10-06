@@ -207,7 +207,6 @@ def run(args):
             if graph and action!='observe':step['graph_transition']=farm_graph.transition(graph,action,before,pending=value)
             fresh=observe(folder/'precheck.png')
             if (not healthy(fresh) or fresh['runtime']!=before['runtime']
-                    or (fresh['source']=='normal_public_addon_api_rendered_pixels' and fresh['movement']['sequence']==m['sequence'])
                     or distance(a['world'],fresh['archaeology']['world'])>.15
                     or abs((fresh['movement']['facing_radians']-m['facing_radians']+math.pi)%math.tau-math.pi)>.03
                     or fresh['archaeology']['casting']):
