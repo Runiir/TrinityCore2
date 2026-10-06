@@ -42,7 +42,16 @@ def matching_marker(row, session, tool):
         tolerance=math.radians(10 if tool['entry']==204272 else 20 if tool['entry']==206589 else 25)
         if abs(projection-along)<=1 and across<=max(8,projection*math.tan(tolerance)):
             candidates.append((abs(projection-along),across,target))
-    if not candidates:return None
+    if not candidates:
+        # The helper can know a saved marker beyond the minimap's radius.
+        # Its public candidate position retains the actual lateral offset.
+        point=public.get('candidate_world')
+        if not point or point.get('instance')!=world['instance']:return None
+        marker_id='addon:'+','.join(str(round(point[k],2)) for k in ('north','west'))
+        if marker_id in session.get('failed_marker_ids',[]):return None
+        return {'source':'GatherMate marker','world':point,'marker_id':marker_id,
+            'recorded_marker_matches':True,'survey_observed_at':tool['observed_at'],
+            'marker_position_source':'public Canopic Helper saved candidate'}
     target=min(candidates,key=lambda item:item[:2])[2]
     return {**target,'recorded_marker_matches':True,'survey_observed_at':tool['observed_at']}
 

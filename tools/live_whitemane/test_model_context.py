@@ -9,7 +9,7 @@ def test_expanded_budget_respects_real_encoder_capacity():
     agent=SimpleNamespace(cfg={'max_len':1024},model=SimpleNamespace(
         encoder=SimpleNamespace(config=SimpleNamespace(max_position_embeddings=8192))))
     limits=model.context_limits(agent)
-    assert agent.cfg=={'max_len':2048,'head_max_len':512}
+    assert agent.cfg=={'max_len':2048,'head_max_len':768}
     assert limits['encoder_context_limit']==8192
     with pytest.raises(ValueError):model.context_limits(agent,9000)
     with pytest.raises(ValueError):model.context_limits(agent,1024,2048)

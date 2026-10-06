@@ -19,6 +19,8 @@ function WhitemaneLiveActivity()
     if bearing and bearing.at and time()-bearing.at<=20 then
         guidance={at=bearing.at,site_id=bearing.siteID,color=bearing.color,
             candidate_matches=not not bearing.candidate,candidate_along_yards=bearing.candidateAlong,
+            candidate_world=bearing.candidateWorld,boundary_first_exit=bearing.boundaryFirstExit,
+            boundary_clipped=not not bearing.boundaryClipped,unclipped_length_yards=bearing.unclippedLength,
             range_min_yards=bearing.rangeMin,range_max_yards=bearing.rangeMax,
             displayed_length_yards=bearing.length,minimum_capped=not not bearing.minimumCapped}
     end
@@ -38,6 +40,7 @@ function WhitemaneLiveActivity()
     if type(gcd)=='table' then gcdStart,gcdDuration=gcd.startTime,gcd.duration end
     local enemies=call(WhitemaneLiveCombatFacts) or {}
     return {activity_schema='whitemane_public_activity_v2',
+        survey_guidance_schema='saved_candidate_boundary_v2',
         combat_facts_schema=enemies.schema,
         terrain_environment={schema='public_environment_v1',indoors=call(IsIndoors),
             outdoors=call(IsOutdoors),submerged=call(IsSubmerged)},

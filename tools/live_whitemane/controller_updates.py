@@ -11,7 +11,7 @@ COMPONENTS=('guide','camera_steering','camera_navigation','fast_waypoint','smoot
     'flight','combat_target','combat','dig_context','dig_decisions','pickup_intent',
     'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find',
     'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal','taxi','ground_jump','controller_updates','interaction_search',
-    'laya_ui','decisions','portal_view')
+    'laya_ui','decisions','portal_view','sticky_input','boundaries','route_facts')
 
 
 class SourceUpdates:

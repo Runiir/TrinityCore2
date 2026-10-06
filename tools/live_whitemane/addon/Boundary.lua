@@ -2,6 +2,7 @@
 local _, A = ...
 local data = A.liveBoundaryData
 if not data or not A.direction then return end
+A.liveBoundarySchema = 'first_exit_with_candidate_v2'
 local function contains(polygon, n, w)
     local inside = false
     for i, a in ipairs(polygon) do
@@ -57,7 +58,11 @@ function A.direction.Import(text)
     end
     b.boundaryVerified = true
     local lastObservation = A.db.surveyBearings and A.db.surveyBearings[#A.db.surveyBearings]
-    if lastObservation then lastObservation.boundaryVerified = true end
+    if lastObservation then
+        lastObservation.boundaryVerified = true
+        lastObservation.candidateWorld = b.candidate and (b.candidate.world or A.nav.World(b.candidate))
+        lastObservation.boundaryFirstExit = length < b.length
+    end
     if length < b.length then
         b.boundaryClipped, b.unclippedLength, b.length = true, b.length, length
         local point = b.endpoint

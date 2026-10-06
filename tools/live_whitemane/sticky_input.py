@@ -43,9 +43,14 @@ class StickyInput:
             if on and self.interrupted:raise RuntimeError(self.interrupted)
             if on and name not in self.held:
                 self.send(name,True);self.held[name]=None if seconds is None else self.clock()+seconds
-            elif on and seconds is not None:
-                deadline=self.clock()+seconds
-                if self.held[name] is None or deadline<self.held[name]:self.held[name]=deadline
+            elif on:
+                # Returning to a continuous hold cancels an earlier short
+                # pulse without another key press. A final pulse may still
+                # shorten an existing predicted stop time.
+                if seconds is None:self.held[name]=None
+                else:
+                    deadline=self.clock()+seconds
+                    if self.held[name] is None or deadline<self.held[name]:self.held[name]=deadline
             elif not on and name in self.held:
                 self.send(name,False);del self.held[name]
 

@@ -185,7 +185,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if m['sequence']<=look_sequence:continue
                 pixels,receipt['camera_steering']=steering.update(m['facing_radians'],m['client_uptime_ms'],
                     error,distance,tolerance)
-                vertical=0;pitch_ready=True
+                vertical=0;pitch_ready=True;horizontal_fraction=1
                 if flying or swimming:
                     pose=row.get('owned_pose');pitch_ready=False
                     if pose and pose.get('pitch_radians') is not None:
@@ -199,7 +199,8 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                         vertical,receipt['pitch_steering']=pitch_steering.update(pitch,m['client_uptime_ms'],
                             desired_pitch-pitch,distance,4)
                         pitch_ready=abs(desired_pitch-pitch)<math.pi/2
-                        speed*=max(.01,math.cos(pitch))
+                        horizontal_fraction=max(.01,math.cos(pitch))
+                        speed*=horizontal_fraction
                 if vertical and not pixels:
                     # A stationary aircraft may not send a new movement-pitch
                     # packet for camera tilt alone. A one-pixel yaw component
@@ -218,7 +219,13 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     # arrival, a calculated pulse ends independently of the
                     # next observation or model request.
                     age=max(row['channel_ages']['M'],row['channel_ages'].get('A',0))
-                    remaining=(distance-tolerance-m['speed']*age)/speed
+                    # GetUnitSpeed reports the full flight/swim speed. A
+                    # steep descent covers only its horizontal projection.
+                    # Subtracting full speed for a delayed map sample made
+                    # a productive descent look past its horizontal goal.
+                    progress_speed=m['speed']*horizontal_fraction*max(0,math.cos(error))
+                    remaining=(distance-tolerance-progress_speed*age)/speed
+                    receipt['horizontal_progress_speed']=progress_speed
                     # A pulse shorter than one observed client update can be
                     # pressed and released without the game seeing movement.
                     # Quantize close pulses to the measured sampling interval.

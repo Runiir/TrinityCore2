@@ -55,3 +55,12 @@ def test_waiting_for_the_first_observation_has_no_active_input_to_expire():
     sticky.renew();sticky.hold('Up',True)
     now[0]=1.36;sticky.tick()
     assert sticky.interrupted and events==[('press','Up'),('release','Up')]
+
+
+def test_a_fresh_continuous_hold_cancels_the_old_pulse_but_keeps_the_feed_lease():
+    sticky,events,now=controller();sticky.hold('Up',True,.1)
+    now[0]=.05;sticky.renew();sticky.hold('Up',True)
+    now[0]=.15;sticky.tick()
+    assert events==[('press','Up')] and 'Up' in sticky.held
+    now[0]=.41;sticky.tick()
+    assert events==[('press','Up'),('release','Up')] and sticky.interrupted

@@ -2,7 +2,7 @@
 import math
 import json
 from pathlib import Path
-from . import laya_ui,pending_find,dig_decisions,world_facts
+from . import laya_ui,pending_find,dig_decisions,world_facts,route_facts
 from .intent_queue import IntentQueue
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
@@ -105,6 +105,7 @@ def choose(row,batches,session):
             try:dig_guide,_=guide.select(row,dig,dig_session.telescope(row,dig))
             except RuntimeError as error:guide_error=str(error)
     options=legal_actions(row,batches,dig_guide,ground_approach_blocked=ground_blocked)
+    next_leg,options=route_facts.describe(ui.get('route') or {},options)
     queued=IntentQueue(session).retained(row,options)
     if queued:return queued
     if len(options)==1:return 'wait',None,{'only_legal_action':'wait'}
@@ -130,6 +131,8 @@ def choose(row,batches,session):
         for step in previous)
     observed=world_facts.reduce(row,row.get('pending_find'))
     state={'goal':'Find the Vial of the Sands recipe' if session.get('stop_on')=='recipe' else 'Find a Canopic Jar; leave it unopened',
+        'task':next_leg['task'] if observed['activity']=='travel' else observed['activity'],
+        'addon_next_leg':next_leg,
         'activity':observed['activity'],'map_id':m['map_id'],
         'portal_distance_yards':observed['facts']['portal_distance_yards'],
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
@@ -171,7 +174,9 @@ def choose(row,batches,session):
         'Follow the current route instruction through Tol Barad and Orgrimmar to the next digsite. '
         'When the teleport shortcut is pending, use Tol Barad and its Orgrimmar portal before approaching the distant flight master. '
         'Land first for a stationary teleport. Check remaining minimap blips before leaving a completed site. '
-        'Follow the addon next leg and lower known taxi fare for instant flights. Another nearby portal can lead to a more expensive route. '
+        'Follow the addon next leg and lower known taxi fare for instant flights. '
+        'If the current leg is reaching a flight master, choose movement to that flight master. '
+        'Another nearby portal can lead to a more expensive route and does not complete this leg. '
         'If the selected portal approach is blocked, fly to that entrance and land. Learn from the last failure.',
         {k:v[0] for k,v in options.items()})
     action=dig_decisions.explore(action,response,options,state)

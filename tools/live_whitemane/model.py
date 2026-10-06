@@ -8,7 +8,7 @@ import time
 import copy
 
 
-def context_limits(agent,maximum=2048,question_maximum=512):
+def context_limits(agent,maximum=2048,question_maximum=768):
     supported=agent.model.encoder.config.max_position_embeddings
     if not 512<=question_maximum<=maximum<=supported:
         raise ValueError('live context limits exceed encoder capacity or question budget')
@@ -129,7 +129,7 @@ def main():
     parser.add_argument('--adapter',type=Path,required=True)
     parser.add_argument('--travel-adapter',type=Path,required=True)
     parser.add_argument('--context-tokens',type=int,default=2048)
-    parser.add_argument('--question-tokens',type=int,default=512)
+    parser.add_argument('--question-tokens',type=int,default=768)
     args=parser.parse_args()
     if not 1024<=args.port<=65535: raise ValueError('invalid loopback port')
     serve(args)

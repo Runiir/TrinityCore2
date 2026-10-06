@@ -127,6 +127,31 @@ def test_a_new_artifact_interrupts_the_retained_approach_for_a_model_choice(monk
     assert events.count(('button_release',3))==1
 
 
+def test_steep_descent_keeps_forward_held_with_delayed_public_map_samples(monkeypatch,tmp_path):
+    # Live step 34 descended at -1.42 radians. Full speed was incorrectly
+    # subtracted from horizontal distance, causing repeated 33-ms presses.
+    r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,16.4)
+    r['movement']['speed']=29.26;r['farm_ui']['frame_rate']=30
+    from . import flight_path
+    monkeypatch.setattr(flight_path,'aim',lambda *_:{'pitch_radians':-1.42})
+    count=[0]
+    def observe(_):
+        count[0]+=1;now[0]+=.1;controllers[0].tick()
+        fresh=copy.deepcopy(r);fresh['observed_at']=now[0]
+        fresh['movement'].update(sequence=count[0],client_uptime_ms=count[0]*100)
+        fresh['archaeology']['sequence']=count[0]
+        fresh['owned_pose']={'pitch_radians':-1.42,'height_yards':100,'client_uptime_ms':count[0]*100}
+        fresh['channel_ages']['A']=[.075,.175,.3,.375][count[0]%4]
+        fresh['archaeology']['world']['north']=16.4-max(0,count[0]-2)*.44 if count[0]<18 else 5.5
+        return fresh
+    monkeypatch.setattr(fast_waypoint,'observe',observe)
+    result=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True,
+        guidance={'flight_path':[{}]},approved_intent=('cruise',{}, {},{}))
+    assert result[-1]['outcome']=='waypoint_arrived' and not calls
+    assert events.count(('press','Up'))==events.count(('release','Up'))==1
+    assert max(x['horizontal_progress_speed'] for x in result if 'horizontal_progress_speed' in x)<5
+
+
 def test_short_on_foot_fall_releases_forward_then_resumes_the_same_intent(monkeypatch,tmp_path):
     r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,20)
     r['archaeology'].update(flying=False,mounted=False,grounded=True)

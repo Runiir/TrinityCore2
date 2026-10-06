@@ -116,3 +116,15 @@ def test_measured_turn_crossing_zero_times_one_full_turn():
     assert abs(duration-2/3)<.00001
     assert abs(calibration['radians_per_second']-3.3)<.00001
     assert duration>.3
+
+
+def test_saved_addon_candidate_beyond_minimap_keeps_its_actual_position():
+    origin={'instance':1,'north':0,'west':0}
+    target={'instance':1,'north':203,'west':8}
+    row={'movement':{'facing_radians':0},'archaeology':{'world':origin,'visible_markers':[],
+        'arrow':{'observed_at':100,'boundary_verified':True,'origin':origin,'heading_radians':0,
+            'endpoint':origin}},'farm_ui':{'survey_guidance':{'at':100,'candidate_matches':True,
+                'candidate_along_yards':203,'candidate_world':target}}}
+    result,_=guide.select(row,{}, {'entry':206590,'observed_at':100,'facing_radians':0})
+    assert result['source']=='GatherMate marker' and result['world']==target
+    assert result['distance_yards']>203 and not result['arrived']
