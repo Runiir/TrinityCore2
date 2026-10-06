@@ -42,7 +42,7 @@ def packets(o,since):
         and since<=p.get('time',0)<=time.time() and p.get('name') in names]
 
 
-def restore(t,o,inventory,old):
+def restore(t,o,inventory,old,before_whole=None):
     t.clean_panels();since=time.time()
     def followed(b,a,s):
         o.poll();sample=read(t,'moveto_follow_restored');checks=command_checks(packets(o,since),o.pet,1)
@@ -56,7 +56,10 @@ def restore(t,o,inventory,old):
             {'follow':{'kind':'chat','value':'/petfollow'}},followed,diagnostic_action='follow'),
             'owned_native_follow_cleanup_pass')
         mode(t,o,3,'fixture.pet_assist_restore')
-    finally:whole_restore(t,o,inventory,old,t.receipt['baseline'])
+    finally:
+        try:
+            if before_whole is not None:before_whole()
+        finally:whole_restore(t,o,inventory,old,t.receipt['baseline'])
 
 
 def begin(t,preparation,entry):
