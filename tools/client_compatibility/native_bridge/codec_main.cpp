@@ -374,9 +374,10 @@ int main(int argc, char **argv)
                                     {"rejection",translation.rejection}});
                                 continue;
                             }
-                            else if(fn=="translate_pet_action" || fn=="translate_pet_set_action")
+                            else if(fn=="translate_pet_action" || fn=="translate_pet_set_action" || fn=="translate_pet_rename")
                             {
-                                auto translation=fn=="translate_pet_action" ? translate_pet_action(protocol,state,body) :
+                                auto translation=fn=="translate_pet_rename" ? translate_pet_rename(protocol,state,body) :
+                                    fn=="translate_pet_action" ? translate_pet_action(protocol,state,body) :
                                     translate_pet_set_action(protocol,state,body);
                                 replies.push_back(Object{{"packet",translation.packet ?
                                     Value(Array{translation.packet->first,hex(translation.packet->second)}) : Value(nullptr)},

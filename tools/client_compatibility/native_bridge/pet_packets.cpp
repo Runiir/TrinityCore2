@@ -306,4 +306,18 @@ bool pet_cast_authority(Protocol const &p,State const &owner,std::uint64_t guid,
         (button&0x00ffffffu)==spell && (type==0x81 || type==0xc1) &&
         owner.pet_state->controlled_autocast.contains(spell);
 }
+bool pet_rename_authority(Protocol const &p,State const &owner,std::uint64_t guid,unsigned number)
+{
+    if(!owner.created || owner.character.is_null() || owner.self_snapshot.is_null() ||
+       !owner.pet_state || owner.pet_state->controlled_guid!=guid || guid>>52!=0xf14 || !number ||
+       ((p.field(owner.self_snapshot,"UNIT_FIELD_BYTES_0")>>8)&255)!=3)return false;
+    auto found=owner.visible_units.find(guid);
+    if(found==owner.visible_units.end())return false;
+    auto const &unit=found->second;
+    return integer(get(unit,"kind"))==3 && integer(get(unit,"map"))==owner.map() &&
+        p.field(unit,"UNIT_FIELD_PETNUMBER")==number &&
+        ((p.field(unit,"UNIT_FIELD_BYTES_2")>>16)&1) &&
+        field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")==owner.guid() &&
+        field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")==guid;
+}
 }
