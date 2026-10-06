@@ -37,6 +37,12 @@ def run(t,preparation,entry,stage_path,review_path):
         stage_source={'path':str(stage_path),'sha256':lab.sha256(stage_path)});t.persist();since=None
     owner={'guid':5,'map':0};target=copy.deepcopy(d['native_target'])
     try:
+        with lab.connection() as c,c.cursor() as q:
+            q.execute('SELECT entry,flags_extra,unit_flags FROM client442_world.creature_template WHERE entry=44548')
+            flags=q.fetchone()
+        if not flags or not flags[1]&0x40000:
+            raise RuntimeError('the passive dummy must retain native NO_SKILLGAIN')
+        t.receipt['dummy_skillgain_guard']={'row':flags,'native_no_skillgain':True};t.persist()
         checked=reviewed(t,review_path,'owned_melee_dummy')
         if (checked.get('stage_source_sha256')!=lab.sha256(stage_path) or checked.get('dummy_visible') is not True or
             checked['frame']['sha256']!=d['frame']['sha256'] or position(5)!=d['staged_position'] or
