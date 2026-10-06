@@ -29,6 +29,7 @@ RETRYABLE=(
     'Mouse Button 4 did not produce a successful Survey',
     'artifact interaction did not confirm fragment pickup',
     'key-1 combat has made no target-health progress',
+    'combat target approach made no movement or range progress',
     'current-target facing remained blocked',
     'Laya disagreed with declared policy',
     'movement decision lease expired',

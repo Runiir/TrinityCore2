@@ -25,6 +25,13 @@ class CameraSteering:
             if abs(change)<.002:
                 if elapsed>1:raise RuntimeError('camera steering did not produce observed yaw')
                 return 0,info
+            # Movement packets may expose a partial delta or an older camera
+            # update first. Calibrate only after two fresh, settled readings.
+            settled=self.pending.get('observed_facing')
+            if settled is None or abs(angle(facing-settled))>.01:
+                self.pending.update(observed_facing=facing,observed_uptime=uptime)
+                return 0,info
+            if uptime==self.pending['observed_uptime']:return 0,info
             rate=change/self.pending['pixels']
             if .00005<abs(rate)<.1:self.samples.append(rate)
             self.pending=None
@@ -40,7 +47,14 @@ class CameraSteering:
         else:self.opposite_samples=0
         # The first pulse is a small calibration probe, not a claimed client
         # sensitivity. Subsequent deltas use measured radians per EI pixel.
-        sensitivity=statistics.median(self.samples) if self.samples else -.003
+        if self.samples:
+            # Conflicting delayed samples must not cancel to zero or flip
+            # the direction through a median of opposite signed rates.
+            positive=sum(sample>0 for sample in self.samples)
+            sign=1 if positive>len(self.samples)/2 else -1 if positive<len(self.samples)/2 else (
+                1 if self.samples[-1]>0 else -1)
+            sensitivity=statistics.median(sample for sample in self.samples if sample*sign>0)
+        else:sensitivity=-.003
         # Mouse-look is a relative position command, not a timed turn key.
         # Once sensitivity is measured, aim at the bearing in one delta and
         # wait for feedback before issuing a correction.

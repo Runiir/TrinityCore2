@@ -166,7 +166,7 @@ local function snapshot()
     local x,y=GetCursorPosition()
     local uiScale=UIParent:GetEffectiveScale()
     local keys={}
-    for _,name in ipairs({"INTERACTTARGET","MOVEFORWARD","TURNLEFT","TURNRIGHT","JUMP","DESCEND","PITCHUP","PITCHDOWN"}) do
+    for _,name in ipairs({"INTERACTTARGET","TARGETNEARESTENEMY","MOVEFORWARD","TURNLEFT","TURNRIGHT","JUMP","DESCEND","PITCHUP","PITCHDOWN"}) do
         keys[name]={call(GetBindingKey,name)}
     end
     local start,duration,enabled=call(GetSpellCooldown,80451)

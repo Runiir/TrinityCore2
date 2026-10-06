@@ -5,6 +5,7 @@ import time
 from . import runtime,inputs,laya_ui,action_queue
 from .observe import observe
 from .motion import turn_duration
+from .combat_target import TargetApproach
 
 
 def ready(row):
@@ -28,6 +29,7 @@ def run(folder,*,turn_history=None):
     folder.mkdir(parents=True,exist_ok=False)
     start=time.monotonic();last_progress=start;last_health=None;last_press=0;count=0
     last_attack=None;last_turn=0;turns=0;turn_history=list(turn_history or [])
+    target_approach=TargetApproach()
     result={'started_at':time.time(),'action':'Sinister Strike with landing and facing recovery','casts':0,'completed':False}
     runtime.write(folder/'combat.json',result)
     while True:
@@ -49,6 +51,8 @@ def run(folder,*,turn_history=None):
         if health is not None and (last_health is None or health<last_health):last_progress=time.monotonic()
         last_health=health
         if time.monotonic()-last_progress>30:raise RuntimeError('key-1 combat has made no target-health progress for 30 seconds')
+        if target_approach.tick(folder,row,result):
+            time.sleep(.1);continue
         if needs_facing(row,last_attack,last_turn):
             if turns>=2:raise RuntimeError('current-target facing remained blocked after two measured turns')
             state={'combat':True,'current_hostile_target_alive':True,'target_in_range':True,
