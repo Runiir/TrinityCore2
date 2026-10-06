@@ -1,0 +1,51 @@
+{
+  "schema": "client442_dismiss_public_settlement_fixture_v1",
+  "pointer": "artifacts/client_harness/442_interactions_20261006_121.tar.gz.dvc",
+  "source": {
+    "member": "evidence/client_interactions_20261006_ui121/dismiss01/episode.json",
+    "sha256": "8eae3f914541697737d70828783dd7992649abe8f4ef90b332d74aad1c083a2c"
+  },
+  "stale_sample": {
+    "target": {
+      "exists": true,
+      "guid": "Pet-0-1-0-0-416-000000000F",
+      "health": 364,
+      "max_health": 364,
+      "name": "Yaztog",
+      "player": false,
+      "position": [],
+      "visible": true
+    },
+    "panels": {}
+  },
+  "settled_sample": {
+    "target": {
+      "exists": false,
+      "health": 0,
+      "max_health": 0,
+      "player": false,
+      "position": {},
+      "visible": false
+    },
+    "panels": {}
+  },
+  "settled_frame": {
+    "file": "evidence/client_interactions_20261006_ui121/dismiss01/input_002_chat_open.png",
+    "sha256": "360ef08535954f4c250f40c04c79106c18734ce4bc9990a3191fa96b0db38876"
+  },
+  "native_command": {
+    "time": 1791279896.2769387,
+    "session": "c03d6414",
+    "direction": "to_native",
+    "name": "CMSG_PET_ACTION",
+    "body": "0f000000a00140f1030000070000000000000000000000000000000000000000"
+  },
+  "automatic_client_clear": {
+    "time": 1791279897.1239815,
+    "session": "c03d6414",
+    "direction": "from_client",
+    "name": "CMSG_SET_SELECTION",
+    "body": "0000"
+  },
+  "limits": "The first whole trial remains failed. Screenshot target and pet frames are absent while the stale encoded sample reports the old target; native selection clears before the normal summon chat opens."
+}

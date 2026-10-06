@@ -7,6 +7,18 @@ from tools.client_compatibility import interaction_pet_dismiss as module
 from tools.client_compatibility.world.objects import INDEX
 
 
+def test_actual_menu_close_sample_waits_for_public_target_settlement():
+    data=json.loads((Path(__file__).parent/'fixtures/pet_dismiss_settlement_ui121.json').read_text())
+    assert not module.dismiss_ready(data['stale_sample'])
+    assert module.dismiss_ready(data['settled_sample'])
+
+
+@pytest.mark.parametrize('state',[{}, {'target':{}}, {'target':{'exists':True}},
+    {'target':{'exists':False},'panels':['ContextMenu']}])
+def test_missing_target_state_or_open_menu_cannot_finish_dismiss_wait(state):
+    assert not module.dismiss_ready(state)
+
+
 @pytest.mark.parametrize('change',('none','missing_spell','foreign_session','stale','future','wrong_packet'))
 def test_starting_recovery_spell_comes_from_this_native_login_without_a_saved_row(change):
     entry={'native_session':'owned','started_at':10,'finished_at':20,'entered_saved':{'spells':[]}}

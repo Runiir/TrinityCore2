@@ -80,6 +80,12 @@ def recovery_spell(entry,probe):
         packet.get('name')=='SMSG_SEND_KNOWN_SPELLS' and 688 in packet.get('ids',[]))
 
 
+def dismiss_ready(state):
+    # The menu can close before the encoded public state reflects native
+    # destruction. Wait for actual target absence without repeating input.
+    return 'ContextMenu' not in state.get('panels',[]) and state.get('target',{}).get('exists') is False
+
+
 def suite(t,preparation,entry,probe,menu):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     e=entry_source(t,entry,session,preparation);p=source(t,probe,session,entry);m=closed(menu)
@@ -122,7 +128,7 @@ def suite(t,preparation,entry,probe,menu):
                 'oracle':{'checks':checks,'requests':requests}}
         require(click_case(t,'pets.dismiss','Dismiss the owned summoned Imp through its stock menu.',
             lambda c:c['kind']=='Button' and c.get('text')=='Dismiss',outcome,
-            await_state=lambda a:'ContextMenu' not in a.get('panels',[])),'native_owned_pet_dismiss_pass')
+            await_state=dismiss_ready),'native_owned_pet_dismiss_pass')
         pet=public_pet(t,'dismissed_pet')
         t.receipt['dismissed_public_pet']=pet;t.persist()
         if pet.get('exists'):raise RuntimeError('public owned pet remains after native dismissal')
