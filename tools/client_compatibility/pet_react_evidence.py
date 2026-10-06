@@ -2,8 +2,8 @@
 from .interaction_pet_react_capture import active_mode
 from .interaction_pet_command_probe import expected_guid
 
-TOKENS={0:'PET_MODE_PASSIVE',3:'PET_MODE_ASSIST'}
-SLOTS={0:10,3:8}
+TOKENS={0:'PET_MODE_PASSIVE',1:'PET_MODE_DEFENSIVE',3:'PET_MODE_ASSIST'}
+SLOTS={0:10,1:9,3:8}
 
 
 def mode_button(probe,mode):
@@ -13,7 +13,7 @@ def mode_button(probe,mode):
     row=rows[0];f=row.get('frame',{})
     if (f.get('button')!='PetActionButton'+str(SLOTS[mode]) or
         not all(f.get(k) is True for k in ('available','visible','enabled')) or
-        any(type(f.get(k)) is not int or not 0<=f[k]<=65535 for k in ('x','y'))):
+        any(type(f.get(k)) is not int or not 0<=f[k]<65535 for k in ('x','y'))):
         raise RuntimeError('stock pet mode button lacks a visible enabled viewport point')
     return row,[round(f['x']/65535*1280),round(f['y']/65535*720)]
 

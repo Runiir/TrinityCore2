@@ -1,4 +1,4 @@
-"""Verify stock Passive/Assist with native reload catalogs and persisted mode."""
+"""Verify captured stock reaction modes with real native catalogs and saved mode."""
 import argparse,json,math,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
@@ -35,7 +35,7 @@ def mode(t,o,wanted,label):
     control=read(t,label+'_control');row,point=mode_button(control['probe'],wanted)
     if control['probe'].get('pet_guid')!=expected_guid(o.pet):raise RuntimeError('pet button owner changed')
     action=({'kind':'chat','value':'/petpassive','description':'Use the captured stock secure Passive command.'} if wanted==0 else
-        {'kind':'click','value':point,'hold':.4,'description':'Click the observed stock Assist button8.'})
+        {'kind':'click','value':point,'hold':.4,'description':f"Click the observed stock {row['name']} button{row['slot']}."})
     since=time.time();t.receipt[label+'_started_at']=since;t.persist()
     def outcome(b,a,s):
         reload_since=time.time();t.execute({'kind':'chat','value':'/reload'});o.poll()
@@ -62,7 +62,9 @@ def mode(t,o,wanted,label):
         {'mode':action},outcome,diagnostic_action='mode'),'owned_native_react_mode_pass')
 
 
-def suite(t,preparation,entry):
+def suite(t,preparation,entry,*,sequence=((0,'pets.passive'),(3,'pets.assist'))):
+    if sequence not in (((0,'pets.passive'),(3,'pets.assist')),((1,'pets.defensive'),(3,'fixture.pet_assist_restore'))):
+        raise ValueError('requires an exact captured mode lifecycle ending in original Assist')
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session'];e=entry_source(t,entry,session,preparation)
     o=FollowPresence(session,5,e['started_at']).poll();inventory=Inventory(lab.ROOT,session,5).poll();identity=retained_imp(t.fixture,pets(5))
     sample=read(t,'react_native_baseline');catalogs=[c for c in o.catalogs if o.pet and c['guid']==o.pet['guid']]
@@ -78,7 +80,8 @@ def suite(t,preparation,entry):
         sources=[{'path':str(p.resolve()),'sha256':lab.sha256(p)} for p in (preparation,entry)],qualification_added=False)
     t.persist();assist_complete=False
     try:
-        mode(t,o,0,'pets.passive');mode(t,o,3,'pets.assist');assist_complete=True
+        for wanted,label in sequence:mode(t,o,wanted,label)
+        assist_complete=True
     except Exception as error:t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist();raise
     finally:
         try:
@@ -108,7 +111,7 @@ def suite(t,preparation,entry):
                 restored_public=sample);t.persist()
             if not all(checks.values()):raise RuntimeError('native pet reaction-mode restoration differs')
     t.receipt.update(completed=True,phase='owned_native_react_modes_complete',qualified_scope='One idle trained owned Imp, '
-        'stock Passive and observed stock Assist button, exact owned native commands, actual requested-mode catalogs '
+        'captured stock modes '+', '.join(label for _,label in sequence)+', exact owned native commands, actual requested-mode catalogs '
         'on ordinary reload, native persisted Reactstate and public selection, followed by original resources, saved rows, '
         'position, money, pose, pet/bar and protected actors restoration. Combat reaction behavior and other pets/classes remain open.')
 

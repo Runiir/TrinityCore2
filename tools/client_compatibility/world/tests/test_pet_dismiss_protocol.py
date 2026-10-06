@@ -70,7 +70,7 @@ def test_native_sparse_changes_are_rechecked_after_catalog_release(codec,change)
 @pytest.mark.parametrize('body',[
     request(identity=(0,0)),request(identity=(IDENTITY[0]+1,IDENTITY[1])),
     request(identity=(IDENTITY[0],IDENTITY[1]^(1<<29))),
-    request(word=0x03800002),request(word=0x03000001),request(word=0x80800c26),
+    request(word=0x03800002),request(word=0x03000002),request(word=0x80800c26),
     request(target=(5,1)),request(position=(1,0,0)),request(position=(0,float('nan'),0)),
     request(position=(0,0,float('inf'))),CAPTURED[:-1],CAPTURED+b'x',b'',
 ])

@@ -29,7 +29,7 @@ def test_actual_owned_reaction_preserves_guid_and_native_reaction_type(codec,nam
     assert rows[1]=={'packet':['CMSG_PET_ACTION',struct.pack('<QIQfff',PET,0x06000000|value,0,0,0,0).hex()],'rejection':''}
 
 
-@pytest.mark.parametrize('body',[request(0x03000001),request(0x03000002),request(0x03000004),
+@pytest.mark.parametrize('body',[request(0x03000005),request(0x03000002),request(0x03000004),
     request(0x03800002),request(0x01800000),request(target=(5,1)),request(position=(1,0,0)),
     request(position=(0,float('nan'),0)),request(position=(0,0,float('inf'))),request(identity=(0,0)),
     request(identity=(IDENTITY[0]+1,IDENTITY[1])),request()[:-1],request()+b'x',b''])

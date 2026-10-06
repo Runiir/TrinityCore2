@@ -7,7 +7,7 @@ from .world.gameobjects import modern_guid
 
 
 def command_checks(requests,pet,command,action_type=7):
-    if action_type not in (6,7) or command not in ((0,3) if action_type==6 else (0,1,3)):
+    if action_type not in (6,7) or command not in (0,1,3):
         raise ValueError('uncaptured pet action type or value')
     modern=[r for r in requests if r['name']=='CMSG_PET_ACTION' and r['direction']=='from_client']
     native=[r for r in requests if r['name']=='CMSG_PET_ACTION' and r['direction']=='to_native']

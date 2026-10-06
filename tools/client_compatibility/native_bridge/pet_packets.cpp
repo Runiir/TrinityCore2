@@ -98,10 +98,10 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     if(name=="CMSG_PET_ACTION")
     {
         auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
-        // Only captured stock commands and Passive/Assist reactions. Preserve
+        // Only captured stock commands and Passive/Defensive/Assist reactions. Preserve
         // the submitted GUID and the released native control authority.
         bool command_action=command==0x03800000u || command==0x03800001u || command==0x03800003u;
-        bool react_action=command==0x03000000u || command==0x03000003u;
+        bool react_action=command==0x03000000u || command==0x03000001u || command==0x03000003u;
         if((!command_action && !react_action) || target!=Array{0,0} ||
            std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;}))
             throw std::runtime_error("unsupported pet action shape");

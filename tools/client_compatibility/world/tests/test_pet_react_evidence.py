@@ -23,7 +23,7 @@ def values(mode=0):
     return catalog,{'probe':p,'ui_clean':True},{'id':2,'owner':5,'entry':416,'Reactstate':mode}
 
 
-@pytest.mark.parametrize('mode',[0,3])
+@pytest.mark.parametrize('mode',[0,1,3])
 def test_exact_owned_command_and_three_independent_mode_readbacks(mode):
     body=Writer().guid(*modern_guid(PET['guid'],0)).pack('I',6<<23|mode).guid().pack('3f',0,0,0).finish()
     requests=[{'time':1,'direction':'from_client','name':'CMSG_PET_ACTION','body':body.hex()},
@@ -31,7 +31,7 @@ def test_exact_owned_command_and_three_independent_mode_readbacks(mode):
             'body':struct.pack('<QIQfff',PET['guid'],6<<24|mode,0,0,0,0).hex()}]
     assert all(command_checks(requests,PET,mode,action_type=6).values())
     c,p,s=values(mode);assert all(readback_checks(c,PET,mode,info_pairs(rows(),'owned',9,11),p,s).values())
-    button,point=mode_button(p['probe'],mode);assert button['slot']==(10 if mode==0 else 8) and point==[480,653]
+    button,point=mode_button(p['probe'],mode);assert button['slot']=={0:10,1:9,3:8}[mode] and point==[480,653]
 
 
 @pytest.mark.parametrize('fault',['foreign_modern','foreign_native','outside','late','body','duplicate','missing'])
