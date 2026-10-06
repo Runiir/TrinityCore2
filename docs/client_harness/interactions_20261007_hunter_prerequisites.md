@@ -77,6 +77,8 @@ as a successful full suite. UI141's JSON receipts and logs preserve these outcom
 
 The Hunter is normally logged out and the original Harnesstwo selection restored
 before bridge-only deployment. The native worldserver stays running and both original
-actors remain offline. Stock reconnection, complete deployment restoration, live
-Control Pet purchase and pet-service qualification remain in progress. DVC checkpoint
-and actual remote verification are required before raw evidence is pruned.
+actors remain offline. Both stock reconnections and complete deployment restorations
+pass. The closed prerequisite boundary passes16 checks, including all five prior
+actors and exact retained Hunter native/saved/pet rows. Live Control Pet purchase and
+pet-service qualification are the next batch. DVC checkpoint and actual remote
+verification are required before raw evidence is pruned.
