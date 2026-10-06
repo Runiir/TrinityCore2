@@ -219,9 +219,11 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     }
     if (name == "CMSG_MOVE_INIT_ACTIVE_MOVER_COMPLETE")
     {
-        require_world();
-        if (body.size() != 4)
-            throw std::runtime_error("invalid active mover acknowledgement");
+        if(!owner.login_barrier.accept_active_mover(state,body,active_world.get()==this))
+        {
+            service.events.event("active_mover_deferred_until_player_create",{{"session",owner.id},{"guid",state.guid()}});
+            return;
+        }
         owner.native->send("CMSG_SET_ACTIVE_MOVER", native_login(state.guid(), true));
         service.events.event("native_active_mover_confirmed", {{"session", id}, {"guid", state.guid()}});
         return;

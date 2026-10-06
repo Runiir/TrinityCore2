@@ -13,12 +13,16 @@ struct LoginBarrier
     std::vector<Packet> quest_reads;
     std::vector<Packet> template_reads;
     bool mail_read = false;
+    bool awaiting_player = false;
+    bool mover_ack = false;
     void begin();
     std::vector<Packet> accept(Packet packet);
     void defer_quest_read(Packet packet);
     void defer_mail_read(Packet packet);
     void defer_template_read(Packet packet);
     std::vector<Packet> release_quest_reads();
+    bool accept_active_mover(State const &state, View body, bool active_instance);
+    bool release_active_mover(State const &state);
 };
 void finish_logout(State &state);
 }

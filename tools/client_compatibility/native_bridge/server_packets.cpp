@@ -343,6 +343,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
             instance->send("SMSG_MOVE_SET_ACTIVE_MOVER", Writer().guid(state.guid(), player_high()).finish());
             instance->send("SMSG_CONTROL_UPDATE",
                            Writer().guid(state.guid(), player_high()).bits(1, 1).finish());
+            if(login_barrier.release_active_mover(state))
+            {
+                native->send("CMSG_SET_ACTIVE_MOVER",native_login(state.guid(),true));
+                service.events.event("native_active_mover_confirmed",{{"session",id},{"guid",state.guid()}});
+            }
             if (auto resume = Protocol::transfer_resume(state))
                 send(*resume);
             service.events.event("native_player_created",
@@ -373,6 +378,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {
         this->send(name, Bytes{0});
         finish_logout(state);
+        login_barrier={};
         world.reset();
         // A logout retires the instance socket; the realm socket stays open.
         // Leaving it alive makes the client reject the next RESUME_COMMS.

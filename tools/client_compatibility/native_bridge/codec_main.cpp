@@ -111,6 +111,26 @@ int main(int argc, char **argv)
                     }
                     result=output;
                 }
+                else if(op=="login_active_mover")
+                {
+                    LoginBarrier barrier;State state;Array output;
+                    state.character=Object{{"guid",get(request,"guid")}};
+                    for(auto const &a:get(request,"actions").as_array())
+                    {
+                        auto fn=str(get(a,"fn"));bool forward=false;
+                        if(fn=="begin")
+                        {state.character=Object{{"guid",get(request,"guid")}};barrier.begin();}
+                        else if(fn=="world")barrier.accept({"SMSG_LOGIN_VERIFY_WORLD",Bytes(20)});
+                        else if(fn=="ack")forward=barrier.accept_active_mover(state,unhex(str(get(a,"body"))),truth(get(a,"active_instance")));
+                        else if(fn=="create")
+                        {state.created=true;forward=barrier.release_active_mover(state);}
+                        else if(fn=="logout"){finish_logout(state);barrier={};}
+                        else throw std::runtime_error("unknown active mover login action");
+                        output.push_back(Object{{"forward",forward},{"deferred",barrier.mover_ack},
+                            {"awaiting_player",barrier.awaiting_player}});
+                    }
+                    result=output;
+                }
                 else if(op=="login_barrier")
                 {
                     LoginBarrier barrier;Array output;

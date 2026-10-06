@@ -1,0 +1,26 @@
+{
+  "schema": "client442_early_active_mover_contract_v1",
+  "source": {
+    "batch": "client_interactions_20261006_ui111",
+    "failed_entry_sha256": "6997cb03badd0e1b0283dffd72de3d00a3c1a4425c2ce658cab78b801d1719c4",
+    "wire_proof_sha256": "8322b50b9e67663ee2c043698670589dbbd901e25d06c130b592ec7b63203724",
+    "native_guid": 4,
+    "native_login_body": "2005",
+    "modern_ack_body": "069d7d18",
+    "failure": "gameplay request outside owned active world"
+  },
+  "behavior": "Defer one four-byte active-mover acknowledgement on the authenticated owned instance until native player creation; release once. Clear deferred acknowledgement on logout.",
+  "limits": [
+    "No gameplay request is admitted before native creation.",
+    "Foreign, stale, absent identity and malformed acknowledgement requests remain errors.",
+    "Read-only native pet outcomes require a fresh whole entry; failed entries add no qualification."
+  ],
+  "controller": "code",
+  "model": null,
+  "custom_script_permission": "blocked_by_user",
+  "softTargetInteract": {
+    "original": "0",
+    "current_stock_disabled": "1",
+    "original_restored": false
+  }
+}

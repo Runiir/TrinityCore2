@@ -4,10 +4,11 @@ namespace bridge
 {
 void LoginBarrier::begin()
 {
-    if(pending || !deferred.empty() || !quest_reads.empty() || !template_reads.empty() || mail_read)
+    if(pending || awaiting_player || mover_ack || !deferred.empty() || !quest_reads.empty() || !template_reads.empty() || mail_read)
         throw std::runtime_error("repeated native login barrier");
     pending = true;
     bytes = 0;
+    awaiting_player = true;
 }
 std::vector<Packet> LoginBarrier::accept(Packet packet)
 {
@@ -68,6 +69,26 @@ void LoginBarrier::defer_mail_read(Packet packet)
     if(packet.first!="MSG_QUERY_NEXT_MAIL_TIME" || !packet.second.empty())
         throw std::runtime_error("only the empty mail-time read may wait for player creation");
     mail_read=true;
+}
+bool LoginBarrier::accept_active_mover(State const &state, View body, bool active_instance)
+{
+    if(body.size()!=4)throw std::runtime_error("invalid active mover acknowledgement");
+    if(!active_instance || !state.guid())
+        throw std::runtime_error("active mover acknowledgement outside owned instance");
+    if(state.created)return true;
+    if(!awaiting_player)throw std::runtime_error("active mover acknowledgement outside owned login");
+    // One acknowledgement can arrive immediately after RESUME_COMMS. Keep it
+    // bounded and wait for the authoritative native player, even after WORLD.
+    mover_ack=true;
+    return false;
+}
+bool LoginBarrier::release_active_mover(State const &state)
+{
+    if(!state.created || !state.guid())throw std::runtime_error("active mover release before owned player creation");
+    bool ready=awaiting_player && mover_ack;
+    awaiting_player=false;
+    mover_ack=false;
+    return ready;
 }
 void finish_logout(State &state)
 {
