@@ -39,7 +39,7 @@ def run(folder,origin,destination):
         result['phases'].append(phase);runtime.write(folder/'taxi.json',result)
         if action=='arrived':result.update(completed=True,after=row);break
         if action=='interact' and row['farm_ui'].get('gossip'):
-            selected=click_choice(folder/f'gossip_{index:02d}',row,['gossip'],'I need a ride',{'label':'I need a ride.'})
+            selected=click_choice(folder/f'gossip_{index:02d}',row,['gossip'],'Show the flight destinations available from this flight master')
             if not selected['executed']:raise RuntimeError('Laya waited at flight master ride option')
             phase['gossip_choice']=selected
         elif action=='interact':
