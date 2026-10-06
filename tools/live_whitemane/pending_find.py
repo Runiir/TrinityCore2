@@ -262,7 +262,6 @@ def priority(row,value):
 
 def choose_inspection(row):
     from . import laya_ui
-    from .ui_choice import MODEL,REVISION
     signal=row.get('minimap_finds') or {}
     state={'task':'locate the uncollected archaeology find','find_pending':True,
         'minimap_live_finds':len(signal.get('confirmed') or []),'minimap':signal.get('status','unavailable'),
@@ -270,4 +269,4 @@ def choose_inspection(row):
     action,request,response=laya_ui.choose(state,
         'Inspect the minimap to locate the pending find before moving.',
         {'inspect':'Inspect the minimap blips','observe':'Wait without input'})
-    return action,{'model':MODEL,'revision':REVISION,'adapter':None},request,response,state
+    return action,laya_ui.identity(response),request,response,state

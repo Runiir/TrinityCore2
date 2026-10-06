@@ -6,7 +6,8 @@ from .dig_policy import SolveBatches
 from .test_farm_loop import row
 
 
-def test_retained_head_choice_is_accepted_without_an_expert_action_veto(monkeypatch):
+def test_retained_head_choice_is_accepted_without_an_expert_action_veto(monkeypatch,tmp_path):
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
     def reply(request,**_):
         value=({'heads':{'archaeology':{'model':'laya','revision':'pinned'}}}
             if isinstance(request,str) else {'revision':'pinned','answers':{'action':{'choice':'observe'}},'token_budget':{}})

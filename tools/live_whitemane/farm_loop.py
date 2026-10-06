@@ -115,7 +115,14 @@ def run(output,stop_on='recipe'):
         # and waiting inside a running farm never renew gameplay inactivity.
         session['resumed_at']=time.time();session['last_progress_at']=session['resumed_at']
     session.update(status='running',failure=None,stop_on=stop_on)
-    session['selection_mode']='Laya current state and legal actions'
+    from . import decision_backend
+    backend=decision_backend.selected()
+    if session.get('decision_backend')!=backend:
+        # A new policy must choose its own activity; old decisions remain in
+        # history, but cannot be silently reused by a different checkpoint.
+        session['accepted_activity_queue']=[]
+        session['decision_backend']=backend
+    session['selection_mode']='Local decision model over current state and legal actions'
     graph=output/'graph.json'
     def sample(output):return observation_wait.sample(output,session,reader=observe)
     from .observed_state import ensure

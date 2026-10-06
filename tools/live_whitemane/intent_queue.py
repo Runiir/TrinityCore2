@@ -22,7 +22,8 @@ class IntentQueue:
         self.jobs[:]=[job for job in self.jobs if (job['action'],job.get('site_id'))!=key]
         self.jobs.append({'action':action,'target':target,'site_id':key[1],
             'runtime':row['runtime'],'priority':priority(action,row),
-            'selected_at':time.time(),'selection':decision,'selected_by':'Laya'})
+            'selected_at':time.time(),'selection':decision,
+            'selected_by':(decision.get('response') or {}).get('model','Laya')})
         self.jobs.sort(key=lambda job:(-job['priority'],job['selected_at']))
         del self.jobs[4:]
 

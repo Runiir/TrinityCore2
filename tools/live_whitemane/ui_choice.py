@@ -17,9 +17,9 @@ from . import runtime
 ENDPOINT = 'http://127.0.0.1:8005'
 
 
-def validate_ui_request(payload, allowed_questions=('action',)):
+def validate_ui_request(payload, allowed_questions=('action',), expected_model=MODEL):
     """Reject invalid choices before Laya's two-option confidence calculation."""
-    if payload.get('model') != MODEL or not isinstance(payload.get('state'), dict):
+    if payload.get('model') != expected_model or not isinstance(payload.get('state'), dict):
         raise ValueError('invalid UI model or state')
     questions = payload.get('questions')
     if (not isinstance(questions, dict) or 'action' not in questions

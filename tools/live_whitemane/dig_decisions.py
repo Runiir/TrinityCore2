@@ -1,7 +1,7 @@
 """Original Laya head chooses legal digging actions with recent outcomes."""
 import math
 import random
-from . import laya_ui,decisions
+from . import laya_ui,decisions,decision_backend
 from .ui_choice import MODEL,REVISION
 
 
@@ -35,7 +35,7 @@ def choose(state):
         pickup.get('interaction_in_range') is False and state.get('guide_arrived'))
     measured_vertical_gap=vertical is not None and abs(vertical)>.5 and pickup.get('uncollected')
     repeat_here=state.get('survey_at_pickup_position_untried') is True
-    if not adjust_depth and not measured_vertical_gap and not repeat_here and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
+    if not decision_backend.vision_enabled() and not adjust_depth and not measured_vertical_gap and not repeat_here and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
             and not state['artifact_visible'] and not pickup.get('uncollected'))):
         # Keep the already-trained navigation schema. Pickup and new UI
         # operations use the original head below; navigation does not ask an
@@ -94,7 +94,7 @@ def choose(state):
             'forward_long':'Leave the collection position and fly to the next marker'}
         options={key:descriptions.get(key,label) for key,label in options.items()}
         instructions+=' Survey can be cast here when ready. Moving first skips this untried pickup spot.'
-    if pickup.get('interaction_in_range') is False and state.get('telescope'):
+    if pickup.get('interaction_in_range') is False and state.get('telescope') and not decision_backend.vision_enabled():
         # Keep the action vocabulary; provide the immediate range correction
         # without unrelated Survey history or a second pickup-priority vote.
         context={k:state.get(k) for k in ('available','casting','named_artifact',
@@ -129,4 +129,4 @@ def choose(state):
         instructions+=' The artifact is vertically '+direction+' from the current position. Choose movement toward its depth.'
     action,request,response=laya_ui.choose(context,instructions,options)
     action=explore(action,response,options,state)
-    return action,{'model':MODEL,'revision':REVISION,'adapter':None},request,response
+    return action,decision_backend.identity(response),request,response

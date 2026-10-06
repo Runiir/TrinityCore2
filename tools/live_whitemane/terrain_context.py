@@ -117,4 +117,4 @@ def move(folder,row,selected,request,response,alternatives,route):
         target=alternatives[selected]['target'];guidance={'source':'Laya-selected short obstacle recovery'}
     return walk(folder,target,flying=row['archaeology']['flying'],tolerance=.5,
         site_id=row['archaeology'].get('site_id') if row['archaeology'].get('can_survey') else None,
-        guidance=guidance,approved_intent=(selected,{'model':laya_ui.MODEL,'revision':laya_ui.REVISION},request,response))
+        guidance=guidance,approved_intent=(selected,laya_ui.identity(response),request,response))

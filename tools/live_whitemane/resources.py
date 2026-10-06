@@ -42,7 +42,7 @@ def rss(pid):
 
 def register_model(pid):
     command=Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
-    if b'tools.live_whitemane.model' not in command:
+    if not {b'tools.live_whitemane.model',b'tools.live_whitemane.vision_model'}.intersection(command):
         raise ResourceLimit('model process is not the owned live model service')
     runtime.write(runtime.ROOT/'run/model_service.json',{'pid':pid,'start_ticks':runtime.proc_start(pid)})
 

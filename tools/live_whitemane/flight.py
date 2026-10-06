@@ -62,7 +62,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             if action=='wait':return receipts
             step['water_approach']=walk(folder,target,flying=False,tolerance=arrival_tolerance,
                 guidance={'source':'current travel destination through water'},
-                approved_intent=(action,{'model':laya_ui.MODEL,'revision':laya_ui.REVISION},request,response))
+                approved_intent=(action,laya_ui.identity(response),request,response))
             return receipts
         if (not combat_landing and a.get('can_survey') and a.get('mounted')
                 and not a['flying'] and not a['falling'] and not m['in_combat']
@@ -118,7 +118,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             action,request,response=laya_ui.choose(state,
                 'Choose how to reach the destination. The reference ascent column is blocked by a ceiling. '
                 'Prefer a clear side or ground detour before ascending. Reference geometry can differ from the client.',options)
-            model={'model':laya_ui.MODEL,'revision':laya_ui.REVISION}
+            model=laya_ui.identity(response)
         else:action,model,request,response=choose(state,'travel',physical_state=flags)
         if combat_landing and action not in ('land','dismount','arrived','observe'):
             raise RuntimeError('combat landing cannot mount, ascend, or travel horizontally')

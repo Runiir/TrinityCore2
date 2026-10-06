@@ -1,0 +1,19 @@
+[workspace]
+name = "whitemane-vision-decision"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.13.*"
+pip = "*"
+
+[pypi-dependencies]
+laya = { git = "https://github.com/r33drichards/laya-vision.git", rev = "9e1e2419d855ad3e1a2af4d4bd1ef6be5418842c" }
+torch = "==2.9.1"
+torchvision = "==0.24.1"
+transformers = "==5.17.0"
+pillow = "*"
+num2words = "*"
+python-xlib = "*"
+fastapi = "*"
+uvicorn = "*"
