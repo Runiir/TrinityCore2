@@ -1,0 +1,5 @@
+outs:
+- md5: c22b54f87b430b34f7391141bb73a206
+  size: 31464419
+  hash: md5
+  path: vision_task_head_sft_v0_20261006.tar.gz
