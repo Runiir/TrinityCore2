@@ -65,7 +65,13 @@ def vertical_speed(pose):
     return statistics.median(rates[-6:]) if rates else None
 
 
-def remaining_seconds(pose, ceiling):
+def remaining_seconds(pose, ceiling, *, flight_speed=None):
     speed=vertical_speed(pose)
+    # A takeoff packet precedes the first periodic height heartbeat. During
+    # this owned, vertical-only ascent, the public flight speed supplies its
+    # rate until two captured positions can measure it directly.
+    if speed is None and pose.get('flying') and pose.get('ascending'):
+        if isinstance(flight_speed,(int,float)) and math.isfinite(flight_speed) and 0<flight_speed<100:
+            speed=flight_speed
     gap=max(0,ceiling-pose['height_yards'])
     return gap/speed if speed else None

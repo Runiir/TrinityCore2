@@ -153,7 +153,7 @@ def ascend(folder, ceiling, *, site_id=None):
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         code,_=sender._keycode(sender.XK.string_to_keysym('space'))
         held=False;rows=[];started=time.time();last_height=None;stalled=0;last_pose_tick=None
-        observation_seconds=[];missing_height=0
+        observation_seconds=[];missing_height=0;released_pose_tick=None
         try:
             for index in range(150):
                 observation_started=time.monotonic()
@@ -174,14 +174,24 @@ def ascend(folder, ceiling, *, site_id=None):
                 missing_height=0
                 if site_id is not None:check_point(site_id,a['world'])
                 if time.time()-started>15:raise RuntimeError('calculated ascent exceeded its emergency bound')
-                seconds=remaining_seconds(pose,ceiling)
+                flight_speed=((row.get('farm_ui') or {}).get('move_speeds') or {}).get('flight') if a['flying'] else None
+                seconds=remaining_seconds(pose,ceiling,flight_speed=flight_speed)
                 gap=ceiling-pose['height_yards']
                 rows.append({'observed_at':row['observed_at'],'pose':pose,
-                             'height_gap_yards':gap,'calculated_seconds_remaining':seconds})
+                             'height_gap_yards':gap,'calculated_seconds_remaining':seconds,
+                             'public_flight_speed_yards_per_second':flight_speed})
                 # Stop before the observed position reaches the target when
                 # measured velocity predicts the remaining telemetry delay.
                 if a['flying'] and gap<=.5:
                     return rows
+                pose_tick=pose.get('client_uptime_ms',pose.get('observed_at',row['observed_at']))
+                if released_pose_tick is not None:
+                    # Re-reading the pre-release heartbeat cannot justify a
+                    # second ascent. Wait for the captured stop and its height.
+                    if pose_tick==released_pose_tick or pose.get('ascending'):
+                        time.sleep(.05)
+                        continue
+                    released_pose_tick=None
                 if held and a['flying'] and seconds is not None:
                     # A screenshot takes longer than the last few yards of a
                     # climb. Release at the predicted arrival before starting
@@ -192,9 +202,9 @@ def ascend(folder, ceiling, *, site_id=None):
                         rows[-1]['calculated_final_hold_seconds']=remaining
                         if remaining:time.sleep(remaining)
                         sender._send(sender.X.KeyRelease,code);held=False
+                        released_pose_tick=pose_tick
                         time.sleep(.15)
                         continue
-                pose_tick=pose.get('client_uptime_ms',pose.get('observed_at',row['observed_at']))
                 new_pose=pose_tick!=last_pose_tick
                 if held and last_height is not None and new_pose:
                     stalled=stalled+1 if pose['height_yards']<=last_height+.1 else 0

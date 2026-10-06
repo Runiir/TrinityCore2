@@ -60,6 +60,14 @@ def test_vertical_rate_handles_old_flag_but_rejects_horizontal_or_downward_motio
     assert clearance.vertical_speed({'samples':descending}) is None
 
 
+def test_takeoff_uses_public_flight_speed_before_the_first_height_heartbeat():
+    pose={'height_yards':17,'samples':[],'ascending':True,'flying':True}
+    assert clearance.remaining_seconds(pose,25,flight_speed=29.26)==pytest.approx(8/29.26)
+    assert clearance.remaining_seconds({**pose,'ascending':False},25,flight_speed=29.26) is None
+    assert clearance.remaining_seconds({**pose,'flying':False},25,flight_speed=29.26) is None
+    assert clearance.remaining_seconds(pose,25,flight_speed=float('nan')) is None
+
+
 def test_corridor_ceiling_clears_the_highest_reference_surface(monkeypatch):
     def surface(_,p):return {'terrain_height':10+p[0]/2,'model_collision_height':None,'highest_surface':10+p[0]/2}
     monkeypatch.setattr(clearance.model_collision,'supporting_surface',surface)
