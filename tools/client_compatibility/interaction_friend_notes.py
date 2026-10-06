@@ -89,8 +89,8 @@ def cancel_dialog(t):
             'friend_note_dialog_cancelled')
 
 
-def probe(t):
-    baseline(t)
+def probe(t,observer_version=122):
+    baseline(t,observer_version)
     t.receipt['qualified_scope']='Stock owned-friend note dialog reconnaissance and cancellation only; no gameplay qualification.'
     t.persist()
     try:
@@ -147,14 +147,14 @@ def set_note(t,packets,label,note,source):
     t.persist();t.execute({'kind':'hover','value':[1000,360]})
 
 
-def suite(t,path):
+def suite(t,path,observer_version=122):
     path=path.resolve()
     if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('requires a closed owned note dialog probe')
     old=json.loads(path.read_text())
     if not source_matches(old,t.receipt):raise RuntimeError('owned note probe verdict, actor or runtime differs')
     t.receipt['source']={'path':str(path),'sha256':lab.sha256(path)};t.persist()
-    baseline(t);packets=Packets(t.receipt['session'])
+    baseline(t,observer_version);packets=Packets(t.receipt['session'])
     t.receipt['qualified_scope']='One short ASCII note on the original owned offline scout friend, then empty-note restoration through stock controls. No persistence or other social qualification.'
     t.persist()
     try:
@@ -172,11 +172,11 @@ def suite(t,path):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--source-probe',type=Path);a=p.parse_args()
+    p.add_argument('--source-probe',type=Path);p.add_argument('--observer-version',type=int,choices=[122,123],default=122);a=p.parse_args()
     with actor('primary'):
         t=Trial(a.output,controller='code')
         try:
-            (suite(t,a.source_probe) if a.source_probe else probe(t));t.receipt['completed']=True
+            (suite(t,a.source_probe,a.observer_version) if a.source_probe else probe(t,a.observer_version));t.receipt['completed']=True
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:
             t.receipt['finished_at']=time.time();t.persist()
