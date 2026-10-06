@@ -76,7 +76,7 @@ def mouseover(folder,before,names,*,sender=None,identity=None):
     runtime.write(folder/'interaction.json',result);return result
 
 
-def use(folder,before,names,*,maximum=100):
+def use(folder,before,names,*,maximum=100,search_seconds=2):
     folder.mkdir(parents=True,exist_ok=False)
     before=action_queue.wait_ready(folder,before,observe)
     ui=before['farm_ui'];soft=ui['soft_interact'];keys=ui['bindings']['INTERACTTARGET']
@@ -99,13 +99,20 @@ def use(folder,before,names,*,maximum=100):
         point=(round(cursor['x']*runtime.WIDTH),round(cursor['y']*runtime.HEIGHT))
         if 0<=point[0]<runtime.WIDTH and 0<=point[1]<runtime.HEIGHT:
             points=([point]+[p for p in points if p!=point])[:maximum]
+    from . import interaction_search
+    search=interaction_search.resume(before,names,points)
+    search_deadline=time.monotonic()+search_seconds
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=native_input_adapter.Input()
         probes=[];observed=before
         try:
-            for x,y in points:
+            for index in range(search['index'],len(points)):
+                x,y=points[index]
                 if (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('supervisor stop requested')
+                if probes and time.monotonic()>=search_deadline:
+                    interaction_search.save(search,index)
+                    raise RuntimeError('named interaction search yielded for fresh facts')
                 row=hover(sender,(x,y),observed,folder,allow_found=True);observed=row
                 name=row['farm_ui'].get('tooltip');probes.append({'x':x,'y':y,'tooltip':name,
                     'cursor':row['farm_ui']['cursor'],'sequence':row['farm_ui']['sequence']})
@@ -127,6 +134,7 @@ def use(folder,before,names,*,maximum=100):
                 runtime.write(folder/'mouseover_choice.json',{'state':state,'choice':action,'request':request,'response':response})
                 if action=='mouseover_interact':
                     result=mouseover(folder/'mouse5',row,names,sender=sender,identity=identity)
+                    interaction_search.save(search,0,completed=True)
                     runtime.write(folder/'interaction.json',result);return result
                 cleared=hover(sender,(1000,750),row,folder)
                 # Native tooltip fading can outlive a cursor move. Wait for
@@ -143,7 +151,9 @@ def use(folder,before,names,*,maximum=100):
                 try:time.sleep(.2)
                 finally:sender._send(sender.X.ButtonRelease,3)
                 result={'source':'rechecked public game tooltip','name':name,'point':[x,y],'identity':identity}
+                interaction_search.save(search,0,completed=True)
                 runtime.write(folder/'interaction.json',result);return result
+            interaction_search.save(search,0)
             raise RuntimeError('no matching public tooltip in bounded interaction search')
         finally:
             sender.close();runtime.write(folder/'probes.json',probes)

@@ -67,6 +67,7 @@ RETRYABLE=(
     'named artifact mouseover changed before interaction',
     'no named flight master candidate at the addon origin',
     'grounded jump',
+    'named interaction search yielded for fresh facts',
 )
 
 

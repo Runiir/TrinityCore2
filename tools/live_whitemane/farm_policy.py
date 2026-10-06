@@ -57,7 +57,7 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
             if not a['flying'] and not a['falling']:
                 key='portal' if selected else 'portal_'+p['key']
                 actions[key]=(('Use the next portal in the addon route' if selected else
-                    'Use nearby portal to '+p['destination']+', which differs from the addon next leg'),p)
+                    'Leave the current addon route via portal to '+p['destination']),p)
             if ui.get('flyable'):
                 key='flight' if selected else 'flight_portal_'+p['key']
                 actions[key]=('Fly to portal to '+p.get('destination','the route destination')+', then land',
@@ -149,6 +149,8 @@ def choose(row,batches,session):
         'guide_error':guide_error,
         'ground_approach_blocked':ground_blocked,
         'route':route.get('kind'),'route_instruction':route.get('instruction'),
+        'task':'Follow addon next leg: '+str(route.get('instruction')),
+        'next_waypoint_is_flight_master':route.get('kind')=='taxi',
         'addon_next_destination':route.get('target'),
         'addon_digsite_name':(route.get('site') or {}).get('name'),
         'instant_flight_paths':True,'route_fare_copper':route.get('fare_copper'),
@@ -162,21 +164,28 @@ def choose(row,batches,session):
         'completed_site_pending_minimap_check':bool(session.get('pending_site_completions') and signal.get('clear') is not True),
         'fragments':[{k:r[k] for k in ('index','fragments','cost','sockets','keystones_in_bags')} for r in a['races'] if r['cost']],
         'last_failure':[{ 'failure':r['failure'][:120],'choice':r['choice']} for r in session.get('recoveries',[])[-1:]]}
-    action,request,response=laya_ui.choose(state,
-        'Choose the next activity. A discovered uncollected artifact means the current activity is pickup. '
-        'Remain in pickup until collection is confirmed, including after the digsite is replaced. '
-        'Finish the current digsite by following its guide before traveling onward. '
-        'Prefer saved GatherMate markers; use telescope fallback. Collect discovered finds before leaving. '
-        'Start solve batches around 150 fragments and continue while affordable with maximum keystones. '
-        'Follow the current route instruction through Tol Barad and Orgrimmar to the next digsite. '
-        'When the teleport shortcut is pending, use Tol Barad and its Orgrimmar portal before approaching the distant flight master. '
-        'Land first for a stationary teleport. Check remaining minimap blips before leaving a completed site. '
-        'Follow the addon next leg and lower known taxi fare for instant flights. Another nearby portal can lead to a more expensive route. '
-        'If the selected portal approach is blocked, fly to that entrance and land. Learn from the last failure.',
+    context=state
+    if (route.get('kind') in ('portal','taxi','shortcut','site')
+            and not state['pending_pickup'] and not state['at_digsite']):
+        keys=('task','activity','route','route_instruction','addon_next_destination','addon_digsite_name',
+            'next_waypoint_is_flight_master','route_distances_yards','portal_distance_yards',
+            'health','combat','mounted','flying','swimming','grounded','casting','falling',
+            'named_object','pending_pickup','minimap_clear','completed_site_pending_minimap_check',
+            'teleport_shortcut_pending','route_fare_copper','route_fare_source',
+            'recent_actions','last_failure','consecutive_actions_without_progress')
+        context={k:state[k] for k in keys}
+        if any(k.startswith('solve_') for k in options):context['fragments']=state['fragments']
+    action,request,response=laya_ui.choose(context,
+        'Choose from current facts. Collect pending artifacts and finish this site before travel, '
+        'even after the site is replaced. Follow saved markers, telescope, then the addon next leg. '
+        'Shortcut: land, teleport to Tol Barad, use Orgrimmar portal, then approach the taxi. '
+        'Later taxi legs wait for portal arrival. For instant taxis prefer lower known fare. '
+        'Survey on ground dismounts. Check minimap before leaving. Solve batches start around '
+        '150 fragments, use maximum keystones, continue while affordable. Change blocked approaches.',
         {k:v[0] for k,v in options.items()})
     action=dig_decisions.explore(action,response,options,state)
     phase=('solve' if action.startswith('solve_') else 'portal' if action.startswith('portal_')
         else 'flight' if action.startswith('flight_portal_') else action)
-    decision={'state':state,'request':request,'response':response,'choice':action}
+    decision={'state':context,'observed_state':state,'request':request,'response':response,'choice':action}
     IntentQueue(session).offer(phase,options[action][1],decision,row)
     return phase,options[action][1],decision
