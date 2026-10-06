@@ -5,11 +5,16 @@ from . import camera_navigation,camera_input,runtime
 
 @pytest.mark.parametrize('sensitivity',[-.006,.004])
 @pytest.mark.parametrize('ground_view,starting_pitch',[(False,-1.5),(True,math.pi/4)])
+@pytest.mark.parametrize('preferred_zoom',[None,20])
 def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
-        monkeypatch,tmp_path,sensitivity,ground_view,starting_pitch):
+        monkeypatch,tmp_path,sensitivity,ground_view,starting_pitch,preferred_zoom):
     (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
     monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
-    commands=[];monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *args:commands.append(args) or {})
+    commands=[];monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *args:commands.append(args) or {'completed':True})
+    zoom_restored=[]
+    monkeypatch.setattr(camera_navigation.camera_zoom,'goal',lambda _:preferred_zoom)
+    monkeypatch.setattr(camera_navigation.camera_zoom,'restore',lambda folder,row,desired,**kw:
+        zoom_restored.append((desired,kw['save_preset'])) or {'confirmed':True})
     monkeypatch.setattr(camera_navigation.time,'sleep',lambda _:None)
     actual={'yaw':0,'pitch':starting_pitch,'sequence':0};deltas=[]
     class Sender:
@@ -38,6 +43,7 @@ def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
     assert actual['pitch']==starting_pitch and all(y==0 for _,y in deltas)
     assert abs(actual['yaw'])<=.18 and len(rows)>=2
     assert commands[0][2]['text']==('/run ResetView(4)SetView(4)' if ground_view else '/run ResetView(2)SetView(2)')
+    assert zoom_restored==([] if preferred_zoom is None else [(20,4 if ground_view else 2)])
 
 
 def test_ground_turn_does_not_require_or_steer_a_stale_body_pitch(monkeypatch,tmp_path):

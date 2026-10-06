@@ -3,7 +3,7 @@ import fcntl
 import json
 import math
 import time
-from . import inputs,runtime,native_control
+from . import inputs,runtime,native_control,camera_zoom
 from .observe import observe
 from .camera_steering import CameraSteering,angle
 from .sticky_input import StickyInput,observation_lease
@@ -16,6 +16,10 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
     folder.mkdir(parents=True,exist_ok=False)
     grounded=not before['archaeology']['flying'] and not before['archaeology']['falling'] and not before['archaeology'].get('swimming')
     view=None
+    before_zoom=(before.get('farm_ui') or {}).get('camera_zoom')
+    preferred_zoom=camera_zoom.goal(before)
+    desired_zoom=max(x for x in (before_zoom,preferred_zoom) if x is not None) if (
+        before_zoom is not None or preferred_zoom is not None) else None
     if grounded and (ground_view or target is None or reset_view):
         preset=4 if ground_view else 2
         path=runtime.ROOT/'run/camera_presets.json'
@@ -77,9 +81,9 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
                 if vertical and not pixels:pixels=1 if len(rows)%2 else -1
                 if pixels or vertical:sticky.relative(pixels,vertical)
                 aligned=aligned+1 if abs(error)<=.18 and not steering.pending and pitch_aligned else 0
-                if aligned>=2:return rows
+                if aligned>=2:break
                 time.sleep(.1)
-            raise RuntimeError('camera view did not reach forward alignment')
+            else:raise RuntimeError('camera view did not reach forward alignment')
         finally:
             sticky.close()
             runtime.write(folder/'camera_view.json',{'identity':identity,'observations':rows,
@@ -88,3 +92,8 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
                 'desired_pitch_radians':desired_pitch,'pitch_samples':list(pitch_steering.samples),
                 'view_preset_input':view,
                 'pitch_basis':'client view preset on ground; owned movement pitch only while airborne'})
+    if view and desired_zoom is not None:
+        zoom=camera_zoom.restore(folder/'zoom',row,desired_zoom,save_preset=preset)
+        saved=json.loads((folder/'camera_view.json').read_text());saved['preserved_zoom']=zoom
+        runtime.write(folder/'camera_view.json',saved)
+    return rows

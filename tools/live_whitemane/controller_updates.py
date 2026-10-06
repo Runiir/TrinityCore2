@@ -11,7 +11,7 @@ COMPONENTS=('guide','camera_steering','camera_navigation','fast_waypoint','smoot
     'flight','combat_target','combat','dig_context','dig_decisions','pickup_intent',
     'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find',
     'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal','taxi','ground_jump','controller_updates','interaction_search',
-    'laya_ui','decisions','portal_view','sticky_input','boundaries','route_facts')
+    'laya_ui','decisions','portal_view','sticky_input','boundaries','route_facts','camera_zoom')
 
 
 class SourceUpdates:
@@ -96,7 +96,7 @@ def upgrade_bound_callbacks():
 
 def apply_addon_request(folder,row):
     path=runtime.ROOT/'run/addon_reload_request.json'
-    if not path.exists():return False
+    if not path.exists():return apply_camera_request(folder,row)
     import json
     request=json.loads(path.read_text());ui=row.get('farm_ui') or {}
     expected=request.get('expected',{'combat_facts_schema':'observed_attackers_v1'})
@@ -113,6 +113,34 @@ def apply_addon_request(folder,row):
         request['selection']=command_choice(folder/'addon_update',row,'/reload',
             request.get('goal','Load installed facts identifying mobs attacking this player'),
             request.get('label','Reload the installed attacker observation telemetry'))
+    except RuntimeError as error:
+        request['retry_reason']=str(error)
+        runtime.write(Path(request['receipt']),request);return False
+    runtime.write(Path(request['receipt']),request)
+    return request['selection']['executed']
+
+
+def apply_camera_request(folder,row):
+    path=runtime.ROOT/'run/camera_zoom_request.json'
+    if not path.exists():return False
+    import json
+    request=json.loads(path.read_text());ui=row.get('farm_ui') or {};a,m=row['archaeology'],row['movement']
+    if request.get('runtime')!=row.get('runtime'):return False
+    current=ui.get('camera_zoom');desired=request['zoom']
+    if current is not None and abs(current-desired)<=1:
+        request.update(completed=True,confirmed_zoom=current,confirmed_at=time.time())
+        runtime.write(Path(request['receipt']),request);path.unlink();return False
+    if (current is None or m['in_combat'] or m['dead'] or not m['in_world'] or m.get('speed',0)>0
+            or any(a.get(k) for k in ('flying','falling','casting'))
+            or time.time()-request.get('last_attempt',0)<10):return False
+    request['last_attempt']=time.time();runtime.write(path,request)
+    from .farm_actions import command_choice
+    fn='CameraZoomOut' if desired>current else 'CameraZoomIn'
+    try:
+        request['selection']=command_choice(folder/'camera_zoom_update',row,
+            f'/run {fn}({abs(desired-current):.2f})',
+            'Use a wider view for supervised archaeology and object searches',
+            f'Adjust the camera zoom from {current:.1f} to {desired:.1f} yards')
     except RuntimeError as error:
         request['retry_reason']=str(error)
         runtime.write(Path(request['receipt']),request);return False

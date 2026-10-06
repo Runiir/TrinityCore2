@@ -5,7 +5,7 @@ import math
 import statistics
 import time
 from collections import deque
-from . import runtime, inputs, native_control, guide
+from . import runtime, inputs, native_control, guide, camera_zoom
 from .observe import observe
 from .decisions import choose
 from .camera_steering import CameraSteering
@@ -53,6 +53,14 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
     if route:target=route[0]
     from .resources import DEFAULTS,limits,check
     check()
+    # A portal's verified close view is local to that interaction. Restore
+    # the requested ordinary view when Laya next selects travel or digging.
+    # This runs before any held movement input, and leaves portal intent alone.
+    if approved_intent and approved_intent[0]!='portal':
+        preference=runtime.ROOT/'run/camera_zoom_preference.json'
+        if preference.exists():
+            zoom_row=observe(folder/'zoom_precheck.png');desired=camera_zoom.goal(zoom_row)
+            if desired is not None:camera_zoom.restore(folder/'ordinary_zoom',zoom_row,desired)
     receipts=deque(maxlen=(limits() or DEFAULTS)['movement_history']);started=time.time()
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
