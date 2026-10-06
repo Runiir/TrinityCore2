@@ -10,6 +10,31 @@ from . import lab_runtime as lab
 TABLES = {'SpellEffect': 0x7F31EDF7, 'SkillLineAbility': 0x738BFEE1}
 
 
+def public_sections(data, layout):
+    """Accept only complete plaintext sections inside strictly verified bytes."""
+    if len(data) < 204 or data[:8] != b'WDC5\x05\0\0\0':
+        raise RuntimeError('unexpected installed table schema')
+    header = struct.unpack_from('<9I2H7I', data, 136)
+    if header[5] != layout or header[9] & ~4 or not 1 <= header[-1] <= 1024:
+        raise RuntimeError('unsupported table layout or flags')
+    end = 204+40*header[-1]
+    if end > len(data):
+        raise RuntimeError('incomplete public section metadata')
+    complete = []
+    for index in range(header[-1]):
+        key, base, rows, strings, sparse_end, ids, relations, sparse_ids, copies = struct.unpack_from('<Q8I', data, 204+40*index)
+        if key:
+            continue
+        stop = base+rows*header[2]+strings+ids+copies*8+relations
+        if sparse_end or sparse_ids or ids not in (0, rows*4) or base < end or stop > len(data):
+            continue
+        complete.append({'index':index, 'base':base, 'rows':rows, 'strings':strings,
+            'ids':ids, 'relations':relations, 'copies':copies, 'end':stop})
+    if not complete:
+        raise RuntimeError('no complete public section in verified prefix')
+    return header, complete
+
+
 def extract(directory):
     directory = directory.resolve()
     if not directory.is_relative_to(lab.ROOT/'evidence'):
@@ -46,8 +71,23 @@ def extract(directory):
                     raise RuntimeError('public table exceeds its bounded size')
                 data = ct.create_string_buffer(size);received = ct.c_uint32()
                 if not lib.CascReadFile(file, data, size, ct.byref(received)) or received.value != size:
-                    raise RuntimeError('strict public table read failed: '+name+
-                        '; CASC error '+str(lib.GetCascError())+'; bytes read '+str(received.value))
+                    error = lib.GetCascError()
+                    if error == 1005 and received.value >= 244:
+                        # CascLib copies each strictly checked readable BLTE frame
+                        # before stopping at ERROR_FILE_ENCRYPTED. Keep only those
+                        # actual bytes, never the zero-filled remainder of the buffer.
+                        prefix = data.raw[:received.value]
+                        header, sections = public_sections(prefix, layout)
+                        out = directory/(name+'.public-prefix.db2');out.write_bytes(prefix)
+                        record = {'build':60895, 'source':'local_read_only_CASC', 'path':source,
+                            'full_bytes':size, 'verified_prefix_bytes':received.value,
+                            'prefix_sha256':lab.sha256(out), 'header':list(header), 'sections':sections,
+                            'casc_error':error, 'complete_table':False,
+                            'limits':'Complete public sections only. Unread encrypted sections prevent global absence claims. No keys or zero-filled records.'}
+                        lab.private_write(directory/(name+'.public-prefix.json'), json.dumps(record, indent=2)+'\n')
+                        print(json.dumps(record), flush=True)
+                    raise RuntimeError('strict full public table read failed: '+name+
+                        '; CASC error '+str(error)+'; bytes read '+str(received.value))
                 if data.raw[:8] != b'WDC5\x05\0\0\0':
                     raise RuntimeError('unexpected installed table schema')
                 header = struct.unpack_from('<9I2H7I', data.raw, 136)
