@@ -19,6 +19,7 @@ struct ChannelState;
 struct ItemTextState;
 struct WhoState;
 struct PetState;
+struct TrainerState;
 struct State
 {
     Value character;
@@ -47,6 +48,7 @@ struct State
     std::shared_ptr<ItemTextState> item_text_state;
     std::shared_ptr<WhoState> who_state;
     std::shared_ptr<PetState> pet_state;
+    std::shared_ptr<TrainerState> trainer_state;
     unsigned cast_counter = 0;
     std::uint64_t cast_serial = 0, aura_serial = 0;
     bool created = false;
