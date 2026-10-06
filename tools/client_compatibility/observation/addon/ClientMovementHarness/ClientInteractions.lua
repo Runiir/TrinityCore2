@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=130,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=131,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -465,6 +465,8 @@ local function snapshot(viewMode,viewPage)
         end
     end
     data.trainer_probe={spell=3127,available=type(IsSpellKnown)=='function',known=call(IsSpellKnown,3127)}
+    local _,class=call(UnitClass,'player')
+    if class=='WARLOCK' then data.control_demon_probe=Client442ObserveControlDemon() end
     if AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
         local api=C_AuctionHouse or {}
         data.auction={tab=call(PanelTemplates_GetSelectedTab,AuctionHouseFrame),events=auctionEvents,

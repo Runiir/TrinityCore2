@@ -20,6 +20,7 @@ DressUpObservation.lua
 AchievementObservation.lua
 ActionBarObservation.lua
 TargetFrameObservation.lua
+PetControlObservation.lua
 SettingsObservation.lua
 AddOnsObservation.lua
 MacroObservation.lua
