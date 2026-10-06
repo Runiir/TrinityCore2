@@ -83,7 +83,7 @@ def test_captured_trained_imp_assist_catalog_uses_pinned_modern_action_types(cod
     rows=result(codec,op='stateful',character={'guid':5,'map':0},snapshot=snapshot(guid=5,pet=pet),
         units=[unit(owner=5,guid=pet,number=2)],gameobjects=[],
         actions=[action('pet_response','SMSG_PET_SPELLS',body)])
-    assert rows[0] and rows[0][0]=='SMSG_PET_SPELLS_MESSAGE'
+    assert isinstance(rows[0],list) and rows[0][0]=='SMSG_PET_SPELLS_MESSAGE',rows[0]
     r=Reader(bytes.fromhex(rows[0][1]));assert r.guid()==(13,IDENTITY[1])
     assert r.unpack('HHIBBB')==(23,0,0,1,0,3)
     assert r.unpack('10I')==(0x03800002,0x03800001,0x03800004,0xc0800c26,0xc08018a3,
