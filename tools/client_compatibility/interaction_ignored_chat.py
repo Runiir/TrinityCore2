@@ -45,7 +45,7 @@ def negative_checks(primary_rows,scout_rows,token,states,before,after):
     for row in scout_rows:
         body=bytes.fromhex(row.get('body',''))
         if body[:1]!=b'\x19':continue # Native SharedDefines CHAT_MSG_IGNORED.
-        if row['name']=='SMSG_MESSAGECHAT' and row['direction']=='from_native':ignored.append(body)
+        if row['name'] in ('SMSG_MESSAGECHAT','SMSG_GM_MESSAGECHAT') and row['direction']=='from_native':ignored.append(body)
         elif row['name']=='SMSG_CHAT' and row['direction']=='to_client':modern_ignored.append(body)
     checks=feedback_checks(primary_rows)
     checks.update(native_owned_whisper=(len(native)==1 and len(native[0])>=13 and native[0][0]==7 and
@@ -107,7 +107,7 @@ def phase(primary,scout,packets,source):
             'general_before':before,'general_after':after,
             'primary_packets':[r for r in rows if r['name'] in ('CMSG_CHAT_REPORT_IGNORED','CMSG_CHAT_IGNORED') or
                 tokens['ignored'].encode() in bytes.fromhex(r.get('body',''))],
-            'scout_packets':[r for r in peer if r['name']=='SMSG_MESSAGECHAT' and r['direction']=='from_native' and
+            'scout_packets':[r for r in peer if r['name'] in ('SMSG_MESSAGECHAT','SMSG_GM_MESSAGECHAT') and r['direction']=='from_native' and
                 bytes.fromhex(r.get('body',''))[:1]==b'\x19' or r['name']=='SMSG_CHAT' and
                 r['direction']=='to_client' and bytes.fromhex(r.get('body',''))[:1]==b'\x19']}
     except Exception as failure:error=f'{type(failure).__name__}: {failure}'

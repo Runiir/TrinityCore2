@@ -1,4 +1,5 @@
 #include "chat_probe.hpp"
+#include "chat_ignore.hpp"
 
 namespace bridge
 {
@@ -63,6 +64,7 @@ bool item_link_probe(std::string const &name, View body)
 
 bool public_chat_probe(std::string const &name, View body)
 {
+    if (owned_ignore_probe(name, body)) return true;
     if (!(name.starts_with("CMSG_CHAT_MESSAGE_") || name.starts_with("CMSG_MESSAGECHAT_") ||
           name == "SMSG_CHAT" || name == "SMSG_MESSAGECHAT")) return false;
     if (item_link_probe(name, body)) return true;

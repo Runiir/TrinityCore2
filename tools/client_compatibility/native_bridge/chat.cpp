@@ -1,5 +1,6 @@
 #include "chat.hpp"
 #include "chat_channels.hpp"
+#include "chat_ignore.hpp"
 
 namespace bridge
 {
@@ -44,6 +45,7 @@ std::string counted(Reader &r,unsigned maximum)
 }
 Reply chat_request(State &owner,std::string const &name,View body)
 {
+    if(auto ignored=ignored_chat_request(name,body))return ignored;
     if(auto channel=chat_channel_request(owner,name,body))return channel;
     static std::unordered_map<std::string,std::string> const names={
         {"CMSG_CHAT_MESSAGE_SAY","CMSG_MESSAGECHAT_SAY"},{"CMSG_CHAT_MESSAGE_YELL","CMSG_MESSAGECHAT_YELL"},
