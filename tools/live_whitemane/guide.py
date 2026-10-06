@@ -2,6 +2,55 @@
 import math
 
 
+def fresh_guidance(row, tool):
+    """The arrow and candidate facts must describe this Survey, not the last."""
+    if not tool:return False
+    arrow=row['archaeology'].get('arrow') or {}
+    public=(row.get('farm_ui') or {}).get('survey_guidance') or {}
+    return (arrow.get('boundary_verified') and
+        abs(arrow.get('observed_at',0)-tool['observed_at'])<=2 and
+        abs(public.get('at',0)-tool['observed_at'])<=2)
+
+
+def marker_target(world, marker):
+    heading=marker['heading_radians'];distance=marker['distance_yards']
+    return {'source':'GatherMate marker','marker_id':marker['marker_id'],
+        'world':{'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
+                 'west':world['west']+math.sin(heading)*distance}}
+
+
+def matching_marker(row, session, tool):
+    """Locate the addon's recorded candidate among displayed minimap markers."""
+    public=(row.get('farm_ui') or {}).get('survey_guidance') or {}
+    along=public.get('candidate_along_yards')
+    if not fresh_guidance(row,tool) or public.get('candidate_matches') is not True or along is None:
+        return None
+    a=row['archaeology'];world=a['world'];origin=a['arrow']['origin']
+    heading=a['arrow'].get('heading_radians',tool['facing_radians'])
+    candidates=[]
+    for marker in a['visible_markers']:
+        if marker['marker_id'] in session.get('failed_marker_ids',[]):continue
+        target=marker_target(world,marker);point=target['world']
+        north,west=point['north']-origin['north'],point['west']-origin['west']
+        projection=north*math.cos(heading)+west*math.sin(heading)
+        # The addon supplies the chosen point's projection. The binary marker
+        # map is quantized; allow its sub-yard error without selecting a point
+        # elsewhere on the same line. Keep the actual marker's lateral offset.
+        across=abs(north*math.sin(heading)-west*math.cos(heading))
+        tolerance=math.radians(10 if tool['entry']==204272 else 20 if tool['entry']==206589 else 25)
+        if abs(projection-along)<=1 and across<=max(8,projection*math.tan(tolerance)):
+            candidates.append((abs(projection-along),across,target))
+    if not candidates:return None
+    target=min(candidates,key=lambda item:item[:2])[2]
+    return {**target,'recorded_marker_matches':True,'survey_observed_at':tool['observed_at']}
+
+
+def reobserve(session):
+    """Discard interrupted estimates without treating an untested marker as failed."""
+    session['walked_since_survey']=True
+    session.pop('telescope_target',None);session.pop('last_green_endpoint',None)
+
+
 def select(row, session, tool):
     a,m=row['archaeology'],row['movement']; world=a['world']
     find=row.get('visible_find')
@@ -22,16 +71,19 @@ def select(row, session, tool):
     target=session.get('marker_target')
     if target and target['world']['instance'] != world['instance']:
         raise RuntimeError('marker target belongs to another world instance')
+    if target is None:
+        target=matching_marker(row,session,tool)
+        if target:
+            session['marker_target']=target
+            session['marker_failed_surveys']=0
+            session.pop('telescope_target',None)
     if not session.get('marker_fallback') and target is None:
         for marker in a['visible_markers']:
             if marker['marker_id'] in visited: continue
-            heading=marker['heading_radians'];distance=marker['distance_yards']
-            target={'source':'GatherMate marker','marker_id':marker['marker_id'],
-                    'world':{'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
-                             'west':world['west']+math.sin(heading)*distance}}
+            target=marker_target(world,marker)
             session['marker_target']=target
+            session['marker_failed_surveys']=0
             break
-    if session.get('marker_fallback'): target=None
     if target:
         endpoint=target['world']; distance=math.hypot(endpoint['north']-world['north'],endpoint['west']-world['west'])
         heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
@@ -40,6 +92,12 @@ def select(row, session, tool):
             'arrived':distance<=.5,'arrival_tolerance_yards':.5}
     elif tool or session.get('telescope_target'):
         saved=session.get('telescope_target')
+        public=(row.get('farm_ui') or {}).get('survey_guidance') or {}
+        if (saved and saved.get('recorded_marker_matches') is False and
+                fresh_guidance(row,tool) and public.get('candidate_matches') is True):
+            # Public tiles can follow the owned object packet by one sample.
+            # Upgrade the provisional short step before returning cached data.
+            session.pop('telescope_target',None);saved=None
         if saved and saved['color']=='green' and 'recorded_marker_matches' not in saved:
             session.pop('telescope_target',None);saved=None
             if not tool:return None,None
@@ -62,7 +120,6 @@ def select(row, session, tool):
             heading=tool['facing_radians'];distance=3
             endpoint={'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
                       'west':world['west']+math.sin(heading)*distance}
-        public=(row.get('farm_ui') or {}).get('survey_guidance') or {}
         candidate=(public.get('candidate_matches') is True and
             abs(public.get('at',0)-tool['observed_at'])<=2)
         if color=='green' and not candidate:
@@ -74,6 +131,7 @@ def select(row, session, tool):
                       'west':world['west']+math.sin(heading)*distance}
         guide={'source':'Survey telescope','color':color,'distance_yards':round(distance,2),
                'arrived':False,'world':endpoint,'recorded_marker_matches':candidate,
+               'survey_observed_at':tool['observed_at'],
                'distance_is_estimate':True,'arrival_tolerance_yards':.5 if color=='green' else 6 if color=='red' else 4}
         session['telescope_target']=dict(guide)
     else: return None,None
@@ -83,13 +141,17 @@ def select(row, session, tool):
 
 
 def marker_survey_outcome(session, guide, fresh_tool, artifact_discovered):
-    if guide and guide['source']=='GatherMate marker' and guide['arrived'] and not artifact_discovered:
+    if (guide and guide['source']=='GatherMate marker' and guide['arrived']
+            and fresh_tool and not artifact_discovered):
         attempts=session.get('marker_failed_surveys',0)+1
         session['marker_failed_surveys']=attempts
-        if attempts>=2:
-            session['visited_marker_ids'].append(guide['marker_id'])
-            session['marker_target']=None
-            session['marker_fallback']=True
+        visited=session.setdefault('visited_marker_ids',[])
+        if guide['marker_id'] not in visited:visited.append(guide['marker_id'])
+        failed=session.setdefault('failed_marker_ids',[])
+        if guide['marker_id'] not in failed:failed.append(guide['marker_id'])
+        session['marker_target']=None
+        session['marker_fallback']=True
+        session.pop('telescope_target',None)
 
 
 def pickup(session,row=None):
@@ -104,6 +166,7 @@ def pickup(session,row=None):
         if closest and closest['distance_yards']<=.5 and closest['marker_id'] not in visited:
             visited.append(closest['marker_id'])
     session.update(marker_target=None,marker_fallback=False,marker_failed_surveys=0)
+    session.pop('failed_marker_ids',None)
     session.pop('telescope_target',None)
     session.pop('reapproach_find',None);session.pop('pickup_retries',None)
     session.pop('pickup_approach',None);session.pop('last_green_endpoint',None)

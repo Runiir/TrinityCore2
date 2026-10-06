@@ -113,8 +113,7 @@ def run(args):
             if grounded_here:
                 pending.update(completed=True,finished_at=time.time(),after=current,
                     outcome='grounded_digsite_discard_interrupted_flight_estimate')
-                session.update(marker_fallback=True,marker_target=None,walked_since_survey=True)
-                session.pop('telescope_target',None)
+                routes.reobserve(session)
                 runtime.write(path,session)
             if current['archaeology']['mounted'] or current['archaeology']['flying']:
                 folder=output/f"step_{pending['index']:04d}"
@@ -125,8 +124,7 @@ def run(args):
                 pending.update(completed=True,finished_at=time.time())
                 session['walked_since_survey']=True
                 if pending.get('grounded_digsite_reobserve'):
-                    session.update(marker_fallback=True,marker_target=None)
-                    session.pop('telescope_target',None)
+                    routes.reobserve(session)
                 runtime.write(path,session)
                 print('Laya resumed the observed flight to the addon endpoint',flush=True)
         for _ in range(args.steps):
@@ -160,10 +158,9 @@ def run(args):
             if session.get('observed_find_count',a['looted_finds']) < a['looted_finds']:
                 routes.pickup(session,before)
             session['observed_find_count']=a['looted_finds']
-            if tool and session.get('marker_fallback') and not session.get('telescope_target'):
+            if tool and not visible_find and not routes.fresh_guidance(before,tool):
                 for attempt in range(60):
-                    arrow=before['archaeology'].get('arrow')
-                    if arrow and arrow.get('boundary_verified'):break
+                    if routes.fresh_guidance(before,tool):break
                     time.sleep(.05)
                     before=observe(folder/f'arrow_wait_{attempt:02d}.png')
                 a,m=before['archaeology'],before['movement']
@@ -268,8 +265,7 @@ def run(args):
                     if graph:step['graph_path']=str(graph)
                     step['inputs']=fly(folder,before,arrow,step)
                     if step.get('grounded_digsite_reobserve'):
-                        session.update(marker_fallback=True,marker_target=None)
-                        session.pop('telescope_target',None)
+                        routes.reobserve(session)
                 elif value or guide['source'] in ('GatherMate marker','visible owned archaeology find','last green Survey endpoint') or guide['color']=='yellow':
                     step['travel_mode']='held_waypoint_approach'
                     finding=bool(value) or guide['source'] in ('visible owned archaeology find','last green Survey endpoint')

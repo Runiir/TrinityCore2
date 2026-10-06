@@ -220,5 +220,5 @@ def test_interrupted_root_landing_hands_back_to_survey_only_on_current_digsite_g
     dig=json.loads(path.read_text())
     if blocked_fact:assert dig==original and 'grounded_digsite_reobserve' not in step
     else:
-        assert dig=={'marker_fallback':True,'marker_target':None,'walked_since_survey':True}
+        assert dig=={'marker_target':{},'walked_since_survey':True}
         assert not step['grounded_digsite_reobserve']['destination_arrival_confirmed']

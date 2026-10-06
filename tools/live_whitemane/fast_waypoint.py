@@ -161,10 +161,17 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                             receipt['flight_aim']=aim(guidance['flight_path'],world,pose['height_yards'],speed,
                                 max(row['channel_ages'].values()))
                             desired_pitch=receipt['flight_aim']['pitch_radians']
-                        vertical,receipt['pitch_steering']=pitch_steering.update(pitch,pose['client_uptime_ms'],
+                        vertical,receipt['pitch_steering']=pitch_steering.update(pitch,m['client_uptime_ms'],
                             desired_pitch-pitch,distance,4)
                         pitch_ready=abs(desired_pitch-pitch)<math.pi/2
                         speed*=max(.01,math.cos(pitch))
+                if vertical and not pixels:
+                    # A stationary aircraft may not send a new movement-pitch
+                    # packet for camera tilt alone. A one-pixel yaw component
+                    # requests that normal client update with the same aim
+                    # delta; it does not restart the movement/model decision.
+                    pixels=1 if index%2 else -1
+                    receipt['pitch_feedback_yaw_pixels']=pixels
                 if pixels or vertical:sticky.relative(pixels,vertical)
                 # Forward motion remains productive throughout a correcting
                 # arc while facing into the destination's half-plane.

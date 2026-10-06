@@ -145,8 +145,8 @@ def run(folder,row,step,session,graph):
     elif action=='resurvey':
         path=Path(session['dig_output'])/'session.json'
         dig=json.loads(path.read_text())
-        dig.update(marker_fallback=True,marker_target=None,walked_since_survey=True)
-        dig.pop('telescope_target',None);dig.pop('last_green_endpoint',None)
+        from .guide import reobserve
+        reobserve(dig)
         runtime.write(path,dig)
     else:time.sleep(1 if action=='wait' else .2)
     result['after']=observe(folder/'after.png');result['completed']=True

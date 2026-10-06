@@ -58,11 +58,12 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
                 # yaw alignment must not wait for that stale body-pitch value.
                 pitch_aligned=grounded;pitch_info=None
                 if not grounded and pitch is not None:
-                    vertical,pitch_info=pitch_steering.update(pitch,pose['client_uptime_ms'],
+                    vertical,pitch_info=pitch_steering.update(pitch,m['client_uptime_ms'],
                         desired_pitch-pitch,1,.03)
                     pitch_aligned=abs(desired_pitch-pitch)<=.03 and not pitch_steering.pending
                 rows.append({'observed_at':row['observed_at'],**info,
                     'pitch_radians':pitch,'desired_pitch_radians':desired_pitch,'pitch_steering':pitch_info})
+                if vertical and not pixels:pixels=1 if len(rows)%2 else -1
                 if pixels or vertical:sticky.relative(pixels,vertical)
                 aligned=aligned+1 if abs(error)<=.18 and not steering.pending and pitch_aligned else 0
                 if aligned>=2:return rows

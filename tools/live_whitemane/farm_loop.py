@@ -11,7 +11,7 @@ from .observe import observe
 from .farm_actions import click_choice, command_choice
 from .flight import fly
 from .dig_policy import SolveBatches
-from . import observation_wait
+from . import observation_wait,guide
 from .intent_queue import IntentQueue
 
 
@@ -23,8 +23,7 @@ def return_to_survey(session,step):
     if not step.get('grounded_digsite_reobserve') or not session.get('dig_output'):return
     path=Path(session['dig_output'])/'session.json'
     dig=json.loads(path.read_text())
-    dig.update(marker_fallback=True,marker_target=None,walked_since_survey=True)
-    dig.pop('telescope_target',None);dig.pop('last_green_endpoint',None)
+    guide.reobserve(dig)
     runtime.write(path,dig)
 
 

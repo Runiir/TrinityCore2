@@ -143,3 +143,33 @@ def test_retained_input_survives_slow_but_valid_public_frames(monkeypatch,tmp_pa
     assert events.count(('press','Up'))==1 and events.count(('release','Up'))==1
     assert events.count(('button_press',3))==1 and events.count(('button_release',3))==1
     assert len(calls)==1
+
+
+def test_stationary_flight_pitch_feedback_does_not_deadlock_before_forward(monkeypatch,tmp_path):
+    from . import flight_path
+    r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,20)
+    state={'actual_pitch':-1.2,'reported_pitch':-1.2,'pose_tick':0,'index':0,'forward_frames':0}
+    sender=camera_input.Input()
+    def relative(x,y):
+        events.append(('relative',(x,y)));state['actual_pitch']-=y*.006
+        if x:
+            state['reported_pitch']=state['actual_pitch'];state['pose_tick']=state['index']*100
+    sender.relative=relative
+    monkeypatch.setattr(flight_path,'aim',lambda *_:{'pitch_radians':.8})
+    def observe(_):
+        state['index']+=1;now[0]+=.1;controllers[0].tick()
+        row=copy.deepcopy(r);row['observed_at']=now[0]
+        row['movement'].update(sequence=state['index'],client_uptime_ms=state['index']*100)
+        row['archaeology']['sequence']=state['index']
+        row['owned_pose']={'pitch_radians':state['reported_pitch'],'client_uptime_ms':state['pose_tick'],'height_yards':100}
+        if 'Up' in controllers[0].held:
+            state['forward_frames']+=1
+            if state['forward_frames']>=2:row['archaeology']['world']['north']=0
+        return row
+    monkeypatch.setattr(fast_waypoint,'observe',observe)
+    rows=fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},flying=True,
+        guidance={'flight_path':[{}]},approved_intent=('cruise',{}, {},{}))
+    assert rows[-1]['outcome']=='waypoint_arrived' and now[0]<2
+    assert abs(state['reported_pitch']-.8)<.1
+    assert any(delta[0] and delta[1] for event,delta in events if event=='relative')
+    assert events.count(('press','Up'))==events.count(('release','Up'))==1 and not calls
