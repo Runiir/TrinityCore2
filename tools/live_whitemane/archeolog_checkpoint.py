@@ -15,6 +15,25 @@ def command(*args):
     return subprocess.check_output(list(args), text=True).strip()
 
 
+def verify_remote_object(pointer):
+    """Inspect the exact remote hash even after local cache is deliberately pruned."""
+    from dvc.repo import Repo
+    import yaml
+    metadata = yaml.safe_load(pointer.read_text())['outs'][0]
+    with Repo('.') as repo:
+        remote = repo.cloud.get_remote_odb()
+        path = remote.oid_to_path(metadata['md5'])
+        exists = remote.fs.exists(path)
+        info = remote.fs.info(path) if exists else {}
+        # For this sub-50MiB single-part S3 object the ETag is the content MD5.
+        etag = info.get('ETag', '').strip('"')
+        verified = exists and info.get('size') == metadata['size'] and etag == metadata['md5']
+        if not verified:
+            raise RuntimeError('exact offloaded remote object identity could not be verified')
+    return {'exists': True, 'bytes': metadata['size'], 'md5': metadata['md5'],
+            'etag_matches_md5': True, 'remote_object_deleted': False}
+
+
 def checkpoint(args):
     from dvclive import Live
     import yaml
@@ -102,9 +121,12 @@ def checkpoint(args):
     # cloud status remains authoritative for retrievability of this exact object.
     summary['local_status_after_offload'] = json.loads(command('dvc', 'status', str(pointer), '--json'))
     summary['remote_cloud_status_after_offload'] = json.loads(command('dvc', 'status', str(pointer), '--cloud', '--json'))
+    summary['remote_object_verification_after_offload'] = verify_remote_object(pointer)
+    summary['post_offload_status_interpretation'] = 'DVC reports a local/remote difference after intentional workspace/cache pruning. The exact remote object remains present and verified; cloud status was empty before pruning.'
     write(args.summary, summary)
     print(json.dumps({'summary': str(args.summary), 'dvc_pointer': str(pointer),
-                      'remote_cloud_status': summary['remote_cloud_status_after_offload'],
+                      'remote_cloud_status_before_offload': cloud,
+                      'remote_object_verified_after_offload': True,
                       'generated_local_experiment_removed': True}), flush=True)
 
 
