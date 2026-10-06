@@ -59,3 +59,16 @@ saved user pose remains protected. Custom scripts remain blocked, with the
 accepted original softTargetInteract0 unrestored at1. The user's prior movement
 and buzzard selection are recorded as user input; the separate later primary
 logout remains unattributed.
+
+The closed checkpoint is `artifacts/client_harness/442_interactions_20261007_142.tar.gz.dvc`,
+332617598 bytes, MD5 `4bd40897b9752b070222108c221c2448`, SHA-256
+`4751e5e2d06c7f724be21d1eb71b51cf54dfd7c9669a97e55c33565e1d2b6384`.
+Actual remote streaming verifies all30 JSON records,181 PNG images and the3 exact
+accepted native purchase/learn/modern-delivery packets for Control Pet. Only after
+that proof are181 raw PNG files313111314 bytes and the exact archive/cache object
+offloaded. DVC status intentionally reports not-in-cache; push reports up to date.
+Two eviction CLI calls reject paths because the tool requires a basename and remove
+nothing; the corrected basename invocation succeeds. All post-checkpoint reports
+are copied into UI143. New paid-control continuity guards pass17 checks before
+reentry on the changed bridge; they require the complete owned offline deployment
+chain and never replay the purchase. UI143 continues live menu and Rename work.
