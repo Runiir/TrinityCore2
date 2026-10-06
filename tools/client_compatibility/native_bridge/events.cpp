@@ -28,6 +28,9 @@ bool capture(std::string const &name)
     if (name.starts_with("CMSG_MOVE_") || name.starts_with("MSG_MOVE_") || name.starts_with("SMSG_MOVE_"))
         return true;
     static std::unordered_set<std::string> const names = {"CMSG_SET_ACTION_BAR_TOGGLES", "CMSG_SET_ACTIONBAR_TOGGLES",
+                                                          "CMSG_REQUEST_PET_INFO", "CMSG_QUERY_PET_NAME", "CMSG_PET_NAME_QUERY",
+                                                          "SMSG_PET_NAME_QUERY_RESPONSE", "SMSG_QUERY_PET_NAME_RESPONSE",
+                                                          "SMSG_PET_SPELLS", "SMSG_PET_SPELLS_MESSAGE",
                                                           "CMSG_STAND_STATE_CHANGE", "CMSG_STANDSTATECHANGE", "SMSG_STAND_STATE_UPDATE", "CMSG_SET_SHEATHED",
                                                           "CMSG_SEND_CONTACT_LIST", "CMSG_CONTACT_LIST", "CMSG_WHO", "SMSG_WHO",
                                                           "CMSG_SHOWING_HELM", "CMSG_SHOWING_CLOAK",
