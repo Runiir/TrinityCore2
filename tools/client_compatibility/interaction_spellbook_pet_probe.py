@@ -38,17 +38,19 @@ def summon_button(t,learned,observe_only=False):
         return flyout.get('visible') and flyout.get('parent')==row['button'] and any(
             r.get('id')==688 and r.get('known') is True and r.get('enabled') for r in flyout.get('buttons',[]))
     def opened(b,a,s):
-        state,frame=read_current_page(t,'summon_flyout_open','spellbook',ready=ready)
+        state,frame=read_current_page(t,'summon_flyout_open','spellbook',ready=None if observe_only else ready)
         probe=state['spellbook_probe']
         t.receipt.setdefault('spellbook_details',{})['summon_flyout_open']={'state':state,'frame':frame,'input_sent':False}
-        valid=s=='open' and ready(state)
-        return {'status':'summon_flyout_open_pass' if valid else 'client_or_protocol_failure','oracle':{'probe':probe}}
+        valid=s=='open' and not state.get('lua_errors') and not state.get('blocked_actions')
+        status='summon_flyout_trace_pass' if observe_only else 'summon_flyout_open_pass'
+        return {'status':status if valid and (observe_only or ready(state)) else 'client_or_protocol_failure',
+            'oracle':{'probe':probe,'observation_only':observe_only,'qualified_scope':None}}
     candidates=[c for c in controls(t) if c['name']==row['button'] and c.get('enabled')]
     if len(candidates)!=1:raise RuntimeError('observed Summon Demon control is absent or ambiguous')
     require(t.step('spellbook.pet_probe.flyout','Open the observed stock Summon Demon flyout.',
         {'open':{'kind':'click','value':point(candidates[0]),'button':3,'hold':1.2,
             'description':'Right-click the observed stock Summon Demon row once.'}},
-        opened,diagnostic_action='open'),'summon_flyout_open_pass')
+        opened,diagnostic_action='open'),'summon_flyout_trace_pass' if observe_only else 'summon_flyout_open_pass')
     if observe_only:
         time.sleep(6)
         probe=detail(t,'summon_flyout_lifecycle')

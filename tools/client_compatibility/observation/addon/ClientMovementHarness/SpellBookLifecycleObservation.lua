@@ -1,14 +1,15 @@
 -- Passive stock event/lifecycle hooks. Never replace scripts or invoke controls.
-local entries,hooked={},setmetatable({},{__mode='k'})
+local entries,transitions,hooked={},{},setmetatable({},{__mode='k'})
 local events=CreateFrame('Frame')
 local function visible(frame)
     return frame and frame:IsVisible() or false
 end
 local function retain(kind,frame,stack)
     local parent=SpellFlyout and SpellFlyout:GetParent()
-    entries[#entries+1]={kind=kind,time=GetTime(),frame=frame and frame:GetName(),
+    local rows=kind:match('^flyout_') and transitions or entries
+    rows[#rows+1]={kind=kind,time=GetTime(),frame=frame and frame:GetName(),
         parent=parent and parent:GetName(),visible=visible(SpellFlyout),stack=stack}
-    if #entries>6 then table.remove(entries,1) end
+    if #rows>(rows==transitions and 2 or 4) then table.remove(rows,1) end
 end
 for _,event in ipairs({'SPELLS_CHANGED','UPDATE_SHAPESHIFT_FORM','PET_BAR_UPDATE',
     'CURSOR_CHANGED','ACTIONBAR_PAGE_CHANGED','PET_STABLE_UPDATE','PET_STABLE_SHOW',
@@ -28,5 +29,5 @@ function Client442ObserveSpellBookLifecycle()
             retain('flyout_hide',self,stack)
         end)
     end
-    return entries
+    return {events=entries,transitions=transitions}
 end

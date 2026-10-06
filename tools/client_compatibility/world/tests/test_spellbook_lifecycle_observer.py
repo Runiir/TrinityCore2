@@ -27,17 +27,19 @@ def test_flyout_hooks_preserve_stock_scripts_and_bound_event_history():
     CastSpellByID=forbidden;CastSpell=forbidden
     '''+'dofile('+json.dumps(str(source))+')\n'+'''
     assert(registered.SPELLS_CHANGED and registered.UPDATE_SHAPESHIFT_FORM and registered.ACTIONBAR_PAGE_CHANGED)
-    assert(#Client442ObserveSpellBookLifecycle()==0)
+    assert(#Client442ObserveSpellBookLifecycle().events==0)
     Client442ObserveSpellBookLifecycle() -- hooks install only once
     hooks.OnShow(SpellFlyout)
     for i=1,12 do listener.event(listener,'SPELLS_CHANGED') end
     shown=false;stock.OnHide();hooks.OnHide(SpellFlyout)
     local rows=Client442ObserveSpellBookLifecycle()
-    assert(#rows==6 and stockHideCalls==1)
-    assert(rows[5].kind=='SPELLS_CHANGED' and rows[6].kind=='flyout_hide')
-    assert(rows[6].parent=='SpellButton1' and rows[6].visible==false and #rows[6].stack==700)
+    assert(#rows.events==4 and #rows.transitions==2 and stockHideCalls==1)
+    assert(rows.events[4].kind=='SPELLS_CHANGED' and rows.transitions[2].kind=='flyout_hide')
+    assert(rows.transitions[2].parent=='SpellButton1' and rows.transitions[2].visible==false and #rows.transitions[2].stack==700)
+    for i=1,12 do listener.event(listener,'UPDATE_SHAPESHIFT_FORM') end
+    assert(rows.transitions[2].kind=='flyout_hide' and rows.events[4].kind=='UPDATE_SHAPESHIFT_FORM')
     SpellBookFrame.IsVisible=function() return false end
     listener.event(listener,'ACTIONBAR_PAGE_CHANGED')
-    assert(#rows==6 and rows[6].kind=='flyout_hide')
+    assert(#rows.events==4 and rows.transitions[2].kind=='flyout_hide')
     '''
     subprocess.run([lua,'-'],input=program,text=True,check=True,capture_output=True)
