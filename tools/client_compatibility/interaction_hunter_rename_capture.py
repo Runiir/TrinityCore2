@@ -21,6 +21,23 @@ from .world.buffer import Reader
 
 NAME='Harnesswolf'
 PROMPT='Enter desired name of pet:'
+CONFIRM="Name your pet 'Harnesswolf'?"
+
+
+def dialog_matches(state,rows,phase,pet):
+    confirmation=phase=='hunter_rename_confirmation_open'
+    panel='StaticPopup2' if confirmation else 'StaticPopup1'
+    text=CONFIRM if confirmation else PROMPT
+    labels=('Yes','No') if confirmation else ('Accept','Cancel')
+    fields=state.get('edit_fields',[])
+    expected='' if phase=='hunter_rename_dialog_open' else NAME
+    field_ok=(not fields if confirmation else len(fields)==1 and
+        fields[0].get('name')=='StaticPopup1EditBox' and fields[0].get('text')==expected)
+    return (state.get('panels')==[panel] and state.get('target',{}).get('guid')==expected_guid(pet) and
+        field_ok and not state.get('lua_errors') and not state.get('blocked_actions') and
+        all(sum(c.get('name')==panel+'Button'+str(i) and c.get('text')==label and
+            c.get('context')==text and c.get('enabled') is True for c in rows)==1
+            for i,label in enumerate(labels,1)))
 
 
 def request(packet,pet):
@@ -42,18 +59,10 @@ def baseline(t,preparation,source,phase):
         resources(inv)!=e['baseline_resources'] or saved(6)!=e['baseline_saved'] or
         not saved_pet_unchanged(e['retained_pet'],retained,time.time())):
         raise RuntimeError('owned Wolf Rename authority or baseline changed')
-    state,frame=t.observe('hunter_rename_current');fields=state.get('edit_fields',[])
-    expected='' if phase=='hunter_rename_dialog_open' else NAME
+    state,frame=t.observe('hunter_rename_current');rows=controls(t)
     position=e.get('baseline_world_position',e['state']['world_position'])
-    if (state.get('panels')!=['StaticPopup1'] or state.get('target',{}).get('guid')!=expected_guid(o.pet) or
-        state.get('world_position')!=position or state.get('lua_errors') or state.get('blocked_actions') or
-        len(fields)!=1 or fields[0].get('name')!='StaticPopup1EditBox' or fields[0].get('text')!=expected):
+    if not dialog_matches(state,rows,phase,o.pet) or state.get('world_position')!=position:
         raise RuntimeError('current stock owned Rename dialog differs')
-    rows=controls(t)
-    if not all(any(c.get('name')==name and c.get('text')==text and c.get('context')==PROMPT and
-        c.get('enabled') is True for c in rows) for name,text in
-        (('StaticPopup1Button1','Accept'),('StaticPopup1Button2','Cancel'))):
-        raise RuntimeError('stock Rename prompt or acceptance controls differ')
     t.receipt.update(native_session=session,native_pet=o.pet,retained_pet=retained,
         baseline_resources=e['baseline_resources'],baseline_saved=e['baseline_saved'],initial_target=e['initial_target'],
         baseline_world_position=position,
@@ -61,13 +70,14 @@ def baseline(t,preparation,source,phase):
     return old,session,e,o,retained,inv,state,frame,rows
 
 
-def suite(t,preparation,source,action,review_path=None,filled=False):
-    phase='hunter_rename_filled' if action=='submit' or filled else 'hunter_rename_dialog_open'
+def suite(t,preparation,source,action,review_path=None,filled=False,confirmed=False):
+    phase=('hunter_rename_confirmation_open' if action=='submit' or confirmed else
+        'hunter_rename_filled' if action=='accept' or filled else 'hunter_rename_dialog_open')
     old,session,e,o,retained,inv,state,frame,rows=baseline(t,preparation,source,phase)
     if action=='refresh':
         t.receipt.update(state=state,frame=frame,dialog_controls=rows,phase=phase,completed=True,input_sent=False)
         return
-    control='StaticPopup1EditBox' if action=='fill' else 'StaticPopup1Button1'
+    control={'fill':'StaticPopup1EditBox','accept':'StaticPopup1Button1','submit':'StaticPopup2Button1'}[action]
     review=reviewed(t,review_path,control)
     if review['frame']['sha256']!=e['frame']['sha256']:raise RuntimeError('reviewed Rename source image differs')
     selected=[c for c in rows if c.get('name')==control]
@@ -84,6 +94,16 @@ def suite(t,preparation,source,action,review_path=None,filled=False):
         t.receipt.update(state=state,frame=frame,dialog_controls=controls(t),dialog_checks=checks)
         if not all(checks.values()):raise RuntimeError('literal owned synthetic Rename field differs')
         t.receipt.update(phase='hunter_rename_filled',completed=True);return
+    if action=='accept':
+        t.execute({'kind':'click','value':review['point'],'hold':.4})
+        state,frame=t.observe('hunter_rename_confirmation');after=pets(6);rows=controls(t)
+        checks={'exact_confirmation':dialog_matches(state,rows,'hunter_rename_confirmation_open',o.pet),
+            'resources':resources(inv.poll())==e['baseline_resources'],'saved_rows':saved(6)==e['baseline_saved'],
+            'pet_rows':saved_pet_unchanged(retained,after,time.time()),
+            'position':state.get('world_position')==t.receipt['baseline_world_position'],**protected(old)}
+        t.receipt.update(state=state,frame=frame,dialog_controls=rows,dialog_checks=checks)
+        if not all(checks.values()):raise RuntimeError('stock synthetic Rename confirmation differs')
+        t.receipt.update(phase='hunter_rename_confirmation_open',completed=True);return
     path=lab.ROOT/'run/owned_pet_rename_probe.json'
     if path.exists():raise RuntimeError('another owned Rename capture is already armed')
     started=time.time();config={'schema':'client442_owned_pet_rename_probe_v1','session':session,'owner':6,'pet_number':4,
@@ -94,7 +114,7 @@ def suite(t,preparation,source,action,review_path=None,filled=False):
     try:
         def submitted(b,a,s):
             t.receipt['rename_confirmation_sent']=s=='accept'
-            return {'status':'synthetic_rename_submitted' if s=='accept' and 'StaticPopup1' not in a.get('panels',[]) and
+            return {'status':'synthetic_rename_submitted' if s=='accept' and not a.get('panels') and
                 not a.get('lua_errors') and not a.get('blocked_actions') else 'client_or_protocol_failure'}
         require(t.step('diagnostic.hunter_rename.capture','Submit exactly the reviewed synthetic owned pet name once.',
             {'accept':{'kind':'click','value':review['point'],'hold':.4,'description':'Click the observed Accept once.'}},
@@ -124,14 +144,15 @@ def suite(t,preparation,source,action,review_path=None,filled=False):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('refresh','fill','submit'))
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('refresh','fill','accept','submit'))
     for name in ('preparation','source','output'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--review',type=Path);p.add_argument('--filled',action='store_true');a=p.parse_args()
-    if a.action in ('fill','submit') and not a.review:p.error('requires the fresh separately viewed stock dialog review')
+    p.add_argument('--review',type=Path);p.add_argument('--filled',action='store_true')
+    p.add_argument('--confirmed',action='store_true');a=p.parse_args()
+    if a.action in ('fill','accept','submit') and not a.review:p.error('requires the fresh separately viewed stock dialog review')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:suite(t,a.preparation,a.source,a.action,a.review,a.filled)
+        try:suite(t,a.preparation,a.source,a.action,a.review,a.filled,a.confirmed)
         except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure','phase')}),flush=True)
