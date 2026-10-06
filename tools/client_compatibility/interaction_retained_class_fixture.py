@@ -18,6 +18,23 @@ def closed(path):
     return v
 
 
+def parking_restored(park):
+    checks=park.get('checks',{})
+    if len(checks)==4:return all(checks.values())
+    expected={'original_character','original_saved_rows','native_worldserver','class_offline',
+        'ordinary_logout','native_logout','delivered_logout'}
+    source=park.get('interrupted_source',{});path=Path(source.get('path','')).resolve()
+    if (set(checks)!=expected or not all(checks.values()) or park.get('input_sent') is not False or
+        path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence') or
+        path.is_symlink() or not path.is_file() or lab.sha256(path)!=source.get('sha256')):
+        return False
+    failed=json.loads(path.read_text())
+    return (failed.get('completed') is False and bool(failed.get('finished_at')) and
+        failed.get('failure')=='InterruptedError: parking process terminated by SIGTERM (exit 143)' and
+        failed.get('actor')==park.get('actor') and failed.get('runtime')==park.get('runtime') and
+        failed.get('fixture_source')==park.get('fixture_source'))
+
+
 def continuity(t,old,park,finish,deployment,preparation_sha):
     previous=old.get('runtime',{});current=t.receipt['runtime']
     fixture=old.get('class_actor',{})
@@ -31,7 +48,7 @@ def continuity(t,old,park,finish,deployment,preparation_sha):
         park.get('phase')!='await_original_selection_review' or
         park.get('fixture_source',{}).get('sha256')!=preparation_sha or
         finish.get('fixture_source',{}).get('sha256')!=preparation_sha or
-        len(park.get('checks',{}))!=4 or not all(park['checks'].values()) or
+        not parking_restored(park) or
         len(finish.get('checks',{}))!=5 or not all(finish['checks'].values())):
         raise RuntimeError('retained class and original restoration chain differs')
     if (not deployment.get('completed') or not deployment.get('finished_at') or
@@ -66,6 +83,14 @@ def prepare(t,preparation,parked,origin_finish,deployment_path,observer_version=
     checks=primary.get('bridge_native_restoration',{}).get('checks',{})
     if len(checks)!=9 or not all(checks.values()):
         raise RuntimeError('deployment has no complete primary native restoration')
+    if deployment.get('parked_primary'):
+        attempt=deployment.get('parked_reconnect_attempt',{}).get('primary',{})
+        if (primary.get('bridge_native_restoration',{}).get('offline') is not True or
+            primary.get('input_sent') is not False or primary.get('actor',{}).get('guid')!=1 or
+            primary.get('runtime',{}).get('worldserver')!=t.receipt['runtime']['worldserver'] or
+            primary.get('runtime',{}).get('modern_world')!=t.receipt['runtime']['modern_world'] or
+            attempt.get('sha256')!=lab.sha256(deployment_path.parent/'primary_after/episode.json')):
+            raise RuntimeError('offline primary restoration is not bound to this completed deployment')
     checks=origin_checks(old)
     fixture=old['class_actor'];guid=fixture['guid'];account=fixture['account_id']
     checks.update(class_offline=park['retained_class_fixture']['online']==0,

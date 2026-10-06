@@ -5,7 +5,7 @@ from . import actors,lab_runtime as lab
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .interaction_bridge_deploy import shot
-from .interaction_retained_class_fixture import closed
+from .interaction_retained_class_fixture import closed,parking_restored
 from .interaction_owned_class_fixture import character,saved,pets,origin_checks,SCRIPT_BOUNDARY
 
 
@@ -22,7 +22,8 @@ def continuity(t,old,park,finish,preparation_sha):
         any(v.get('runtime')!=t.receipt['runtime'] for v in (old,park,finish)) or
         park.get('phase')!='await_original_selection_review' or
         any(v.get('fixture_source',{}).get('sha256')!=preparation_sha for v in (park,finish)) or
-        set(park.get('checks',{}))!=parked or not all(park['checks'].values()) or
+        not (set(park.get('checks',{}))==parked and all(park['checks'].values()) or
+            len(park.get('checks',{}))==7 and parking_restored(park)) or
         set(finish.get('checks',{}))!=restored or not all(finish['checks'].values()) or
         not old['finished_at']<=park['started_at']<park['finished_at']<=finish['started_at']<finish['finished_at']):
         raise RuntimeError('closed unchanged-runtime class restoration chain differs')
