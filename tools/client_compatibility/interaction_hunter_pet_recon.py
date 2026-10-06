@@ -39,7 +39,7 @@ def saved_pet_unchanged(before,after,now):
         {k:v for k,v in b.items() if k!='savetime'}=={k:v for k,v in a.items() if k!='savetime'})
 
 
-def pet_frame_menu(t,oracle,expected):
+def pet_frame_menu(t,oracle,expected,*,name='Wolf',rename_allowed=True):
     """Inspect the owned pet frame's menu, whose actions differ from TargetFrame."""
     bar=bar_detail(t,'hunter_pet_hit_rectangle',lambda p:bool(p.get('targeting',{}).get('pet_frame')))
     control=bar['targeting']['pet_frame'];xy=point(control)
@@ -62,9 +62,11 @@ def pet_frame_menu(t,oracle,expected):
             'description':'Right-click the observed owned PetFrame once.'}},outcome,diagnostic_action='open',
         await_state=lambda a:'ContextMenu' in a.get('panels',[])),'hunter_pet_frame_menu_pass')
     state,frame=t.observe('hunter_pet_frame_menu');rows=controls(t)
-    menu_checks={'owned_menu_title':any(c.get('kind')=='MenuItem' and c.get('text')=='Wolf' for c in rows),
+    menu_checks={'owned_menu_title':any(c.get('kind')=='MenuItem' and c.get('text')==name for c in rows),
         'player_menu_absent':not any(c.get('text')=='Harnesshunt' for c in rows),
-        'stock_rename_visible':any(c.get('text')=='Rename' and c.get('enabled') is True for c in rows)}
+        'stock_rename_visible':any(c.get('text')=='Rename' and c.get('enabled') is True for c in rows)==rename_allowed}
+    if not rename_allowed:
+        menu_checks['stock_abandon_still_visible']=any(c.get('text')=='Abandon' and c.get('enabled') is True for c in rows)
     t.receipt.update(pet_menu={'state':state,'frame':frame,'controls':rows,'source_control':control,
         'checks':menu_checks});t.persist()
     if not all(menu_checks.values()):raise RuntimeError('owned Hunter pet rename menu differs')
