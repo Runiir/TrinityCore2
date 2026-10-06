@@ -1,5 +1,6 @@
 """Capture one stock synthetic Rename request while native translation is absent."""
 import argparse,json,time
+from copy import deepcopy
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_social import actor
@@ -63,7 +64,7 @@ def baseline(t,preparation,source,phase):
     position=e.get('baseline_world_position',e['state']['world_position'])
     if not dialog_matches(state,rows,phase,o.pet) or state.get('world_position')!=position:
         raise RuntimeError('current stock owned Rename dialog differs')
-    t.receipt.update(native_session=session,native_pet=o.pet,retained_pet=retained,
+    t.receipt.update(native_session=session,native_pet=deepcopy(o.pet),retained_pet=retained,
         baseline_resources=e['baseline_resources'],baseline_saved=e['baseline_saved'],initial_target=e['initial_target'],
         baseline_world_position=position,
         protected_checks=protected(old),rename_confirmation_sent=False,qualification_added=False)
