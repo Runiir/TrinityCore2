@@ -78,3 +78,23 @@ def test_blocked_portal_offers_a_jump_and_retains_the_portal_destination(monkeyp
     result=recovery.run(tmp_path/'recovery',r,{'phase':'portal','target':{'from':target},
         'local_failure':'continuous waypoint movement is blocked'},{'dig_output':None},graph)
     assert result['choice']=='jump_forward' and calls==[target]
+
+
+@pytest.mark.parametrize('failure',['artifact tooltip observation did not follow the cursor',
+    'no matching public tooltip in bounded interaction search','unexpected movement mode during continuous approach: swimming changed'])
+def test_ui_search_failure_or_water_exit_does_not_offer_an_obstacle_jump(monkeypatch,tmp_path,failure):
+    (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    r=ground();target={'instance':1,'north':4,'west':0}
+    graph=tmp_path/'graph.json';farm_graph.transition(graph,'portal',r,target=target)
+    monkeypatch.setattr(recovery.escape_route,'candidates',lambda *_:{
+        'step_forward':{'target':target,'distance_yards':4,'reference_collision_clear':False}})
+    monkeypatch.setattr(terrain_context,'facts',lambda *_:{})
+    monkeypatch.setattr(terrain_context,'detour',lambda *_:{'available':False})
+    def choose(state,instructions,options):
+        assert 'jump_forward' not in options and not state['forward_movement_blocked']
+        return 'retry',{},{}
+    monkeypatch.setattr(recovery.laya_ui,'choose',choose)
+    monkeypatch.setattr(recovery,'observe',lambda _:r)
+    monkeypatch.setattr(recovery.time,'sleep',lambda _:None)
+    recovery.run(tmp_path/'recovery',r,{'phase':'portal','target':{'from':target},
+        'local_failure':failure},{'dig_output':None},graph)

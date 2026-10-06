@@ -110,7 +110,11 @@ def run(folder,row,step,session,graph):
             for key in alternatives})
         if route.get('available'):choices['follow_detour']='Follow the connected reference ground route around the obstruction'
         from . import ground_jump
-        if ground_jump.legal(row) and alternatives.get('step_forward',{}).get('distance_yards',0)>.5:
+        movement_blocked=any(reason in step['local_failure'] for reason in (
+            'movement is blocked','walking outcome was blocked','flight cruise was blocked',
+            'repeated terrain contact without route progress'))
+        if (movement_blocked and ground_jump.legal(row)
+                and alternatives.get('step_forward',{}).get('distance_yards',0)>.5):
             choices['jump_forward']='Jump forward over a small obstacle, then observe landing and progress'
     state={'goal':'Find the Vial of the Sands recipe through archaeology',
         'failed_activity':step['phase'],'failure':step['local_failure'],
@@ -138,6 +142,7 @@ def run(folder,row,step,session,graph):
             'directions_clear_in_reference_geometry':{key:value['reference_collision_clear'] for key,value in alternatives.items()},
             'terrain':terrain,'reference_detour_available':route.get('available',False),
             'jump_forward_legal':'jump_forward' in choices,
+            'forward_movement_blocked':movement_blocked,
             'jump_height':'measure from owned altitude telemetry; no assumed clearance',
             'pending_pickup':bool(pending)}
         descriptions={'retry':'Repeat the blocked movement','wait':'Wait here','land':'Land and dismount',

@@ -63,6 +63,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         steering=CameraSteering();current_decision=None;look_sequence=None
         pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
         survey_generation=None;artifact_before=None;forward_started=False;terrain_wait=False
+        swimming_mode=None
         try:
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
@@ -77,6 +78,14 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if a['flying']!=flying:
                     if flying and (a['grounded'] or a.get('swimming')):raise GroundContact(row)
                     raise RuntimeError('unexpected movement mode during continuous approach')
+                if not flying:
+                    current_swimming=bool(a.get('swimming'))
+                    if swimming_mode is None:swimming_mode=current_swimming
+                    elif current_swimming!=swimming_mode:
+                        receipts.append({'observed_at':row['observed_at'],
+                            'outcome':'water_mode_changed','swimming_before':swimming_mode,
+                            'swimming_now':current_swimming,'retained_destination':target})
+                        raise RuntimeError('unexpected movement mode during continuous approach: swimming changed')
                 if sticky.interrupted:raise RuntimeError(sticky.interrupted)
                 # Rendering can be slower than the local control tick. An
                 # unchanged but still-valid public frame retains the accepted

@@ -133,6 +133,7 @@ def choose(row,batches,session):
         'activity':observed['activity'],'map_id':m['map_id'],
         'portal_distance_yards':observed['facts']['portal_distance_yards'],
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
+        'swimming':a.get('swimming'),'grounded':a.get('grounded'),
         'casting':a['casting'],'falling':a['falling'],
         'Survey_dismounts_on_ground':bool(a['mounted'] and not a['flying'] and not a.get('falling')),
         'at_digsite':a['can_survey'],'Survey_ready':(ui.get('survey') or {}).get('ready'),

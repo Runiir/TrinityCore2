@@ -83,6 +83,28 @@ def test_changed_route_or_terrain_releases_forward_and_camera(monkeypatch,tmp_pa
     assert recovery.retryable(failed.value)
 
 
+@pytest.mark.parametrize('initial_swimming',[True,False])
+def test_water_entry_or_exit_releases_retained_movement_for_a_new_mode_choice(monkeypatch,tmp_path,initial_swimming):
+    r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,100)
+    r['archaeology'].update(flying=False,mounted=False,grounded=not initial_swimming,swimming=initial_swimming)
+    count=[0]
+    def observe(_):
+        count[0]+=1;now[0]+=.1;controllers[0].tick()
+        fresh=copy.deepcopy(r);fresh['observed_at']=now[0]
+        fresh['movement'].update(sequence=count[0],client_uptime_ms=count[0]*100)
+        fresh['archaeology']['sequence']=count[0]
+        if initial_swimming:fresh['owned_pose']={'pitch_radians':0,'client_uptime_ms':count[0]*100}
+        if count[0]>=4:fresh['archaeology'].update(swimming=not initial_swimming,grounded=initial_swimming)
+        return fresh
+    monkeypatch.setattr(fast_waypoint,'observe',observe)
+    with pytest.raises(RuntimeError,match='swimming changed') as failed:
+        fast_waypoint.walk(tmp_path,{'instance':1,'north':0,'west':0},
+            approved_intent=('forward_long',{}, {},{}))
+    assert not calls and recovery.retryable(failed.value)
+    assert events.count(('press','Up'))==events.count(('release','Up'))==1
+    assert events.count(('button_press',3))==events.count(('button_release',3))==1
+
+
 def test_a_new_artifact_interrupts_the_retained_approach_for_a_model_choice(monkeypatch,tmp_path):
     r,now,events,controllers,calls=setup_route(monkeypatch,tmp_path,100)
     index=[0]
