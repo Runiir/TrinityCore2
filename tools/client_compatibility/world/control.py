@@ -23,6 +23,8 @@ def source_digest():
     paths = sorted((lab.REPO / 'tools/client_compatibility/native_bridge').glob('*'))
     paths += sorted((lab.REPO / 'tools/client_compatibility/world').glob('*.json'))
     paths += [lab.REPO / 'tools/client_compatibility/world/upstream-development-connect-to.pem']
+    paths += [lab.REPO/'experiments/configs/client_harness'/name for name in
+        ['public_portal_hotfix_v1.json','control_skill_metadata_v1.json']]
     for path in paths:
         if path.is_file() and path.suffix in {'.cpp', '.hpp', '.txt', '.json', '.pem'}:
             digest.update(str(path.relative_to(lab.REPO)).encode() + b'\0')
