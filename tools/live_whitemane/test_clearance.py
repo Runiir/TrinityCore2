@@ -25,6 +25,20 @@ def test_descent_does_not_report_ascent_and_pitch_is_preserved():
     assert result['pitch_radians']==pytest.approx(-.4)
 
 
+def test_post_taxi_scalar_flags_do_not_change_the_owned_height_layout():
+    player=(9,2<<58|7<<42)
+    for optional in (0,0x10):  # HasSpline has no trailing structure here.
+        payload=Writer().guid(*player).pack('4I6f2I',0x10,0x200,8,1234,
+            -534.05,1056.67,93.25,1.2,0,0,0,1).bits(optional,8).finish()
+        result=own_pose.parse(payload,player)
+        assert result['height_yards']==93.25 and result['movement_flags3']==8
+        assert not result['flying']
+    unsupported=Writer().guid(*player).pack('4I6f2I',0,0,8,1234,
+        -534.05,1056.67,93.25,1.2,0,0,0,1).bits(0x40,8).finish()
+    with pytest.raises(ValueError,match='unsupported movement layout'):
+        own_pose.parse(unsupported,player)
+
+
 def test_stale_or_unmatched_pose_cannot_supply_flight_height():
     row={'runtime':{'pid':1},'movement':{'speed':20},'archaeology':{
         'world':{'instance':1,'north':0,'west':0},'grounded':False,'flying':True,'falling':False}}

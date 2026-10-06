@@ -18,7 +18,11 @@ def parse(payload, player):
     if forces>16:raise ValueError('unsupported movement forces')
     for _ in range(forces):r.guid()
     presence=[r.bits(1) for _ in range(8)]
-    if flags3 or flags>=1<<30 or flags2 & ~(0x3f|0x100|0x200|0x400|0x8000) or any(presence[i] for i in (1,3,6,7)):
+    # WPP's pinned ReadMovementStats uses the presence byte, not scalar
+    # flag values, to select additional fields. Whitemane retains flags3=8
+    # after an instant taxi; it does not change this packet's layout.
+    # HasSpline (bit 3) is also a value-only bit in this message.
+    if any(presence[i] for i in (1,6,7)):
         mask=sum(bit<<i for i,bit in enumerate(presence))
         raise ValueError(f'unsupported movement layout flags={flags:x}/{flags2:x}/{flags3:x} optional={mask:02x}')
     if presence[0]:r.guid()
@@ -29,6 +33,7 @@ def parse(payload, player):
     if not all(math.isfinite(v) for v in (north,west,height,facing,pitch,elevation)) or max(abs(north),abs(west),abs(height))>17067:
         raise ValueError('invalid owned movement position')
     return {'north':north,'west':west,'height_yards':height,
+            'movement_flags':flags,'movement_flags2':flags2,'movement_flags3':flags3,
             'facing_radians':facing,'client_uptime_ms':tick,
             'flying':bool(flags&0x1000000),'falling':bool(flags&0x800),
             'ascending':bool(flags&0x200000),'descending':bool(flags&0x400000),
