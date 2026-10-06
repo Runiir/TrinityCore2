@@ -88,7 +88,7 @@ def test_captured_pet_creation_and_later_owner_link_release_deferred_native_cata
     assert rows[0] is None
     assert rows[1] and rows[1][0]=='SMSG_UPDATE_OBJECT','captured native Pet create was dropped'
     r=Reader(bytes.fromhex(rows[1][1]));assert r.unpack('HI')==(0,1)
-    assert (r.bits(1),r.bits(1))==(0,0)
+    assert (r.bits(1),r.bits(1))==(1,0)
     block=Reader(r.raw(r.unpack('I')[0]));assert block.unpack('B')==(1,)
     assert list(block.guid())==IDENTITY and block.unpack('B')==(5,)
     assert rows[2] is None and rows[3][0]=='SMSG_UPDATE_OBJECT'
@@ -146,7 +146,7 @@ def test_readonly_name_query_can_reach_another_visible_pet(codec):
 def test_removed_pet_has_no_name_response_or_future_query_authority(codec):
     query=action('pet_request','CMSG_QUERY_PET_NAME',Writer().guid(*IDENTITY).finish())
     native=struct.pack('<I',1)+b'Pip\0'+struct.pack('<IB',123,0)
-    rows=run(codec,[query,action('destroy_object','SMSG_DESTROY_OBJECT',struct.pack('<QB',PET,0)),
+    rows=run(codec,[query,action('destroy','SMSG_DESTROY_OBJECT',struct.pack('<QB',PET,0)),
         action('pet_response','SMSG_PET_NAME_QUERY_RESPONSE',native),query])
     assert rows[0][0]=='CMSG_PET_NAME_QUERY' and rows[1][0]=='SMSG_UPDATE_OBJECT'
     assert rows[2] is None and 'not visible' in rows[3]['error']

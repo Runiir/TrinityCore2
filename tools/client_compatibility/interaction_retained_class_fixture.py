@@ -1,0 +1,92 @@
+"""Bind an unchanged retained class fixture to a completed bridge-only deployment."""
+import argparse,json,time
+from pathlib import Path
+from . import actors,lab_runtime as lab
+from .interaction_social import actor
+from .interaction_trial import Trial
+from .interaction_bridge_deploy import shot
+from .interaction_owned_class_fixture import character,saved,pets,origin_checks,SCRIPT_BOUNDARY
+
+
+def closed(path):
+    path=path.resolve()
+    if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence') or path.is_symlink():
+        raise ValueError('requires a private owned closed episode')
+    v=json.loads(path.read_text())
+    if v.get('completed') is not True or v.get('failure') is not None or not v.get('finished_at'):
+        raise RuntimeError('retained fixture source is not closed and successful')
+    return v
+
+
+def continuity(t,old,park,finish,deployment,preparation_sha):
+    previous=old.get('runtime',{});current=t.receipt['runtime']
+    if (old.get('phase')!='await_owned_class_lobby_review' or
+        old.get('origin_actor',{}).get('guid')!=2 or old.get('class_actor',{}).get('guid')!=4 or
+        old.get('actor')!=t.fixture or old.get('origin_actor')!=t.fixture or
+        park.get('actor')!=old.get('class_actor') or finish.get('actor')!=t.fixture or
+        park.get('runtime')!=previous or finish.get('runtime')!=previous or
+        park.get('phase')!='await_original_selection_review' or
+        park.get('fixture_source',{}).get('sha256')!=preparation_sha or
+        finish.get('fixture_source',{}).get('sha256')!=preparation_sha or
+        len(park.get('checks',{}))!=4 or not all(park['checks'].values()) or
+        len(finish.get('checks',{}))!=5 or not all(finish['checks'].values())):
+        raise RuntimeError('retained class and original restoration chain differs')
+    if (not deployment.get('completed') or not deployment.get('finished_at') or
+        not deployment.get('native_unchanged') or not deployment.get('parked_scout') or
+        deployment.get('native')!=previous.get('worldserver') or
+        deployment.get('before')!=previous.get('modern_world') or
+        deployment.get('after')!=current.get('modern_world') or
+        previous.get('modern_world')==current.get('modern_world') or
+        previous.get('worldserver')!=current.get('worldserver') or
+        previous.get('client')!=current.get('client') or
+        set(deployment.get('reconnected',{}))!={'primary','scout'} or
+        not all(v.get('completed') for v in deployment['reconnected'].values()) or
+        deployment['reconnected']['scout'].get('parked') is not True):
+        raise RuntimeError('completed bridge-only lifetime continuity differs')
+
+
+def prepare(t,preparation,parked,origin_finish,deployment_path):
+    preparation,parked,origin_finish=[p.resolve() for p in (preparation,parked,origin_finish)]
+    old,park,finish=[closed(p) for p in (preparation,parked,origin_finish)]
+    deployment_path=deployment_path.resolve()
+    if deployment_path.name!='deployment.json' or not deployment_path.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires the completed owned bridge deployment')
+    deployment=json.loads(deployment_path.read_text())
+    continuity(t,old,park,finish,deployment,lab.sha256(preparation))
+    deployed=closed(deployment_path.parent/'scout_parked_after/episode.json')
+    if (deployed.get('actor')!=t.fixture or deployed.get('runtime')!=t.receipt['runtime'] or
+        len(deployed.get('restoration_checks',{}))!=5 or not all(deployed['restoration_checks'].values()) or
+        deployed.get('parked_native')!=old['origin_native']):
+        raise RuntimeError('new deployment has no exact parked original restoration')
+    primary=closed(deployment_path.parent/'primary_after/episode.json')
+    checks=primary.get('bridge_native_restoration',{}).get('checks',{})
+    if len(checks)!=9 or not all(checks.values()):
+        raise RuntimeError('deployment has no complete primary native restoration')
+    checks=origin_checks(old)
+    fixture=old['class_actor'];guid=fixture['guid'];account=fixture['account_id']
+    checks.update(class_offline=park['retained_class_fixture']['online']==0,
+        retained_character=character(guid,account)==park['retained_class_fixture'],
+        retained_saved_rows=saved(guid)==park['retained_class_saved'],
+        retained_pets=pets(guid)==park['retained_class_pets'],origin_registration=actors.load()==t.fixture)
+    if not all(checks.values()):raise RuntimeError('retained class or original saved state changed')
+    sources=[preparation,parked,origin_finish,deployment_path]
+    t.receipt.update(sources=[{'path':str(p),'sha256':lab.sha256(p)} for p in sources],
+        origin_actor=old['origin_actor'],origin_native=old['origin_native'],origin_saved=old['origin_saved'],
+        origin_roster=old['origin_roster'],class_actor=fixture,natural_native=park['retained_class_fixture'],
+        natural_saved=park['retained_class_saved'],retained_class_pets=park['retained_class_pets'],
+        checks=checks,qualified_scope='Retained native-account class fixture continuity only; no gameplay qualification.')
+    t.persist()
+    if actors.register(guid)!=fixture:raise RuntimeError('retained class registration differs')
+    t.receipt.update(completed=True,phase='await_owned_class_lobby_review',frame=shot(t.out/'owned_lobby.png'))
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__)
+    for name in ['preparation','park','origin-finish','deployment','output']:p.add_argument('--'+name,type=Path,required=True)
+    a=p.parse_args()
+    with actor('scout'):
+        t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
+        try:prepare(t,a.preparation,a.park,a.origin_finish,a.deployment)
+        except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
+        finally:t.receipt['finished_at']=time.time();t.persist()
+        print(json.dumps({k:t.receipt.get(k) for k in ['phase','completed','failure']}),flush=True)

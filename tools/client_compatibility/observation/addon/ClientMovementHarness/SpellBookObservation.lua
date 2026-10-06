@@ -37,7 +37,7 @@ function Client442ObserveSpellBook()
             rows[#rows+1]={button=button:GetName(),slot=slot,kind=kind,action=action,flyout=flyout,
                 api_kind=apiKind,api_id=apiID,name=name,rank=rank,id=id,
                 shown_name=text(button.SpellName),shown_rank=text(button.SpellSubName),
-                passive=not not button.isPassive,known=id and read(IsSpellKnown,id),
+                passive=not not button.isPassive,known=id and read(IsSpellKnown,id,book.bookType==BOOKTYPE_PET),
                 trainer=button.TrainFrame and not not read(button.TrainFrame.IsVisible,button.TrainFrame) or false}
         end
     end
