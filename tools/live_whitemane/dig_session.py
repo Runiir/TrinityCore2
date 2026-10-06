@@ -43,8 +43,21 @@ def distance(a, b):
 
 def telescope(row, session):
     path = runtime.ROOT / 'run/telescope.json'
-    if session.get('walked_since_survey') or not path.exists():
+    if session.get('walked_since_survey'):
         return None
+    arrow=row['archaeology'].get('arrow') or {}
+    public=(row.get('farm_ui') or {}).get('survey_guidance') or {}
+    at=public.get('at',0)
+    if (arrow.get('boundary_verified') and public.get('color') in COLORS.values()
+            and public.get('site_id')==row['archaeology']['site_id']
+            and arrow.get('observed_at')==at and 0<=time.time()-at<=20
+            and at>=session.get('last_survey_at',time.time())
+            and distance(arrow['origin'],row['archaeology']['world'])<=25):
+        return {**arrow['origin'],'runtime':row['runtime'],'observed_at':at,
+            'facing_radians':arrow['heading_radians'],
+            'entry':next(entry for entry,color in COLORS.items() if color==public['color']),
+            'source':'fresh_public_addon_survey_bearing'}
+    if not path.exists():return None
     tool = json.loads(path.read_text())
     if (tool['runtime'] != row['runtime'] or time.time()-tool['observed_at'] > 6
             or tool['observed_at'] < session.get('last_survey_at', time.time())
@@ -133,7 +146,7 @@ def run(args):
                 session.update(finished=True,stop_reason='digsite_changed_check_final_loot')
                 break
             tool=telescope(before,session)
-            if session.get('observed_find_count',a['looted_finds']) != a['looted_finds']:
+            if session.get('observed_find_count',a['looted_finds']) < a['looted_finds']:
                 routes.pickup(session)
             session['observed_find_count']=a['looted_finds']
             if tool and session.get('marker_fallback') and not session.get('telescope_target'):
@@ -193,7 +206,8 @@ def run(args):
                     or abs((fresh['movement']['facing_radians']-m['facing_radians']+math.pi)%math.tau-math.pi)>.03
                     or fresh['archaeology']['casting']):
                 raise RuntimeError('client changed, casting started, or supervisor moved before input')
-            if tool and guide and guide['source']=='Survey telescope' and time.time()-tool['observed_at']>10:
+            tool_lifetime=20 if tool and tool.get('source')=='fresh_public_addon_survey_bearing' else 10
+            if tool and guide and guide['source']=='Survey telescope' and time.time()-tool['observed_at']>tool_lifetime:
                 raise RuntimeError('telescope expired before input')
             if action=='survey':
                 cooldown=(fresh.get('farm_ui') or {}).get('survey') or {}
@@ -245,7 +259,7 @@ def run(args):
                     step['travel_mode']='held_waypoint_approach'
                     finding=bool(value) or guide['source'] in ('visible owned archaeology find','last green Survey endpoint')
                     step['smooth_approach']=walk(folder,guide['world'],site_id=guide['boundary_site_id'],
-                        approaching_find=finding,tolerance=guide.get('arrival_tolerance_yards',.5) if finding else None,
+                        approaching_find=finding,tolerance=guide.get('arrival_tolerance_yards',.5) if finding else guide.get('arrival_tolerance_yards'),
                         guidance=guide,approved_intent=(action,model,request,result))
                     step['inputs']=[]
                 else:

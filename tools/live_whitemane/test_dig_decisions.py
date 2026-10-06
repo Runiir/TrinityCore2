@@ -1,4 +1,4 @@
-from . import dig_decisions,dig_context,guide
+from . import dig_decisions,dig_context,guide,dig_session,runtime
 from .test_farm_loop import row
 import math
 import pytest
@@ -111,4 +111,35 @@ def test_green_fallback_is_a_short_step_and_is_not_arrived_before_moving(candida
     second,_=guide.select(r,session,None)
     assert not second['arrived']
     r['archaeology']['world']['north']=length-.3
+    assert guide.select(r,session,None)[0]['arrived']
+
+
+def test_fresh_addon_bearing_survives_the_packet_mailbox_lifetime(monkeypatch,tmp_path):
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    monkeypatch.setattr(dig_session.time,'time',lambda:110)
+    r=row();origin={'instance':1,'north':0,'west':0}
+    r['archaeology'].update(world=origin,site_id=493,arrow={
+        'boundary_verified':True,'observed_at':100,'origin':origin,'heading_radians':.4})
+    r['farm_ui']['survey_guidance']={'at':100,'site_id':493,'color':'green'}
+    session={'walked_since_survey':False,'last_survey_at':99.8}
+    tool=dig_session.telescope(r,session)
+    assert tool['entry']==204272 and tool['source']=='fresh_public_addon_survey_bearing'
+    session['walked_since_survey']=True
+    assert dig_session.telescope(r,session) is None
+    session.update(walked_since_survey=False,last_survey_at=101)
+    assert dig_session.telescope(r,session) is None
+    session['last_survey_at']=99.8
+    monkeypatch.setattr(dig_session.time,'time',lambda:121)
+    assert dig_session.telescope(r,session) is None
+
+
+def test_nearby_unvisited_marker_is_approached_before_survey():
+    r=row();r['movement']['facing_radians']=0
+    r['archaeology'].update(world={'instance':1,'north':0,'west':0},
+        visible_markers=[{'marker_id':'nearby','distance_yards':2,'heading_radians':0}])
+    session={}
+    target,_=guide.select(r,session,None)
+    assert target['marker_id']=='nearby' and not target['arrived']
+    assert target['arrival_tolerance_yards']==.5
+    r['archaeology']['world']['north']=1.7
     assert guide.select(r,session,None)[0]['arrived']

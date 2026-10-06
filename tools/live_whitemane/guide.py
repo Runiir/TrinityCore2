@@ -24,7 +24,7 @@ def select(row, session, tool):
         raise RuntimeError('marker target belongs to another world instance')
     if not session.get('marker_fallback') and target is None:
         for marker in a['visible_markers']:
-            if marker['marker_id'] in visited or marker['distance_yards']<5: continue
+            if marker['marker_id'] in visited: continue
             heading=marker['heading_radians'];distance=marker['distance_yards']
             target={'source':'GatherMate marker','marker_id':marker['marker_id'],
                     'world':{'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
@@ -36,7 +36,8 @@ def select(row, session, tool):
         endpoint=target['world']; distance=math.hypot(endpoint['north']-world['north'],endpoint['west']-world['west'])
         heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
         color='green' if distance<=40 else 'yellow' if distance<=80 else 'red'
-        guide={**target,'color':color,'distance_yards':round(distance,2),'arrived':distance<=5}
+        guide={**target,'color':color,'distance_yards':round(distance,2),
+            'arrived':distance<=.5,'arrival_tolerance_yards':.5}
     elif tool or session.get('telescope_target'):
         saved=session.get('telescope_target')
         if saved and saved['color']=='green' and 'recorded_marker_matches' not in saved:
