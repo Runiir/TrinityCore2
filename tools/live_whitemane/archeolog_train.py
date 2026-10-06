@@ -48,7 +48,13 @@ def load_parent(threads):
     weights = load_file(str(folder / 'model.safetensors'))
     agent.model.load_state_dict(weights, strict=True, assign=True)
     del weights
+    # Rotary frequencies are deterministic, nonpersistent buffers and therefore
+    # absent from the checkpoint. Recreate them on CPU after meta initialization.
+    rotary_type = type(agent.model.encoder.rotary_emb)
+    agent.model.encoder.rotary_emb = rotary_type(agent.model.encoder.config, device=torch.device('cpu'))
     agent.model.float().eval()
+    if any(tensor.is_meta for tensor in (*agent.model.parameters(), *agent.model.buffers())):
+        raise RuntimeError('unmaterialized meta tensor remains in the CPU parent')
     agent.model.encoder.config.reference_compile = False
     agent.device, agent.dtype = torch.device('cpu'), torch.float32
     agent.temperature = agent.cfg['temperature']
@@ -92,7 +98,9 @@ def features(agent, item):
                                       ('input_ids', 'attention_mask', 'marker_pos', 'marker_mask', 'qtype')})
     finally:
         hook.remove()
-    return captured[0].squeeze(0), logits.squeeze(0), time.perf_counter() - started
+    # Clone outside inference_mode so the frozen features may be used by autograd
+    # when fitting the scorer (the encoder itself never receives gradients).
+    return captured[0].squeeze(0).clone(), logits.squeeze(0), time.perf_counter() - started
 
 
 def temperature(agent, count):
