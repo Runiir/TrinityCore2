@@ -1,0 +1,50 @@
+{
+  "schema": "client442_actual_trained_pet_dismiss_fixture_v1",
+  "pointer": "artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc",
+  "archive_sha256": "13530f194806af6db1c4c10ef7b803b9b56565511b836cace12f6b8e95d1f44f",
+  "receipt_member": "evidence/client_interactions_20261006_ui120/trained_dismiss_capture01.json",
+  "receipt_sha256": "218b4c3fb9b43589b091a4231a979aec882f21264a29d58cef701211e99ab55d",
+  "source": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261006_ui120/dismiss01/episode.json",
+    "sha256": "38744fa3f70f6448f704ab53fb4712dfa858e02a34c87dc6ca9c044aadb624cd"
+  },
+  "character": {
+    "guid": 5,
+    "map": 0
+  },
+  "native_pet_guid": 17383896348356509710,
+  "native_pet_number": 2,
+  "modern_request": {
+    "packet": {
+      "time": 1791278103.8154192,
+      "session": "e52875b8",
+      "direction": "from_client",
+      "name": "CMSG_PET_ACTION",
+      "body": "01a20e680428030080030000000000000000000000000000"
+    },
+    "pet_guid": [
+      14,
+      2882308159563655168
+    ],
+    "action": 58720259,
+    "type": 7,
+    "value": 3,
+    "target_guid": [
+      0,
+      0
+    ],
+    "position": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "native_catalog_packet": {
+    "time": 1791276973.4042912,
+    "session": "e52875b8",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "0e000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "limits": "Actual failed request and normally delivered native catalog; fixture is protocol evidence, not live qualification. Native output expected from pinned native handler."
+}
