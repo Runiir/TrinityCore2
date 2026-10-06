@@ -35,7 +35,7 @@ def public_sections(data, layout):
     return header, complete
 
 
-def extract(directory):
+def extract_tables(directory, tables):
     directory = directory.resolve()
     if not directory.is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('require an owned evidence destination')
@@ -61,7 +61,9 @@ def extract(directory):
     if not lib.CascOpenStorage(str(lab.BASE.parent).encode(), 2, ct.byref(storage)):
         raise RuntimeError('local public CASC storage is unavailable')
     try:
-        for name, layout in TABLES.items():
+        for name, layout in tables.items():
+            if name not in (*TABLES, 'SpellXSpellVisual'):
+                raise ValueError('unsupported public spell table')
             source = 'DBFilesClient/'+name+'.db2';file = handle()
             if not lib.CascOpenFile(storage, source.encode(), 2, 16, ct.byref(file)):
                 raise RuntimeError('local public table is absent: '+name)
@@ -111,6 +113,10 @@ def extract(directory):
         lib.CascCloseStorage(storage)
     if failures:
         raise RuntimeError('incomplete installed static evidence: '+', '.join(failures))
+
+
+def extract(directory):
+    extract_tables(directory, TABLES)
 
 
 if __name__ == '__main__':
