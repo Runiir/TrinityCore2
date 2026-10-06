@@ -3,7 +3,7 @@ import copy,json
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
-from tools.client_compatibility.interaction_pet_moveto_capture import button,source
+from tools.client_compatibility.interaction_pet_moveto_capture import button,source,ground_review
 from tools.client_compatibility.interaction_owned_class_fixture import SCRIPT_BOUNDARY
 
 F=json.loads((Path(__file__).parent/'fixtures/native_trained_pet_manual_spell_ui131.json').read_text())
@@ -39,7 +39,9 @@ def reticle():
     d={'actor':copy.deepcopy(actor),'runtime':copy.deepcopy(runtime),'completed':True,'finished_at':1,'failure':None,
         'phase':'await_owned_pet_moveto_ground_review','sources':[{'sha256':'a'},{'sha256':'b'}],
         'qualification_added':False,'custom_script_permission':'blocked_by_user','softTargetInteract':copy.deepcopy(SCRIPT_BOUNDARY),
-        'reticle_state':{'spell_targeting':True},'cases':[{'id':'diagnostic.pet_moveto.reticle',
+        'reticle_state':{'spell_targeting':False},'reticle_point':[875,545],
+        'reticle_requires_visual_review':True,'reticle_frame':{'sha256':'image'},
+        'cases':[{'id':'diagnostic.pet_moveto.reticle',
             'status':'owned_pet_moveto_reticle_pass','oracle':{'checks':{str(i):True for i in range(6)}}}]}
     return d,t
 
@@ -66,5 +68,34 @@ def test_ground_source_refuses_open_changed_or_unbound_cursor(fault):
     elif fault=='failed_case':d['cases'][0]['status']='client_or_protocol_failure'
     elif fault=='missing_check':d['cases'][0]['oracle']['checks'].pop('0')
     elif fault=='false_check':d['cases'][0]['oracle']['checks']['0']=False
-    else:d['reticle_state']['spell_targeting']=False
+    else:d['reticle_state'].pop('spell_targeting')
+    with pytest.raises(RuntimeError):source(d,t,['a','b'])
+
+
+@pytest.mark.parametrize('signal',[True,False])
+def test_spell_targeting_does_not_stand_in_for_a_visible_pet_destination(signal):
+    d,t=reticle();d['reticle_state']['spell_targeting']=signal
+    assert source(d,t,['a','b']) is d
+    checked={'reticle_source_sha256':'receipt','pet_destination_reticle_visible':True,
+        'point':[875,545],'frame':{'sha256':'image'}}
+    ground_review(d,checked,'receipt')
+
+
+@pytest.mark.parametrize('fault',['missing_visual','not_visible','source','image','point'])
+def test_ground_input_requires_its_exact_fresh_visual_pet_reticle_review(fault):
+    d,_=reticle();checked={'reticle_source_sha256':'receipt','pet_destination_reticle_visible':True,
+        'point':[875,545],'frame':{'sha256':'image'}}
+    if fault=='missing_visual':checked.pop('pet_destination_reticle_visible')
+    elif fault=='not_visible':checked['pet_destination_reticle_visible']=False
+    elif fault=='source':checked['reticle_source_sha256']='other'
+    elif fault=='image':checked['frame']['sha256']='other'
+    else:checked['point']=[1,1]
+    with pytest.raises(RuntimeError):ground_review(d,checked,'receipt')
+
+
+@pytest.mark.parametrize('fault',['unreviewed','other_ground'])
+def test_reticle_source_keeps_the_mandatory_visual_review_boundary(fault):
+    d,t=reticle()
+    if fault=='unreviewed':d['reticle_requires_visual_review']=False
+    else:d['reticle_point']=[1,1]
     with pytest.raises(RuntimeError):source(d,t,['a','b'])

@@ -82,11 +82,13 @@ def begin(t,preparation,entry):
             t.execute({'kind':'hover','value':[875,545]})
             state,frame=t.observe('moveto_ground_reticle')
             o.poll();requests=packets(o,since)
-            checks={'stock_targeting_cursor':state.get('spell_targeting') is True,'no_pet_or_owner_command_yet':not requests,
+            checks={'public_spell_targeting_readable':type(state.get('spell_targeting')) is bool,
+                'no_pet_or_owner_command_yet':not requests,
                 'current_owned_pet':o.present() and o.pet['guid']==t.receipt['native_pet']['guid'],
                 'owner_vitals':vitals(o)==baseline['vitals'],'position':position(5)==baseline['position'],
                 'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
             t.receipt.update(reticle_frame=frame,reticle_state=state,
+                reticle_point=[875,545],reticle_requires_visual_review=True,
                 selection_observation='one stock AnyUp click followed by non-click ground hover');t.persist()
             return {'status':'owned_pet_moveto_reticle_pass' if all(checks.values()) else 'client_or_protocol_failure',
                 'oracle':{'checks':checks,'requests':requests,'ground_state':state,'ground_frame':frame,
@@ -95,7 +97,7 @@ def begin(t,preparation,entry):
             {'select':{'kind':'click','value':point,'hold':.4}},selected,diagnostic_action='select'),
             'owned_pet_moveto_reticle_pass')
         t.receipt.update(completed=True,phase='await_owned_pet_moveto_ground_review',
-            qualified_scope='Stock Move To selection and pending ordinary target cursor only. '
+            qualified_scope='Stock Move To selection and ground-hover inspection only. '
             'Ground input requires a fresh separate source-bound visual review; no gameplay qualification.')
     except Exception:
         restore(t,o,inventory,old);raise
@@ -111,9 +113,18 @@ def source(d,t,hashes):
         d['cases'][0].get('status')!='owned_pet_moveto_reticle_pass' or
         len(d['cases'][0].get('oracle',{}).get('checks',{}))!=6 or
         not all(d['cases'][0].get('oracle',{}).get('checks',{}).values()) or
-        d.get('reticle_state',{}).get('spell_targeting') is not True):
+        type(d.get('reticle_state',{}).get('spell_targeting')) is not bool or
+        d.get('reticle_requires_visual_review') is not True or d.get('reticle_point')!=[875,545]):
         raise RuntimeError('closed owned Move To reticle source differs')
     return d
+
+
+def ground_review(d,checked,source_hash):
+    if (checked.get('reticle_source_sha256')!=source_hash or
+        checked.get('pet_destination_reticle_visible') is not True or
+        checked.get('point')!=d['reticle_point'] or
+        checked.get('frame',{}).get('sha256')!=d['reticle_frame']['sha256']):
+        raise RuntimeError('source-bound visible pet destination reticle review differs')
 
 
 def finish(t,preparation,entry,reticle,review_path):
@@ -123,9 +134,9 @@ def finish(t,preparation,entry,reticle,review_path):
         'sha256':lab.sha256(reticle)},qualification_added=False);t.persist()
     try:
         checked=reviewed(t,review_path,'owned_pet_move_to_ground')
+        ground_review(d,checked,lab.sha256(reticle))
         state,_=t.observe('moveto_pending_ground');o.poll()
-        if (checked.get('reticle_source_sha256')!=lab.sha256(reticle) or
-            checked['frame']['sha256']!=d['reticle_frame']['sha256'] or state.get('spell_targeting') is not True or
+        if (state.get('spell_targeting') is not d['reticle_state']['spell_targeting'] or
             o.session!=d.get('native_session') or not o.present() or o.pet['guid']!=d['native_pet']['guid'] or
             pair(o.player,'UNIT_FIELD_TARGET')!=0 or vitals(o)!=d['baseline']['vitals']):
             raise RuntimeError('reviewed current owned Move To cursor or native fixture differs')
@@ -143,7 +154,7 @@ def finish(t,preparation,entry,reticle,review_path):
                 'finite_ground_destination':bool(decoded and all(math.isfinite(v) for v in decoded['position'])
                     and any(v!=0 for v in decoded['position'])),
                 'no_native_command':not native,'healthy_rejection':bool(rejection),
-                'targeting_cursor_completed':state.get('spell_targeting') is False,
+                'public_spell_targeting_readable':type(state.get('spell_targeting')) is bool,
                 'same_owned_pet':o.present() and o.pet['guid']==d['native_pet']['guid'],
                 'public_owned_pet':sample['probe'].get('pet_guid')==expected_guid(o.pet),
                 'owner_vitals':vitals(o)==d['baseline']['vitals'],'position':position(5)==d['baseline']['position'],
