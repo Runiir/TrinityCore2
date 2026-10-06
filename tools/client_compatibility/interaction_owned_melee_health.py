@@ -166,13 +166,49 @@ def stage(t,preparation,entry):
         restore(t,o,inventory,old,fixture,original,t.receipt['original_position']);raise
 
 
-def run(t,preparation,entry,stage_path,review_path):
+def staging_source(t,preparation,entry,stage_path):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session'];e=entry_source(t,entry,session,preparation)
     d=closed(stage_path)
     if (d.get('phase')!='await_owned_melee_health_review' or d.get('actor')!=t.fixture or d.get('runtime')!=t.receipt['runtime'] or
         d.get('native_session')!=session or len(d.get('checks',{}))!=15 or not all(d['checks'].values()) or
         [s['sha256'] for s in d.get('sources',[])]!=[lab.sha256(p) for p in (preparation,entry)] or
         d['fixture_file']['sha256']!=lab.sha256(Path(d['fixture_file']['path']))):raise RuntimeError('closed health staging differs')
+    return old,session,e,d
+
+
+def refresh(t,preparation,entry,stage_path):
+    old,session,e,d=staging_source(t,preparation,entry,stage_path)
+    o=HealthPresence(session,5,e['started_at']).poll()
+    state,_=t.observe('health_refresh_scene');sample=read(t,'health_refresh_passive');o.poll()
+    frozen=position(5);time.sleep(.5);baseline=d['baseline'];target=load_target(d['native_target'])
+    checks={'exact_native_target':bool(o.target and native_target(o.target) and o.target['guid']==target['guid']),
+        'native_selection':bool(o.target and o.selected()==o.target['guid']),
+        'exact_public_target':bool(o.target and state['target'].get('guid')==target_guid(o.target)),
+        'undamaged_target':bool(o.target and health(o)==target['fields'][INDEX['UNIT_FIELD_HEALTH']]
+            ==o.target['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]),
+        'safe_target_health':bool(o.target and health(o)>=10 and any(r[0]==228 and r[1]==r[2] for r in baseline['saved']['skills'])),
+        'public_health':bool(o.target and state['target'].get('health')==health(o)),
+        'in_melee_range':bool(o.target and math.dist(frozen[:3],o.target['movement']['position'][:3])<4),
+        'stable_position':position(5)==frozen==d['staged_position'],
+        'native_passive':o.present() and o.pet['fields'][INDEX['UNIT_FIELD_PETNUMBER']]==baseline['pet']['id']
+            and any(c['guid']==o.pet['guid'] and c['react']==0 for c in o.catalogs[-1:]),
+        'public_passive':active_mode(sample['probe'],'PET_MODE_PASSIVE'),
+        'idle_pet':not sample['probe']['pet_combat'] and not sample['probe']['pet_target_exists'],
+        'original_vitals':vitals(o)==baseline['vitals'],'original_saved':saved(5)==baseline['saved'],
+        'protected':all(protected(old).values()),'ui_clean':sample['ui_clean'] and not state['owner_melee']['active']}
+    if not all(checks.values()):
+        t.receipt.update(checks=checks);t.persist();raise RuntimeError('read-only health scene refresh differs')
+    for key in ('baseline','original_position','original_spell','fixture_file','staged_position','sources'):
+        t.receipt[key]=copy.deepcopy(d[key])
+    t.receipt.update(native_session=session,checks=checks,native_target=copy.deepcopy(o.target),
+        native_pet=copy.deepcopy(o.pet),refresh_source={'path':str(stage_path),'sha256':lab.sha256(stage_path)},
+        qualification_added=False,frame=shot(t.out/'health_review_ready.png'),
+        completed=True,phase='await_owned_melee_health_review',
+        qualified_scope='Read-only refresh of the same staged target, actor and Passive pet; no Attack, transfer or qualification.')
+
+
+def run(t,preparation,entry,stage_path,review_path):
+    old,session,e,d=staging_source(t,preparation,entry,stage_path)
     fixture=MeleeHealthFixture.resume(t.out,t.fixture,Path(d['fixture_file']['path']))
     o=HealthPresence(session,5,e['started_at']).poll();inventory=Inventory(lab.ROOT,session,5).poll()
     t.receipt.update(baseline=copy.deepcopy(d['baseline']),native_session=session,qualification_added=False,
@@ -267,15 +303,17 @@ def run(t,preparation,entry,stage_path,review_path):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('stage','run'))
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('stage','refresh','run'))
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--stage',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
     if a.action=='run' and (a.stage is None or a.review is None):p.error('run requires closed staging and fresh review')
+    if a.action=='refresh' and a.stage is None:p.error('refresh requires closed staging')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='stage':stage(t,a.preparation,a.entry)
+            elif a.action=='refresh':refresh(t,a.preparation,a.entry,a.stage)
             else:run(t,a.preparation,a.entry,a.stage,a.review)
         except Exception as error:t.receipt.update(completed=False,failure=f'{type(error).__name__}: {error}')
         finally:t.receipt['finished_at']=time.time();t.persist()
