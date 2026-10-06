@@ -84,12 +84,14 @@ def read_power(t,oracle,expected):
             'SpellBookFrame' in a['panels'] and not a.get('lua_errors') and not a.get('blocked_actions') else
             'client_or_protocol_failure'}),'spellbook_open_pass')
     probe=detail(t,'owned_pet_power');snapshot=t.receipt['spellbook_details']['owned_pet_power']
-    if snapshot['state'].get('observer_version')!=129:
+    state,frame=t.observe('owned_pet_power_target')
+    if any(s.get('observer_version')!=129 for s in (snapshot['state'],state)):
         raise RuntimeError('requires passive pet-power observer129')
-    oracle.poll();checks,native=power_checks(oracle,snapshot['state'],probe['pet'],expected)
+    oracle.poll();checks,native=power_checks(oracle,state,probe['pet'],expected)
+    checks['detail_ui_clean']=not snapshot['state'].get('lua_errors') and not snapshot['state'].get('blocked_actions')
     row={'id':'pets.pet_power','time':time.time(),'status':'native_owned_pet_power_pass' if all(checks.values()) else
         'client_or_protocol_failure','input_sent':False,'scope':'Read mana of the selected owned Imp.',
-        'after':snapshot['state'],'after_frame':snapshot['frame'],
+        'after':state,'after_frame':frame,'public_probe_frame':snapshot['frame'],
         'oracle':{'checks':checks,'native':native,'public':probe['pet']}}
     t.receipt['cases'].append(row);t.persist();require(row,'native_owned_pet_power_pass')
 

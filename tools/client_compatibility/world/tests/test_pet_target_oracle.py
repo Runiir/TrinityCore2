@@ -82,3 +82,28 @@ def test_owned_mana_requires_exact_current_native_and_public_identity(tmp_path,m
     checks,native=module.power_checks(o,state,public,'current-owned-imp')
     assert all(checks.values())==(change in ('none','sparse_power'))
     assert native['power']==(120 if change=='sparse_power' else 155)
+
+
+@pytest.mark.parametrize('change',('none','foreign_target','detail_error'))
+def test_detailed_mana_page_joins_separate_fresh_target_state(tmp_path,monkeypatch,change):
+    from types import SimpleNamespace
+    o,_,_=oracle(tmp_path,monkeypatch);o.poll()
+    o.player[INDEX['UNIT_FIELD_TARGET']]=o.pet['guid']&0xffffffff
+    o.player[INDEX['UNIT_FIELD_TARGET']+1]=o.pet['guid']>>32
+    pet={'exists':True,'guid':'current-owned-imp','power':155,'max_power':155,'power_type':0}
+    page={'observer_version':129,'spellbook_probe':{'pet':pet},'mode':'spellbook'}
+    # The real diagnostic page intentionally has no core target fields.
+    assert 'target' not in page
+    state={'observer_version':129,'target':{'guid':'other' if change=='foreign_target' else 'current-owned-imp','visible':True}}
+    if change=='detail_error':page['lua_errors']=['error']
+    frames={'core':{'file':'core.png'},'page':{'file':'page.png'}}
+    t=SimpleNamespace(receipt={'cases':[],'spellbook_details':{'owned_pet_power':{'state':page,'frame':frames['page']}}},
+        persist=lambda:None,observe=lambda label:(state,frames['core']))
+    monkeypatch.setattr(module,'click_case',lambda *a,**kw:{'status':'spellbook_open_pass'})
+    monkeypatch.setattr(module,'detail',lambda *a,**kw:page['spellbook_probe'])
+    if change=='none':module.read_power(t,o,'current-owned-imp')
+    else:
+        with pytest.raises(RuntimeError):module.read_power(t,o,'current-owned-imp')
+    row=t.receipt['cases'][0]
+    assert row['after_frame']==frames['core'] and row['public_probe_frame']==frames['page']
+    assert row['status']==('native_owned_pet_power_pass' if change=='none' else 'client_or_protocol_failure')
