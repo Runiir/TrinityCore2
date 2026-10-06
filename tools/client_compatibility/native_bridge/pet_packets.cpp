@@ -131,16 +131,18 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     if(name=="CMSG_PET_ACTION")
     {
         auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
-        // Captured stock commands, reactions, UI131 idle Blood Pact and the
-        // remotely reviewed UI135 Move To destination. Preserve current GUID.
+        // Captured stock commands, reactions, UI131 idle Blood Pact, UI135
+        // Move To and UI137 selected-victim Attack. Preserve submitted GUIDs.
         bool command_action=command==0x03800000u || command==0x03800001u || command==0x03800003u;
         bool react_action=command==0x03000000u || command==0x03000001u || command==0x03000003u;
         bool blood_pact=command==0xc08018a3u;
         bool move_to=command==0x03800004u;
+        bool attack=command==0x03800002u;
         bool nonzero=std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;});
         bool invalid_position=std::any_of(position.begin(),position.end(),[](Value const &v)
         {auto n=bridge::number(v);return !std::isfinite(n) || std::abs(n)>17067;});
-        if((!command_action && !react_action && !blood_pact && !move_to) || target!=Array{0,0} ||
+        if((!command_action && !react_action && !blood_pact && !move_to && !attack) ||
+           (attack ? target==Array{0,0} : target!=Array{0,0}) ||
            invalid_position || (move_to ? !nonzero : nonzero))
             throw std::runtime_error("unsupported pet action shape");
         if(!owner.pet_state || owner.pet_state->controlled_guid!=guid ||
@@ -156,9 +158,23 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
                       !p.field(owner.self_snapshot,"UNIT_FIELD_HEALTH") ||
                       integer(get(unit,"map"))!=owner.map()))
             throw std::runtime_error("pet Move To without current live native command and map authority");
+        std::uint64_t victim=0;
+        if(attack)
+        {
+            victim=owned_unit(owner,target);auto const &selected=owner.visible_units.at(victim);
+            if(owner.pet_state->controlled_buttons[0]!=0x07000002u ||
+               !p.field(unit,"UNIT_FIELD_HEALTH") || !p.field(owner.self_snapshot,"UNIT_FIELD_HEALTH") ||
+               integer(get(unit,"map"))!=owner.map() || victim>>52!=0xf13 ||
+               integer(get(selected,"kind"))!=3 || !p.field(selected,"UNIT_FIELD_HEALTH") ||
+               integer(get(selected,"map"))!=owner.map() ||
+               field_guid(p,owner.self_snapshot,"UNIT_FIELD_TARGET")!=victim)
+                throw std::runtime_error("pet Attack without current live command and selected native victim authority");
+            // The core remains authoritative for faction, pacify and attack
+            // validity. This bridge does not choose or replace the victim.
+        }
         auto native_command=blood_pact?0xc10018a3u:
             (react_action?0x06000000u:0x07000000u) | (command&0x007fffffu);
-        return Packet{name,Writer().pack("QIQfff",{guid,native_command,0,position[0],position[1],position[2]}).finish()};
+        return Packet{name,Writer().pack("QIQfff",{guid,native_command,victim,position[0],position[1],position[2]}).finish()};
     }
     r.end();
     if(guid>>52!=0xf14 || !number)throw std::runtime_error("name query requires a visible numbered pet");

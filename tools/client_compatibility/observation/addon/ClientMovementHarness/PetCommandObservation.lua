@@ -70,5 +70,8 @@ function Client442ObservePetCommands()
         actions=rows,viewport={width=width,height=height,basis='scaled_game_ui_screen'},
         player_position=player,pet_position=pet,distance=distance,
         interaction_ranges=ranges,distance_squared=squared,pet_visible=call(UnitIsVisible,'pet'),
+        pet_combat=call(UnitAffectingCombat,'pet'),pet_target_exists=call(UnitExists,'pettarget'),
+        pet_target_guid=call(UnitGUID,'pettarget'),pet_target_name=call(UnitName,'pettarget'),
+        player_can_attack_target=call(UnitCanAttack,'player','target'),
         player_speed=call(GetUnitSpeed,'player'),pet_speed=call(GetUnitSpeed,'pet')}
 end

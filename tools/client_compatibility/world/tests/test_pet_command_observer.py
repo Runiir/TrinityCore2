@@ -29,7 +29,11 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     end
     GetPetActionSlotUsable=function(slot) assert(slot>=1 and slot<=10);return slot~=3 end
     IsModifiedClick=function() return false end
-    UnitGUID=function(unit) return unit=='player' and 'Player-owned' or 'Pet-owned' end
+    UnitGUID=function(unit) return unit=='player' and 'Player-owned' or unit=='pettarget' and 'Creature-victim' or 'Pet-owned' end
+    UnitName=function(unit) assert(unit=='pettarget');return 'Training Dummy' end
+    UnitExists=function(unit) assert(unit=='pettarget');return true end
+    UnitAffectingCombat=function(unit) assert(unit=='pet');return false end
+    UnitCanAttack=function(unit,target) assert(unit=='player' and target=='target');return true end
     GetUnitSpeed=function(unit) return unit=='player' and 0 or 1 end
     CheckInteractDistance=function(unit,index) assert(unit=='pet' and index>=1 and index<=4);return index~=3 end
     UnitDistanceSquared=function(unit) assert(unit=='pet');return 25,true end
@@ -44,6 +48,8 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     assert(#p.actions==10 and p.owner_guid=='Player-owned' and p.pet_guid=='Pet-owned')
     assert(p.player_speed==0 and p.pet_speed==1)
     assert(p.modified_click==false)
+    assert(p.pet_combat==false and p.pet_target_exists==true and p.pet_target_guid=='Creature-victim'
+        and p.pet_target_name=='Training Dummy' and p.player_can_attack_target==true)
     assert(p.distance_squared.available and p.distance_squared.value==25 and p.pet_visible)
     for index,row in ipairs(p.interaction_ranges) do
         assert(row.index==index and row.available and row.in_range==(index~=3))
@@ -62,11 +68,14 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     else assert(not p.player_position.available and not p.pet_position.available and p.distance==nil) end
     GetPetActionInfo=nil;GetPetActionSlotUsable=nil;IsModifiedClick=nil
     UnitPosition=nil;CheckInteractDistance=nil;UnitDistanceSquared=nil;GetScreenWidth=nil
+    UnitAffectingCombat=nil;UnitExists=nil;UnitName=nil;UnitCanAttack=nil
     p=Client442ObservePetCommands()
     for _,row in ipairs(p.actions) do
         assert(not row.available and not row.active and not row.frame.available and row.usable==nil)
     end
     assert(p.modified_click==nil)
+    assert(p.pet_combat==nil and p.pet_target_exists==nil and p.pet_target_name==nil
+        and p.player_can_attack_target==nil)
     assert(not p.pet_position.available and p.distance==nil)
     assert(not p.distance_squared.available)
     for _,row in ipairs(p.interaction_ranges) do assert(not row.available and row.in_range==nil) end

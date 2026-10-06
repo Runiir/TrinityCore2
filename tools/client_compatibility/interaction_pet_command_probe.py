@@ -13,8 +13,8 @@ def read(t,label):
     t.submit_chat('/tcui petcommands',any_mode=True)
     try:
         state,frame=t.observe(label,mode='petcommands')
-        if state.get('observer_version') not in (134,135) or 'pet_commands' not in state:
-            raise RuntimeError('requires the installed passive pet-command observer134 or135')
+        if state.get('observer_version') not in (134,135,136) or 'pet_commands' not in state:
+            raise RuntimeError('requires the installed passive pet-command observer134,135 or136')
         value={'time':time.time(),'probe':state['pet_commands'],'frame':frame,
             'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
         t.receipt.setdefault('pet_command_observations',[]).append(value);t.persist();return value
