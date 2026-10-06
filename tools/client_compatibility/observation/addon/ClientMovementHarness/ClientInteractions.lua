@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=131,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=132,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -172,6 +172,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='combat_log' then data.combat_log_probe=Client442ObserveCombatLog();return data end
     if mode=='equipment' then data.equipment_probe=Client442ObserveEquipment();return data end
     if mode=='spellbook' then data.spellbook_probe=Client442ObserveSpellBook();return data end
+    if mode=='petcommands' then data.pet_commands=Client442ObservePetCommands();return data end
     if mode=='macros' then data.macro_probe=Client442ObserveMacros();return data end
     if mode=='dressup' then data.dressup_probe=Client442ObserveDressUp();return data end
     if mode=='achievements' then data.achievement_probe=Client442ObserveAchievements();return data end
@@ -840,7 +841,7 @@ SlashCmdList.CLIENTOBSERVERPANELS=function(text)
 end
 SlashCmdList.CLIENTINTERACTIONHARNESS=function(text)
     local command,arg=text:match('^(%S+)%s*(.*)$')
-    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' or command=='itemtext' or command=='equipment' or command=='spellbook' or command=='chat' or command=='combat_log' or command=='recipes' or command=='settings' or command=='addons' then mode=command;page=math.max(1,tonumber(arg) or 1)
+    if command=='bindings' or command=='controls' or command=='talents' or command=='quest_reward' or command=='glyphs' or command=='reputation' or command=='currency' or command=='archaeology' or command=='map' or command=='tooltip' or command=='itemtext' or command=='equipment' or command=='spellbook' or command=='petcommands' or command=='chat' or command=='combat_log' or command=='recipes' or command=='settings' or command=='addons' then mode=command;page=math.max(1,tonumber(arg) or 1)
     elseif command=='hide' then frame:Hide();return
     else mode='state';autoPage=0;autoPhase='group';controlPage=1;groupPage=1 end
     frame:Show();update()

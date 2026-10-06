@@ -17,6 +17,7 @@ from .interaction_metrics import choice_counts
 from .native_input.control import verified as verified_input
 
 SAFE_BODY_NAMES={
+    'SMSG_ON_MONSTER_MOVE',
     'CMSG_PET_ACTION','CMSG_PET_ABANDON',
     'CMSG_REQUEST_PET_INFO','CMSG_QUERY_PET_NAME','CMSG_PET_NAME_QUERY',
     'SMSG_PET_NAME_QUERY_RESPONSE','SMSG_QUERY_PET_NAME_RESPONSE','SMSG_PET_SPELLS','SMSG_PET_SPELLS_MESSAGE',

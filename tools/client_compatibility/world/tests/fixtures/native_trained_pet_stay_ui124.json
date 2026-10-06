@@ -1,0 +1,44 @@
+{
+  "schema": "client442_actual_owned_stay_ui124_v1",
+  "pointer": "artifacts/client_harness/442_interactions_20261006_124.tar.gz.dvc",
+  "archive_sha256": "466cf7de892b47f05769337c61223b4de9fba19af266b6b555e289d674fcd086",
+  "receipt_member": "evidence/client_interactions_20261006_ui124/stay_capture01/episode.json",
+  "receipt_sha256": "9c7d96c207622bec925f33401d24c908becb9a1835d795b0f92b7edd58c9ae4e",
+  "character": {
+    "guid": 5,
+    "map": 0
+  },
+  "native_pet_guid": 17383896348356509718,
+  "native_pet_number": 2,
+  "modern_request": {
+    "packet": {
+      "time": 1791286219.7067645,
+      "session": "2440b222",
+      "direction": "from_client",
+      "name": "CMSG_PET_ACTION",
+      "body": "01a216680428000080030000000000000000000000000000"
+    },
+    "pet_guid": [
+      22,
+      2882308159563655168
+    ],
+    "action": 58720256,
+    "target_guid": [
+      0,
+      0
+    ],
+    "position": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "native_catalog_packet": {
+    "time": 1791286009.3264303,
+    "session": "2440b222",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "16000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "limits": "Diagnostic captured Stay was rejected with no native action. Full restoration passes, but no Stay/Follow movement or active-command qualification. Fresh live validation is required."
+}

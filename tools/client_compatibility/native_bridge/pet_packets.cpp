@@ -98,9 +98,9 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     if(name=="CMSG_PET_ACTION")
     {
         auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
-        // Admit the actual stock Follow and Dismiss captures only. Preserve
+        // Admit the actual stock Stay, Follow and Dismiss captures only. Preserve
         // the submitted GUID and never substitute destructive ABANDON.
-        if((command!=0x03800001u && command!=0x03800003u) || target!=Array{0,0} ||
+        if((command!=0x03800000u && command!=0x03800001u && command!=0x03800003u) || target!=Array{0,0} ||
            std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;}))
             throw std::runtime_error("unsupported pet action shape");
         if(!owner.pet_state || owner.pet_state->controlled_guid!=guid ||
@@ -108,7 +108,7 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
            field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")!=owner.guid() || owner.self_snapshot.is_null() ||
            field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=guid)
             throw std::runtime_error("pet action without current native control authority");
-        auto native_command=command==0x03800001u ? 0x07000001u : 0x07000003u;
+        auto native_command=0x07000000u | (command&0x007fffffu);
         return Packet{name,Writer().pack("QIQfff",{guid,native_command,0,0.0,0.0,0.0}).finish()};
     }
     r.end();

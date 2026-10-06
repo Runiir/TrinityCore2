@@ -21,6 +21,7 @@ AchievementObservation.lua
 ActionBarObservation.lua
 TargetFrameObservation.lua
 PetControlObservation.lua
+PetCommandObservation.lua
 SettingsObservation.lua
 AddOnsObservation.lua
 MacroObservation.lua

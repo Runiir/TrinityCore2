@@ -34,7 +34,7 @@ def test_actual_trained_imp_follow_preserves_guid_and_native_command(codec):
     assert rows[1]==expected()
 
 
-@pytest.mark.parametrize('body',[request(word=0x03800000),request(word=0x03800002),
+@pytest.mark.parametrize('body',[request(word=0x03800004),request(word=0x03800002),
     request(word=0x03000001),request(word=0x01800003),request(target=(5,1)),
     request(position=(1,0,0)),request(position=(0,float('nan'),0)),
     request(position=(0,0,float('inf'))),request(identity=(0,0)),
