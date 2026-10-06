@@ -230,5 +230,104 @@
       "local_enabled": true
     }
   ],
-  "decode_scope": "Only these four captured forms. Last byte is held to captured zero without assigning a meaning. Native handler takes current pet GUID plus one position/action entry."
+  "decode_scope": "Only these four captured forms. Last byte is held to captured zero without assigning a meaning. Native handler takes current pet GUID plus one position/action entry.",
+  "actual_reload_native_catalog": {
+    "time": 1791296638.4834998,
+    "session": "9eb082b1",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "1e000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "actual_reload_modern_catalog": {
+    "time": 1791296638.4835668,
+    "session": "9eb082b1",
+    "direction": "to_client",
+    "name": "SMSG_PET_SPELLS_MESSAGE",
+    "body": "01a21e6804281700000000000000010003020080030100800304008003260c80c0a31880c0000080000000800003000003010000030000000304000000000000000000000036668100e97d8000a31880c0260c80c0"
+  },
+  "public_baseline_bar": [
+    {
+      "slot": 1,
+      "name": "PET_ACTION_ATTACK",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 2,
+      "name": "PET_ACTION_FOLLOW",
+      "spell_id": null,
+      "active": true,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 3,
+      "name": "PET_ACTION_MOVE_TO",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 4,
+      "name": "Firebolt",
+      "spell_id": 3110,
+      "active": false,
+      "autocast_allowed": true,
+      "autocast_enabled": true
+    },
+    {
+      "slot": 5,
+      "name": "Blood Pact",
+      "spell_id": 6307,
+      "active": false,
+      "autocast_allowed": true,
+      "autocast_enabled": true
+    },
+    {
+      "slot": 6,
+      "name": null,
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 7,
+      "name": null,
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 8,
+      "name": "PET_MODE_ASSIST",
+      "spell_id": null,
+      "active": true,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 9,
+      "name": "PET_MODE_DEFENSIVE",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 10,
+      "name": "PET_MODE_PASSIVE",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    }
+  ],
+  "saved_baseline_abdata": "7 2 7 1 7 4 193 3110 193 6307 1 0 1 0 6 3 6 1 6 0 ",
+  "catalog_packet_source_member": "tracking/packets.jsonl",
+  "catalog_packet_source_scope": "Actual owned Assist cleanup reload, captured after batch start by the explicit safe packet-name allowlist inside the immutable DVC130 archive. Paired logical session and timestamps identify these packets."
 }
