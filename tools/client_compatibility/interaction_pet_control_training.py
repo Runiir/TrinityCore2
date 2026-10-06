@@ -1,5 +1,5 @@
 """Inspect the eligible stock warlock trainer before a native-bound purchase."""
-import argparse,json,time
+import argparse,json,re,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
@@ -108,12 +108,17 @@ def select(t,preparation,source):
     if len(rows)!=1 or rows[0][1]!=1:raise RuntimeError('native Control Demon lesson unavailable')
     state,_=t.observe('trainer_selection_before')
     if 'ClassTrainerFrame' not in state['panels']:raise RuntimeError('stock trainer no longer open')
-    current=controls(t)
-    if any(c['name'].startswith('ClassTrainerSkill') and c['text'].strip()=='Affliction' for c in current):
-        require(click_case(t,'control.collapse_affliction','Collapse the observed Affliction trainer header.',
-            lambda c:c['name'].startswith('ClassTrainerSkill') and c['text'].strip()=='Affliction',
-            lambda b,a,s:{'status':'trainer_header_pass' if s and 'ClassTrainerFrame' in a['panels'] else
-                'client_or_protocol_failure'}),'trainer_header_pass')
+    for header in ['Affliction','Demonology','Destruction']:
+        current=[c for c in controls(t) if re.fullmatch(r'ClassTrainerSkill\d+',c['name'])]
+        if any(c['text'].strip()=='Control Demon' for c in current):break
+        index=next((i for i,c in enumerate(current) if c['text'].strip()==header),None)
+        # A collapsed header is followed by another unindented header. Never
+        # toggle it back open while revealing the General lesson below.
+        if index is not None and index+1<len(current) and current[index+1]['text'].startswith('  '):
+            require(click_case(t,'control.collapse_'+header.lower(),'Collapse the observed '+header+' trainer header.',
+                lambda c:c['name'].startswith('ClassTrainerSkill') and c['text'].strip()==header,
+                lambda b,a,s:{'status':'trainer_header_pass' if s and 'ClassTrainerFrame' in a['panels'] else
+                    'client_or_protocol_failure'}),'trainer_header_pass')
     def selected(b,a,s):
         service=a.get('trainer',{}).get('service',{})
         checks={'ordinary_select':bool(s),'name':service.get('name')=='Control Demon',
@@ -126,7 +131,7 @@ def select(t,preparation,source):
         lambda c:c['name'].startswith('ClassTrainerSkill') and c['text'].strip()=='Control Demon',
         selected),'control_lesson_selected_pass')
     state,frame=t.observe('control_selected');oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
-    t.receipt.update(state=state,frame=frame,native_lesson=rows[0],native_session=session,
+    t.receipt.update(state=state,frame=frame,native_lesson=rows[0],native_trainer_guid=e['native_catalog']['guid'],native_session=session,
         resources=resources(oracle),saved_spells=known(t.fixture['guid']),protected_checks=protected(old),
         phase='control_lesson_selected',completed=True)
 
@@ -155,7 +160,7 @@ def learn(t,preparation,source):
         modern=[r for r in rows if r.get('direction')=='to_client' and r['name']=='SMSG_LEARNED_SPELLS'
             and r['body']=='010000000000000000bf6c010000']
         commands=[r for r in rows if r.get('direction')=='to_native' and r['name']=='CMSG_TRAINER_BUY_SPELL'
-            and Reader(bytes.fromhex(r['body'])).unpack('QII')[1:]==(154,80388)]
+            and Reader(bytes.fromhex(r['body'])).unpack('QII')==(e['native_trainer_guid'],154,80388)]
         expected={**before,'money':before['money']-price}
         checks={'ordinary_train':bool(s),'one_native_purchase':len(commands)==1,'native_learned':len(native)==1,
             'modern_learned':len(modern)==1,'saved_control_demon':[93375,1,0] in known(t.fixture['guid']),
