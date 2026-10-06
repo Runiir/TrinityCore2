@@ -41,9 +41,12 @@ class CameraSteering:
         # The first pulse is a small calibration probe, not a claimed client
         # sensitivity. Subsequent deltas use measured radians per EI pixel.
         sensitivity=statistics.median(self.samples) if self.samples else -.003
-        desired=direction*min(abs(error)-deadband,math.pi*period)
+        # Mouse-look is a relative position command, not a timed turn key.
+        # Once sensitivity is measured, aim at the bearing in one delta and
+        # wait for feedback before issuing a correction.
+        desired=direction*max(0,abs(error)-deadband*.5)
         pixels=round(desired/sensitivity) if self.samples else -8*direction
-        pixels=max(-256,min(256,pixels))
+        pixels=max(-1024,min(1024,pixels))
         if not pixels:return 0,info
         self.pending={'facing':facing,'uptime':uptime,'pixels':pixels}
         self.last_direction=direction;self.opposite_samples=0

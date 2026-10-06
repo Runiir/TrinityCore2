@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import tempfile
 import time
 
 from tools.second_client.place_window import place, second_monitor
@@ -21,11 +22,20 @@ WIDTH, HEIGHT = 1280, 900
 
 
 def write(path, data):
+    path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    with path.open('w') as handle:
-        os.chmod(path, 0o600)
-        json.dump(data, handle, indent=2)
-        handle.write('\n')
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.'+path.name,
+                                         delete=False) as handle:
+            temporary = Path(handle.name)
+            os.chmod(temporary, 0o600)
+            json.dump(data, handle, indent=2)
+            handle.write('\n')
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def proc_start(pid):

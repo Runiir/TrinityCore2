@@ -158,12 +158,15 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     # pressed and released without the game seeing movement.
                     # Quantize close pulses to the measured sampling interval.
                     interval=statistics.median(sample_periods) if sample_periods else age
+                    frame_rate=(row.get('farm_ui') or {}).get('frame_rate')
+                    input_period=1/frame_rate if frame_rate and frame_rate>0 else interval
                     if m['speed']==0:remaining=max(interval,remaining)
-                    pulse=max(interval,remaining) if remaining<.5 else None
+                    if m['speed']==0:remaining=max(input_period,(distance-tolerance)/speed)
+                    pulse=max(input_period,remaining) if remaining<.5 else None
                     receipt['calculated_pulse_seconds']=pulse
                     stale_position=bool(last_pulse and 'Up' not in sticky.held and
                         math.hypot(last_pulse['world']['north']-world['north'],last_pulse['world']['west']-world['west'])<.15
-                        and a['sequence']<=last_pulse['sequence']+1)
+                        and (m['speed']>0 or a['sequence']<=last_pulse['sequence']+1))
                     if not stale_position:
                         newly_pressed='Up' not in sticky.held
                         if newly_pressed and remaining>0 and not forward_started:

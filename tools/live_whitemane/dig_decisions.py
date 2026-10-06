@@ -22,23 +22,26 @@ def explore(action, response, options, state):
 
 
 def choose(state):
-    options={'observe':'Wait without input','inspect':'Read minimap blips'}
+    options={'observe':'Wait if the client is unavailable or casting',
+        'inspect':'Search the minimap if an artifact was discovered but cannot be located'}
     if state['available'] and not state['casting']:
-        options['camera_forward']='Align the camera with the current forward direction'
+        options['camera_forward']='Restore the camera if it has not been aligned recently'
         if state['artifact_visible'] or (state.get('pickup') or {}).get('uncollected'):
-            options['loot']='Locate and interact with the discovered find; check range or gathering cast'
+            options['loot']='Interact if a discovered artifact is uncollected and nearby; verify gathering cast or fragments'
         if state.get('mouseover_artifact'):
             options['mouseover_interact']='Press Mouse Button 5 on the artifact under the cursor'
         if (state.get('can_survey') and state.get('survey_ready')
                 and not (state.get('pickup') or {}).get('uncollected')):
-            options['survey']='Survey using Mouse Button 4'
+            options['survey']='Cast Survey if Survey is ready, no artifact is pending, and the guide has been reached'
         if state.get('telescope') and not state.get('guide_arrived'):
-            options.update(forward_short='Approach the guide using forward movement and camera steering',
-                forward_long='Follow the telescope or marker continuously; fly if red or far')
+            options.update(forward_short='Approach if the current marker, telescope or artifact has not been reached',
+                forward_long='Fly toward the current guide if it is red or far; otherwise approach it on foot')
     action,request,response=laya_ui.choose(state,
         'Collect discovered finds before more Survey or travel. A missed tooltip means locate the same find again. '
         'Estimated arrival is not pickup. A gathering cast confirms interaction range. '
         'Retain useful movement; steer with the camera. Prefer markers, then telescope: red fly, green approach. '
+        'When guide_arrived is true and no artifact is pending, Survey here. '
+        'Camera alignment without travel cannot discover an artifact. '
         'Resume digging after confirmed collection.',options)
     action=explore(action,response,options,state)
     return action,{'model':MODEL,'revision':REVISION,'adapter':None},request,response

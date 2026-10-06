@@ -52,6 +52,8 @@ def model_state(row, guide, visible_find, pending, steps):
             result['outcome']='tooltip_search_missed' if 'no matching public tooltip' in step['failure'] else 'action_interrupted'
         recent.append(result)
     state['recent_outcomes'] = recent
+    state['camera_recently_aligned'] = any(step['action']=='camera_forward' and step.get('completed')
+        for step in steps[-3:])
     turns = 0
     for step in reversed(steps):
         if (not step.get('completed') or not step['action'].startswith('turn_')
