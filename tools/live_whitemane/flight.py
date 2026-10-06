@@ -41,7 +41,14 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
                 'old_endpoint_distance_yards':remaining,'destination_arrival_confirmed':False}
             target=world;remaining=0;height_plan=None
             reobserve_ground=False
-        if combat_landing and remaining>6:raise RuntimeError('combat landing drifted from its current-position target')
+        if combat_landing and remaining>6:
+            # Combat landing permits only vertical descent and a grounded
+            # dismount. A knockback or delayed position sample can replace
+            # its anchor; never fly back to an obsolete horizontal point.
+            step.setdefault('combat_landing_position_updates',[]).append({
+                'observed_at':row['observed_at'],'previous_position':target,
+                'current_position':world,'displacement_yards':remaining,'horizontal_inputs':0})
+            target=world;remaining=0
         if a.get('swimming') and not combat_landing:
             step['swimming_mode_handoff']={'observed_at':row['observed_at'],'world':world,
                 'flying':False,'can_survey':a.get('can_survey')}

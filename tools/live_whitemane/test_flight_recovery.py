@@ -105,8 +105,10 @@ def test_failed_toggle_stops_after_one_press(monkeypatch,tmp_path,mounted,action
     assert inputs==[('key',{'key':'shift+space','hold':.15})]
 
 
-def test_combat_landing_uses_laya_phases_and_only_toggles_on_ground(monkeypatch,tmp_path):
-    air=observation(0,flying=True);ground=observation(0);foot=observation(0,mounted=False)
+@pytest.mark.parametrize('displacement',[0,9])
+def test_combat_landing_uses_laya_phases_and_only_toggles_on_ground(monkeypatch,tmp_path,displacement):
+    initial=observation(0,flying=True)
+    air=observation(displacement,flying=True);ground=observation(displacement);foot=observation(displacement,mounted=False)
     for r in (air,ground,foot):r['movement']['in_combat']=True
     observations=iter([air,ground,ground,ground,foot,foot])
     monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
@@ -116,13 +118,14 @@ def test_combat_landing_uses_laya_phases_and_only_toggles_on_ground(monkeypatch,
     def descend(folder,target,**kwargs):descents.append((target,kwargs));return []
     monkeypatch.setattr(flight,'descend',descend)
     monkeypatch.setattr(flight.inputs,'execute',lambda *args:{'arguments':args[-1]})
-    step={};target=air['archaeology']['world']
-    flight.fly(tmp_path,air,{'endpoint':target},step,combat_landing=True)
+    step={};target=initial['archaeology']['world']
+    flight.fly(tmp_path,initial,{'endpoint':target},step,combat_landing=True)
     assert [p['action'] for p in step['travel_decisions']]==['land','dismount','arrived']
-    assert descents==[(target,{'site_id':None,'allow_combat':True})]
+    assert descents==[(air['archaeology']['world'],{'site_id':None,'allow_combat':True})]
+    assert bool(step.get('combat_landing_position_updates'))==bool(displacement)
     assert step['travel_decisions'][1]['inputs'][0]['arguments']['key']=='shift+space'
     with pytest.raises(RuntimeError,match='current position'):
-        flight.fly(tmp_path,air,{'endpoint':dict(target,north=10)},{},combat_landing=True)
+        flight.fly(tmp_path,initial,{'endpoint':dict(target,north=10)},{},combat_landing=True)
 
 
 def test_interrupted_digsite_landing_surveys_on_ground_instead_of_remounting(monkeypatch,tmp_path):
