@@ -62,6 +62,8 @@ def restore(t,o,inventory,old):
 def begin(t,preparation,entry):
     old,e,o,inventory,identity=eligibility(t,preparation,entry);t.clean_panels()
     sample=read(t,'moveto_stock_baseline');row,point=button(sample['probe'],o.pet)
+    if row.get('usable') is not True or sample['probe'].get('modified_click') is not False:
+        raise RuntimeError('requires observed usable Move To without a modified click')
     state,_=t.observe('moveto_original_scene');catalogs=[c for c in o.catalogs if c['guid']==o.pet['guid']]
     follow=follow_row(sample['probe'])
     if (not sample['ui_clean'] or not catalogs or catalogs[-1]['react']!=3 or catalogs[-1]['command']!=1
@@ -74,20 +76,26 @@ def begin(t,preparation,entry):
         observed_button=row,qualification_added=False);t.persist();since=time.time()
     try:
         def selected(b,a,s):
+            # A pet destination cursor can be hidden while the pointer remains
+            # over the stock bar. Inspect it over visible ground before judging
+            # selection; this hover submits no ground request.
+            t.execute({'kind':'hover','value':[875,545]})
+            state,frame=t.observe('moveto_ground_reticle')
             o.poll();requests=packets(o,since)
-            checks={'stock_targeting_cursor':a.get('spell_targeting') is True,'no_pet_or_owner_command_yet':not requests,
+            checks={'stock_targeting_cursor':state.get('spell_targeting') is True,'no_pet_or_owner_command_yet':not requests,
                 'current_owned_pet':o.present() and o.pet['guid']==t.receipt['native_pet']['guid'],
                 'owner_vitals':vitals(o)==baseline['vitals'],'position':position(5)==baseline['position'],
-                'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+                'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+            t.receipt.update(reticle_frame=frame,reticle_state=state,
+                selection_observation='one stock AnyUp click followed by non-click ground hover');t.persist()
             return {'status':'owned_pet_moveto_reticle_pass' if all(checks.values()) else 'client_or_protocol_failure',
-                'oracle':{'checks':checks,'requests':requests,'qualification_added':False}}
+                'oracle':{'checks':checks,'requests':requests,'ground_state':state,'ground_frame':frame,
+                    'qualification_added':False}}
         require(t.step('diagnostic.pet_moveto.reticle','Select the observed stock Move To button once.',
             {'select':{'kind':'click','value':point,'hold':.4}},selected,diagnostic_action='select'),
             'owned_pet_moveto_reticle_pass')
-        t.execute({'kind':'hover','value':[875,545]});state,frame=t.observe('moveto_ground_reticle')
-        if state.get('spell_targeting') is not True:raise RuntimeError('ground targeting did not remain active')
-        t.receipt.update(completed=True,phase='await_owned_pet_moveto_ground_review',reticle_frame=frame,
-            reticle_state=state,qualified_scope='Stock Move To selection and pending ordinary target cursor only. '
+        t.receipt.update(completed=True,phase='await_owned_pet_moveto_ground_review',
+            qualified_scope='Stock Move To selection and pending ordinary target cursor only. '
             'Ground input requires a fresh separate source-bound visual review; no gameplay qualification.')
     except Exception:
         restore(t,o,inventory,old);raise
