@@ -27,8 +27,12 @@ def capture(t,o):
             def outcome(b,a,s):
                 after=read(t,label+'_local');o.poll();rows=entries(lab.ROOT/'evidence/world_packets.jsonl')
                 checks,modern,forwarded=request_checks(rows,o.session,since,time.time())
+                t.receipt.setdefault('autocast_request_captures',[]).append({'label':label,'started_at':since,
+                    'spell':spell,'local_wanted':wanted,'modern_requests':modern,'native_requests':forwarded,
+                    'public':after,'wire_layout_inferred':False});t.persist()
                 # The shape is deliberately opaque until this actual capture is reviewed.
-                button(after['probe'],o.pet,spell,wanted)
+                try:button(after['probe'],o.pet,spell,wanted);checks['public_toggle_control']=True
+                except RuntimeError:checks['public_toggle_control']=False
                 public=public_bar(after['probe']);expected=public_bar(before['probe'])
                 for value in expected:
                     if value.get('spell_id')==spell:value['autocast_enabled']=wanted
