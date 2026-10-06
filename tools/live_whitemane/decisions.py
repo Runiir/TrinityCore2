@@ -3,19 +3,19 @@ import json
 import urllib.request
 from tools.client_compatibility import archaeology_policy, travel_policy
 from . import guidance_policy
+from .laya_ui import read_json
 
 ENDPOINT='http://127.0.0.1:8004'
 
 
 def choose(state, which='archaeology', physical_state=None):
-    with urllib.request.urlopen(ENDPOINT+'/health',timeout=5) as response:
-        health=json.load(response)
+    health=read_json(ENDPOINT+'/health',timeout=5)
     model=health['heads'][which]
     policy={'archaeology':archaeology_policy,'travel':travel_policy,'guidance':guidance_policy}[which]
     request={'model':model['model'],'policy':which,'state':state}
     req=urllib.request.Request(ENDPOINT+'/v1/systemone',data=json.dumps(request).encode(),
                                headers={'Content-Type':'application/json'})
-    with urllib.request.urlopen(req,timeout=10) as response: result=json.load(response)
+    result=read_json(req,timeout=10)
     action=result['answers']['action']['choice']
     if (result['revision']!=model['revision'] or action not in policy.ACTIONS
             or any(v['truncated_fields'] for v in result['token_budget'].values())):

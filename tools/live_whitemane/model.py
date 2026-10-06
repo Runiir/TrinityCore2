@@ -8,6 +8,15 @@ import time
 import copy
 
 
+def context_limits(agent,maximum=2048,question_maximum=512):
+    supported=agent.model.encoder.config.max_position_embeddings
+    if not 512<=question_maximum<=maximum<=supported:
+        raise ValueError('live context limits exceed encoder capacity or question budget')
+    agent.cfg.update(max_len=maximum,head_max_len=question_maximum)
+    return {'context_limit':maximum,'question_token_limit':question_maximum,
+        'encoder_context_limit':supported}
+
+
 def serve(args):
     import os
     from .resources import register_model
@@ -18,6 +27,7 @@ def serve(args):
     from laya.common import build_sequence, render_options, serialize_state
     from tools.client_compatibility import archaeology_policy, travel_policy
     agent = archaeology_policy.base_agent()
+    limits=context_limits(agent,args.context_tokens,args.question_tokens)
     base_weights={k:v.detach().cpu().clone() for k,v in agent.model.state_dict().items() if not k.startswith('encoder.')}
     base_temperature=copy.deepcopy(agent.temperature)
     base_options=copy.deepcopy(agent.temperature_by_options)
@@ -62,6 +72,7 @@ def serve(args):
         return {'status':'ready',**identity('archaeology'),'heads':{n:identity(n) for n in heads},
                 'device':str(agent.device),'action_authority':False,'shared_frozen_encoder':True,
                 'warmup_seconds':warmup_seconds,
+                **limits,
                 'base_ui':{'model':archaeology_policy.MODEL,'revision':archaeology_policy.REVISION,'adapter':None}}
     @app.post('/v1/ui')
     def ui_decide(payload:dict):
@@ -80,6 +91,7 @@ def serve(args):
         result.update(model=archaeology_policy.MODEL,revision=archaeology_policy.REVISION,adapter=None,
             device=str(agent.device),action_authority=False,shared_frozen_encoder=True,
             token_budget=budget,elapsed_sec=time.perf_counter()-started)
+        result.update(**limits)
         return result
     @app.post('/v1/systemone')
     def decide(payload:dict):
@@ -106,6 +118,7 @@ def serve(args):
             result=agent.predict(state,{'action':definition})
         result.update(**identity(name),elapsed_sec=time.perf_counter()-started,action_authority=False,
             token_budget={'action':{'input_tokens':len(sequence),'truncated_fields':[]}})
+        result.update(**limits)
         return result
     uvicorn.run(app,host='127.0.0.1',port=args.port,log_level='warning')
 
@@ -115,6 +128,8 @@ def main():
     parser.add_argument('--port',type=int,default=8004)
     parser.add_argument('--adapter',type=Path,required=True)
     parser.add_argument('--travel-adapter',type=Path,required=True)
+    parser.add_argument('--context-tokens',type=int,default=2048)
+    parser.add_argument('--question-tokens',type=int,default=512)
     args=parser.parse_args()
     if not 1024<=args.port<=65535: raise ValueError('invalid loopback port')
     serve(args)
