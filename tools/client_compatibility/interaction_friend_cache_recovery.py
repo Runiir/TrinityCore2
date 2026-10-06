@@ -32,8 +32,13 @@ def source_matches(old,current):
     friends=old.get('friend_restoration',{}).get('checks',{})
     failed=(old.get('completed') is False and old.get('failure')==
         'RuntimeError: fresh target control was not observed: fixture.friend_whisper.row')
-    prepared=(old.get('completed') is True and old.get('failure') is None and
-        old.get('friend_cache_restore_required') is True)
+    ignored=old.get('ignored_chat_restoration',{}).get('checks',{})
+    ignored_failed=(old.get('completed') is False and old.get('failure')==
+        'RuntimeError: owned ignored-chat outcomes differ' and
+        set(ignored)=={'native_social','public_friends_preserved','stock_ignore_empty'} and
+        all(v is True for v in ignored.values()))
+    prepared=(old.get('friend_cache_restore_required') is True and
+        ((old.get('completed') is True and old.get('failure') is None) or ignored_failed))
     return (bool(old.get('finished_at')) and (failed or prepared) and old.get('actor')==current.get('actor') and
         old.get('runtime')==current.get('runtime') and old.get('actor',{}).get('guid')==1 and
         set(native)==NATIVE and all(v is True for v in native.values()) and set(friends)==FRIENDS and

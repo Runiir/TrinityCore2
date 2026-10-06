@@ -15,7 +15,7 @@ from .world.buffer import Reader
 CONTEXT='Enter name of player to ignore\nor\nShift-Click a name from th'
 
 
-def wire_checks(rows,remove=False):
+def wire_checks(rows,remove=False,*,guid=GUID,name=FRIEND):
     op='CMSG_DEL_IGNORE' if remove else 'CMSG_ADD_IGNORE';result=16 if remove else 15
     def bodies(name,direction):
         return [bytes.fromhex(r['body']) for r in rows if r['name']==name and r['direction']==direction]
@@ -31,10 +31,10 @@ def wire_checks(rows,remove=False):
         r=Reader(body);status=r.unpack('B')[0];player=r.guid();account=r.guid()
         realm,connected,area,level,klass=r.unpack('IBIII');length=r.bits(10);note=r.raw(length).decode();r.end()
         responses.append((status,player,account,realm,connected,area,level,klass,note))
-    return {'exact_modern_request':requests==[(1,(GUID,HIGH)) if remove else (FRIEND,(0,0))],
-        'exact_native_request':bodies(op,'to_native')==[struct.pack('<Q',GUID) if remove else FRIEND.encode()+b'\0'],
-        'exact_native_status':bodies('SMSG_FRIEND_STATUS','from_native')==[struct.pack('<BQ',result,GUID)],
-        'exact_modern_status':responses==[(result,(GUID,HIGH),(0,0),1,0,0,0,0,'')]}
+    return {'exact_modern_request':requests==[(1,(guid,HIGH)) if remove else (name,(0,0))],
+        'exact_native_request':bodies(op,'to_native')==[struct.pack('<Q',guid) if remove else name.encode()+b'\0'],
+        'exact_native_status':bodies('SMSG_FRIEND_STATUS','from_native')==[struct.pack('<BQ',result,guid)],
+        'exact_modern_status':responses==[(result,(guid,HIGH),(0,0),1,0,0,0,0,'')]}
 
 
 def ignore_rows(rows):

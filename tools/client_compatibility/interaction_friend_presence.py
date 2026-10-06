@@ -124,7 +124,7 @@ def park(s,old,original_peer):
     return stopped,errors
 
 
-def run(out,source,review):
+def run(out,source,review,*,trial_class=Trial,operations=None):
     out=out.resolve();source=source.resolve();review=review.resolve()
     if not out.is_relative_to(lab.ROOT/'evidence') or source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('requires owned evidence and closed scout source')
@@ -132,7 +132,7 @@ def run(out,source,review):
     entered=False;entry_started=None;packets={};original_peer=None
     try:
         for name in ['primary','scout']:
-            with actor(name):trials[name]=Trial(out/name,controller='code',chat_key_hold=1.2)
+            with actor(name):trials[name]=trial_class(out/name,controller='code',chat_key_hold=1.2)
         p,s=trials['primary'],trials['scout'];old=json.loads(source.read_text())
         with actor('scout'):
             if not source_matches(old,s.receipt) or parked_native(s)!=old['parked_native']:
@@ -172,6 +172,7 @@ def run(out,source,review):
             if not all(checks.values()):raise RuntimeError('owned scout entry differs from parked source')
         with actor('primary'):presence(p,packets['primary'],entry_started,True,old['parked_native']['zone'])
         send(p,s,packets)
+        if operations:operations(p,s,packets)
     except Exception as error:report['failure']=f'{type(error).__name__}: {error}'
     finally:
         cleanup_errors=[];stopped=None
