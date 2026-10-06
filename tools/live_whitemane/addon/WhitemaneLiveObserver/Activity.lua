@@ -35,5 +35,6 @@ function WhitemaneLiveActivity()
         casting={name=name,starts=castStart and castStart/1000,ends=castEnd and castEnd/1000,
             channel=channel,spell=spell},
         gcd={starts=gcdStart or 0,duration=gcdDuration or 0,ends=(gcdStart or 0)+(gcdDuration or 0)},
-        mount_binding={key='SHIFT-SPACE',action=call(GetBindingAction,'SHIFT-SPACE')}}
+        mount_binding={key='SHIFT-SPACE',action=call(GetBindingAction,'SHIFT-SPACE')},
+        camera_input={right_down=call(IsMouseButtonDown,'RightButton'),mouselooking=call(IsMouselooking)}}
 end

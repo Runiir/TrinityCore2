@@ -16,6 +16,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
     contacts=[]; height_plan=None
     step['travel_decisions']=phases
     target=arrow['endpoint']
+    arrival_tolerance=arrow.get('arrival_tolerance_yards',6)
     if combat_landing and math.hypot(target['north']-row['archaeology']['world']['north'],
                                     target['west']-row['archaeology']['world']['west'])>.15:
         raise RuntimeError('combat landing must stay at the observed current position')
@@ -36,13 +37,13 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         if combat_landing and remaining>6:raise RuntimeError('combat landing drifted from its current-position target')
         maximum_distance=750 if arrow.get('site_id') else 1500
         if remaining>maximum_distance: raise RuntimeError('addon endpoint exceeds bounded flight range')
-        if remaining>6 and not row.get('owned_pose'):
+        if remaining>arrival_tolerance and not row.get('owned_pose'):
             from .navigation import seed_height
             phase_folder=folder/f'height_refresh_{time.time_ns()}'
             refresh=seed_height(phase_folder,row)
             step.setdefault('height_refreshes',[]).append(refresh)
             row=refresh['after'];m,a=row['movement'],row['archaeology'];world=a['world']
-        if remaining>6 and height_plan is None:
+        if remaining>arrival_tolerance and height_plan is None:
             height_plan=clearance.plan(row,target,maximum_distance=maximum_distance)
             step['height_plan']=height_plan
         if height_plan:
@@ -51,7 +52,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         flags={'mode':'flight','available':m['in_world'] and m['health_percent']>0 and not m['dead'] and (not m['in_combat'] or combat_landing),
                'casting':a['casting'],'on_taxi':m['on_taxi'],'mounted':a['mounted'],
                'flying':a['flying'],'falling':a['falling'],'at_route_height':at_height,
-               'near_destination':remaining<=6,'destination_reached':remaining<=6,'taxi_map_open':False}
+               'near_destination':remaining<=arrival_tolerance,'destination_reached':remaining<=arrival_tolerance,'taxi_map_open':False}
         if not flags['available']: raise RuntimeError('character became unavailable during flight')
         error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
         state=travel_policy.model_state(flags)
@@ -79,6 +80,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         elif action=='cruise':
             try:
                 phase['smooth_approach']=walk(folder,target,flying=True,site_id=arrow.get('site_id'),guidance=arrow,
+                    tolerance=arrival_tolerance,
                     approved_intent=(action,model,request,response))
             except GroundContact as contact:
                 landed=contact.observation['archaeology']['world']

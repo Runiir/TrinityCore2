@@ -149,7 +149,9 @@ def run(output,stop_on='recipe'):
                             target={**target,**{k:origin[k]+(target[k]-origin[k])*fraction for k in ('north','west')}}
                         step['orientation']=orient(folder/'orient',row,target)
                         step['graph_path']=str(graph)
-                        step['inputs']=fly(folder,step['orientation']['after'],{'endpoint':target,'source':'public Canopic travel route'},step) if step['orientation']['completed'] else []
+                        step['inputs']=fly(folder,step['orientation']['after'],{
+                            'endpoint':target,'arrival_tolerance_yards':target.get('arrival_tolerance_yards',6),
+                            'source':'public Canopic travel route'},step) if step['orientation']['completed'] else []
                     elif action=='dig':
                         site=pending['site_id'] if pending else row['archaeology']['site_id']
                         if session['dig_output'] is None or (site is not None and site!=session['dig_site']):

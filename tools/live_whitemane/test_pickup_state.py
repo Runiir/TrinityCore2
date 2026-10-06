@@ -93,10 +93,12 @@ def test_a_portal_in_another_instance_is_not_a_flight_destination():
 
 def test_nearby_portal_waits_for_grounded_facts_before_it_is_legal():
     r=row();r['archaeology'].update(falling=False,flying=True,mounted=True)
+    r['farm_ui']['flyable']=True
     r['farm_ui']['route']['portal']={'from':{'instance':1,'north':20,'west':0}}
     r['farm_ui']['route']['site']={'point':{'instance':1,'north':-9732,'west':-38}}
     assert 'portal' not in farm_policy.legal_actions(r,SolveBatches())
-    assert 'flight' not in farm_policy.legal_actions(r,SolveBatches())
+    flight=farm_policy.legal_actions(r,SolveBatches())['flight'][1]
+    assert flight['north']==20 and flight['arrival_tolerance_yards']==.4
     assert 'land' in farm_policy.legal_actions(r,SolveBatches())
     r['archaeology']['flying']=False
     assert 'portal' in farm_policy.legal_actions(r,SolveBatches())

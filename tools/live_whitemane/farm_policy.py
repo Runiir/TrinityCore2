@@ -37,7 +37,7 @@ def legal_actions(row,batches,dig_guide=None):
             if r['cost']>0 and r['fragments']>=required and (r['fragments']>=150 or r['index'] in batches.active_races):
                 actions[f"solve_{r['index']}"]=(f"Solve race {r['index']} using maximum accepted keystones",{'race':r['index']})
     if pending_find.facts(row,row.get('pending_find'))['uncollected']:return actions
-    if m['map_id']!=245 and teleport_button(ui):
+    if m['map_id']!=245 and route.get('kind')=='shortcut' and teleport_button(ui):
         actions['teleport']=('Use the Tol Barad teleport button',None)
     if ui.get('taxi') and route.get('exit'):
         current=route.get('current_taxi');node=next((n for n in ui['taxi'] if n['id']==current),None)
@@ -48,6 +48,9 @@ def legal_actions(row,batches,dig_guide=None):
         if distance(a['world'],p.get('from'))<30:
             if not a['flying'] and not a['falling']:
                 actions['portal']=('Approach and use the nearby route portal',p)
+            if ui.get('flyable'):
+                actions['flight']=('Fly precisely to the nearby portal entrance, then land',
+                    {**p['from'],'arrival_tolerance_yards':.4})
         elif route.get('portal')==p and a['world'] and a['world']['instance']==p['from']['instance']:
             actions['flight']=('Fly to the route portal',p['from'])
     if route.get('origin') and route.get('exit'):
@@ -109,7 +112,8 @@ def choose(row,batches,session):
         'Finish the current digsite by following its guide before traveling onward. '
         'Prefer saved GatherMate markers; use telescope fallback. Collect discovered finds before leaving. '
         'Start solve batches around 150 fragments and continue while affordable with maximum keystones. '
-        'Travel via Tol Barad and Orgrimmar to the next digsite. Learn from the last failure.',
+        'Follow the current route instruction through Tol Barad and Orgrimmar to the next digsite. '
+        'Use a nearby portal; if its ground approach is blocked, fly to that entrance and land. Learn from the last failure.',
         {k:v[0] for k,v in options.items()})
     action=dig_decisions.explore(action,response,options,state)
     return ('solve' if action.startswith('solve_') else action),options[action][1],{'state':state,'request':request,'response':response,'choice':action}

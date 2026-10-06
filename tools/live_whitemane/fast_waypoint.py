@@ -58,7 +58,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
         sample_periods=deque(maxlen=8);last_sample=None
         steering=CameraSteering();current_decision=None;look_sequence=None
         pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
-        survey_generation=None;artifact_before=None
+        survey_generation=None;artifact_before=None;forward_started=False
         try:
             while True:
                 cycle=time.monotonic();row=observe(folder/f'approach_{index%8:02d}.png')
@@ -111,6 +111,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                         decision_count+=1
                 action,model,request,response=current_decision
                 receipt={'observed_at':row['observed_at'],'distance_yards':distance,'heading_error':error,
+                    'camera_input':(row.get('farm_ui') or {}).get('camera_input'),
                     'altitude_yards':a.get('altitude_yards'),'grounded':a['grounded'],
                     'model':model,'request':request,'response':response,'action':action,
                     'channel_ages':row['channel_ages'],'model_decision_reused':not new_decision or retained,
@@ -128,7 +129,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     raise RuntimeError('continuous waypoint movement is blocked')
                 previous=distance
                 if look_sequence is None:
-                    sender.move(640,350);sticky.button(3,True);look_sequence=m['sequence']
+                    sender.move(640,150);sticky.button(3,True);look_sequence=m['sequence']
                     index+=1;time.sleep(.1);continue
                 if m['sequence']<=look_sequence:continue
                 pixels,receipt['camera_steering']=steering.update(m['facing_radians'],m['client_uptime_ms'],
@@ -144,7 +145,8 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if pixels or vertical:sticky.relative(pixels,vertical)
                 # Forward motion remains productive throughout a correcting
                 # arc while facing into the destination's half-plane.
-                if abs(error)>=math.pi/2 or not pitch_ready:
+                alignment_limit=.18 if distance<=max(4,speed*.3) else math.pi/2
+                if abs(error)>=alignment_limit or not pitch_ready:
                     sticky.hold('Up',False)
                 else:
                     # Predict the travel during the measured feed delay. Near
@@ -164,6 +166,8 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                         and a['sequence']<=last_pulse['sequence']+1)
                     if not stale_position:
                         newly_pressed='Up' not in sticky.held
+                        if newly_pressed and remaining>0 and not forward_started:
+                            last_progress=cycle;forward_started=True
                         sticky.hold('Up',remaining>0,pulse)
                         if newly_pressed and pulse is not None:last_pulse={'world':dict(world),'sequence':a['sequence']}
                     receipt['calculated_forward_seconds']=max(0,remaining)

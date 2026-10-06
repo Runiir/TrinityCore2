@@ -24,7 +24,7 @@ def align(folder,before,target=None):
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=Input();sticky=StickyInput(sender)
         try:
-            sticky.renew();sender.move(640,350);sticky.button(3,True)
+            sticky.renew();sender.move(640,150);sticky.button(3,True)
             last_sequence=before['movement']['sequence'];aligned=0
             while time.monotonic()-started<8:
                 row=observe(folder/'view.png');m=row['movement'];a=row['archaeology']
