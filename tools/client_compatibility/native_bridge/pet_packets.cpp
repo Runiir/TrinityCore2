@@ -130,11 +130,12 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
     if(name=="CMSG_PET_ACTION")
     {
         auto command=r.take<std::uint32_t>();auto target=r.guid();auto position=r.unpack("3f");r.end();
-        // Only captured stock commands and Passive/Defensive/Assist reactions. Preserve
-        // the submitted GUID and the released native control authority.
+        // Captured stock commands, reactions and the remotely reviewed UI131
+        // idle enabled Blood Pact form. Preserve the submitted current GUID.
         bool command_action=command==0x03800000u || command==0x03800001u || command==0x03800003u;
         bool react_action=command==0x03000000u || command==0x03000001u || command==0x03000003u;
-        if((!command_action && !react_action) || target!=Array{0,0} ||
+        bool blood_pact=command==0xc08018a3u;
+        if((!command_action && !react_action && !blood_pact) || target!=Array{0,0} ||
            std::any_of(position.begin(),position.end(),[](Value const &v){return bridge::number(v)!=0;}))
             throw std::runtime_error("unsupported pet action shape");
         if(!owner.pet_state || owner.pet_state->controlled_guid!=guid ||
@@ -142,7 +143,11 @@ Reply pet_request(Protocol const &p, State &owner, std::string const &name, View
            field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")!=owner.guid() || owner.self_snapshot.is_null() ||
            field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")!=guid)
             throw std::runtime_error("pet action without current native control authority");
-        auto native_command=(react_action?0x06000000u:0x07000000u) | (command&0x007fffffu);
+        if(blood_pact && (owner.pet_state->controlled_buttons[4]!=0xc10018a3u ||
+                         !owner.pet_state->controlled_autocast.contains(6307)))
+            throw std::runtime_error("pet spell without current enabled native spell and slot authority");
+        auto native_command=blood_pact?0xc10018a3u:
+            (react_action?0x06000000u:0x07000000u) | (command&0x007fffffu);
         return Packet{name,Writer().pack("QIQfff",{guid,native_command,0,0.0,0.0,0.0}).finish()};
     }
     r.end();

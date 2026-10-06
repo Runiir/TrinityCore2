@@ -1,0 +1,268 @@
+{
+  "schema": "client442_actual_trained_pet_manual_spell_capture_v1",
+  "source_checkpoint": "artifacts/client_harness/442_interactions_20261006_131.tar.gz.dvc",
+  "source_checkpoint_sha256": "605169eda377359115d451a12978d71ca5bc5df81b9d40d5bfeccad645e72853",
+  "source_receipts": [
+    {
+      "member": "evidence/client_interactions_20261006_ui131/class_prepare01/episode.json",
+      "sha256": "6af8041ad29edbdd1df7decc7a08ade9ee5e21acdf0f64daaeee69b35ea8d8c4"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui131/class_enter01/episode.json",
+      "sha256": "e5fad04845c42c318b482a3cf9c8ae9b46837f98ed0617a270e89bba26049b70"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui131/manual_spell_capture01/episode.json",
+      "sha256": "266a869c86748aa148064dd5ddfccdcbd5a5510c8da041c95ad14b0a7f15240f"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui131/class_park01/episode.json",
+      "sha256": "2cfe8101aa8b1028206c109d26a2020c25bef505d57ef0384f0dca78836ce27f"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui131/origin_finish01/episode.json",
+      "sha256": "207a865cfd4b50afbd1f407f311b607b7659d5c450ec80cbce2f9463a8aacef4"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui131/manual_spell_whole_review01.json",
+      "sha256": "2761db018ec5564840be60f6b4b37ece3f7405112cd44cc077d4c098bcc44221"
+    },
+    {
+      "member": "evidence/client_interactions_20261006_ui131/verification.json",
+      "sha256": "db4fa10034bdf15ac59744a1af6d7fb038fe8d74c74abe27b21995c3a8e90f0a"
+    }
+  ],
+  "source_scope": "One closed ordinary stock Blood Pact click with12 diagnostic checks, no native mutation, healthy unsupported rejection and Assist15/whole17 restoration. No manual casting qualification.",
+  "character": {
+    "guid": 5,
+    "map": 0
+  },
+  "native_pet_guid": 17383896348356509727,
+  "native_pet_number": 2,
+  "native_pet_create": {
+    "guid": 17383896348356509727,
+    "map": 0,
+    "update_type": 2,
+    "kind": 3,
+    "movement": {
+      "flags": 0,
+      "flags2": 0,
+      "position": [
+        -9472.578125,
+        -9.563446044921875,
+        49.79469299316406,
+        2.408560037612915
+      ],
+      "pitch": 0,
+      "time": 181010150,
+      "speeds": [
+        2.5,
+        8.0,
+        4.5,
+        4.722221851348877,
+        2.5,
+        7.0,
+        4.5,
+        3.1415939331054688,
+        3.140000104904175
+      ]
+    },
+    "flags": {
+      "hover": 0,
+      "greeting": 0,
+      "rotation": 0,
+      "animkit": 0,
+      "victim": 0,
+      "self": 0,
+      "vehicle": 0,
+      "movement": 1,
+      "birth": 0,
+      "transport": 0,
+      "stationary": 0,
+      "area": 0,
+      "portals": 0,
+      "time": 0
+    },
+    "fields": {
+      "0": 31,
+      "1": 4047503776,
+      "4": 9,
+      "5": 416,
+      "6": 1065353216,
+      "16": 5,
+      "18": 5,
+      "25": 133120,
+      "26": 364,
+      "27": 298,
+      "32": 364,
+      "33": 298,
+      "48": 10,
+      "49": 1,
+      "53": 8,
+      "54": 2048,
+      "56": 2000,
+      "57": 2000,
+      "59": 1065353216,
+      "60": 1069547520,
+      "61": 4449,
+      "62": 4449,
+      "64": 1096361106,
+      "65": 1099731529,
+      "69": 2,
+      "70": 1791298411,
+      "73": 0,
+      "74": 1065353216,
+      "75": 1065353216,
+      "76": 688,
+      "77": 0,
+      "79": 29,
+      "80": 10,
+      "81": 24,
+      "82": 33,
+      "83": 31,
+      "94": 191,
+      "115": 147,
+      "116": 223,
+      "117": 1,
+      "118": 18,
+      "143": 1065353216,
+      "38": 1085344247,
+      "43": 1075713147,
+      "55": 4194304,
+      "101": 11,
+      "119": 21
+    }
+  },
+  "native_catalog_packet": {
+    "time": 1791298639.0924766,
+    "session": "8f5f748b",
+    "direction": "from_native",
+    "name": "SMSG_PET_SPELLS",
+    "body": "1f000000a00140f117000000000003010000020000070100000704000007260c00c1a31800c100000001000000010300000601000006000000060436660101e97d0001a31800c1260c00c100"
+  },
+  "baseline_saved_bar": "7 2 7 1 7 4 193 3110 193 6307 1 0 1 0 6 3 6 1 6 0 ",
+  "baseline_public_bar": [
+    {
+      "slot": 1,
+      "name": "PET_ACTION_ATTACK",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 2,
+      "name": "PET_ACTION_FOLLOW",
+      "spell_id": null,
+      "active": true,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 3,
+      "name": "PET_ACTION_MOVE_TO",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 4,
+      "name": "Firebolt",
+      "spell_id": 3110,
+      "active": false,
+      "autocast_allowed": true,
+      "autocast_enabled": true
+    },
+    {
+      "slot": 5,
+      "name": "Blood Pact",
+      "spell_id": 6307,
+      "active": false,
+      "autocast_allowed": true,
+      "autocast_enabled": true
+    },
+    {
+      "slot": 6,
+      "name": null,
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 7,
+      "name": null,
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 8,
+      "name": "PET_MODE_ASSIST",
+      "spell_id": null,
+      "active": true,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 9,
+      "name": "PET_MODE_DEFENSIVE",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    },
+    {
+      "slot": 10,
+      "name": "PET_MODE_PASSIVE",
+      "spell_id": null,
+      "active": false,
+      "autocast_allowed": false,
+      "autocast_enabled": false
+    }
+  ],
+  "request": {
+    "packet": {
+      "time": 1791298738.0753434,
+      "session": "8f5f748b",
+      "direction": "from_client",
+      "name": "CMSG_PET_ACTION",
+      "body": "01a21f680428a31880c00000000000000000000000000000"
+    },
+    "decoded": {
+      "guid": [
+        31,
+        2882308159563655168
+      ],
+      "word": 3229620387,
+      "flag9": 385,
+      "spell": 6307,
+      "target": [
+        0,
+        0
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "exact_end": true
+    },
+    "physical_request": {
+      "session": "fa5dc981",
+      "direction": "from_client",
+      "name": "CMSG_PET_ACTION",
+      "bytes": 24,
+      "time": 1791298738.075277,
+      "event": "modern_packet"
+    },
+    "healthy_rejection": {
+      "session": "8f5f748b",
+      "error": "unsupported pet action shape",
+      "time": 1791298738.0754063,
+      "event": "pet_action_translation_rejected"
+    }
+  }
+}
