@@ -52,9 +52,18 @@ function Client442ObserveSpellBook()
             local button=_G['SpellFlyoutButton'..index]
             if button and read(button.IsVisible,button) then
                 local info=C_Spell and read(C_Spell.GetSpellInfo,button.spellID)
+                local x,y=read(button.GetCenter,button)
+                local scale=read(button.GetEffectiveScale,button)
+                local rootScale=UIParent and read(UIParent.GetEffectiveScale,UIParent)
+                local width,height=read(GetScreenWidth),read(GetScreenHeight)
+                local point
+                if x and y and scale and rootScale and width and width>0 and height and height>0 then
+                    point={math.floor(x*scale/(width*rootScale)*65535),
+                        math.floor((1-y*scale/(height*rootScale))*65535)}
+                end
                 flyout.buttons[#flyout.buttons+1]={button=read(button.GetName,button),id=button.spellID,
                     name=read(GetSpellInfo,button.spellID) or info and info.name,
-                    known=read(IsSpellKnown,button.spellID),enabled=read(button.IsEnabled,button)}
+                    known=read(IsSpellKnown,button.spellID),enabled=read(button.IsEnabled,button),point=point}
             end
         end
     end

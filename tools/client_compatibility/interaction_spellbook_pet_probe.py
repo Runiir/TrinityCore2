@@ -16,6 +16,19 @@ from .world.buffer import Reader
 from .world.native_objects import guid as native_guid
 
 
+def observed_imp(probe,learned):
+    flyout=probe.get('flyout',{})
+    buttons=[r for r in flyout.get('buttons',[]) if r.get('id')==688]
+    if (688 not in learned or not flyout.get('visible') or flyout.get('parent')!='SpellButton1' or
+            len(buttons)!=1):raise RuntimeError('fresh owned Imp flyout is absent or ambiguous')
+    button=buttons[0];xy=button.get('point')
+    if (button.get('button')!='SpellFlyoutButton1' or button.get('name')!='Summon Imp' or
+            button.get('known') is not True or button.get('enabled') is not True or
+            not isinstance(xy,list) or len(xy)!=2 or any(type(v) is not int or not 0<v<65535 for v in xy)):
+        raise RuntimeError('fresh native-known Imp identity, training or coordinate guard differs')
+    return button,{'name':button['button'],'x':xy[0],'y':xy[1]}
+
+
 def summon_button(t,learned,observe_only=False):
     probe=detail(t,'summon_flyout_tabs')
     tab=next((r for r in probe['tabs'] if r.get('name')=='Demonology' and not r.get('hidden')),None)
@@ -55,16 +68,15 @@ def summon_button(t,learned,observe_only=False):
         time.sleep(6)
         probe=detail(t,'summon_flyout_lifecycle')
         t.receipt.update(phase='flyout_lifecycle_observed',summon_input_sent=False,
-            qualification_added=False,origin_checks=origin_checks(prepared(t,t.receipt['preparation_source'])))
+            qualification_added=False,origin_checks=origin_checks(prepared(t,Path(t.receipt['preparation_source']))))
         if not all(t.receipt['origin_checks'].values()):raise RuntimeError('flyout trace changed the parked scout')
         t.receipt['completed']=True
         return None
-    probe=detail(t,'summon_flyout_before_cast');buttons=[r for r in probe['flyout']['buttons'] if
-        r.get('id')==688 and r.get('known') is True and r.get('enabled') and r.get('name')=='Summon Imp']
-    candidates=[c for c in controls(t) if c.get('spell_flyout') and c.get('spell_id')==688 and c.get('enabled')]
-    if len(buttons)!=1 or len(candidates)!=1 or candidates[0]['name']!=buttons[0]['button']:
-        raise RuntimeError('visible native-known Imp control is absent or ambiguous')
-    return buttons[0],candidates[0]
+    state,frame=read_current_page(t,'summon_flyout_before_cast','spellbook',ready=ready)
+    t.receipt['spellbook_details']['summon_flyout_before_cast']={'state':state,'frame':frame,'input_sent':False}
+    t.persist()
+    button,control=observed_imp(state['spellbook_probe'],learned)
+    return button,control,frame
 
 
 def suite(t,path,observe_only=False):
@@ -74,7 +86,13 @@ def suite(t,path,observe_only=False):
     session=actors.session_entry(t.fixture)['session'];t.clean_panels()
     learned=wire_known(t,session)
     if 688 not in learned:raise RuntimeError('natural Summon Imp is absent from native login spells')
+    # Historical journal priming must finish before observing a transient button.
+    packets=Cursor(lab.ROOT/'evidence/world_packets.jsonl');events=Cursor(lab.ROOT/'logs/modern_world.jsonl')
+    if not observe_only:
+        for _ in packets.poll():pass
+        for _ in events.poll():pass
     t.receipt.update(native_session=session,native_baseline=capture(t),
+        summon_input_sent=False,
         qualified_scope='One stock Summon Imp compatibility probe only; no pet-tab or other operation qualification.')
     require(click_case(t,'spellbook.pet_probe.open','Open the observed stock spellbook.',
         lambda c:c['name']=='SpellbookMicroButton',lambda b,a,s:{'status':'spellbook_open_pass' if s and
@@ -82,15 +100,15 @@ def suite(t,path,observe_only=False):
     t.receipt['preparation_source']=str(path)
     result=summon_button(t,learned,observe_only)
     if observe_only:return
-    row,button=result
+    row,button,frame=result
     if row.get('name')!='Summon Imp' or row.get('known') is not True:raise RuntimeError('owned summon button differs')
-    packets=Cursor(lab.ROOT/'evidence/world_packets.jsonl');events=Cursor(lab.ROOT/'logs/modern_world.jsonl')
-    for _ in packets.poll():pass
-    for _ in events.poll():pass
     started=time.time();t.receipt.update(summon_started_at=started,summon_spell=row,
-        summon_input={'kind':'click','value':point(button),'button':1,'hold':1.2},
-        before_summon=shot(t.out/'before_summon.png'));t.persist()
-    t.io.click(*point(button),button=1,hold=1.2);time.sleep(16)
+        summon_input={'kind':'click','value':point(button),'button':1,'hold':.4},
+        before_summon=frame);t.persist()
+    if time.time()-(t.out/frame['file']).stat().st_mtime>2:
+        raise RuntimeError('observed Imp frame exceeded its two-second input bound')
+    t.receipt['summon_input_sent']=True;t.persist()
+    t.io.click(*point(button),button=1,hold=.4);time.sleep(16)
     rows=[r for r in packets.poll() if r.get('session')==session and r.get('time',0)>=started]
     outcomes=[]
     for r in rows:

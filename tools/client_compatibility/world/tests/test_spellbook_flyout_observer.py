@@ -32,7 +32,10 @@ def test_flyout_preserves_slot_and_visible_button_training_identity(trained):
     SpellFlyout={IsVisible=function() return true end,GetParent=function() return SpellButton1 end,
         Toggle=forbidden,Hide=forbidden}
     SpellFlyoutButton1={spellID=688,IsVisible=function() return true end,
-        IsEnabled=function() return trained end,GetName=function() return 'SpellFlyoutButton1' end,Click=forbidden}
+        IsEnabled=function() return trained end,GetName=function() return 'SpellFlyoutButton1' end,Click=forbidden,
+        GetCenter=function() return 160,557 end,GetEffectiveScale=function() return 1 end}
+    UIParent={GetEffectiveScale=function() return 1 end}
+    GetScreenWidth=function() return 1280 end;GetScreenHeight=function() return 720 end
     SpellFlyoutButton2={spellID=697,IsVisible=function() return false end,Click=forbidden}
     Client442ObserveTooltip=function() return {lines={}} end
     local probe=Client442ObserveSpellBook()
@@ -42,6 +45,8 @@ def test_flyout_preserves_slot_and_visible_button_training_identity(trained):
     assert(probe.flyout.visible and probe.flyout.parent=='SpellButton1' and #probe.flyout.buttons==1)
     assert(probe.flyout.buttons[1].id==688 and probe.flyout.buttons[1].known==trained)
     assert(probe.flyout.buttons[1].enabled==trained and probe.flyout.buttons[1].name=='Summon Imp')
+    assert(probe.flyout.buttons[1].point[1]==math.floor(160/1280*65535))
+    assert(probe.flyout.buttons[1].point[2]==math.floor(163/720*65535))
     assert(probe.pet.exists==false)
     '''
     subprocess.run([lua,'-'],input=program,text=True,check=True,capture_output=True)
