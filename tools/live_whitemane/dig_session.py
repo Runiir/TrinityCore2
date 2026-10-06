@@ -125,11 +125,6 @@ def run(args):
             a,m=before['archaeology'],before['movement']
             auto_loot=getattr(args,'auto_loot',False)
             ui=before.get('farm_ui') or {}
-            if ((before.get('minimap_finds') or {}).get('status')=='uninspected_candidates'
-                and ui.get('soft_interact',{}).get('name') not in FIND_NAMES
-                and not pending_find.load(before)):
-                minimap_finds.inspect(folder/'minimap',before)
-                before=observe(folder/'minimap_after.png');a,m=before['archaeology'],before['movement'];ui=before['farm_ui']
             value=pending_find.update(before,session)
             before['pending_find']=value
             pickup_priority=pending_find.priority(before,value) if value else None
@@ -179,10 +174,7 @@ def run(args):
                 if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
                     raise RuntimeError('hovered object is not a confirmed archaeology find')
             state=dig_context.model_state(before,guide,bool(args.loot_at) or visible_find,value,session['steps'])
-            if value and not visible_find and not guide:
-                action,model,request,result,state=pending_find.choose_inspection(before)
-            else:
-                action,model,request,result=choose(state)
+            action,model,request,result=choose(state)
             guidance=guide['source'] if guide else 'awaiting Survey'
             step={'index':index,'started_at':time.time(),'before':before,'state':state,
                 'action':action,'model':model,'request':request,'response':result,
@@ -324,6 +316,7 @@ def run(args):
                 raise RuntimeError('Mouse Button 4 did not produce a successful Survey')
             if action=='survey':
                 fresh_tool=telescope(after,session)
+                if fresh_tool and COLORS[fresh_tool['entry']]!='green':session.pop('last_green_endpoint',None)
                 if fresh_tool and value and not pending_find.facts(after,value)['discovery_confirmed']:
                     # Absence of a decoded telescope was only a provisional
                     # discovery. A fresh telescope at the same search position

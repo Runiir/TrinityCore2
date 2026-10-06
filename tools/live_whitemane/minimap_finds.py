@@ -111,28 +111,29 @@ def inspect(folder,row):
         'rotating':row['farm_ui']['minimap']['rotating']}
     runtime.write(folder/'scan.json',result)
     if action!='inspect':return result
-    for point in scan.get('candidates',[]):
-        fresh=observe(folder/'precheck.png');stationary(row,fresh)
-        inputs.execute('World of Warcraft','hover',{'x':point['x'],'y':point['y']})
-        # A normal UI generation must reflect this cursor, not a fading tooltip.
-        fps=max(1,(fresh.get('farm_ui') or {}).get('frame_rate') or 1)
-        # Background rendering may produce only one frame per second. Give
-        # the cursor and tooltip two rendered frames to reach the observer.
-        deadline=time.monotonic()+max(.7,min(3,2/fps))
-        while True:
-            hovered=observe(folder/'hover.png');stationary(row,hovered)
-            cursor=hovered['farm_ui'].get('cursor') or {}
-            if (hovered['farm_ui']['sequence']!=fresh['farm_ui']['sequence']
-                and abs(cursor.get('x',-1)*runtime.WIDTH-point['x'])<2
-                and abs(cursor.get('y',-1)*runtime.HEIGHT-point['y'])<2):break
-            if time.monotonic()>deadline:raise RuntimeError('minimap tooltip observation did not follow the cursor')
-            time.sleep(.02)
-        lines=hovered['farm_ui']['minimap'].get('tooltip_lines') or []
-        names=[name for name in FIND_NAMES if name in lines]
-        result['probes'].append({'point':point,'tooltip_lines':lines})
-        if names:
-            result['confirmed'].append({'name':names[0],'world':world_from_blip(hovered,point),
-                'point':point,'source':'normal_native_minimap_tooltip','estimated_position':True})
+    import fcntl
+    from tools.second_client import ctl
+    from tools.client_compatibility import native_input_adapter
+    from . import native_control,interact
+    ctl._launcher_env=runtime.client_environment
+    native_input_adapter.lab=runtime;native_input_adapter.control=native_control
+    with (runtime.ROOT/'run/input.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        result['identity']=inputs.focus('World of Warcraft')
+        sender=native_input_adapter.Input();result['input']=sender.initialization
+        try:
+            for point in scan.get('candidates',[]):
+                fresh=observe(folder/'precheck.png');stationary(row,fresh)
+                result['probe_target']=point;runtime.write(folder/'scan.json',result)
+                hovered=interact.hover(sender,(point['x'],point['y']),fresh,folder)
+                lines=hovered['farm_ui']['minimap'].get('tooltip_lines') or []
+                names=[name for name in FIND_NAMES if name in lines]
+                result['probes'].append({'point':point,'tooltip_lines':lines})
+                if names:
+                    result['confirmed'].append({'name':names[0],'world':world_from_blip(hovered,point),
+                        'point':point,'source':'normal_native_minimap_tooltip','estimated_position':True})
+        finally:
+            sender.close();runtime.write(folder/'scan.json',result)
     result.update(observed_at=time.time(),all_candidates_inspected=True)
     result['status']='confirmed_finds' if result['confirmed'] else 'no_confirmed_finds'
     result['clear']=not result['confirmed'] and scan.get('tracking_enabled') is not False

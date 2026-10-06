@@ -10,6 +10,13 @@ def fragments(row):
     return {str(r['index']):r['fragments'] for r in row['archaeology']['races']}
 
 
+def local_approach(row,approach):
+    if not approach:return None
+    a,b=approach.get('world'),row['archaeology'].get('world')
+    return approach if a and b and a['instance']==b['instance'] and math.hypot(
+        a['north']-b['north'],a['west']-b['west'])<=40 else None
+
+
 def facts(row,value):
     ui=row.get('farm_ui') or {};gathering=ui.get('gathering') or {}
     named=((ui.get('soft_interact') or {}).get('name') in FIND_NAMES or ui.get('tooltip') in FIND_NAMES)
@@ -67,7 +74,7 @@ def latch(row,*,site_id=None,approach=None,source='successful Survey without tel
     old=load(row)
     if old:return old
     value={'runtime':row['runtime'],'observed_at':time.time(),'site_id':site_id or row['archaeology']['site_id'],
-        'origin':row['archaeology']['world'],'fragments':fragments(row),'source':source,'approach':approach,
+        'origin':row['archaeology']['world'],'fragments':fragments(row),'source':source,'approach':local_approach(row,approach),
         'out_of_range':False,'attempts':0,
         'discovery_confirmed':source=='public visible archaeology find',
         'looted_finds':row['archaeology'].get('looted_finds',0),
@@ -98,7 +105,8 @@ def update(row,session):
                 and s.get('started_at',0)>=value['observed_at'] for s in session['steps'])
         if named or row.get('visible_find') or confirmed or row['archaeology']['loot_open']:
             value['discovery_confirmed']=True
-        approach=row.get('visible_find') or (confirmed[0] if confirmed else value.get('approach'))
+        approach=local_approach(row,row.get('visible_find') or (confirmed[0] if confirmed else value.get('approach')))
+        value['approach']=approach
         if approach:
             value['approach']=approach
             if row.get('visible_find'):value['captured_find_observed_at']=row['visible_find']['observed_at']
@@ -106,6 +114,7 @@ def update(row,session):
         else:runtime.write(runtime.ROOT/'run/pending_find.json',value)
         session['pending_find']=value
         if approach:session['pickup_approach']=approach
+        else:session.pop('pickup_approach',None)
         session['reapproach_find']=value['out_of_range'] or bool(approach)
     else:
         session.pop('pending_find',None)

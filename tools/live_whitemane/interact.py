@@ -19,7 +19,8 @@ def search_points(maximum):
 
 
 def hover(sender,point,before,folder,expected=None,allow_found=False):
-    sender.move(*point);sequence=before['farm_ui']['sequence'];deadline=time.monotonic()+1.5
+    fps=max(1,before['farm_ui'].get('frame_rate') or 1)
+    sender.move(*point);sequence=before['farm_ui']['sequence'];deadline=time.monotonic()+max(1.5,2/fps)
     matched=None
     while True:
         if (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('supervisor stop requested')

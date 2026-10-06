@@ -29,6 +29,46 @@ def test_out_of_range_latch_survives_reload_site_replacement_and_missing_blips(o
     assert pending_find.load(r) is None and pending_find.can_leave(r)
 
 
+def test_old_green_endpoint_cannot_send_a_new_pickup_back_across_the_site(owned_root):
+    r=row();r['archaeology'].update(site_id=331,looted_finds=0,loot_open=False)
+    old={'world':{'instance':1,'north':125,'west':0}}
+    value=pending_find.latch(r,approach=old)
+    assert value['approach'] is None
+    value['approach']=old;runtime.write(owned_root/'run/pending_find.json',value)
+    session={'pickup_approach':old,'reapproach_find':True}
+    updated=pending_find.update(r,session)
+    assert updated and updated['approach'] is None
+    assert 'pickup_approach' not in session and not session['reapproach_find']
+
+
+def test_minimap_inspection_retains_one_sender_until_all_cursor_probes_finish(owned_root,monkeypatch):
+    from . import observe,interact,farm_actions
+    from tools.client_compatibility import native_input_adapter
+    r=row();r['farm_ui']['minimap']={'x':.5,'y':.5,'width':.1,'height':.1,
+        'radius_yards':200,'rotating':False,'zoom':0}
+    points=[{'x':640,'y':440},{'x':640,'y':450}]
+    monkeypatch.setattr(minimap_finds,'signal',lambda *_,**__:{'candidates':points})
+    monkeypatch.setattr(minimap_finds.laya_ui,'choose',lambda *_:('inspect',{},{}))
+    monkeypatch.setattr(observe,'observe',lambda _:r)
+    monkeypatch.setattr(farm_actions,'stationary',lambda *_:None)
+    monkeypatch.setattr(minimap_finds.inputs,'focus',lambda _:{'owned':True})
+    monkeypatch.setattr(minimap_finds.inputs,'execute',lambda *_:pytest.fail('must retain the inspection sender'))
+    senders=[]
+    class Sender:
+        def __init__(self):self.initialization={'owned':True};self.closed=False;senders.append(self)
+        def close(self):self.closed=True
+    monkeypatch.setattr(native_input_adapter,'Input',Sender)
+    def hover(sender,point,*_):
+        assert len(senders)==1 and not sender.closed
+        result=copy.deepcopy(r)
+        result['farm_ui']['minimap']['tooltip_lines']=(['NPC'] if point[1]==440 else ['Fossil Archaeology Find'])
+        return result
+    monkeypatch.setattr(interact,'hover',hover)
+    result=minimap_finds.inspect(owned_root/'scan',r)
+    assert len(result['probes'])==2 and senders[0].closed
+    assert result['all_candidates_inspected'] and len(result['confirmed'])==1
+
+
 def test_verified_pickup_counter_can_confirm_collection_after_currency_spending(owned_root):
     r=row();r['archaeology'].update(looted_finds=3,loot_open=False,site_id=331)
     r['archaeology']['races'][0]['fragments']=100
