@@ -1,0 +1,21 @@
+# Native pet and stock flyout diagnosis
+
+UI110 prepares Harnesslock through the normal native-account path on the existing scout client. The retained fixture is human warlock GUID4, level1, with 52 naturally known spells after normal world entry. Harnesstwo's full original row, spells, skills, actions and quests remain unchanged. Harnesslock and its saved Imp remain in the owned account roster for the next repair; the expanded roster is intentional.
+
+The native server creates an Imp, entry416 and pet number1, owned by GUID4 during the first normal class login. Its native GUID is `0xf14001a000000001`, and the player's native summon pointer refers to that same pet. The modern client reports `UnitExists("pet")=false`, shows no pet frame and exposes no pet spellbook tab. The bridge currently omits the native Pet GUID kind, pet unit creation and ownership fields. This is a compatibility failure with attributable native evidence.
+
+One ordinary `/cast Summon Imp` diagnostic produces exactly one client request, one native cast request and a matching native spell688 completion from GUID4. Generic casting already has scoped qualification, so this adds no coverage. The owned pet predates this cast. Same-session read-only reconciliation proves its creation, owner and summon pointer without assuming that it was created inside the cast window.
+
+The stock Summon Demon flyout briefly exposes the known Imp button. Its recorded hide stack reaches `SpellBookFrame.lua:545` through `SpellButtonMixin:OnEvent` during `UPDATE_SHAPESHIFT_FORM`. Four guarded flyout probes and two lifecycle traces produce zero client or native cast requests. The fresh-coordinate probe also fails before casting. Nearby native NPC creation events provide approximate timing only; they do not prove a native form-field bug. The flyout and pet-tab operations remain open.
+
+Normal logout parks Harnesslock, retaining its full saved rows and native pet row. A later reviewed selection and finish restore Harnesstwo as the selected, offline scout. The immediate logout frame still showed the countdown and is excluded as selection proof. The primary was unexpectedly at character selection; the logout audit records the request and completion without assigning a cause. Source-bound normal reentry restores it in world, with all six entry and nine original native restoration checks passing. Reviewed closing images show the primary seated with panels closed and the original scout selected. Both existing clients remain on HDMI-1. The bridge, native worldserver and client process identities remain unchanged.
+
+The batch contains 29 closed episodes. Earlier failures remain excluded: the main Pixi environment lacked PIL during test collection, one lifecycle trace used a string where a Path was required, the first pet reconciliation used the wrong actor schema, and the second searched only the cast window. The corrected auth Pixi selection passes all 30 focused tests; the later source guards pass all nine tests. Lua syntax and Python syntax/import checks pass. No C++ source change or build occurred in this batch.
+
+After archive closure, the direct pytest executable failed to collect the two metadata files because it omitted the repository import path. The same files pass all eight checks through `pixi run python -m pytest`. This invocation failure does not change the archived gameplay verdicts.
+
+Coverage stays 424/916 with 492 operations open. The next unit repairs native pet visibility, ownership and pet spell responses, then validates the retained fixture through ordinary inputs. Other class, character creation, deletion and appearance variants remain open.
+
+Custom scripts remain blocked. The original `softTargetInteract=0` remains unrestored at stock-disabled `1`, as the user requested. No permission toggle or run/script/console input is authorized.
+
+[DVC archive](../../artifacts/client_harness/442_interactions_20261006_110.tar.gz.dvc) contains 432,501,088 bytes, SHA-256 `6cf496273ef3046b176dd3aaafa8cf4fd853493871a437ef654047b0ef69b32f`, MD5 `a8ece470ea33cc03722244821dd19ce3`. Remote and archive review verify all 52 JSON receipts and 268 attributed images before local pruning. Integrity verification does not qualify a failed gameplay operation.
