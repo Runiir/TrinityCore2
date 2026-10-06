@@ -56,7 +56,7 @@ def restart(out,version,unavailable_primary_source=None,unavailable_scout_source
                 else:
                     actors.session_entry(t.fixture);t.clean_panels();state,frame=t.observe('before_deploy')
                     baselines[name]={key:state.get(key) for key in ['guid','money','equipment','group','raid_profile']}
-                    native_baselines[name]=native_restoration.capture(t)
+                    native_baselines[name]=native_restoration.capture(t,state)
                     t.receipt['bridge_native_baseline']=native_baselines[name]
                     t.receipt['baseline']={'state':state,'frame':frame};t.receipt['completed']=True
                 if not (name=='scout' and parked_scout_review):

@@ -17,11 +17,14 @@ def oracle(t):
     return Inventory(lab.ROOT,session,t.fixture['guid']).poll()
 
 
-def capture(t):
+def capture(t,state=None):
     native=oracle(t)
+    if state is None:state,_=t.observe('bridge_selection_baseline')
     return {'resources':resources(native),'stats':native_state(native),'spells':known(t.fixture['guid']),
         'actions':saved_actions(t.fixture['guid']),'pose':pose(native),'afk':afk(native),
-        'position':position(t.fixture['guid'])}
+        'position':position(t.fixture['guid']),
+        'selection':{'native_guid':native.pair(t.fixture['guid'],'UNIT_FIELD_TARGET'),
+            'public':{k:state.get('target',{}).get(k) for k in ('exists','guid','name')}}}
 
 
 def restore(t,baseline):
@@ -35,6 +38,21 @@ def restore(t,baseline):
         t.execute({'kind':'key','value':binding_key(bar['keys']['SITORSTAND'][0]),'hold':.4})
         time.sleep(12)
     state,frame=t.observe('bridge_native_restored')
+    if 'selection' in baseline:
+        wanted=baseline['selection'];now=state.get('target',{});selected_again=False
+        # A bridge reconnect can clear selection. Restore that exact prior name
+        # only when both native and public selection are empty; retain new input.
+        if wanted['native_guid'] and native.poll().pair(t.fixture['guid'],'UNIT_FIELD_TARGET')==0 and now.get('exists') is False:
+            name=wanted['public'].get('name')
+            if not isinstance(name,str) or not name or len(name)>128 or any(c in name for c in '\r\n'):
+                raise RuntimeError('prior selected target has no safe ordinary target name')
+            t.execute({'kind':'chat','value':'/targetexact '+name});selected_again=True
+            state,frame=t.observe('bridge_selection_restored');now=state.get('target',{})
+        selection_checks={'native':native.poll().pair(t.fixture['guid'],'UNIT_FIELD_TARGET')==wanted['native_guid'],
+            'public':all(now.get(k)==v for k,v in wanted['public'].items())}
+        t.receipt['bridge_selection_restoration']={'checks':selection_checks,'ordinary_selection_input':selected_again,
+            'baseline':wanted,'frame':frame};t.persist()
+        if not all(selection_checks.values()):raise RuntimeError('selected target differs after bridge reconnect; preserve current user input')
     checks={'resources':resources(native)==baseline['resources'],
         'stats':restored_native_state(baseline['stats'],native_state(native)),
         'spells':known(t.fixture['guid'])==baseline['spells'],
@@ -44,4 +62,3 @@ def restore(t,baseline):
         'no_lua_errors':not state.get('lua_errors'),'no_blocked_actions':not state.get('blocked_actions')}
     t.receipt['bridge_native_restoration']={'checks':checks,'frame':frame};t.persist()
     if not all(checks.values()):raise RuntimeError('native character state differs after bridge reconnect')
-
