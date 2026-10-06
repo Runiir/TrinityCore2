@@ -1,0 +1,58 @@
+"""Resume a parked owned class without restarting its unchanged bridge."""
+import argparse,json,time
+from pathlib import Path
+from . import actors,lab_runtime as lab
+from .interaction_social import actor
+from .interaction_trial import Trial
+from .interaction_bridge_deploy import shot
+from .interaction_retained_class_fixture import closed
+from .interaction_owned_class_fixture import character,saved,pets,origin_checks,SCRIPT_BOUNDARY
+
+
+def continuity(t,old,park,finish,preparation_sha):
+    parked={'original_character','original_saved_rows','native_worldserver','class_offline'}
+    restored=parked|{'origin_registration'}
+    if (old.get('phase')!='await_owned_class_lobby_review' or
+        old.get('origin_actor',{}).get('guid')!=2 or old.get('class_actor',{}).get('guid')!=4 or
+        old.get('origin_actor')!=t.fixture or old.get('actor')!=t.fixture or
+        park.get('actor')!=old.get('class_actor') or finish.get('actor')!=t.fixture or
+        any(v.get('runtime')!=t.receipt['runtime'] for v in (old,park,finish)) or
+        park.get('phase')!='await_original_selection_review' or
+        any(v.get('fixture_source',{}).get('sha256')!=preparation_sha for v in (park,finish)) or
+        set(park.get('checks',{}))!=parked or not all(park['checks'].values()) or
+        set(finish.get('checks',{}))!=restored or not all(finish['checks'].values()) or
+        not old['finished_at']<=park['started_at']<park['finished_at']<=finish['started_at']<finish['finished_at']):
+        raise RuntimeError('closed unchanged-runtime class restoration chain differs')
+
+
+def prepare(t,preparation,parked,origin_finish):
+    sources=[p.resolve() for p in (preparation,parked,origin_finish)]
+    old,park,finish=[closed(p) for p in sources]
+    continuity(t,old,park,finish,lab.sha256(sources[0]))
+    fixture=old['class_actor'];guid=fixture['guid'];account=fixture['account_id']
+    checks=origin_checks(old)
+    checks.update(class_offline=park['retained_class_fixture']['online']==0,
+        retained_character=character(guid,account)==park['retained_class_fixture'],
+        retained_saved_rows=saved(guid)==park['retained_class_saved'],
+        retained_pets=pets(guid)==park['retained_class_pets'],origin_registration=actors.load()==t.fixture)
+    if not all(checks.values()):raise RuntimeError('retained class or original saved state changed')
+    t.receipt.update(sources=[{'path':str(p),'sha256':lab.sha256(p)} for p in sources],
+        origin_actor=old['origin_actor'],origin_native=old['origin_native'],origin_saved=old['origin_saved'],
+        origin_roster=old['origin_roster'],class_actor=fixture,natural_native=park['retained_class_fixture'],
+        natural_saved=park['retained_class_saved'],retained_class_pets=park['retained_class_pets'],
+        checks=checks,qualified_scope='Unchanged-runtime retained fixture continuity only; no gameplay qualification.')
+    t.persist()
+    if actors.register(guid)!=fixture:raise RuntimeError('retained class registration differs')
+    t.receipt.update(completed=True,phase='await_owned_class_lobby_review',frame=shot(t.out/'owned_lobby.png'))
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__)
+    for name in ('preparation','park','origin-finish','output'):p.add_argument('--'+name,type=Path,required=True)
+    a=p.parse_args()
+    with actor('scout'):
+        t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
+        try:prepare(t,a.preparation,a.park,a.origin_finish)
+        except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
+        finally:t.receipt['finished_at']=time.time();t.persist()
+        print(json.dumps({k:t.receipt.get(k) for k in ('phase','completed','failure')}),flush=True)

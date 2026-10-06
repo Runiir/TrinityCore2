@@ -1,0 +1,13 @@
+{
+  "schema": "client442_pet_target_contract_v1",
+  "actor": {"guid": 4, "account_id": 2, "class": 9, "level": 1},
+  "fixture": "Retained normally created Harnesslock and native Imp entry416, pet number1; current native counter comes from its owned entry.",
+  "inputs": ["Stock exact-name target command using the observed public pet name", "Stock clear-target command during cleanup"],
+  "outcomes": ["Modern request GUID and native request GUID agree with exact owned pet creation", "Native player target, public target and visible name agree", "Selected owned pet current and maximum health agree with native sparse fields"],
+  "restoration": ["Original empty native/public target", "Native inventory and money", "Saved spells, skills, actions and quests", "Observed player position", "Closed panels and clean UI", "Original Harnesstwo full row and saved rows", "Native worldserver lifetime"],
+  "controller": "code",
+  "model": null,
+  "custom_scripts": "blocked",
+  "softTargetInteract": {"original": "0", "current_stock_disabled": "1", "original_restored": false},
+  "limits": "Only owned Imp targeting and health when selected; pet tab, power, commands, combat, other classes and persistence remain open. No spell/aura grant, level change, additional client or bridge restart."
+}
