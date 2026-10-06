@@ -36,7 +36,7 @@ def run(folder,portal,*,approved_intent=None):
     named=(soft.get('name') in names and soft.get('enabled')=='3'
         and fresh.get('farm_ui',{}).get('bindings',{}).get('INTERACTTARGET'))
     if named:
-        row=action_queue.wait_stopped(folder,fresh,observe)
+        row=action_queue.wait_stopped(folder,fresh,observe,camera_released=True)
         result['approach']={'source':'confirmed public named portal interaction',
             'exact_coordinate_required':False}
     else:
@@ -46,7 +46,7 @@ def run(folder,portal,*,approved_intent=None):
         runtime.write(folder/'portal.json',result)
         result['approach']=walk(folder/'approach',approach_target,tolerance=.4,
             guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
-        row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
+        row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe,camera_released=True)
         if hint:
             # Ground body pitch does not measure camera tilt. Restore a normal
             # view before reproducing the successful facing and measured zoom.
@@ -56,6 +56,7 @@ def run(folder,portal,*,approved_intent=None):
         else:
             result['camera_view']=align(folder/'view',row,target,reset_view=True)
             row=observe(folder/'view_ready.png')
+        row=action_queue.wait_stopped(folder,row,observe,camera_released=True)
     runtime.write(folder/'portal.json',result)
     point=portal_view.search_point(hint,row)
     if point:

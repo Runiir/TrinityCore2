@@ -7,5 +7,6 @@ Snapshot.lua
 Minimap.lua
 CombatFacts.lua
 Activity.lua
+MacroUI.lua
 FarmUI.lua
 Relay.lua

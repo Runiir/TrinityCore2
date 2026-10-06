@@ -25,12 +25,15 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
         max(x for x in (before_zoom,preferred_zoom) if x is not None) if (
             before_zoom is not None or preferred_zoom is not None) else None)
     if grounded and (ground_view or target is None or reset_view):
-        preset=4 if ground_view else 2
+        recovery_view=target is None and not ground_view
+        # The portal keeps view 2. Ordinary camera recovery owns view 3 and
+        # resets its saved angle so a bad pitch cannot be restored repeatedly.
+        preset=4 if ground_view else 3 if recovery_view else 2
         path=runtime.ROOT/'run/camera_presets.json'
         previous=json.loads(path.read_text()) if path.exists() else {}
         identity=before.get('runtime')
         initialized=previous.get('runtime')==identity and preset in previous.get('initialized',[])
-        text=('/run SetView(%d)'%preset if initialized else '/run ResetView(%d)SetView(%d)'%(preset,preset))
+        text=('/run SetView(%d)'%preset if initialized and not recovery_view else '/run ResetView(%d)SetView(%d)'%(preset,preset))
         view=inputs.execute('World of Warcraft','command',{
             'text':text,
             'frame_period_seconds':1/max(1,(before.get('farm_ui') or {}).get('frame_rate') or 1)})
@@ -109,7 +112,7 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
                     release.update(confirmed=True,observed_at=stopped['observed_at'])
                 except Exception as error:
                     release.update(confirmed=False,failure=str(error))
-            try:sticky.close(after_release=settled)
+            try:sticky.close(after_release=settled,release_camera=True)
             finally:runtime.write(folder/'camera_release.json',release)
             runtime.write(folder/'camera_view.json',{'identity':identity,'observations':rows,
                 'alignment_heading_radians':desired,'yaw_samples':list(steering.samples),

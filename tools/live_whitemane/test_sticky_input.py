@@ -37,6 +37,15 @@ def test_watchdog_releases_mouselook_and_forward_together():
     assert events==[('press','Up'),('button_press',3),('release','Up'),('button_release',3)]
 
 
+def test_camera_handoff_releases_even_when_python_forgot_the_pressed_button():
+    sticky,events,now=controller();sticky.button(3,True);sticky.buttons.clear()
+    def released():
+        assert events[-1]==('button_release',3) and ('close',None) not in events
+        events.append(('client_confirmed',False))
+    sticky.close(after_release=released,release_camera=True)
+    assert events==[('button_press',3),('button_release',3),('client_confirmed',False),('close',None)]
+
+
 def test_a_continuous_command_accepts_an_earlier_stop_without_resending_keydown():
     sticky,events,now=controller()
     sticky.hold('Up',True)

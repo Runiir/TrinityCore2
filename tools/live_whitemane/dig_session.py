@@ -202,9 +202,9 @@ def run(args):
                 if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
                     raise RuntimeError('hovered object is not a confirmed archaeology find')
             state=dig_context.model_state(before,guide,bool(args.loot_at) or visible_find,value,session['steps'])
-            retained=pickup_intent.retained(session,before,value)
+            retained=pickup_intent.retained(session,before,value,state=state)
             action,model,request,result=retained or choose(state)
-            pickup_intent.offer(session,before,value,action,model,request,result)
+            pickup_intent.offer(session,before,value,action,model,request,result,state=state)
             guidance=guide['source'] if guide else 'awaiting Survey'
             step={'index':index,'started_at':time.time(),'before':before,'state':state,
                 'action':action,'model':model,'request':request,'response':result,

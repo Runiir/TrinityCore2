@@ -276,7 +276,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                         world=stopped['archaeology']['world'],speed=stopped['movement'].get('speed',0))
                 except Exception as error:
                     release.update(confirmed=False,failure=str(error))
-            try:sticky.close(after_release=settled)
+            try:sticky.close(after_release=settled,release_camera=True)
             finally:
                 runtime.write(folder/'movement_release.json',release)
             runtime.write(folder/'smooth_walk.json',{'identity':identity,'sender':sender.initialization,

@@ -10,6 +10,9 @@ def stationary(before, fresh):
     if (runtime.ROOT/'run/stop_dig').exists():raise RuntimeError('supervisor stop requested')
     if not ready(fresh) or fresh['archaeology']['casting'] or before['runtime']!=fresh['runtime']:
         raise RuntimeError('character or owned client unavailable for UI input')
+    camera=(fresh.get('farm_ui') or {}).get('camera_input') or {}
+    if camera.get('right_down') or camera.get('mouselooking'):
+        raise RuntimeError('selected client action invalidated: camera mouse-look is still active before UI input')
     a,b=before['archaeology']['world'],fresh['archaeology']['world']
     if not a or not b or a['instance']!=b['instance'] or math.hypot(a['north']-b['north'],a['west']-b['west'])>.2:
         raise RuntimeError('supervisor moved before selected UI input')

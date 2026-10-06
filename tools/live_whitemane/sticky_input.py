@@ -71,13 +71,20 @@ class StickyInput:
             except Exception as error:
                 self.interrupted='owned input watchdog failed: '+str(error);break
 
-    def close(self,after_release=None):
+    def close(self,after_release=None,*,release_camera=False):
         self.stop.set()
         if self.worker:self.worker.join(timeout=1)
         try:
             with self.lock:
                 for name in list(self.held):self.hold(name,False)
-                for button in list(self.buttons):self.button(button,False)
+                for button in list(self.buttons):
+                    if not release_camera or button!=3:self.button(button,False)
+                if release_camera:
+                    # A camera owner sends the release even if its Python
+                    # bookkeeping lost the button. The native sender still
+                    # retains its own pressed-button set until it is closed.
+                    self.sender._send(self.sender.X.ButtonRelease,3)
+                    self.buttons.discard(3)
             # Delivery acknowledgement precedes client processing. Keep the
             # EI device alive while the caller observes the released state.
             if after_release:after_release()

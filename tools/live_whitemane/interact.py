@@ -137,16 +137,35 @@ def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
                 artifact=name in FIND_NAMES
                 state={'object_name':name,'object_kind':'archaeology find' if artifact else 'named route interaction',
                     'cursor':row['farm_ui']['cursor'],
-                    'combat':row['movement']['in_combat'],'casting':row['archaeology']['casting'],
-                    'mouseover_interact_binding':'Mouse Button 5'}
-                if artifact:state['artifact_name']=name
-                action,request,response=laya_ui.choose(state,
-                    'Interact with the currently named '+('archaeology find' if artifact else 'route object')+' using the user mouseover binding.',
-                    {'mouseover_interact':'Press Mouse Button 5 on the named object under the cursor',
+                    'combat':row['movement']['in_combat'],'casting':row['archaeology']['casting']}
+                if artifact:state.update(artifact_name=name,mouseover_interact_binding='Mouse Button 5')
+                else:state['interaction_binding']='Right mouse button after camera release'
+                options=({'mouseover_interact':'Press Mouse Button 5 on the named artifact under the cursor',
+                    'recheck':'Move away and recheck the tooltip before a right click'} if artifact else
+                    {'right_click':'Right-click the freshly named route object with camera mouse-look released',
                      'recheck':'Move away and recheck the tooltip before a right click'})
+                action,request,response=laya_ui.choose(state,
+                    'Interact with the currently named '+('archaeology find using the user mouseover binding.'
+                        if artifact else 'route object using a right click after camera release.'),options)
                 runtime.write(folder/'mouseover_choice.json',{'state':state,'choice':action,'request':request,'response':response})
                 if action=='mouseover_interact':
                     result=mouseover(folder/'mouse5',row,names,sender=sender,identity=identity)
+                    interaction_search.save(search,0,completed=True)
+                    runtime.write(folder/'interaction.json',result);return result
+                if action=='right_click':
+                    point=row['farm_ui']['cursor']
+                    actual=(round(point['x']*runtime.WIDTH),round(point['y']*runtime.HEIGHT))
+                    confirmed=hover(sender,actual,row,folder,expected=name)
+                    if confirmed['farm_ui'].get('tooltip')!=name:continue
+                    camera=confirmed['farm_ui'].get('camera_input') or {}
+                    if camera.get('right_down') or camera.get('mouselooking'):
+                        raise RuntimeError('selected client action invalidated: camera mouse-look active before portal click')
+                    sender._send(sender.X.ButtonPress,3)
+                    try:time.sleep(inputs.key_hold(confirmed,minimum=.2))
+                    finally:sender._send(sender.X.ButtonRelease,3)
+                    time.sleep(1/max(1,confirmed['farm_ui'].get('frame_rate') or 30))
+                    result={'source':'fresh named route object right click after camera release',
+                        'name':name,'point':list(actual),'identity':identity}
                     interaction_search.save(search,0,completed=True)
                     runtime.write(folder/'interaction.json',result);return result
                 cleared=hover(sender,(1000,750),row,folder)
@@ -160,6 +179,9 @@ def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
                 confirmed=hover(sender,(x,y),cleared,folder,expected=name)
                 observed=confirmed
                 if confirmed['farm_ui'].get('tooltip')!=name:continue
+                camera=confirmed['farm_ui'].get('camera_input') or {}
+                if camera.get('right_down') or camera.get('mouselooking'):
+                    raise RuntimeError('selected client action invalidated: camera mouse-look active before object click')
                 sender._send(sender.X.ButtonPress,3)
                 try:time.sleep(.2)
                 finally:sender._send(sender.X.ButtonRelease,3)

@@ -176,7 +176,8 @@ local function snapshot()
     local ends=(start or 0)+(duration or 0)
     return {uptime=GetTime(),route=call(WhitemaneLiveCanopicRoute),actionbars=actionbars(),flyout=flyout(),
         minimap=call(WhitemaneLiveMinimap),survey={ready=enabled~=0 and enabled~=false and ends<=GetTime(),cooldown_ends=ends},
-        journal=journal(),taxi=taxi(),gossip=gossip(),loot=loot(),canopic=canopic(),tooltip=visible(GameTooltip) and tip or nil,
+        journal=journal(),taxi=taxi(),gossip=gossip(),loot=loot(),canopic=canopic(),
+        macro=call(WhitemaneLiveMacroUI,control,append,visible,text),tooltip=visible(GameTooltip) and tip or nil,
         cursor={x=x/(GetScreenWidth()*uiScale),y=1-y/(GetScreenHeight()*uiScale)},
         soft_interact={exists=not not call(UnitExists,"softinteract"),name=call(UnitName,"softinteract"),
                        enabled=call(GetCVar,"SoftTargetInteract")},bindings=keys,
