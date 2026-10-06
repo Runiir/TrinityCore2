@@ -115,6 +115,8 @@ def main():
     session['addon_decoder_sha256']=relay_hash
     find_file=Path(survey_find.__file__);find_hash=hashlib.sha256(find_file.read_bytes()).hexdigest()
     session['find_decoder_sha256']=find_hash
+    pose_file=Path(own_pose.__file__);pose_hash=hashlib.sha256(pose_file.read_bytes()).hexdigest()
+    session['height_decoder_sha256']=pose_hash
     try:
         library = reader.crypto.load_native(runtime)
         keys, scanned, _, limited = reader.crypto.schedules(library, scope['game_pid'], 4096, 45)
@@ -187,6 +189,9 @@ def main():
                     # Layout diagnostics contain no prefix payload or chat.
                     counts=session.setdefault('relay_rejections',{});reason=str(error)[:120]
                     if reason in counts or len(counts)<16:counts[reason]=counts.get(reason,0)+1
+                elif direction=='client_to_server' and opcode in movement_opcodes:
+                    counts=session.setdefault('height_rejections',{});reason=str(error)[:120]
+                    if reason in counts or len(counts)<16:counts[reason]=counts.get(reason,0)+1
             if activity:
                 last_activity = time.monotonic()
                 session['last_gameplay_activity_at'] = stamp
@@ -194,6 +199,10 @@ def main():
             validate(scope)
             window.expire(time.time())
             if time.monotonic() - heartbeat >= 2:
+                candidate_hash=hashlib.sha256(pose_file.read_bytes()).hexdigest()
+                if candidate_hash!=pose_hash:
+                    importlib.reload(own_pose);pose_hash=candidate_hash;poses.clear()
+                    session['height_decoder_sha256']=pose_hash
                 candidate_hash=hashlib.sha256(find_file.read_bytes()).hexdigest()
                 if candidate_hash!=find_hash:
                     importlib.reload(survey_find);find_hash=candidate_hash

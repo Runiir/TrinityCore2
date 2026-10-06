@@ -19,7 +19,8 @@ def parse(payload, player):
     for _ in range(forces):r.guid()
     presence=[r.bits(1) for _ in range(8)]
     if flags3 or flags>=1<<30 or flags2 & ~(0x3f|0x100|0x200|0x400|0x8000) or any(presence[i] for i in (1,3,6,7)):
-        raise ValueError('unsupported movement layout')
+        mask=sum(bit<<i for i,bit in enumerate(presence))
+        raise ValueError(f'unsupported movement layout flags={flags:x}/{flags2:x}/{flags3:x} optional={mask:02x}')
     if presence[0]:r.guid()
     if presence[2]:
         fall_time,vertical=r.unpack('If')
