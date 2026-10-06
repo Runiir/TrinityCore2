@@ -16,7 +16,7 @@ from .world.buffer import Reader
 from .world.native_objects import guid as native_guid
 
 
-def summon_button(t,learned):
+def summon_button(t,learned,observe_only=False):
     probe=detail(t,'summon_flyout_tabs')
     tab=next((r for r in probe['tabs'] if r.get('name')=='Demonology' and not r.get('hidden')),None)
     if tab is None:raise RuntimeError('owned Demonology tab is absent')
@@ -49,6 +49,14 @@ def summon_button(t,learned):
         {'open':{'kind':'click','value':point(candidates[0]),'button':3,'hold':1.2,
             'description':'Right-click the observed stock Summon Demon row once.'}},
         opened,diagnostic_action='open'),'summon_flyout_open_pass')
+    if observe_only:
+        time.sleep(6)
+        probe=detail(t,'summon_flyout_lifecycle')
+        t.receipt.update(phase='flyout_lifecycle_observed',summon_input_sent=False,
+            qualification_added=False,origin_checks=origin_checks(prepared(t,t.receipt['preparation_source'])))
+        if not all(t.receipt['origin_checks'].values()):raise RuntimeError('flyout trace changed the parked scout')
+        t.receipt['completed']=True
+        return None
     probe=detail(t,'summon_flyout_before_cast');buttons=[r for r in probe['flyout']['buttons'] if
         r.get('id')==688 and r.get('known') is True and r.get('enabled') and r.get('name')=='Summon Imp']
     candidates=[c for c in controls(t) if c.get('spell_flyout') and c.get('spell_id')==688 and c.get('enabled')]
@@ -57,7 +65,7 @@ def summon_button(t,learned):
     return buttons[0],candidates[0]
 
 
-def suite(t,path):
+def suite(t,path,observe_only=False):
     old=prepared(t,path)
     if (t.fixture['character_name'],t.fixture['race'],t.fixture['class'],t.fixture['level'])!=('Harnesslock',1,9,1):
         raise RuntimeError('requires the prepared owned Warlock')
@@ -69,7 +77,10 @@ def suite(t,path):
     require(click_case(t,'spellbook.pet_probe.open','Open the observed stock spellbook.',
         lambda c:c['name']=='SpellbookMicroButton',lambda b,a,s:{'status':'spellbook_open_pass' if s and
             'SpellBookFrame' in a['panels'] else 'client_or_protocol_failure'}),'spellbook_open_pass')
-    row,button=summon_button(t,learned)
+    t.receipt['preparation_source']=str(path)
+    result=summon_button(t,learned,observe_only)
+    if observe_only:return
+    row,button=result
     if row.get('name')!='Summon Imp' or row.get('known') is not True:raise RuntimeError('owned summon button differs')
     packets=Cursor(lab.ROOT/'evidence/world_packets.jsonl');events=Cursor(lab.ROOT/'logs/modern_world.jsonl')
     for _ in packets.poll():pass
@@ -102,12 +113,13 @@ def suite(t,path):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--observe-flyout-only',action='store_true');a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2)
         t.receipt.update(custom_script_permission='blocked_by_user',
             softTargetInteract={'original':'0','current_stock_disabled':'1','original_restored':False})
-        try:suite(t,a.source)
+        try:suite(t,a.source,a.observe_flyout_only)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ['phase','completed','failure']}),flush=True)

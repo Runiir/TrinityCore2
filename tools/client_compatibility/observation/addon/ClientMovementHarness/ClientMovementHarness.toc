@@ -13,6 +13,7 @@ MapObservation.lua
 TooltipObservation.lua
 ItemTextObservation.lua
 EquipmentObservation.lua
+SpellBookLifecycleObservation.lua
 SpellBookObservation.lua
 ProfessionObservation.lua
 DressUpObservation.lua

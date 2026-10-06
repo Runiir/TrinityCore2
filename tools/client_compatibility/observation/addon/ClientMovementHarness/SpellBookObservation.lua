@@ -59,6 +59,7 @@ function Client442ObserveSpellBook()
         end
     end
     return {visible=book and not not read(book.IsVisible,book) or false,flyout=flyout,
+        lifecycle=read(Client442ObserveSpellBookLifecycle),
         chat_link_dispatch=Client442CompatibilityStatus and Client442CompatibilityStatus.spell_chat_link_dispatch or false,
         book_type=book and book.bookType,skill_line=book and book.selectedSkillLine,
         book_types={spell=BOOKTYPE_SPELL,profession=BOOKTYPE_PROFESSION,pet=BOOKTYPE_PET},
