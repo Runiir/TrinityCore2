@@ -36,6 +36,13 @@ def saved(guid):
     return {'spells':known(guid),'skills':skills(guid),'actions':saved_actions(guid),'quests':quests}
 
 
+def pets(guid):
+    with lab.connection() as c,c.cursor() as q:
+        q.execute('SELECT * FROM client442_characters.character_pet WHERE owner=%s ORDER BY id',(guid,))
+        columns=[x[0] for x in q.description]
+        return json.loads(json.dumps([dict(zip(columns,row)) for row in q.fetchall()]))
+
+
 def origin_checks(old):
     origin=old['origin_actor']
     return {'original_character':character(2,origin['account_id'])==old['origin_native'],
@@ -166,7 +173,8 @@ def park(t,path):
     if not all(checks.values()):raise RuntimeError('class parking changed the original fixture')
     if actors.register(2)!=old['origin_actor']:raise RuntimeError('original actor registration differs')
     t.receipt.update(checks=checks,phase='await_original_selection_review',frame=shot(t.out/'origin_selection.png'),
-        retained_class_fixture=character(t.fixture['guid'],t.fixture['account_id']),completed=True,
+        retained_class_fixture=character(t.fixture['guid'],t.fixture['account_id']),
+        retained_class_saved=saved(t.fixture['guid']),retained_class_pets=pets(t.fixture['guid']),completed=True,
         qualified_scope='Class fixture parked and original actor registration restored. New owned class fixture retained; '
             'original account roster is intentionally expanded, not restored.')
 
