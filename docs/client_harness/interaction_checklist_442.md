@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 428 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 429 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -91,7 +91,7 @@ Fixture: `class_variants`.
 - [x] `spellbook.close` (qualified variant; [evidence](#panel_visibility))
 - [x] `spellbook.general_tab` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [x] `spellbook.class_tab` (qualified variant; [evidence](#stock_spellbook_navigation))
-- [ ] `spellbook.pet_tab`
+- [x] `spellbook.pet_tab` (qualified variant; [evidence](#trained_imp_pet_spellbook_tab))
 - [x] `spellbook.professions_tab` (qualified variant; [evidence](#stock_spellbook_profession_catalog))
 - [x] `spellbook.next_page` (qualified variant; [evidence](#stock_spellbook_navigation))
 - [x] `spellbook.previous_page` (qualified variant; [evidence](#stock_spellbook_navigation))
@@ -3014,3 +3014,20 @@ Remaining limits: Only one owned Imp identity/name across normal logout/reentry.
 - [442_interactions_20261006_113.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_113.tar.gz.dvc), member `evidence/client_interactions_20261006_ui113/whole_pet_persistence_review.json`, SHA-256 `0b8096f861fb0970499e53be27b09e9fca8da4d677f1bbb33c11ebbc291a09ce`.
 - [442_interactions_20261006_113.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_113.tar.gz.dvc), member `evidence/client_interactions_20261006_ui113/runtime_closure.json`, SHA-256 `2a49ceb2375f7e1f14455e390c07b6b9671325a903e071a8714f203411d5bfb5`.
 - [442_interactions_20261006_113.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_113.tar.gz.dvc), member `evidence/client_interactions_20261006_ui113/verification.json`, SHA-256 `581ad6aca2636de672dfcd15b2da9964554ea1fec549a4f123ff987caedd6a63`.
+
+### trained_imp_pet_spellbook_tab
+
+UI120 pet_tab02 opens the stock Pet tab on normally trained level10 human warlock Harnessctrl/GUID5 with saved Imp2/Yaztog. Five exact native/public catalog checks, seven visible contents checks and ten restoration checks pass. All10 slots and three visible native spells agree; native-hidden91702 is correctly omitted. The whole review includes normal class parking, original scout restoration, nine primary native checks and fourteen final runtime checks. DVC120 remotely verifies all40 JSON receipts and118 attributed images. Code controller, model None.
+
+Remaining limits: Only this normally trained Imp Pet-tab opening and contents variant. No executing commands/spells, Dismiss, actual summon from absence, other class/pet/combat variants or family completion. Failed pet_tab01, dismiss01 and UI119 whole training remain excluded; legitimate80388 purchase/9354 balance/Imp2 are retained. Native server and two clients unchanged on HDMI-1; scripts blocked, original softTargetInteract0 unrestored at1.
+
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/class_prepare01/episode.json`, SHA-256 `e3abf0f63180645d5b24bb6af59245f3b91e6f6eb6e1c23fc03fec56ed3e44ca`.
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/class_enter01/episode.json`, SHA-256 `188e38a4436e6c254ed1caf52e4ad2c0516d9f2d588e9bb660c509d1a0f6c98e`.
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/pet_entry_recon01/episode.json`, SHA-256 `e40b2857c46c8e28f931fc8f79fea04188d598bb8fbeccdeec8990fb9fadd4d2`.
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/pet_tab02/episode.json`, SHA-256 `27f325078a85de4cf342511a040cfc3197a6f67980df70ef93050dfdca1cba2d`.
+  Checked cases: `spellbook.pet_tab` (pet_tab_selected_pass).
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/class_park01/episode.json`, SHA-256 `20d4477e8429c78062582f104383626e20b25870c9489c356bc78cee2e6b7717`.
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/origin_finish01/episode.json`, SHA-256 `56e648c8000f8ead5cd33c4865c26b01ccd4d944ed6005aec40afce326d64904`.
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/primary_native_close01/episode.json`, SHA-256 `0d179166e8154fab8aec17dcaa9a980dde8c4291706953f7a2b7fd42badf2fde`.
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/pet_tab_whole_review01.json`, SHA-256 `0d4d2a07dde2873614e708d0a3137af80a619a9e8ed3a8fa32303d74fb0a129a`.
+- [442_interactions_20261006_120.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_120.tar.gz.dvc), member `evidence/client_interactions_20261006_ui120/verification.json`, SHA-256 `e009cc12c74f2d0d6305dda2b43d8b8b8c8bdd8aa51d4b109d27b5451d76151e`.
