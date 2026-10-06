@@ -7,7 +7,7 @@ from tools.client_compatibility.world.buffer import Reader,Writer
 
 def test_reviewed_portal_record_is_advertised_and_sent_through_standard_hotfix():
     rows=hotfixes.records();row=next(row for row in rows if row['record_id']==4354)
-    r=Reader(hotfixes.available());r.unpack('I');assert r.unpack('I')==(4,)
+    r=Reader(hotfixes.available());r.unpack('I');assert r.unpack('I')==(6,)
     assert [r.unpack('iI') for _ in rows]==[(row['push_id'],row['unique_id']) for row in rows];r.end()
     sent=[];session=SimpleNamespace(send=lambda n,b:sent.append((n,b)))
     hotfixes.request(session,Writer().pack('IIIi',60895,0,1,row['push_id']).finish())
