@@ -1,0 +1,37 @@
+{
+  "schema": "archeolog_cpu_pilot_v1",
+  "model_id": "archeolog-v0",
+  "training_kind": "outcome_filtered_supervised_warm_start",
+  "parent_model": "convaiinnovations/laya-typed-decisions",
+  "parent_revision": "c5d78730f3493e4fe16d61507ef4b78eef7318cf",
+  "seed": 20261006,
+  "device": "cpu",
+  "torch_threads": 2,
+  "max_len": 2048,
+  "head_max_len": 512,
+  "epochs": 12,
+  "learning_rate": 0.00002,
+  "weight_decay": 0.01,
+  "feature_cache_max_bytes": 268435456,
+  "maximum_json_bytes": 20971520,
+  "train_parameters": "scorer_only_frozen_encoder_and_transformer_head",
+  "promotion": "never_automatic_offline_experiment_only",
+  "trusted_rlvr_requires": [
+    "complete_intervention_ledger_with_no_assistance",
+    "immutable_policy_identity_and_original_action_log_probability",
+    "fresh_pre_action_input_and_original_complete_candidates",
+    "same_client_lifetime_and_monotonic_public_observations",
+    "executed_action_receipt_with_retained_destination_identity",
+    "independent_measured_outcome_not_controller_completion_flag",
+    "trajectory_terminal_state_and_no_unobserved_action_gap"
+  ],
+  "verifiable_rewards": {
+    "interaction_fragment_increase": 1.0,
+    "fresh_successful_survey": 0.2,
+    "named_transport_arrival": 0.5,
+    "retained_destination_approach": "min(0.2, approach_yards/100)",
+    "retained_destination_bearing": "min(0.1, bearing_improvement_radians/pi)",
+    "runtime_failure_or_stale_observation": "quarantine_not_reward",
+    "valid_executed_no_progress": 0.0
+  }
+}
