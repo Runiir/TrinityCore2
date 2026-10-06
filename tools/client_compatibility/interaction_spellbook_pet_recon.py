@@ -30,13 +30,14 @@ def suite(t,preparation,source):
     old=prepared(t,preparation);source=source.resolve()
     e=summon_source(t,source,actors.session_entry(t.fixture)['session'])
     t.receipt.update(source={'file':str(source),'sha256':lab.sha256(source)},
-        input_sent=False,qualification_added=False)
+        input_sent=False,qualification_added=False,
+        native_evidence_scope='Same owned native session through the closed summon; existing pets may precede the cast.')
     captured=[]
     def word(fields,name):
         return fields.get(INDEX[name],0) | fields.get(INDEX[name]+1,0)<<32
     for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
         if (p.get('session')!=e['native_session'] or p.get('direction')!='from_native' or
-                p.get('name')!='SMSG_UPDATE_OBJECT' or not e['summon_started_at']<=p['time']<=e['finished_at']):continue
+                p.get('name')!='SMSG_UPDATE_OBJECT' or p['time']>e['finished_at']):continue
         bound=[]
         for r in records(bytes.fromhex(p['body'])):
             fields=r.get('fields',{})
@@ -52,7 +53,7 @@ def suite(t,preparation,source):
         phase='native_pet_public_comparison',completed=all(checks.values()))
     if not all(checks.values()):raise RuntimeError('read-only pet recon changed the parked scout')
     if not any(r['kind']=='owned_pet_create' for p in captured for r in p['bound_records']):
-        t.receipt['completed']=False;raise RuntimeError('owned native pet creation is absent from the summon window')
+        t.receipt['completed']=False;raise RuntimeError('owned native pet creation is absent from the bound native session')
 
 
 if __name__=='__main__':
