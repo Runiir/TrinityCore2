@@ -2,7 +2,7 @@
 import json
 import time
 from pathlib import Path
-from . import runtime,laya_ui,pending_find,farm_graph
+from . import runtime,laya_ui,pending_find,farm_graph,escape_route
 from .observe import observe
 
 
@@ -78,18 +78,39 @@ def run(folder,row,step,session,graph):
     if (step['phase']=='dig' and session.get('dig_output') and not pending and a['can_survey']
             and not a['mounted'] and not a['flying'] and not m['in_combat']):
         choices['resurvey']='Discard the failed route estimate and use a fresh Survey from this position'
-    state={'goal':'Continue archaeology farming until a Canopic Jar is in the bags',
+    alternatives={}
+    if (step['phase']=='flight' and not pending and not m['in_combat'] and not a['casting']
+            and not a['falling'] and m.get('speed',0)==0):
+        alternatives=escape_route.candidates(row,step.get('target'))
+        choices.update({key:'Move 4 yards '+key.removeprefix('step_')+
+            ' relative to the route using forward movement and camera steering to clear the obstruction'
+            for key in alternatives})
+    state={'goal':'Find the Vial of the Sands recipe through archaeology',
         'failed_activity':step['phase'],'failure':step['local_failure'],
         'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
-        'pending_pickup':bool(pending),'world':a['world'],
+        'pending_pickup':bool(pending),'world':a['world'],'grounded':a.get('grounded'),
+        'local_movement_alternatives':alternatives,
         'recent_recoveries':session.get('recoveries',[])[-3:]}
     action,request,response=laya_ui.choose(state,
-        'Choose the next recovery. Preserve an uncollected find. Change approach when repeated attempts do not progress.',choices)
+        'Choose the next recovery. Preserve an uncollected find. When repeated flight or ascent is blocked, '
+        'try a short movement around the obstruction instead of repeating the same blocked path. '
+        'Reference collision checks are estimates; observe the actual movement outcome.',choices)
     result={'at':time.time(),'choice':action,'state':state,'request':request,'response':response,'inputs':[]}
     runtime.write(folder/'recovery.json',result)
     if action=='land':
         from .flight import fly
         result['inputs']=fly(folder,row,{'endpoint':a['world']},result,combat_landing=m['in_combat'])
+    elif action in alternatives:
+        from .fast_waypoint import walk
+        from .smooth_move import GroundContact
+        result['target']=alternatives[action]['target']
+        try:
+            result['movement']=walk(folder,result['target'],flying=a['flying'],tolerance=.5,
+                guidance={'source':'Laya-selected short obstacle recovery'},
+                approved_intent=('cruise' if a['flying'] else 'forward_short',
+                    {'model':'Laya original UI head'},request,response))
+        except GroundContact as contact:
+            result.update(outcome='short_recovery_reached_ground',ground_contact=contact.observation)
     elif action=='resurvey':
         path=Path(session['dig_output'])/'session.json'
         dig=json.loads(path.read_text())
@@ -100,5 +121,6 @@ def run(folder,row,step,session,graph):
     result['after']=observe(folder/'after.png');result['completed']=True
     runtime.write(folder/'recovery.json',result)
     session['recoveries']=(session.get('recoveries',[])+[{'at':result['at'],
-        'failure':step['local_failure'],'choice':action,'world':a['world']}])[-8:]
+        'failure':step['local_failure'],'choice':action,'world':a['world'],
+        'after_world':result['after']['archaeology']['world']}])[-8:]
     return result

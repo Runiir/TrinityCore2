@@ -47,6 +47,28 @@ def test_recovery_keeps_unconfirmed_pickup_and_does_not_renew_inactivity(monkeyp
     assert not recovery.retryable('pending find belongs to another owned client')
 
 
+def test_blocked_travel_moves_only_along_the_short_recovery_laya_selected(monkeypatch,tmp_path):
+    from . import fast_waypoint
+    (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    r=row();r['archaeology'].update(site_id=None,falling=False,loot_open=False,grounded=True)
+    target={'instance':1,'north':4,'west':0}
+    graph=tmp_path/'graph.json';farm_graph.transition(graph,'flight',r,target=target)
+    monkeypatch.setattr(recovery.escape_route,'candidates',lambda *_:{'step_left':{'target':target}})
+    def choose(state,instructions,options):
+        assert 'step_left' in options and state['grounded'] is True
+        return 'step_left',{'selected':'step_left'},{'choice':'step_left'}
+    monkeypatch.setattr(recovery.laya_ui,'choose',choose)
+    monkeypatch.setattr(recovery,'observe',lambda _:r)
+    calls=[]
+    def walk(folder,point,**kwargs):
+        calls.append((point,kwargs));return []
+    monkeypatch.setattr(fast_waypoint,'walk',walk)
+    result=recovery.run(tmp_path/'recovery',r,{'phase':'flight','target':target,
+        'local_failure':'continuous waypoint movement is blocked'},{'dig_output':None},graph)
+    assert result['choice']=='step_left' and calls[0][0]==target
+    assert calls[0][1]['approved_intent'][2]=={'selected':'step_left'}
+
+
 def test_farm_waits_with_no_progress_use_layas_complete_action_distribution(monkeypatch):
     r=row();r['archaeology'].update(falling=False)
     r['farm_ui']['actionbars']=[{'label':'Teleport','enabled':True}]
