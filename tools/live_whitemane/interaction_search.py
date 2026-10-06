@@ -15,8 +15,11 @@ def resume(row,names,points):
         'zoom':row['farm_ui'].get('camera_zoom'),
         'guid':(row.get('visible_find') or {}).get('guid')}
     old=saved.get(key) or {};start=old.get('stamp') or {};p=start.get('world')
+    old_zoom=start.get('zoom');zoom=stamp['zoom']
+    same_zoom=(old_zoom==zoom or (old_zoom is not None and zoom is not None
+        and abs(old_zoom-zoom)<=.05))
     same=(start.get('runtime')==stamp['runtime'] and start.get('guid')==stamp['guid']
-        and start.get('zoom')==stamp['zoom'] and time.time()-old.get('at',0)<300)
+        and same_zoom and time.time()-old.get('at',0)<300)
     if world and p:
         same=same and world['instance']==p['instance'] and math.hypot(
             world['north']-p['north'],world['west']-p['west'])<=2

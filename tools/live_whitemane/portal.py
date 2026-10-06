@@ -2,7 +2,7 @@
 import math
 import time
 from . import runtime, inputs, interact,action_queue
-from . import portal_view,camera_zoom
+from . import portal_view
 from .observe import observe
 from .decisions import choose
 from .fast_waypoint import walk
@@ -50,11 +50,9 @@ def run(folder,portal,*,approved_intent=None):
         if hint:
             # Ground body pitch does not measure camera tilt. Restore a normal
             # view before reproducing the successful facing and measured zoom.
-            result['camera_view']=align(folder/'view',row,portal_view.aim(hint,row),reset_view=True)
+            result['camera_view']=align(folder/'view',row,portal_view.aim(hint,row),
+                reset_view=True,zoom_target=hint.get('zoom'))
             row=observe(folder/'view_ready.png')
-            if hint.get('zoom') is not None:
-                result['view_zoom']=camera_zoom.restore(folder/'portal_zoom',row,hint['zoom'])
-                row=observe(folder/'zoom_ready.png')
         else:
             result['camera_view']=align(folder/'view',row,target,reset_view=True)
             row=observe(folder/'view_ready.png')

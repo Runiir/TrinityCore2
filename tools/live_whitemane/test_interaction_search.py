@@ -32,3 +32,14 @@ def test_completed_search_clears_progress_and_storage_is_bounded(monkeypatch,tmp
     assert len(search['saved'])==8 and search['index']==1
     interaction_search.save(search,0,completed=True)
     assert interaction_search.resume(row(),{'11'},points)['index']==0
+
+
+def test_zoom_roundoff_preserves_search_progress_but_a_changed_view_restarts(monkeypatch,tmp_path):
+    monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    points=[(640,400),(640,420),(640,440)]
+    before=row();before['farm_ui']['camera_zoom']=5.5499997138977
+    interaction_search.save(interaction_search.resume(before,{'Portal to Orgrimmar'},points),2)
+    after=row();after['farm_ui']['camera_zoom']=5.5500001907349
+    assert interaction_search.resume(after,{'Portal to Orgrimmar'},points)['index']==2
+    after['farm_ui']['camera_zoom']=6
+    assert interaction_search.resume(after,{'Portal to Orgrimmar'},points)['index']==0

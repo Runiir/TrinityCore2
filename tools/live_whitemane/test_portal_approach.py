@@ -92,7 +92,7 @@ def test_verified_portal_view_approaches_the_successful_standing_position(monkey
     before=row();before['archaeology']['falling']=False
     before['farm_ui']['soft_interact']['name']=None
     entrance={'instance':1,'north':21,'west':0}
-    hint={'world':{'instance':1,'north':4,'west':2},'facing_radians':1.2,'zoom':None}
+    hint={'world':{'instance':1,'north':4,'west':2},'facing_radians':1.2,'zoom':5.55}
     destination={'instance':732,'north':-601,'west':1382}
     after=copy.deepcopy(before);after['archaeology']['world']=destination
     frames=iter([before,before,before,before,after])
@@ -105,6 +105,7 @@ def test_verified_portal_view_approaches_the_successful_standing_position(monkey
     monkeypatch.setattr(portal,'walk',lambda folder,target,**_:walks.append(target) or [])
     def align(folder,row,target,**kwargs):
         assert kwargs['reset_view']
+        assert kwargs['zoom_target']==5.55
         assert target==portal_view.aim(hint,row)
         return []
     monkeypatch.setattr(portal,'align',align)

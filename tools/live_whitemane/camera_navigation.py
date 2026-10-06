@@ -9,7 +9,7 @@ from .camera_steering import CameraSteering,angle
 from .sticky_input import StickyInput,observation_lease
 
 
-def align(folder,before,target=None,*,ground_view=False,reset_view=False):
+def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_target=None):
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter
     from .camera_input import Input
@@ -18,8 +18,11 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
     view=None
     before_zoom=(before.get('farm_ui') or {}).get('camera_zoom')
     preferred_zoom=camera_zoom.goal(before)
-    desired_zoom=max(x for x in (before_zoom,preferred_zoom) if x is not None) if (
-        before_zoom is not None or preferred_zoom is not None) else None
+    # A confirmed portal view has its own measured zoom. Apply and save that
+    # goal with the preset instead of restoring the ordinary view first.
+    desired_zoom=zoom_target if zoom_target is not None else (
+        max(x for x in (before_zoom,preferred_zoom) if x is not None) if (
+            before_zoom is not None or preferred_zoom is not None) else None)
     if grounded and (ground_view or target is None or reset_view):
         preset=4 if ground_view else 2
         path=runtime.ROOT/'run/camera_presets.json'
