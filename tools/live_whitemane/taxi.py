@@ -1,11 +1,11 @@
 """Laya opens the named flight master and selects the public route's taxi node."""
 import math
 import time
-from . import runtime, inputs, interact
+from . import runtime, inputs, interact, action_queue
 from .observe import observe
 from .decisions import choose
 from .farm_actions import stationary,click_choice
-from .smooth_move import walk
+from .smooth_move import walk,descend
 from tools.client_compatibility import travel_policy
 
 
@@ -49,7 +49,21 @@ def run(folder,origin,destination):
         phase={'action':action,'before':row,'model':model,'request':request,'response':response}
         result['phases'].append(phase);runtime.write(folder/'taxi.json',result)
         if action=='arrived':result.update(completed=True,after=row);break
-        if action=='interact' and row['farm_ui'].get('gossip'):
+        if action=='land':
+            # The taxi phase can begin while the previous approach is still
+            # airborne. Honor the model's landing command here rather than
+            # bouncing through root recovery until another activity lands.
+            phase['landing']=descend(folder,world)
+        elif action=='dismount':
+            if not a['mounted'] or a['flying'] or a['falling']:
+                raise RuntimeError('taxi dismount requires a grounded mounted character')
+            phase['dismount']=action_queue.run(folder/f'dismount_{index:02d}',row,'dismount',
+                lambda _:inputs.execute('World of Warcraft','key',{'key':'shift+space','hold':.15}),
+                lambda fresh:not fresh['archaeology']['mounted'],observe,
+                allowed=lambda fresh:fresh['archaeology']['mounted'] and not any(
+                    fresh['archaeology'].get(k) for k in ('flying','falling')),
+                uses_gcd=False,failure='taxi dismount did not confirm unmounted state')
+        elif action=='interact' and row['farm_ui'].get('gossip'):
             selected=click_choice(folder/f'gossip_{index:02d}',row,['gossip'],'Show the flight destinations available from this flight master')
             if not selected['executed']:raise RuntimeError('Laya waited at flight master ride option')
             phase['gossip_choice']=selected
