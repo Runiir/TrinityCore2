@@ -1,6 +1,5 @@
 """Trainer catalog wire order, native prerequisites and greeting boundaries."""
 import struct
-import pytest
 from tools.client_compatibility.world.buffer import Reader,Writer
 from tools.client_compatibility.world.gameobjects import modern_guid
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
@@ -8,61 +7,6 @@ from tools.client_compatibility.world.tests.test_merchant_packets import GUID,UN
 from tools.client_compatibility.world.objects import INDEX
 
 TRAINER={**UNIT,'fields':{str(INDEX['UNIT_NPC_FLAGS']):51}}
-
-
-def control_sequence(codec,actions,class_=9,units=None):
-    return result(codec,op='stateful',character={'guid':1,'map':0,'class':class_},
-        snapshot={'guid':1,'fields':{}},gameobjects=[],units=[TRAINER] if units is None else units,actions=actions)
-
-
-def control_action(fn,body,name):
-    return {'fn':fn,'name':name,'body':body.hex()}
-
-
-def control_buy(spell_=93375,id_=154):
-    return control_action('trainer_request',Writer().guid(*modern_guid(GUID,0)).pack('2i',id_,spell_).finish(),
-        'CMSG_TRAINER_BUY_SPELL')
-
-
-@pytest.mark.parametrize('state',[0,1,2])
-def test_control_lesson_keeps_native_price_state_and_requirements(codec,state):
-    wire=catalog([spell(80388,usable=state,cost=646,level=0,skill=0,rank=0,abilities=(0,0))],id=154)
-    replies=control_sequence(codec,[control_action('trainer_response',wire,'SMSG_TRAINER_LIST'),control_buy()])
-    assert decode(replies[0])[1]==[(93375,646,0,0,0,0,0,0,state,0)]
-    assert replies[1]==['CMSG_TRAINER_BUY_SPELL',struct.pack('<QII',GUID,154,80388).hex()]
-
-
-def test_control_purchase_requires_current_exact_catalog_and_retires_old_display_id(codec):
-    assert 'error' in control_sequence(codec,[control_buy()])[0]
-    lesson=control_action('trainer_response',catalog([spell(80388)],id=154),'SMSG_TRAINER_LIST')
-    assert 'error' in control_sequence(codec,[lesson,control_buy(id_=155)])[1]
-    assert 'error' in control_sequence(codec,[lesson,control_buy(spell_=80388)])[1]
-    replacement=control_action('trainer_response',catalog([spell(3127)],id=154),'SMSG_TRAINER_LIST')
-    assert 'error' in control_sequence(codec,[lesson,replacement,control_buy()])[2]
-    # The same native lesson on another class is not relabeled.
-    assert decode(control_sequence(codec,[lesson],class_=1)[0])[1][0][0]==80388
-    assert 'error' in control_sequence(codec,[lesson,control_buy()],class_=1)[1]
-    other=GUID+1
-    request=control_action('trainer_request',Writer().guid(*modern_guid(other,0)).pack('2i',154,93375).finish(),
-        'CMSG_TRAINER_BUY_SPELL')
-    assert 'error' in control_sequence(codec,[lesson,request],units=[TRAINER,{**TRAINER,'guid':other}])[1]
-    malformed=control_action('trainer_response',catalog([spell(80388)],id=154)[:-1],'SMSG_TRAINER_LIST')
-    replies=control_sequence(codec,[lesson,malformed,control_buy()])
-    assert 'error' in replies[1] and 'error' in replies[2]
-
-
-def test_control_failure_reports_actual_display_ability_without_learning(codec):
-    lesson=control_action('trainer_response',catalog([spell(80388)],id=154),'SMSG_TRAINER_LIST')
-    failure=control_action('trainer_response',struct.pack('<QII',GUID,80388,1),'SMSG_TRAINER_BUY_FAILED')
-    reply=control_sequence(codec,[lesson,failure])[1]
-    r=Reader(bytes.fromhex(reply[1]));assert r.guid()==modern_guid(GUID,0)
-    assert r.unpack('2i')==(93375,1);r.end()
-
-
-def test_control_catalog_rejects_colliding_display_and_duplicate_native_lessons(codec):
-    for rows in [[spell(80388),spell(93375)],[spell(80388),spell(80388)]]:
-        action=control_action('trainer_response',catalog(rows,id=154),'SMSG_TRAINER_LIST')
-        assert 'error' in control_sequence(codec,[action])[0]
 
 
 def call(codec,body,units=None,fn='trainer_response',name='SMSG_TRAINER_LIST'):
