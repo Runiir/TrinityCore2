@@ -7,6 +7,18 @@ from tools.client_compatibility import interaction_pet_dismiss as module
 from tools.client_compatibility.world.objects import INDEX
 
 
+@pytest.mark.parametrize('change',('none','missing_spell','foreign_session','stale','future','wrong_packet'))
+def test_starting_recovery_spell_comes_from_this_native_login_without_a_saved_row(change):
+    entry={'native_session':'owned','started_at':10,'finished_at':20,'entered_saved':{'spells':[]}}
+    packet={'session':'owned','time':15,'name':'SMSG_SEND_KNOWN_SPELLS','ids':[688]}
+    if change=='missing_spell':packet['ids']=[]
+    elif change=='foreign_session':packet['session']='foreign'
+    elif change=='stale':packet['time']=9
+    elif change=='future':packet['time']=21
+    elif change=='wrong_packet':packet['name']='SMSG_SPELL_GO'
+    assert module.recovery_spell(entry,{'native_known_spell_packet':packet})==(change=='none')
+
+
 @pytest.mark.parametrize('change',('none','missing_modern','duplicate_modern','missing_native','wrong_guid',
     'wrong_command','abandon','not_removed','summon_present','target_present','menu_open','lua_error','not_selected'))
 def test_dismiss_cannot_pass_an_unmapped_foreign_or_incomplete_command(change):

@@ -73,6 +73,13 @@ def public_pet(t,label):
     probe=detail(t,label);t.clean_panels();return probe['pet']
 
 
+def recovery_spell(entry,probe):
+    packet=probe.get('native_known_spell_packet',{})
+    return (packet.get('session')==entry['native_session'] and
+        entry['started_at']<=packet.get('time',0)<=entry['finished_at'] and
+        packet.get('name')=='SMSG_SEND_KNOWN_SPELLS' and 688 in packet.get('ids',[]))
+
+
 def suite(t,preparation,entry,probe,menu):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     e=entry_source(t,entry,session,preparation);p=source(t,probe,session,entry);m=closed(menu)
@@ -92,7 +99,7 @@ def suite(t,preparation,entry,probe,menu):
     if (not o.present() or o.pet['guid']!=guid or base.selected()!=0 or resources(inventory)!=e['resources'] or
         saved(t.fixture['guid'])!=e['entered_saved'] or len(retained)!=1 or
         (retained[0]['id'],retained[0]['entry'],retained[0]['owner'],retained[0]['name'])!=(1,416,4,'Volrot') or
-        [688,1,0] not in e['entered_saved']['spells']):
+        not recovery_spell(e,p)):
         raise RuntimeError('owned retained pet or known normal recovery spell differs')
     before,frame=t.observe('dismiss_baseline')
     baseline_vitals=vitals(o)
