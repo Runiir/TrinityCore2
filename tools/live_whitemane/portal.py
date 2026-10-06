@@ -32,6 +32,7 @@ def run(folder,portal,*,approved_intent=None):
     names={'Portal to '+portal['destination']}
     if portal.get('key')=='org-uldum':names.add('Portal to Uldum')
     soft=fresh.get('farm_ui',{}).get('soft_interact') or {}
+    hint=None
     named=(soft.get('name') in names and soft.get('enabled')=='3'
         and fresh.get('farm_ui',{}).get('bindings',{}).get('INTERACTTARGET'))
     if named:
@@ -58,7 +59,11 @@ def run(folder,portal,*,approved_intent=None):
             result['camera_view']=align(folder/'view',row,target,reset_view=True)
             row=observe(folder/'view_ready.png')
     runtime.write(folder/'portal.json',result)
-    result['interaction']=interact.use(folder/'interaction',row,names)
+    point=portal_view.search_point(hint,row)
+    if point:
+        result['preferred_tooltip_probe']=point
+        result['interaction']=interact.use(folder/'interaction',row,names,preferred_points=[point])
+    else:result['interaction']=interact.use(folder/'interaction',row,names)
     for index in range(25):
         time.sleep(.4)
         try:after=observe(folder/'arrival.png')

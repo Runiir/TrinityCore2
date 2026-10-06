@@ -33,8 +33,28 @@ def remember(portal,row,interaction,after,*,evidence=None):
         'world':start,'facing_radians':facing,'zoom':ui.get('camera_zoom'),
         'name':name,'at':time.time(),'source':'named public interaction with confirmed destination arrival',
         'evidence':evidence}
+    cursor=interaction.get('cursor')
+    if not cursor and interaction.get('point'):
+        cursor={'x':interaction['point'][0]/runtime.WIDTH,'y':interaction['point'][1]/runtime.HEIGHT}
+    if cursor and all(isinstance(cursor.get(k),(int,float)) and 0<=cursor[k]<1 for k in ('x','y')):
+        saved[portal.get('key',portal['destination'])].update(cursor=cursor,
+            viewport=[runtime.WIDTH,runtime.HEIGHT],view_preset=2)
     runtime.write(path,dict(sorted(saved.items(),key=lambda item:item[1]['at'],reverse=True)[:8]))
     return True
+
+
+def search_point(hint,row):
+    """A verified prior mouseover is only the first probe, never a blind click."""
+    if not hint or not hint.get('cursor') or hint.get('viewport')!=[runtime.WIDTH,runtime.HEIGHT]:return None
+    world=row['archaeology'].get('world');old=hint['world'];zoom=row['farm_ui'].get('camera_zoom')
+    facing=row['movement'].get('facing_radians')
+    if (hint.get('runtime')!=row.get('runtime') or not world or world['instance']!=old['instance']
+            or math.hypot(world['north']-old['north'],world['west']-old['west'])>1
+            or facing is None or abs((facing-hint['facing_radians']+math.pi)%math.tau-math.pi)>.18
+            or zoom is None or hint.get('zoom') is None or abs(zoom-hint['zoom'])>1
+            or hint.get('view_preset')!=2):return None
+    point=hint['cursor']
+    return round(point['x']*runtime.WIDTH),round(point['y']*runtime.HEIGHT)
 
 
 def aim(hint,row):

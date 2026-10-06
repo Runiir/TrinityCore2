@@ -83,7 +83,7 @@ def mouseover(folder,before,names,*,sender=None,identity=None):
     runtime.write(folder/'interaction.json',result);return result
 
 
-def use(folder,before,names,*,maximum=100,search_seconds=2):
+def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
     folder.mkdir(parents=True,exist_ok=False)
     before=action_queue.wait_ready(folder,before,observe)
     ui=before['farm_ui'];soft=ui['soft_interact'];keys=ui['bindings']['INTERACTTARGET']
@@ -101,6 +101,11 @@ def use(folder,before,names,*,maximum=100,search_seconds=2):
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
     points=search_points(maximum,portal=any(name.startswith('Portal to ') for name in names))
+    for point in reversed(preferred_points):
+        if (len(point)!=2 or any(not isinstance(v,int) for v in point)
+                or not 0<=point[0]<runtime.WIDTH or not 0<=point[1]<runtime.HEIGHT):
+            raise ValueError('preferred tooltip probe is outside the owned viewport')
+        points=([tuple(point)]+[p for p in points if p!=tuple(point)])[:maximum]
     cursor=ui.get('cursor') or {}
     if ui.get('tooltip') in names and 'x' in cursor and 'y' in cursor:
         point=(round(cursor['x']*runtime.WIDTH),round(cursor['y']*runtime.HEIGHT))
