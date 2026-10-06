@@ -64,7 +64,14 @@ class PetAttackFixture:
         self.verify_rows();lab.server_command('reload game_tele');time.sleep(.5)
         lab.server_command('tele name Harnessctrl '+NAMES[1]);time.sleep(4)
         actual=position(5)
-        if any(abs(a-b)>.01 for a,b in zip(actual,ground)):raise RuntimeError('pet attack pose staging differs')
+        # The actual UI137 staging settles 8.2cm below the spawn's Z at the
+        # owner point three metres east. Keep exact XY/facing/map attribution
+        # and retain the accepted floor height instead of equating two points.
+        checks={'xy_facing':all(abs(actual[i]-ground[i])<.01 for i in (0,1,3)),
+            'map':actual[4]==ground[4],'near_spawn_floor':abs(actual[2]-ground[2])<.2}
+        lab.private_write(self.out/'pet_attack_landing.json',json.dumps({'requested':ground,'accepted':actual,
+            'checks':checks,'source':'Native accepted pose after passive landing; no pet input or gameplay qualification.'},indent=2)+'\n')
+        if not all(checks.values()):raise RuntimeError('pet attack pose staging differs')
         return actual
 
     def restore(self):

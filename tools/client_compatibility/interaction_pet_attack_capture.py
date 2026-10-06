@@ -84,7 +84,8 @@ def stage(t,preparation,entry):
         t.receipt.update(completed=True,phase='await_owned_pet_attack_review',qualified_scope=
             'Owned native pose staging, ordinary exact-name target and passive control inspection only. '
             'Attack requires a separate fresh visual review; no gameplay qualification.')
-    except Exception:
+    except Exception as error:
+        t.receipt['execution_failure']=f'{type(error).__name__}: {error}';t.persist()
         t.receipt['baseline']['position']=position(5)
         restore(t,o,inventory,old,fixture,original,baseline['position']);raise
 
