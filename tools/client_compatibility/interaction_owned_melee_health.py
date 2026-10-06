@@ -54,6 +54,12 @@ class HealthPresence(SpellPresence):
 def health(o):return o.target['fields'][INDEX['UNIT_FIELD_HEALTH']]
 
 
+def load_target(row):
+    result=copy.deepcopy(row);fields={int(k):v for k,v in result['fields'].items()}
+    if len(fields)!=len(result['fields']):raise ValueError('ambiguous numeric native target fields')
+    result['fields']=fields;return result
+
+
 def entry_pvp(session,entry):
     for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
         if (p.get('session')!=session or p.get('direction')!='from_native' or p.get('name')!='SMSG_UPDATE_OBJECT' or
@@ -164,7 +170,7 @@ def run(t,preparation,entry,stage_path,review_path):
     o=HealthPresence(session,5,e['started_at']).poll();inventory=Inventory(lab.ROOT,session,5).poll()
     t.receipt.update(baseline=copy.deepcopy(d['baseline']),native_session=session,qualification_added=False,
         stage_source={'path':str(stage_path),'sha256':lab.sha256(stage_path)});t.persist();since=None;stopped=False
-    target=d['native_target'];owner={'guid':5,'map':0}
+    target=load_target(d['native_target']);owner={'guid':5,'map':0}
     try:
         checked=reviewed(t,review_path,'owned_melee_health_target')
         if (checked.get('stage_source_sha256')!=lab.sha256(stage_path) or checked.get('target_visible') is not True or

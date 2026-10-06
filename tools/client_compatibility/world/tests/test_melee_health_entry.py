@@ -1,4 +1,5 @@
 """Initial sparse creation supplies zero defaults; foreign/update rows cannot."""
+import json
 import pytest
 from tools.client_compatibility import interaction_owned_melee_health as run
 from tools.client_compatibility.world.objects import INDEX
@@ -24,3 +25,14 @@ def test_initial_pvp_proof_refuses_other_actors_updates_and_lifetimes(monkeypatc
     elif fault=='outside_entry':packet['time']=4.
     monkeypatch.setattr(run,'entries',lambda _:iter([packet]));monkeypatch.setattr(run,'records',lambda _:[row])
     with pytest.raises(RuntimeError):run.entry_pvp('s',{'started_at':1.,'finished_at':3.})
+
+
+def test_saved_stage_record_recovers_numeric_health_fields_without_changing_the_source():
+    native={'guid':7,'kind':3,'map':0,'fields':{INDEX['UNIT_FIELD_HEALTH']:14,INDEX['UNIT_FIELD_MAXHEALTH']:14}}
+    saved=json.loads(json.dumps(native));assert str(INDEX['UNIT_FIELD_HEALTH']) in saved['fields']
+    assert run.load_target(saved)==native
+    assert str(INDEX['UNIT_FIELD_HEALTH']) in saved['fields']
+
+
+def test_saved_target_refuses_two_strings_for_one_native_field_number():
+    with pytest.raises(ValueError):run.load_target({'fields':{'26':14,'026':0}})
