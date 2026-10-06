@@ -1,5 +1,7 @@
 #include "control_skill_metadata.hpp"
 #include "crypto.hpp"
+#include <algorithm>
+#include <array>
 #include <map>
 
 namespace bridge
@@ -7,6 +9,8 @@ namespace bridge
 Array control_skill_hotfixes(View native, Value const &config)
 {
     constexpr unsigned Table=4282664694u;
+    constexpr std::array<std::array<unsigned,4>,4> Specs{{
+        {21975,354,80388,256},{23872,354,93375,256},{21959,50,79682,4},{23785,50,93321,4}}};
     if (str(get(config,"schema"))!="client442_control_skill_metadata_v1" ||
         integer(get(config,"client_build"))!=60895 || integer(get(config,"native_build"))!=15595 ||
         integer(get(config,"table_hash"))!=Table || str(get(config,"layout_hash"))!="738BFEE1" ||
@@ -22,18 +26,18 @@ Array control_skill_hotfixes(View native, Value const &config)
     for (unsigned i=0;i<count;++i)
     {
         auto row=r.unpack("14I");auto id=integer(row[0]);
-        if (id==21975 || id==23872)
+        if (std::any_of(Specs.begin(),Specs.end(),[id](auto const &spec){return spec[0]==id;}))
             if (!source.emplace(id,std::move(row)).second)
                 throw std::runtime_error("duplicate native control skill record");
     }
     r.raw(strings);r.end();
     auto const &records=get(config,"records").as_array();
-    if (source.size()!=2 || records.size()!=2)
+    if (source.size()!=Specs.size() || records.size()!=Specs.size())
         throw std::runtime_error("native control skill allowlist differs");
     Array hotfixes;
-    for (unsigned i=0;i<2;++i)
+    for (unsigned i=0;i<Specs.size();++i)
     {
-        auto const &spec=records[i];unsigned id=i ? 23872 : 21975,spell=i ? 93375 : 80388;
+        auto const &spec=records[i];auto const &shape=Specs[i];unsigned id=shape[0],skill=shape[1],spell=shape[2],class_mask=shape[3];
         unsigned push=60895004+i;
         auto const &v=source.at(id),&expected=get(spec,"native_values").as_array();
         if (integer(get(spec,"record_id"))!=id || integer(get(spec,"push_id"))!=push ||
@@ -42,10 +46,10 @@ Array control_skill_hotfixes(View native, Value const &config)
         for (unsigned column=0;column<14;++column)
             if (integer(v[column])!=integer(expected[column]))
                 throw std::runtime_error("native control skill fields differ from evidence");
-        // These two recorded native rows have no rank successor or race
+        // These four recorded native rows have no rank successor or race
         // exclusion. Preserve the class/skill association without inventing
         // modern rank direction, acquisition rules or learning outcomes.
-        Array exact{id,354,spell,0,256,0,0,1,0,0,0,0,0,0};
+        Array exact{id,skill,spell,0,class_mask,0,0,1,0,0,0,0,0,0};
         for (unsigned column=0;column<14;++column)
             if (integer(v[column])!=integer(exact[column]))
                 throw std::runtime_error("unsupported native control skill semantics");

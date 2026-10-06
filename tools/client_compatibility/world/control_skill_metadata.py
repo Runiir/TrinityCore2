@@ -1,4 +1,4 @@
-"""Convert two pinned native class-skill records without teaching any spell."""
+"""Convert four pinned native class-skill records without teaching any spell."""
 import hashlib
 import json
 import struct
@@ -7,6 +7,7 @@ from .. import lab_runtime as lab
 
 TABLE = 0xFF4446F6
 FORMAT = '<QIHIHIIIHHIBHHH2I'
+SPECS = ((21975,354,80388,256),(23872,354,93375,256),(21959,50,79682,4),(23785,50,93321,4))
 
 
 def convert(native, config):
@@ -25,19 +26,19 @@ def convert(native, config):
     source = {}
     for index in range(count):
         values = list(struct.unpack_from('<14I', native, 20+index*width))
-        if values[0] in (21975, 23872):
+        if values[0] in {row[0] for row in SPECS}:
             if values[0] in source:
                 raise ValueError('duplicate native control skill record')
             source[values[0]] = values
     records = config.get('records', [])
-    if len(source) != 2 or len(records) != 2:
+    if len(source) != len(SPECS) or len(records) != len(SPECS):
         raise ValueError('native control skill allowlist differs')
     rows = []
-    for index, (record, spell) in enumerate([(21975, 80388), (23872, 93375)]):
+    for index, (record, skill, spell, class_mask) in enumerate(SPECS):
         spec = records[index];v = source[record];push = 60895004+index
         if (spec.get('record_id') != record or spec.get('push_id') != push or
             spec.get('unique_id') != push or spec.get('native_values') != v or
-            v != [record, 354, spell, 0, 256, 0, 0, 1, 0, 0, 0, 0, 0, 0]):
+            v != [record, skill, spell, 0, class_mask, 0, 0, 1, 0, 0, 0, 0, 0, 0]):
             raise ValueError('native control skill identity or semantics differs')
         payload = struct.pack(FORMAT, v[3], v[0], v[1], v[2], v[7], v[4], v[8], v[9],
             v[10], v[11], 0, v[12], v[13], 0, 0, 0, 0)

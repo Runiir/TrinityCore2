@@ -5,9 +5,9 @@
   "table_hash": 4282664694,
   "layout_hash": "738BFEE1",
   "native_source_sha256": "6b71b4746e0a950ba0414f53905c308119f0485429240651733747c252fcaadf",
-  "native_source": "Installed isolated native15595 SkillLineAbility.dbc; positive rows in DVC118",
+  "native_source": "Installed isolated native15595 SkillLineAbility.dbc; Warlock positive rows in DVC118, Hunter positive rows and stock missing-lesson trace in UI141.",
   "wire_layout_source": "https://github.com/TrinityCore/WowPacketParser/blob/28fc3d194b22063ce8e94d2ed7235ca98ca51ef2/WowPacketParserModule.V4_4_0_54481/Parsers/HotfixHandler.cs",
-  "limits": "Two native warlock class-skill metadata records only. No learned spell, aura, level, money, trainer eligibility or pet ownership grant. Modern-only Flags/category/skillup/character points fields default to zero. Native next-rank field is zero in both records, avoiding next/previous rank interpretation. Live trainer acceptance remains required.",
+  "limits": "Four native Warlock/Hunter class-skill metadata records only. No learned spell, aura, level, money, trainer eligibility or pet ownership grant. Modern-only Flags/category/skillup/character points fields default to zero. Native next-rank field is zero in all four records, avoiding next/previous rank interpretation. Live trainer acceptance remains required.",
   "records": [
     {
       "record_id": 21975,
@@ -40,6 +40,48 @@
         93375,
         0,
         256,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "record_id": 21959,
+      "push_id": 60895006,
+      "unique_id": 60895006,
+      "native_values": [
+        21959,
+        50,
+        79682,
+        0,
+        4,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "record_id": 23785,
+      "push_id": 60895007,
+      "unique_id": 60895007,
+      "native_values": [
+        23785,
+        50,
+        93321,
+        0,
+        4,
         0,
         0,
         1,

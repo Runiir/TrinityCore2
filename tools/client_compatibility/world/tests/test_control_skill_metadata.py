@@ -30,12 +30,13 @@ def test_real_pinned_native_dbc_and_cpp_preserve_positive_class_skill_records(co
     assert hashlib.sha256(native).hexdigest()==spec['native_source_sha256']
     expected=convert(native,spec)
     assert result(codec,op='control_skill_hotfixes',native=native.hex(),config=spec)==expected
-    for row,spell in zip(expected,[80388,93375]):
+    assert len(expected)==4
+    for row,spell,skill,class_mask in zip(expected,[80388,93375,79682,93321],[354,354,50,50],[256,256,4,4]):
         body=bytes.fromhex(row['data']);assert len(body)==55
         # Independent pinned WPP441 sequence, rather than native packed fields.
         r=Reader(body)
-        assert r.unpack('qIhi')==(0,row['record_id'],354,spell)
-        assert r.unpack('hiii')==(1,256,0,0)
+        assert r.unpack('qIhi')==(0,row['record_id'],skill,spell)
+        assert r.unpack('hiii')==(1,class_mask,0,0)
         assert r.unpack('hhibhhhii')==(0,0,0,0,0,0,0,0,0);r.end()
 
 
@@ -72,17 +73,17 @@ def test_cpp_and_python_refuse_unpinned_or_semantically_changed_skill_metadata(c
     assert 'error' in codec(op='control_skill_hotfixes',native=native.hex(),config=spec)
 
 
-def test_both_skill_records_use_standard_hotfix_connect_and_bulk_lookup():
+def test_four_skill_records_use_standard_hotfix_connect_and_bulk_lookup():
     rows=[r for r in hotfixes.records() if r['table_hash']==TABLE]
-    assert [r['record_id'] for r in rows]==[21975,23872]
+    assert [r['record_id'] for r in rows]==[21975,23872,21959,23785]
     sent=[];session=SimpleNamespace(send=lambda n,b:sent.append((n,b)))
-    hotfixes.request(session,Writer().pack('IIIii',60895,0,2,*[r['push_id'] for r in rows]).finish())
+    hotfixes.request(session,Writer().pack('III4i',60895,0,4,*[r['push_id'] for r in rows]).finish())
     assert sent[0][0]=='SMSG_HOTFIX_CONNECT'
-    r=Reader(sent[0][1]);assert r.unpack('I')==(2,)
+    r=Reader(sent[0][1]);assert r.unpack('I')==(4,)
     for row in rows:
         assert r.unpack('IIIiI')==(row['push_id'],row['unique_id'],TABLE,row['record_id'],55)
         assert r.bits(3)==1;r.align()
-    assert r.unpack('I')==(110,)
+    assert r.unpack('I')==(220,)
     for row in rows:
         body=r.raw(55);assert body==hotfixes.lookup(TABLE,row['record_id'])==bytes.fromhex(row['data'])
     r.end()
