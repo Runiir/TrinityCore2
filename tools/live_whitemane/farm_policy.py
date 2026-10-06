@@ -26,6 +26,8 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
     if m['in_combat']:actions['combat']=('Use Sinister Strike on the current target, landing and facing as needed',None)
     if a['mounted'] or a['flying'] or a['falling']:
         actions['land']=('Land here and toggle Shift+Space to dismount',a['world'])
+        if route.get('kind')=='shortcut':
+            actions['land']=('Land and dismount here to prepare the teleport shortcut',a['world'])
     if m['in_combat']:return actions
     if not a['mounted'] and not a['flying']:
         if (a['can_survey'] or row.get('pending_find') or row.get('visible_find') or a.get('loot_open')
@@ -39,7 +41,7 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
                 actions[f"solve_{r['index']}"]=(f"Solve race {r['index']} using maximum accepted keystones",{'race':r['index']})
     if pending_find.facts(row,row.get('pending_find'))['uncollected']:return actions
     if m['map_id']!=245 and route.get('kind')=='shortcut' and teleport_button(ui):
-        actions['teleport']=('Use the Tol Barad teleport button',None)
+        actions['teleport']=('Teleport to Tol Barad to begin the shortcut to Orgrimmar',None)
     if ui.get('taxi') and route.get('exit'):
         current=route.get('current_taxi');node=next((n for n in ui['taxi'] if n['id']==current),None)
         if node:actions['taxi']=('Take the route taxi',({'id':current,'name':node['label'],'point':a['world']},route['exit']))
@@ -54,11 +56,16 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
                     {**p['from'],'arrival_tolerance_yards':.4})
         elif route.get('portal')==p and a['world'] and a['world']['instance']==p['from']['instance']:
             actions['flight']=('Fly to the route portal',p['from'])
-    if route.get('origin') and route.get('exit'):
+    # The addon includes later legs in its route description. Its flight
+    # master becomes the active destination only after the shortcut arrives.
+    if route.get('origin') and route.get('exit') and route.get('kind')!='shortcut':
         target=route['origin']['point']
         if distance(a['world'],target)<12:actions['taxi']=('Take the route taxi',(route['origin'],route['exit']))
         elif a['world'] and a['world']['instance']==target['instance']:
-            actions['flight']=('Fly to the route flight master',target)
+            remaining=distance(a['world'],target)
+            label=f'Fly directly {remaining:.0f} yards to the flight master'
+            if route.get('kind')=='shortcut':label+=' before taking the shortcut'
+            actions['flight']=(label,target)
     site=(route.get('site') or {}).get('point')
     if (site and not route.get('portal') and not route.get('origin') and a['world']
             and a['world']['instance']==site['instance'] and 'flight' not in actions
@@ -78,7 +85,8 @@ def choose(row,batches,session):
     if a['recipe_items_in_bags'] or ui.get('recipe_known'):return 'recipe',None,{'completion':'recipe observed'}
     if a['canopic_jars_in_bags']:return 'jar',None,{'completion':'jar observed'}
     dig_guide=None;guide_error=None;ground_blocked=False
-    if session.get('dig_output'):
+    active_dig=(a['can_survey'] and a.get('site_id')==session.get('dig_site')) or row.get('pending_find')
+    if session.get('dig_output') and active_dig:
         from . import dig_session,guide
         path=Path(session['dig_output'])/'session.json'
         if path.exists():
@@ -116,6 +124,12 @@ def choose(row,batches,session):
         'ground_approach_blocked':ground_blocked,
         'route':route.get('kind'),'route_instruction':route.get('instruction'),
         'via_Tol_Barad_requested':session['via_tolbarad'],
+        'route_distances_yards':{name:round(distance(a['world'],point)) for name,point in (
+            ('flight_master',(route.get('origin') or {}).get('point')),
+            ('digsite',(route.get('site') or {}).get('point')))
+            if math.isfinite(distance(a['world'],point))},
+        'teleport_shortcut_pending':route.get('kind')=='shortcut',
+        'completed_site_pending_minimap_check':bool(session.get('pending_site_completions') and signal.get('clear') is not True),
         'fragments':[{k:r[k] for k in ('index','fragments','cost','sockets','keystones_in_bags')} for r in a['races'] if r['cost']],
         'last_failure':[{ 'failure':r['failure'][:120],'choice':r['choice']} for r in session.get('recoveries',[])[-1:]]}
     action,request,response=laya_ui.choose(state,
@@ -125,6 +139,8 @@ def choose(row,batches,session):
         'Prefer saved GatherMate markers; use telescope fallback. Collect discovered finds before leaving. '
         'Start solve batches around 150 fragments and continue while affordable with maximum keystones. '
         'Follow the current route instruction through Tol Barad and Orgrimmar to the next digsite. '
+        'When the teleport shortcut is pending, use Tol Barad and its Orgrimmar portal before approaching the distant flight master. '
+        'Land first for a stationary teleport. Check remaining minimap blips before leaving a completed site. '
         'Use a nearby portal; if its ground approach is blocked, fly to that entrance and land. Learn from the last failure.',
         {k:v[0] for k,v in options.items()})
     action=dig_decisions.explore(action,response,options,state)

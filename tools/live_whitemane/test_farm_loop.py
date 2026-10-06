@@ -70,6 +70,19 @@ def test_active_digsite_navigation_is_not_replaced_with_a_flight_to_its_center()
     assert 'flight' in farm_policy.legal_actions(r,SolveBatches())
 
 
+def test_shortcut_keeps_a_future_flight_master_out_of_the_active_route_leg():
+    from . import farm_policy
+    r=row();r['archaeology']['falling']=False
+    r['farm_ui']['actionbars']=[{'enabled':True,'kind':'spell','id':5000028,'label':'Teleport: Tol Barad'}]
+    r['farm_ui']['route'].update(origin={'point':{'instance':1,'north':9000,'west':0}},
+        exit={'point':{'instance':1,'north':9000,'west':4000}})
+    actions=farm_policy.legal_actions(r,SolveBatches())
+    assert 'teleport' in actions and 'flight' not in actions
+    r['farm_ui']['route']['kind']='taxi'
+    actions=farm_policy.legal_actions(r,SolveBatches())
+    assert 'flight' in actions and 'teleport' not in actions
+
+
 def test_named_game_object_soft_target_can_use_interact_without_unit_exists(monkeypatch,tmp_path):
     monkeypatch.setattr(farm_loop.runtime,'ROOT',tmp_path)
     r=row();monkeypatch.setattr(interact,'observe',lambda _:copy.deepcopy(r))
