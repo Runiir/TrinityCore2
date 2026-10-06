@@ -24,6 +24,17 @@ def pair(fields,name):
     i=INDEX[name];return fields.get(i,0)|(fields.get(i+1,0)<<32)
 
 
+def retained_imp(fixture,rows):
+    allowed={4:('Harnesslock',1,9,1,2,1,'Volrot'),5:('Harnessctrl',1,9,10,2,2,'Yaztog')}
+    expected=allowed.get(fixture.get('guid'))
+    if (expected is None or tuple(fixture.get(k) for k in
+        ['character_name','race','class','level','account_id'])!=expected[:5] or len(rows)!=1 or
+        tuple(rows[0].get(k) for k in ['id','entry','owner','name'])!=
+            (expected[5],416,fixture['guid'],expected[6])):
+        raise RuntimeError('owned retained Imp fixture identity differs')
+    return rows[0]
+
+
 class PetOracle:
     def __init__(self,session,owner,started):
         self.cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
@@ -131,8 +142,9 @@ def suite(t,preparation,entry,probe,power=False,menu=False):
     e=entry_source(t,entry,session,preparation);p=source(t,probe,session,entry)
     oracle=PetOracle(session,t.fixture['guid'],e['started_at']).poll()
     items=Inventory(lab.ROOT,session,t.fixture['guid']).poll();pet=oracle.pet
+    retained=retained_imp(t.fixture,old['retained_class_pets'])
     if (not pet or pet['guid']>>32&0xfffff!=416 or pair(oracle.player,'UNIT_FIELD_SUMMON')!=pet['guid'] or
-        pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'],0)!=1 or oracle.selected()!=0 or
+        pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'],0)!=retained['id'] or oracle.selected()!=0 or
         resources(items)!=e['resources'] or saved(t.fixture['guid'])!=e['entered_saved']):
         raise RuntimeError('owned pet identity or original empty selection differs')
     guid=pet['guid'];expected=f"Pet-0-1-{pet['map']}-0-{guid>>32&0xfffff}-{guid&0xffffffff:010X}"

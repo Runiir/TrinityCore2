@@ -7,7 +7,7 @@ from .interaction_trial import Trial
 from .interaction_retained_class_fixture import closed
 from .interaction_owned_class_fixture import prepared,origin_checks,saved,pets,SCRIPT_BOUNDARY
 from .interaction_spellbook_pet_recon import entry_source
-from .interaction_pet_target import PetOracle,pair,source,read_menu
+from .interaction_pet_target import PetOracle,pair,source,read_menu,retained_imp
 from .interaction_operations import click_case
 from .interaction_macros import require
 from .interaction_spellbook_navigation import detail
@@ -95,10 +95,12 @@ def suite(t,preparation,entry,probe,menu):
     base=PetOracle(session,t.fixture['guid'],e['started_at']).poll()
     o=Presence(session,t.fixture['guid'],e['started_at']).poll()
     inventory=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
-    retained=pets(t.fixture['guid']);guid=base.pet['guid'];expected=p['public_pet']['guid']
+    retained=pets(t.fixture['guid']);identity=retained_imp(t.fixture,retained)
+    guid=base.pet['guid'];expected=p['public_pet']['guid']
     if (not o.present() or o.pet['guid']!=guid or base.selected()!=0 or resources(inventory)!=e['resources'] or
-        saved(t.fixture['guid'])!=e['entered_saved'] or len(retained)!=1 or
-        (retained[0]['id'],retained[0]['entry'],retained[0]['owner'],retained[0]['name'])!=(1,416,4,'Volrot') or
+        saved(t.fixture['guid'])!=e['entered_saved'] or
+        (t.fixture['guid']==5 and (not p.get('native_control_demon_known') or
+            [80388,1,0] not in e['entered_saved']['spells'])) or
         not recovery_spell(e,p)):
         raise RuntimeError('owned retained pet or known normal recovery spell differs')
     before,frame=t.observe('dismiss_baseline')
@@ -145,7 +147,7 @@ def suite(t,preparation,entry,probe,menu):
             resources=resources(inventory)==e['resources'],saved_rows=saved(t.fixture['guid'])==e['entered_saved'],
             position=state['world_position']==before['world_position'],panels_closed=not state.get('panels') and not state.get('bags'),
             ui_clean=not state.get('lua_errors') and not state.get('blocked_actions'),owned_pet=o.present() and
-                pair(fields,'UNIT_FIELD_SUMMONEDBY')==t.fixture['guid'] and fields.get(INDEX['UNIT_FIELD_PETNUMBER'])==1,
+                pair(fields,'UNIT_FIELD_SUMMONEDBY')==t.fixture['guid'] and fields.get(INDEX['UNIT_FIELD_PETNUMBER'])==identity['id'],
             native_vitals=vitals(o)==baseline_vitals,
             public_pet=public.get('exists') is True and public.get('guid')==public_guid and public.get('name')==identity['name'],
             retained_pet=len(current)==1 and all(current[0].get(k)==v for k,v in identity.items()))
