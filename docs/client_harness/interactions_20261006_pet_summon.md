@@ -12,4 +12,6 @@ The same two clients remain on HDMI-1, using code-controlled ordinary inputs and
 
 All10 episodes close successfully. Normal class logout and original selection pass all four and five checks respectively. The primary's original nine native checks,14 runtime checks and six protected-fixture checks pass. The bridge remains PID3829768/start ticks43117280, with binary SHA25608b77db9799b749ead65906e91d78fdcc72887bf8fec9bfd77d728b891de6e55.
 
-Qualification is pending DVC122 remote review. Current admitted coverage remains430/916, with486 operations open. The trial qualifies no flyout button, other summon, class, command, combat behavior or complete pet family.
+After whole restoration and DVC122 remote review, pets.summon is admitted. Coverage is431/916, with485 operations open. The trial qualifies no flyout button, other summon, class, command, combat behavior or complete pet family.
+
+DVC122 is pushed and remotely reviewed:19 JSON receipts and78 attributed images verify. The151447381-byte archive has SHA25603d13b2ca0a1212461dd13483cb64ea906f9253bb7f364c9da0cece83f0143e8 and MD57b390ce3edccbf52d2c4487e2a3b54ac. After review,99 PNG files (127649271 bytes) and the exact archive/cache copy are offloaded. Scoped status records the intentional missing local cache; push confirms the remote is up to date. Immutable verification records430 qualified and zero added at checkpoint time; the ledger records the subsequent Summon Imp admission.

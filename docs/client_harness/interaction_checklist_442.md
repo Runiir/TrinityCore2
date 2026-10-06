@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 430 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 431 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -922,7 +922,7 @@ Fixture: `class_variants`.
 
 Fixture: `pet_class_variants`.
 
-- [ ] `pets.summon`
+- [x] `pets.summon` (qualified variant; [evidence](#owned_trained_imp_summon_from_absence))
 - [x] `pets.dismiss` (qualified variant; [evidence](#owned_trained_imp_dismiss))
 - [ ] `pets.command_attack`
 - [ ] `pets.command_follow`
@@ -3050,3 +3050,21 @@ Remaining limits: Only this normally trained summoned Imp Dismiss variant. Norma
 - [442_interactions_20261006_121.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_121.tar.gz.dvc), member `evidence/client_interactions_20261006_ui121/primary_idle_reentry01/episode.json`, SHA-256 `ca34c4ca8d7939de58083029044773dfa3a539a01f4b89bc64906897d3f009aa`.
 - [442_interactions_20261006_121.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_121.tar.gz.dvc), member `evidence/client_interactions_20261006_ui121/dismiss_whole_review01.json`, SHA-256 `ebf5c4be3f3453af6c7a6988998cbe1325a7353cf6679309a113cd5a641b6801`.
 - [442_interactions_20261006_121.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_121.tar.gz.dvc), member `evidence/client_interactions_20261006_ui121/verification.json`, SHA-256 `456f3ea4c6d585a39d1c65039f6ea0944c2cd6e6372ecfc7b7e5f78ce35ef43c`.
+
+### owned_trained_imp_summon_from_absence
+
+UI122 summon01 casts Summon Imp once from explicit native/public absence on normally trained level10 human warlock Harnessctrl/GUID5 with retained saved Imp2/Yaztog. Nine summon outcome,13 restoration and six protected-fixture checks pass. One modern/native688 cast has one matching native cast-counter completion and new owned runtime pet GUID20 after removed GUID19. The passive client probe agrees with exact GUID/name. Four samples settle without replay; no extra recovery cast. Whole closure includes original scout5, primary9 and runtime14/protected6. DVC122 remotely verifies19 JSON receipts and78 attributed images. Code controller, model None.
+
+Remaining limits: Only this ordinary Summon Imp from genuine absence. Stock Dismiss is preparation only. No flyout button, other summon/class/pet/command/combat or family completion. The earlier UI110 probes and UI121 cleanup casts remain excluded as summon qualification; earlier whole failures remain recorded. Legitimate80388 purchase/9354 balance/Imp2 and original fixtures retained. No C++ build or native restart; same two clients on HDMI-1, scripts blocked, original softTargetInteract0 unrestored at1.
+
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/class_prepare01/episode.json`, SHA-256 `265029ef2387bf878c5276b7d25de0b3d13246f6b25bcb19e0c12a2d629cea79`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/class_enter01/episode.json`, SHA-256 `1138b96dc97b72cb89a09806bcf81e530479a1c4477c872853366d38404358f1`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/pet_entry_recon01/episode.json`, SHA-256 `51f909088592fe4fbd50418d62b296abbfc79071de8e6969840e4eca894c102c`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/pet_menu01/episode.json`, SHA-256 `8a624ca36eedf74e6fb23e8b0c69dee3f16b36297bde0a799bbb54cafc65668b`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/summon01/episode.json`, SHA-256 `631bea00cdda9bc10ffacc85aa69cfffd8459ca640e3451a4adea4782d46049d`.
+  Checked cases: `pets.summon` (native_owned_pet_summon_pass).
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/class_park01/episode.json`, SHA-256 `36d08576748defa44b37731f993358200eb9fa797e4025f5602a46d7c3b433cd`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/origin_finish01/episode.json`, SHA-256 `74906d7e30ada5a858bd213075007eb8bceeacdab399a536198b74dfd335ac37`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/primary_native_close01/episode.json`, SHA-256 `c2a4e080a72745dedc639a5884abf251b5342c98660145ee7fd8c9004670c847`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/summon_whole_review01.json`, SHA-256 `ab6f3b2d9d258d4376c795503ecb3ef2decdd02a5b6fdefedb8aae4650f67e21`.
+- [442_interactions_20261006_122.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_122.tar.gz.dvc), member `evidence/client_interactions_20261006_ui122/verification.json`, SHA-256 `33406e91e13e080794cc2e94b51761872dc88316957f75b04c5e50102754760b`.
