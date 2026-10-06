@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 424 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 426 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -933,8 +933,8 @@ Fixture: `pet_class_variants`.
 - [ ] `pets.assist`
 - [ ] `pets.autocast_toggle`
 - [ ] `pets.spell_cast`
-- [ ] `pets.pet_target`
-- [ ] `pets.pet_health`
+- [x] `pets.pet_target` (qualified variant; [evidence](#owned_imp_target_and_health))
+- [x] `pets.pet_health` (qualified variant; [evidence](#owned_imp_target_and_health))
 - [ ] `pets.pet_power`
 - [ ] `pets.happiness_if_available`
 - [ ] `pets.rename`
@@ -2958,3 +2958,22 @@ Remaining limits: Only this owned same-realm friend, short ASCII markers and def
 - [442_interactions_20261006_108.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc), member `evidence/client_interactions_20261006_ui108/failed_whisper_cleanup_review01.json`, SHA-256 `2978cde6f0b0b6e1502ca370c8d8ad40a2ac6d0311955b7f84d7f6c9e1dc66b2`.
 - [442_interactions_20261006_108.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc), member `evidence/client_interactions_20261006_ui108/verification.json`, SHA-256 `6661d5fc15c1bc12444b4752500dab9b8c22bbf9baeeb5782943182d86ecbb44`.
 - [442_interactions_20261006_108.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc), member `evidence/client_interactions_20261006_ui108/runtime_closure.json`, SHA-256 `00e4550298437b2c2176d6d7865a7dbf81f3629d74f26ed402e78e05c43eafc3`.
+
+### owned_imp_target_and_health
+
+UI112 whole pet_target01 passes on retained human Warlock GUID4 level1. One stock exact-name target selects the current owned Imp entry416 number1: native GUID0xf14001a000000005, modern request/public Pet-0-1-0-0-416-0000000005, native request/player target and visible Volrot selection agree. Public and native selected health are254/254, with a full visible health bar. Nine target checks, five health checks and all nine restoration checks pass. Original empty target, resources, saved rows, position and closed panels restore; normal class parking and reviewed Harnesstwo finish pass all five closing checks. Code controller, model None.
+
+Remaining limits: Only exact-name targeting and health when this owned Imp is selected. Pet tab, power, commands, combat, damaged/healed variants, other classes/levels and persistence remain open. Imp name queries and pet visibility were repaired in UI111; this does not qualify those other operations. No spell/aura grant, level change, native build, bridge restart or new client. Both existing windows remain on HDMI-1. One initial test expected initial140 rather than the later sparse254 and fails; corrected focused selection passes66. Scripts remain blocked; original softTargetInteract0 remains unrestored at1.
+
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/pet_target01/episode.json`, SHA-256 `9fde6acf018eeaccf8f96742763b9260035e2b7c382cbae92e62088c9db7c67c`.
+  Checked cases: `pets.pet_target` (native_owned_pet_target_pass), `pets.pet_health` (native_owned_pet_health_pass).
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/class_prepare01/episode.json`, SHA-256 `abb45d48668294ffd27287b998d7194f11e2d24b5528d6299886a37eeed4440a`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/class_enter01/episode.json`, SHA-256 `84f4d91a7be85e089169b2692d050130ef419f9ff7614cd9a5c959660b43d407`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/pet_entry_recon01/episode.json`, SHA-256 `eb9463694a255803d52e9c9013e537cea428202973b9c0d8d75bea1e6ca6e017`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/class_park01/episode.json`, SHA-256 `5312238604f94a0de298d23f7f848dd2aba3ddac5b0ae0b24c2c9f73647d83d9`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/class_original_finish01/episode.json`, SHA-256 `38d946a1ebd303d2076d50edffb1dc8f0f77108391e06773b3a74abcd2a229f4`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/whole_pet_target_review.json`, SHA-256 `fff5b733d78ec481e4f6472e280ed9e4fec214fbccbffc3984066f17f4cdb6ee`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/runtime_closure.json`, SHA-256 `5d6cd80529bf515a5b58b01e8d6e2e5671fcfc560da8418c7bd0fce53ccb6445`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/verification.json`, SHA-256 `07c0c84b15dc7750621c39ae04724a87dace865a5edff0896bcbe50d594d2dde`.
+- [442_interactions_20261006_112.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_112.tar.gz.dvc), member `evidence/client_interactions_20261006_ui112/control_prerequisite.json`, SHA-256 `e2a6a38c81d1c25e8f86952302d7aa69c74970717c9f2a01212eb4403bc636cb`.
+

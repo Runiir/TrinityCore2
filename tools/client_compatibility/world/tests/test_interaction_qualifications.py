@@ -1,8 +1,18 @@
 """Coverage regeneration retains reviewed successes without expanding their scope."""
 import copy
+import json
+from pathlib import Path
 import pytest
 from tools.client_compatibility.interaction_qualifications import reconcile
 from tools.client_compatibility.interaction_inventory import checklist,render
+
+
+def test_saved_plan_preserves_the_source_qualification_ledger():
+    repo=Path(__file__).resolve().parents[4]
+    saved=json.loads((repo/'experiments/configs/client_harness/442_interactions_v1.json').read_text())
+    regenerated=checklist()
+    assert saved['qualification_records']==regenerated['qualification_records']
+    assert saved['qualified_operations']==regenerated['qualified_operations']
 
 
 def test_current_checklist_preserves_markers_group_archaeology_and_quest_evidence():
