@@ -94,8 +94,11 @@ def test_owned_movement_settles_before_a_stationary_interaction(clock,tmp_path):
     sequence=[1]
     def observe(_):
         sequence[0]+=1;r=frame(sequence[0])
+        r['movement']['sequence']=int(clock[0]/.1)+1
+        r['archaeology']['sequence']=int(clock[0]/.4)+1
+        r['farm_ui']['sequence']=int(clock[0]/.2)+1
         r['movement']['speed']=15 if clock[0]<.2 else 0
         r['archaeology']['world']={'instance':1,'north':1 if clock[0]<.4 else 2,'west':0}
         return r
     after=action_queue.wait_stopped(tmp_path,before,observe)
-    assert after['movement']['speed']==0 and clock[0]>=.2
+    assert after['movement']['speed']==0 and clock[0]>=.4

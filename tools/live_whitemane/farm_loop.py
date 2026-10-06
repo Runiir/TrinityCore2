@@ -200,7 +200,8 @@ def run(output,stop_on='recipe'):
                 resources.phase_boundary(output,session)
                 print(json.dumps({'phase':action,'finds':session['looted_finds'],'sites':session['completed_sites']}),flush=True)
         except Exception as error:
-            session.update(status='repair_required',failure=f'{type(error).__name__}: {error}')
+            if (runtime.ROOT/'run/stop_dig').exists():session.update(status='supervisor_stopped',failure=None)
+            else:session.update(status='repair_required',failure=f'{type(error).__name__}: {error}')
         finally:
             session['updated_at']=time.time();session['active_races']=sorted(batches.active_races);runtime.write(path,session)
     return {k:session[k] for k in ('status','failure','looted_finds','completed_sites')}

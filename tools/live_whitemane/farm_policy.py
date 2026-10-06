@@ -56,7 +56,8 @@ def legal_actions(row,batches,dig_guide=None):
         elif a['world'] and a['world']['instance']==target['instance']:
             actions['flight']=('Fly to the route flight master',target)
     site=(route.get('site') or {}).get('point')
-    if site and a['world'] and a['world']['instance']==site['instance'] and 'flight' not in actions:
+    if (site and not route.get('portal') and not route.get('origin') and a['world']
+            and a['world']['instance']==site['instance'] and 'flight' not in actions):
         actions['flight']=('Fly to the next addon digsite',site)
     if dig_guide and not dig_guide['arrived'] and a['world'] and a['world']['instance']==dig_guide['world']['instance']:
         actions['flight']=('Fly toward the current dig guide',dig_guide['world'])

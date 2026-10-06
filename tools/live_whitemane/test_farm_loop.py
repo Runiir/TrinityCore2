@@ -58,6 +58,7 @@ def test_existing_digsite_is_finished_before_next_travel_and_recipe_stops_input(
 
 
 def test_named_game_object_soft_target_can_use_interact_without_unit_exists(monkeypatch,tmp_path):
+    monkeypatch.setattr(farm_loop.runtime,'ROOT',tmp_path)
     r=row();monkeypatch.setattr(interact,'observe',lambda _:copy.deepcopy(r))
     monkeypatch.setattr(interact,'stationary',lambda *_:None)
     calls=[];monkeypatch.setattr(interact.inputs,'execute',lambda *args:calls.append(args) or {'completed':True})

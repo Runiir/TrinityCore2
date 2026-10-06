@@ -68,7 +68,7 @@ def wait_stopped(folder,before,observer):
             world=a.get('world')
             if stationary and newer(row,stationary) and world==stationary['archaeology'].get('world'):
                 return row
-            stationary=row
+            if stationary is None or world!=stationary['archaeology'].get('world'):stationary=row
         else:stationary=None
         if time.monotonic()>=deadline:raise RuntimeError('selected client action invalidated: movement did not settle')
         time.sleep(POLL_SECONDS);row=observer(folder/'stopped.png')
