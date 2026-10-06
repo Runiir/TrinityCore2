@@ -29,7 +29,7 @@ def observed_imp(probe,learned):
     return button,{'name':button['button'],'x':xy[0],'y':xy[1]}
 
 
-def summon_button(t,learned,observe_only=False):
+def summon_row(t,learned):
     probe=detail(t,'summon_flyout_tabs')
     tab=next((r for r in probe['tabs'] if r.get('name')=='Demonology' and not r.get('hidden')),None)
     if tab is None:raise RuntimeError('owned Demonology tab is absent')
@@ -44,8 +44,15 @@ def summon_button(t,learned,observe_only=False):
             line=line,page=probe['page']-1,check_content=False),'spellbook_navigation_pass')
     row=next((r for r in probe['rows'] if r.get('kind')=='FLYOUT' and r.get('name')=='Summon Demon'),None)
     slots=(row or {}).get('flyout',{}).get('slots',[])
-    if row is None or not any(r.get('id')==688 and r.get('known') is True for r in slots):
+    if row is None or not any(r.get('id')==688 and r.get('known') is True and
+            r.get('name')=='Summon Imp' and r.get('override')==688 for r in slots):
         raise RuntimeError('native-known Imp is absent from the public summon flyout')
+    t.receipt['summon_flyout_row']=row;t.persist()
+    return row
+
+
+def summon_button(t,learned,observe_only=False):
+    row=summon_row(t,learned)
     def ready(state):
         flyout=state.get('spellbook_probe',{}).get('flyout',{})
         return flyout.get('visible') and flyout.get('parent')==row['button'] and any(
@@ -79,7 +86,7 @@ def summon_button(t,learned,observe_only=False):
     return button,control,frame
 
 
-def suite(t,path,observe_only=False):
+def suite(t,path,observe_only=False,ordinary_cast=False):
     old=prepared(t,path)
     if (t.fixture['character_name'],t.fixture['race'],t.fixture['class'],t.fixture['level'])!=('Harnesslock',1,9,1):
         raise RuntimeError('requires the prepared owned Warlock')
@@ -98,17 +105,25 @@ def suite(t,path,observe_only=False):
         lambda c:c['name']=='SpellbookMicroButton',lambda b,a,s:{'status':'spellbook_open_pass' if s and
             'SpellBookFrame' in a['panels'] else 'client_or_protocol_failure'}),'spellbook_open_pass')
     t.receipt['preparation_source']=str(path)
-    result=summon_button(t,learned,observe_only)
-    if observe_only:return
-    row,button,frame=result
+    if ordinary_cast:
+        flyout=summon_row(t,learned)
+        row=next(r for r in flyout['flyout']['slots'] if r.get('id')==688 and r.get('known') is True)
+        state,frame=t.observe('before_ordinary_cast')
+        action={'kind':'chat','value':'/cast Summon Imp','description':'Submit the ordinary native-known summon command once.'}
+    else:
+        result=summon_button(t,learned,observe_only)
+        if observe_only:return
+        row,button,frame=result
+        action={'kind':'click','value':point(button),'button':1,'hold':.4}
     if row.get('name')!='Summon Imp' or row.get('known') is not True:raise RuntimeError('owned summon button differs')
     started=time.time();t.receipt.update(summon_started_at=started,summon_spell=row,
-        summon_input={'kind':'click','value':point(button),'button':1,'hold':.4},
+        summon_input=action,
+        summon_input_scope='ordinary command diagnostic only' if ordinary_cast else 'observed stock flyout button',
         before_summon=frame);t.persist()
-    if time.time()-(t.out/frame['file']).stat().st_mtime>2:
+    if not ordinary_cast and time.time()-(t.out/frame['file']).stat().st_mtime>2:
         raise RuntimeError('observed Imp frame exceeded its two-second input bound')
-    t.receipt['summon_input_sent']=True;t.persist()
-    t.io.click(*point(button),button=1,hold=.4);time.sleep(16)
+    t.receipt['summon_action_attempted']=True;t.persist()
+    t.execute(action);time.sleep(16)
     rows=[r for r in packets.poll() if r.get('session')==session and r.get('time',0)>=started]
     outcomes=[]
     for r in rows:
@@ -120,6 +135,7 @@ def suite(t,path,observe_only=False):
     diagnostics=[{k:r[k] for k in ['time','session','event','name','bytes','error','guid'] if k in r}
         for r in events.poll() if r.get('session')==session and r.get('time',0)>=started]
     t.receipt.update(protocol_rows=retained,native_summon_outcomes=outcomes,
+        summon_input_sent=any(r.get('direction')=='to_native' and r.get('name')=='CMSG_CAST_SPELL' for r in rows),
         protocol_events=diagnostics,
         after_summon=shot(t.out/'after_summon.png'),origin_checks=origin_checks(old),
         phase='await_summon_outcome_review',requires_next_screen_review=True);t.persist()
@@ -134,12 +150,14 @@ def suite(t,path,observe_only=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--observe-flyout-only',action='store_true');a=p.parse_args()
+    modes=p.add_mutually_exclusive_group()
+    modes.add_argument('--observe-flyout-only',action='store_true')
+    modes.add_argument('--ordinary-cast',action='store_true');a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2)
         t.receipt.update(custom_script_permission='blocked_by_user',
             softTargetInteract={'original':'0','current_stock_disabled':'1','original_restored':False})
-        try:suite(t,a.source,a.observe_flyout_only)
+        try:suite(t,a.source,a.observe_flyout_only,a.ordinary_cast)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ['phase','completed','failure']}),flush=True)
