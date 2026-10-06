@@ -1,5 +1,6 @@
 """Return local action failures to Laya without discarding farm progress."""
 import json
+import math
 import time
 from pathlib import Path
 from . import runtime,laya_ui,pending_find,farm_graph,escape_route
@@ -91,11 +92,31 @@ def run(folder,row,step,session,graph):
         'pending_pickup':bool(pending),'world':a['world'],'grounded':a.get('grounded'),
         'local_movement_alternatives':alternatives,
         'recent_recoveries':session.get('recoveries',[])[-3:]}
-    action,request,response=laya_ui.choose(state,
-        'Choose the next recovery. Preserve an uncollected find. When repeated flight or ascent is blocked, '
-        'try a short movement around the obstruction instead of repeating the same blocked path. '
-        'Reference collision checks are estimates; observe the actual movement outcome.',choices)
-    result={'at':time.time(),'choice':action,'state':state,'request':request,'response':response,'inputs':[]}
+    context=state
+    instructions=('Choose the next recovery. Preserve an uncollected find. Change approach '
+        'when repeated attempts do not progress.')
+    if alternatives:
+        start_pose=(step.get('before') or {}).get('owned_pose') or {}
+        end_pose=row.get('owned_pose') or {}
+        dz=(end_pose['height_yards']-start_pose['height_yards']
+            if 'height_yards' in start_pose and 'height_yards' in end_pose else None)
+        progressed=False
+        for previous in session.get('recoveries',[])[-3:]:
+            old,new=previous.get('world'),previous.get('after_world')
+            if old and new and old['instance']==new['instance']:
+                progressed=progressed or math.hypot(old['north']-new['north'],old['west']-new['west'])>.25
+        context={'task':'Escape an obstruction to resume flying',
+            'ascent_blocked':bool('ascent' in step['local_failure'] and dz is not None and abs(dz)<.25),
+            'position_changed_after_retries':progressed,'flying':a['flying'],'grounded':a.get('grounded'),
+            'directions_clear_in_reference_geometry':{key:value['reference_collision_clear'] for key,value in alternatives.items()}}
+        descriptions={'retry':'Repeat the blocked movement','wait':'Wait here','land':'Land and dismount',
+            'step_left':'Move left around the obstruction','step_right':'Move right around the obstruction',
+            'step_back':'Move back away from the obstruction','step_forward':'Move forward toward the destination'}
+        choices={key:descriptions[key] for key in choices}
+        instructions='Choose how to clear the obstacle. Change direction when ascent is blocked. Prefer a clear direction.'
+    action,request,response=laya_ui.choose(context,instructions,choices)
+    result={'at':time.time(),'choice':action,'state':context,'observed_context':state,
+        'request':request,'response':response,'inputs':[]}
     runtime.write(folder/'recovery.json',result)
     if action=='land':
         from .flight import fly
