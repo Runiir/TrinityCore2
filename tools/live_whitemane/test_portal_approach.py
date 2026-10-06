@@ -9,10 +9,11 @@ def test_portal_retains_its_selected_movement_intent_and_confirms_arrival(monkey
     entrance={'instance':1,'north':21,'west':0}
     destination={'instance':732,'north':-601,'west':1382}
     after=copy.deepcopy(before);after['archaeology']['world']=destination
-    frames=iter([before,before,before,after])
+    frames=iter([before,before,before,before,after])
     monkeypatch.setattr(portal,'observe',lambda _:next(frames))
     monkeypatch.setattr(portal,'stationary',lambda *_:None)
     monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
+    monkeypatch.setattr(portal,'align',lambda folder,row,target:[{'pitch_radians':0}])
     monkeypatch.setattr(portal,'choose',lambda *_,**kwargs:('portal',{}, {}, {}))
     walks=[]
     def walk(folder,target,**kwargs):
@@ -31,10 +32,11 @@ def test_selected_portal_intent_is_not_replaced_by_a_second_model_choice(monkeyp
     before=row();before['archaeology']['falling']=False
     entrance={'instance':1,'north':21,'west':0};destination={'instance':732,'north':-601,'west':1382}
     after=copy.deepcopy(before);after['archaeology']['world']=destination
-    frames=iter([before,before,before,after])
+    frames=iter([before,before,before,before,after])
     monkeypatch.setattr(portal,'observe',lambda _:next(frames))
     monkeypatch.setattr(portal,'stationary',lambda *_:None)
     monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
+    monkeypatch.setattr(portal,'align',lambda folder,row,target:[{'pitch_radians':0}])
     monkeypatch.setattr(portal,'choose',lambda *_,**__:pytest.fail('do not replace selected intent'))
     intent=('portal','Laya',{'selected':'portal'},{'choice':'portal'})
     def walk(folder,target,**kwargs):
@@ -51,10 +53,11 @@ def test_uldum_route_label_uses_the_observed_portal_name(monkeypatch,tmp_path):
     before=row();before['archaeology']['falling']=False
     destination={'instance':1,'north':-9444,'west':-959}
     after=copy.deepcopy(before);after['archaeology']['world']=destination
-    frames=iter([before,before,before,after])
+    frames=iter([before,before,before,before,after])
     monkeypatch.setattr(portal,'observe',lambda _:next(frames))
     monkeypatch.setattr(portal,'stationary',lambda *_:None)
     monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
+    monkeypatch.setattr(portal,'align',lambda folder,row,target:[{'pitch_radians':0}])
     monkeypatch.setattr(portal,'walk',lambda *_,**__:[])
     def interact(folder,row,names):
         assert 'Portal to Uldum' in names

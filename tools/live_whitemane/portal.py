@@ -6,6 +6,7 @@ from .observe import observe
 from .decisions import choose
 from .fast_waypoint import walk
 from .farm_actions import stationary
+from .camera_navigation import align
 from tools.client_compatibility import travel_policy
 
 
@@ -30,6 +31,8 @@ def run(folder,portal,*,approved_intent=None):
     result['approach']=walk(folder/'approach',target,tolerance=.4,
         guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
     row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
+    result['camera_view']=align(folder/'view',row,target)
+    row=observe(folder/'view_ready.png')
     names={'Portal to '+portal['destination']}
     if portal.get('key')=='org-uldum':names.add('Portal to Uldum')
     result['interaction']=interact.use(folder/'interaction',row,names)
