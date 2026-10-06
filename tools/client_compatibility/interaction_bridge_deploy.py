@@ -145,8 +145,10 @@ def reconnect(out,name,keyboard_modal=False,character_selection=False,realm_sele
                     'failure':t.receipt['failure'],'episode':str(t.out/'episode.json'),
                     'sha256':lab.sha256(t.out/'episode.json')}
                 expected=1 if latest.get('recovery_source') else 2
-                if len(latest['reconnect_attempts'])==expected:
-                    latest.update(finished_at=time.time(),completed=all(r['completed'] for r in latest['reconnect_attempts'].values()))
+                attempts={**latest.get('parked_reconnect_attempt',{}),**latest['reconnect_attempts']}
+                if len(attempts)==expected:
+                    latest.update(finished_at=time.time(),completed=len(latest['reconnected'])==expected and
+                        all(r['completed'] for r in attempts.values()))
                 lab.private_write(out/'deployment.json',json.dumps(latest,indent=2)+'\n')
             print(json.dumps({'actor':name,'completed':t.receipt['completed'],'failure':t.receipt['failure']}),flush=True)
         if not t.receipt['completed']:raise RuntimeError(t.receipt['failure'])
