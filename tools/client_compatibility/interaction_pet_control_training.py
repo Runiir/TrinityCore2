@@ -11,7 +11,7 @@ from .interaction_macros import require
 from .interaction_spellbook_navigation import known
 from .interaction_spellbook_recon import resources
 from .observation.inventory import Inventory
-from .observation.journal import entries
+from .observation.journal import entries,Cursor
 from .world.buffer import Reader
 
 
@@ -90,8 +90,90 @@ def open_trainer(t,preparation,source,review_path):
     if not all(t.receipt['protected_checks'].values()):raise RuntimeError('protected original fixtures differ')
 
 
+def prior(t,source,session,phase):
+    source=source.resolve()
+    if source.name!='episode.json' or not source.is_relative_to(lab.ROOT/'evidence'):
+        raise ValueError('requires a closed owned trainer receipt')
+    e=json.loads(source.read_text())
+    if (e.get('completed') is not True or e.get('failure') or not e.get('finished_at') or
+        e.get('phase')!=phase or e.get('actor')!=t.fixture or e.get('runtime')!=t.receipt['runtime'] or
+        e.get('native_session')!=session or not all(e.get('protected_checks',{}).values())):
+        raise RuntimeError('closed same-entry trainer source differs')
+    t.receipt['trainer_source']={'path':str(source),'sha256':lab.sha256(source)};return e
+
+
+def select(t,preparation,source):
+    old,session=baseline(t,preparation);e=prior(t,source,session,'control_trainer_open')
+    rows=[r for r in e['native_catalog']['rows'] if r[0]==80388]
+    if len(rows)!=1 or rows[0][1]!=1:raise RuntimeError('native Control Demon lesson unavailable')
+    state,_=t.observe('trainer_selection_before')
+    if 'ClassTrainerFrame' not in state['panels']:raise RuntimeError('stock trainer no longer open')
+    current=controls(t)
+    if any(c['name'].startswith('ClassTrainerSkill') and c['text'].strip()=='Affliction' for c in current):
+        require(click_case(t,'control.collapse_affliction','Collapse the observed Affliction trainer header.',
+            lambda c:c['name'].startswith('ClassTrainerSkill') and c['text'].strip()=='Affliction',
+            lambda b,a,s:{'status':'trainer_header_pass' if s and 'ClassTrainerFrame' in a['panels'] else
+                'client_or_protocol_failure'}),'trainer_header_pass')
+    def selected(b,a,s):
+        service=a.get('trainer',{}).get('service',{})
+        checks={'ordinary_select':bool(s),'name':service.get('name')=='Control Demon',
+            'available':service.get('state')=='available','cost':service.get('cost')==rows[0][2],
+            'native_level_requirement':service.get('level')==rows[0][3],
+            'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+        return {'status':'control_lesson_selected_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'native':rows[0],'public':service}}
+    require(click_case(t,'control.select_lesson','Select the observed available Control Demon lesson.',
+        lambda c:c['name'].startswith('ClassTrainerSkill') and c['text'].strip()=='Control Demon',
+        selected),'control_lesson_selected_pass')
+    state,frame=t.observe('control_selected');oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll()
+    t.receipt.update(state=state,frame=frame,native_lesson=rows[0],native_session=session,
+        resources=resources(oracle),saved_spells=known(t.fixture['guid']),protected_checks=protected(old),
+        phase='control_lesson_selected',completed=True)
+
+
+def learn(t,preparation,source):
+    old,session=baseline(t,preparation);e=prior(t,source,session,'control_lesson_selected')
+    packets=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
+    for _ in packets.poll():pass
+    oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll();before=resources(oracle)
+    state,_=t.observe('control_purchase_before');service=state.get('trainer',{}).get('service',{})
+    price=e['native_lesson'][2]
+    if (before!=e['resources'] or known(t.fixture['guid'])!=e['saved_spells'] or
+        any(r[0]==93375 for r in e['saved_spells']) or service.get('name')!='Control Demon' or
+        service.get('state')!='available' or service.get('cost')!=price or not 0<price<before['money']):
+        raise RuntimeError('selected untrained native lesson or resources differ')
+    started=time.time();t.receipt.update(native_session=session,before=before,native_lesson=e['native_lesson'],
+        purchase_started_at=started,retained_change='Normally purchased Control Demon and its exact native copper charge.')
+    def learned(b,a,s):
+        lab.server_command('saveall');time.sleep(1);oracle.poll();after=resources(oracle)
+        rows=[r for r in packets.poll() if r.get('session')==session and r.get('time',0)>=started]
+        safe={'CMSG_TRAINER_BUY_SPELL','SMSG_TRAINER_BUY_SUCCEEDED','SMSG_TRAINER_BUY_FAILED',
+            'SMSG_LEARNED_SPELL','SMSG_LEARNED_SPELLS','SMSG_PET_SPELLS','SMSG_PET_SPELLS_MESSAGE'}
+        rows=[r for r in rows if r.get('name') in safe]
+        native=[r for r in rows if r.get('direction')=='from_native' and r['name']=='SMSG_LEARNED_SPELL'
+            and Reader(bytes.fromhex(r['body'])).unpack('II')==(93375,0)]
+        modern=[r for r in rows if r.get('direction')=='to_client' and r['name']=='SMSG_LEARNED_SPELLS'
+            and r['body']=='010000000000000000bf6c010000']
+        commands=[r for r in rows if r.get('direction')=='to_native' and r['name']=='CMSG_TRAINER_BUY_SPELL'
+            and Reader(bytes.fromhex(r['body'])).unpack('QII')[1:]==(154,80388)]
+        expected={**before,'money':before['money']-price}
+        checks={'ordinary_train':bool(s),'one_native_purchase':len(commands)==1,'native_learned':len(native)==1,
+            'modern_learned':len(modern)==1,'saved_control_demon':[93375,1,0] in known(t.fixture['guid']),
+            'exact_charge_inventory':after==expected,'protected_originals':all(protected(old).values()),
+            'ui_clean':not a.get('lua_errors') and not a.get('blocked_actions')}
+        t.receipt.update(purchase_packets=rows,purchase_checks=checks,after=after,protected_checks=protected(old));t.persist()
+        return {'status':'control_training_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'oracle':{'checks':checks,'price':price,'before':before['money'],'after':after['money']}}
+    require(click_case(t,'control.train','Purchase the selected native Control Demon lesson once.',
+        lambda c:c['name']=='ClassTrainerTrainButton',learned),'control_training_pass')
+    t.clean_panels();state,frame=t.observe('control_training_closed')
+    t.receipt.update(state=state,frame=frame,phase='control_demon_trained',completed=True,
+        qualified_scope='Normal Control Demon purchase on an explicit native level10 test fixture. '
+            'Native and modern learned93375 plus exact copper spend and inventory agreement; pet catalog/commands remain open.')
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','open'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','open','select','learn'])
     for name in ['preparation','source','output']:p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--review',type=Path);a=p.parse_args()
     if a.action=='open' and not a.review:p.error('requires a fresh visual review of the trainer')
@@ -100,7 +182,9 @@ if __name__=='__main__':
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='recon':recon(t,a.preparation,a.source)
-            else:open_trainer(t,a.preparation,a.source,a.review)
+            elif a.action=='open':open_trainer(t,a.preparation,a.source,a.review)
+            elif a.action=='select':select(t,a.preparation,a.source)
+            else:learn(t,a.preparation,a.source)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ['phase','completed','failure']}))
