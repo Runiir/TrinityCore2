@@ -58,12 +58,18 @@ original UI head on localhost port 8004. Head identity and complete token
 budgets are checked on each request; all original action options remain
 available. CUDA warms before the service announces readiness.
 
-In local tile mode, waypoint movement requests a new retained-head Laya decision
-on fresh movement samples at a target period of 100 ms. Accepted movement
+Survey and ordinary marker/telescope navigation use the existing archaeology
+head's trained fact schema. Artifact interaction and additional UI choices use
+the original head with current pickup facts and outcomes. The farm selector
+does not replace an active on-foot dig guide with travel to the site's center.
+
+In local tile mode, waypoint movement retains Laya's selected intent and checks
+fresh movement samples at a target period of 100 ms. Accepted movement
 stays held until replaced, arrived, interrupted, or its decision lease
 expires. A separate input watchdog releases held keys after 350 ms without
 an accepted decision, even if inference blocks. Turn duration follows the
-turn-rate calculation; short approach pulses account for the measured feed
+measured mouse sensitivity; a calibrated turn aims at the bearing in one relative
+delta and waits for observed yaw. Short approach pulses account for the measured feed
 age. Route emergency bounds derive from distance and travel speed.
 
 The existing marker-first rule, telescope fallback, digsite boundary margin,

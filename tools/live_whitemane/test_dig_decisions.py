@@ -36,6 +36,19 @@ def test_normal_decisions_keep_the_model_choice(monkeypatch):
     assert dig_decisions.explore('loot',{}, {}, {'consecutive_turns_without_approach':2})=='loot'
 
 
+def test_ready_marker_uses_existing_navigation_head_without_an_expert_veto(monkeypatch):
+    state={'task':'recover an archaeology find','available':True,'casting':False,
+        'artifact_visible':False,'instrument_current':False,'telescope':None,
+        'can_survey':True,'survey_ready':True,'guide_arrived':True}
+    def choose(navigation):
+        assert navigation=={key:state[key] for key in
+            ('task','available','casting','artifact_visible','instrument_current','telescope')}
+        return 'observe',{'model':'existing archaeology head'},{},{}
+    monkeypatch.setattr(dig_decisions.decisions,'choose',choose)
+    monkeypatch.setattr(dig_decisions.laya_ui,'choose',lambda *_:pytest.fail('untrained UI navigation'))
+    assert dig_decisions.choose(state)[0]=='observe'
+
+
 @pytest.mark.parametrize('probabilities',[{'turn_right':1.0},{'turn_right':float('nan'),'loot':.5}])
 def test_exploration_rejects_incomplete_or_invalid_model_probabilities(probabilities):
     response={'answers':{'action':{'probabilities':probabilities}}}

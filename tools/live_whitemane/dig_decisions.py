@@ -1,7 +1,7 @@
 """Original Laya head chooses legal digging actions with recent outcomes."""
 import math
 import random
-from . import laya_ui
+from . import laya_ui,decisions
 from .ui_choice import MODEL,REVISION
 
 
@@ -22,6 +22,17 @@ def explore(action, response, options, state):
 
 
 def choose(state):
+    if (state.get('survey_ready') and not state['artifact_visible']
+            and not (state.get('pickup') or {}).get('uncollected')):
+        # Keep the already-trained navigation schema. Pickup and new UI
+        # operations use the original head below; navigation does not ask an
+        # untrained general UI head to rediscover its existing task policy.
+        navigation={key:state[key] for key in
+            ('task','available','casting','artifact_visible','instrument_current')}
+        tool=state.get('telescope')
+        navigation['telescope']=({key:tool[key] for key in ('color','heading_relative_to_player')}
+            if tool and state['instrument_current'] else None)
+        return decisions.choose(navigation)
     options={'observe':'Wait if the client is unavailable or casting',
         'inspect':'Search the minimap if an artifact was discovered but cannot be located'}
     if state['available'] and not state['casting']:
