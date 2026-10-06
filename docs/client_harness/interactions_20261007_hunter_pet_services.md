@@ -72,3 +72,26 @@ nothing; the corrected basename invocation succeeds. All post-checkpoint reports
 are copied into UI143. New paid-control continuity guards pass17 checks before
 reentry on the changed bridge; they require the complete owned offline deployment
 chain and never replay the purchase. UI143 continues live menu and Rename work.
+
+UI143 deploys the missing native permission byte and the correct stock Wolf menu
+passes all6 catalog,3 menu and13 restoration checks. Rename uses two dialogs. The
+first capture helper incorrectly treats Accept, which opens the stock Yes/No
+confirmation, as submission. That whole failed receipt stays excluded; no Rename
+packet is sent and all13 restoration checks pass. Separate fresh image reviews
+for both stages produce one actual25-byte `Harnesswolf` request, pet number4 and
+the exact owned GUID. Native translation is absent during capture; Wolf stays
+unchanged and all13 restoration checks pass. The private capture is disarmed.
+
+The captured shape now drives a native Rename translator. It requires a current
+Hunter, released native control catalog, matching pet number/owner/summon links
+and native rename permission. It preserves the submitted ASCII name and GUID;
+the native core owns validation, persistence and one-time permission removal.
+General Rename bodies remain excluded. The one-job build a3866085fa uses
+17260488KiB available memory,65 focused protocol checks pass, and the full
+world/auth suite passes3515 tests in48.90s. Paid Control knowledge can cross
+successive verified bridge deployments without another purchase. Its first
+new test run has29 passed and1 failure because the synthetic two-change fixture
+contains two source references instead of four; the failed log is retained. The
+corrected fixture and explicit four-reference admission pass30 tests. Rename
+acceptance/preservation guards pass62 tests. Both original actors remain offline
+through the second bridge-only deployment. Live Rename acceptance is still open.
