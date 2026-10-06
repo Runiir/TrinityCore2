@@ -28,9 +28,13 @@ def created(reader,payload,diagnostics=None):
         note(f'update_header_count_{count}_flags_{flags}');return None
     if r.u32()!=len(payload)-r.offset:raise ValueError('visible find update size mismatch')
     kind,guid=r.byte(),r.guid()
-    if kind not in (1,2) or r.byte()!=8:return None
+    if kind not in (1,2):return None
+    object_type=r.byte()
+    if object_type!=8:
+        note(f'create_object_type_{object_type}');return None
     entry=(guid[1]>>6)&0x7fffff
-    if entry not in FINDS:return None
+    if entry not in FINDS:
+        note(f'other_gameobject_entry_{entry}');return None
     note(f'known_find_entry_{entry}')
     movement=r.take(3)
     if movement not in (b'\x82\x10\x00',b'\xc2\x10\x00'):
