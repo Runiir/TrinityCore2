@@ -31,6 +31,7 @@ def test_only_own_find_spawn_in_own_survey_window_is_accepted():
     reader=SimpleNamespace(Reader=Cursor);window=SimpleNamespace(active=True,player=(1,2),requested=100)
     record=survey_find.owned(reader,window,'server_to_client',0x4B0000,packet(),101)
     assert record['name']=='Fossil Archaeology Find' and record['north']==10 and 'owner' not in record
+    assert record['height_yards']==30
     assert survey_find.owned(reader,window,'server_to_client',0x4B0000,packet((9,10)),101) is None
     assert survey_find.owned(reader,window,'server_to_client',0x4B0000,packet(),109) is None
     assert survey_find.owned(reader,window,'client_to_server',0x4B0000,packet(),101) is None

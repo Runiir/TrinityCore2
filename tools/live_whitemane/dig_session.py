@@ -17,6 +17,15 @@ from .smooth_move import walk
 from .boundaries import constrain
 from . import interact,pending_find,minimap_finds,farm_graph,dig_context,dig_feedback,pickup_intent
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
+# Upgrade the catalog once when an older running controller loads this module
+# at an action boundary. Its SourceUpdates instance resolves the new globals.
+from . import controller_updates
+if 'swim_vertical' not in controller_updates.COMPONENTS:
+    import importlib
+    from . import world_facts
+    importlib.reload(controller_updates)
+    importlib.reload(world_facts)
+    importlib.reload(farm_graph)
 COLORS = {206590: 'red', 206589: 'yellow', 204272: 'green'}
 
 
@@ -256,8 +265,8 @@ def run(args):
                     if value:
                         value['approach']=None;value['out_of_range']=False
                         runtime.write(runtime.ROOT/'run/pending_find.json',value)
-                elif guide['color']=='red' or (guide['distance_yards']>20 and
-                        (guide['color']=='yellow' or guide['source']=='GatherMate marker')):
+                elif not a.get('swimming') and (guide['color']=='red' or (guide['distance_yards']>20 and
+                        (guide['color']=='yellow' or guide['source']=='GatherMate marker'))):
                     arrow={'endpoint':guide['world'],'source':guide['source'],'site_id':guide['boundary_site_id']}
                     step['travel_mode']='red_flight'
                     step['arrow']=arrow
@@ -282,6 +291,12 @@ def run(args):
                 if guide['source']=='Survey telescope' and guide['color']=='green':
                     session['last_green_endpoint']={'world':guide['world']}
                     session.pop('telescope_target',None)
+            elif action in ('swim_up','swim_down'):
+                from .swim_vertical import move
+                step['water_depth_adjustment']=move(folder,action,guide,before)
+                step['outcome']=step['water_depth_adjustment']['outcome']
+                step['inputs']=[]
+                session['walked_since_survey']=True
             elif action in ('loot','mouseover_interact'):
                 if auto_loot:
                     if not fresh['archaeology']['loot_open']:
@@ -320,6 +335,9 @@ def run(args):
             found=pending_find.gained(pending_find.fragments(before),after)
             step.update(after=after,walked_yards=walked,confirmed_looted_find=found,
                         finished_at=time.time(),completed=True)
+            old_height=(before.get('owned_pose') or {}).get('height_yards')
+            new_height=(after.get('owned_pose') or {}).get('height_yards')
+            step['vertical_yards']=abs(new_height-old_height) if old_height is not None and new_height is not None else 0
             if not healthy(after): raise RuntimeError('character became unavailable after input')
             if action=='survey' and after['archaeology']['successful_surveys']<=a['successful_surveys']:
                 raise RuntimeError('Mouse Button 4 did not produce a successful Survey')
@@ -374,7 +392,7 @@ def run(args):
                 raise RuntimeError('turn unexpectedly moved the character')
             turned=abs((after['movement']['facing_radians']-m['facing_radians']+math.pi)%math.tau-math.pi)>.05
             progress.decision_outcome(action=action,position=(round(a['world']['north'],1),round(a['world']['west'],1)),
-                                      progress=found or walked>.25 or turned)
+                                      progress=found or walked>.25 or step['vertical_yards']>.25 or turned)
             session['progress']=asdict(progress)
             if graph:farm_graph.transition(graph,'observe',after,pending=pending_find.load(after))
             runtime.write(path,session)

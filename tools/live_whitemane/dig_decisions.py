@@ -29,7 +29,11 @@ def choose(state):
     pickup=state.get('pickup') or {}
     named_pickup=(state['artifact_visible'] and pickup.get('uncollected')
         and pickup.get('interaction_in_range') is not False)
-    if (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
+    vertical=state.get('artifact_height_error_yards')
+    adjust_depth=state.get('swimming') and pickup.get('uncollected') and (
+        vertical is not None and abs(vertical)>.5 or
+        pickup.get('interaction_in_range') is False and state.get('guide_arrived'))
+    if not adjust_depth and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
             and not state['artifact_visible'] and not pickup.get('uncollected'))):
         # Keep the already-trained navigation schema. Pickup and new UI
         # operations use the original head below; navigation does not ask an
@@ -61,6 +65,10 @@ def choose(state):
         if state.get('telescope') and not state.get('guide_arrived'):
             options.update(forward_short='Approach if the current marker, telescope or artifact has not been reached',
                 forward_long='Fly toward the current guide if it is red or far; otherwise approach it on foot')
+        if state.get('swimming'):
+            options['swim_up']='Swim upward toward the artifact depth or to test a higher interaction position'
+            options['swim_down']='Swim downward toward the artifact depth or to test a lower interaction position'
+            if 'forward_long' in options:options['forward_long']='Swim toward the current recorded marker or telescope guide'
     context=state
     instructions=(
         'Collect discovered finds before more Survey or travel. A missed tooltip means locate the same find again. '
@@ -75,16 +83,20 @@ def choose(state):
         context={k:state.get(k) for k in ('available','casting','named_artifact',
             'mouseover_artifact','pickup_activity','guide_arrived')}
         context.update(in_range=False,distance_yards=state['telescope'].get('distance_yards'),
+            swimming=state.get('swimming'),artifact_height_error_yards=vertical,
             facing_target=state['telescope'].get('heading_relative_to_player'),
             camera_aligned=state.get('camera_recently_aligned'),
             ground_visible=state.get('ground_view_recently_adjusted'))
         instructions=('Choose the next action to collect this artifact. If out of range, move closer. '
-            'If close enough, interact. Camera movement alone cannot collect it.')
+            'If close enough, interact. When swimming, a negative artifact_height_error_yards means swim down; '
+            'positive means swim up. If horizontal distance is already small but depth is unknown, '
+            'test a small depth change and recheck interaction. Camera movement alone cannot collect it.')
         descriptions={'observe':'Wait while casting or unavailable',
             'inspect':'Locate an artifact whose position is unknown',
             'camera_forward':'Align the camera with the character','camera_ground':'Look down at the ground',
             'loot':'Interact with the named artifact','mouseover_interact':'Interact with the artifact under the mouse',
             'forward_short':'Walk closer to the artifact','forward_long':'Move toward the destination'}
+        descriptions.update(swim_up='Swim upward toward the artifact depth',swim_down='Swim downward toward the artifact depth')
         options={key:descriptions[key] for key in options}
     action,request,response=laya_ui.choose(context,instructions,options)
     action=explore(action,response,options,state)

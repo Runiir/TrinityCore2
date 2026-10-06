@@ -53,7 +53,8 @@ def created(reader,payload,diagnostics=None):
     fields.take(28);effects=fields.u32()
     if effects>32:raise ValueError('visible find effect bound')
     fields.take(effects*4);owner=fields.guid()
-    return {'entry':entry,'name':FINDS[entry],'instance':instance,'north':north,'west':west,'owner':owner}
+    return {'entry':entry,'name':FINDS[entry],'instance':instance,'north':north,'west':west,
+        'height_yards':height,'owner':owner}
 
 
 def owned(reader,window,direction,opcode,payload,stamp,diagnostics=None):
@@ -97,4 +98,8 @@ def attach(row,now):
 
 def in_range(row):
     find=row.get('visible_find')
-    return bool(find and find['distance_yards']<=.5)
+    if not find or find['distance_yards']>.5:return False
+    height=find.get('height_yards');pose=row.get('owned_pose') or {}
+    if row['archaeology'].get('swimming') and height is not None and pose.get('height_yards') is not None:
+        return abs(height-pose['height_yards'])<=.5
+    return True

@@ -67,11 +67,11 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     raise RuntimeError('terrain falling interrupted the continuous approach')
                 if ((runtime.ROOT/'run/stop_dig').exists() or not m['in_world'] or m['dead']
                     or m['in_combat'] or m['on_taxi'] or a['casting'] or m['health_percent']<=0
-                    or not world or world['instance']!=target['instance'] or a.get('swimming')):
+                    or not world or world['instance']!=target['instance']):
                     raise RuntimeError('character or owned feed unavailable during continuous approach')
                 if site_id is not None:check_point(site_id,world)
                 if a['flying']!=flying:
-                    if flying and a['mounted'] and a['grounded']:raise GroundContact(row)
+                    if flying and (a['grounded'] or a.get('swimming')):raise GroundContact(row)
                     raise RuntimeError('unexpected movement mode during continuous approach')
                 if sticky.interrupted:raise RuntimeError(sticky.interrupted)
                 # Rendering can be slower than the local control tick. An
@@ -101,7 +101,8 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 if distance>(1500 if flying and site_id is None else 750):
                     raise RuntimeError('waypoint exceeds its bounded route range')
                 speeds=(row.get('farm_ui') or {}).get('move_speeds') or {}
-                speed=m['speed'] if m['speed']>.5 else (speeds.get('flight' if flying else 'run') or (32 if flying else 7))
+                swimming=bool(a.get('swimming'))
+                speed=m['speed'] if m['speed']>.5 else (speeds.get('swim' if swimming else 'flight' if flying else 'run') or (5 if swimming else 32 if flying else 7))
                 if deadline is None:deadline=cycle+10+3*distance/speed
                 if cycle>deadline:raise RuntimeError('continuous waypoint exceeded its calculated emergency bound')
                 error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
@@ -133,6 +134,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                     'channel_ages':row['channel_ages'],'model_decision_reused':not new_decision or retained,
                     'decision_source':'selected_movement_intent' if retained else 'waypoint_feedback',
                     'guidance_source':(guidance or {}).get('source','selected waypoint')}
+                receipt['swimming']=swimming
                 receipts.append(receipt)
                 if new_decision:
                     with (folder/'movement_decisions.jsonl').open('a') as audit:audit.write(json.dumps(receipt)+'\n')
@@ -151,7 +153,7 @@ def walk(folder,target,*,flying=False,site_id=None,tolerance=None,approaching_fi
                 pixels,receipt['camera_steering']=steering.update(m['facing_radians'],m['client_uptime_ms'],
                     error,distance,tolerance)
                 vertical=0;pitch_ready=True
-                if flying:
+                if flying or swimming:
                     pose=row.get('owned_pose');pitch_ready=False
                     if pose and pose.get('pitch_radians') is not None:
                         pitch=pose['pitch_radians']

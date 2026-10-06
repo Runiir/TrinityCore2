@@ -22,7 +22,8 @@ def model_state(row, guide, visible_find, pending, steps):
         guide_source=guide['source'] if guide else None, pending_pickup=bool(pending),
         named_artifact=ui.get('soft_interact', {}).get('name') or ui.get('tooltip'),
         pickup_range='out_of_range' if pending and pending['out_of_range'] else 'unknown')
-    state.update({key:row['archaeology'].get(key) for key in ('mounted','flying','falling')})
+    state.update({key:row['archaeology'].get(key) for key in ('mounted','flying','falling','swimming')})
+    state['height_yards']=(row.get('owned_pose') or {}).get('height_yards')
     state['Survey_dismounts_on_ground']=bool(row['archaeology']['mounted'] and
         not row['archaeology'].get('flying') and not row['archaeology'].get('falling'))
     if pending:
@@ -38,10 +39,11 @@ def model_state(row, guide, visible_find, pending, steps):
         state['guide_position_is_estimate'] = guide['source'] != 'visible owned archaeology find'
         state['guide_arrived'] = guide['arrived']
         state['recorded_marker_matches'] = guide.get('recorded_marker_matches')
+        state['artifact_height_error_yards']=guide.get('height_error_yards')
         state['survey_range'] = ui.get('survey_guidance')
     recent = []
     for step in steps[-3:]:
-        result = {'action': step['action'], 'moved_yards': round(step.get('walked_yards', 0), 2),
+        result = {'action': step['action'], 'moved_yards': round(max(step.get('walked_yards', 0),step.get('vertical_yards',0)), 2),
                   'pickup_confirmed': bool(step.get('confirmed_looted_find'))}
         if step.get('guide') and step.get('after'):
             before = bearing_error(step['before'], step['guide'])
@@ -63,13 +65,13 @@ def model_state(row, guide, visible_find, pending, steps):
     turns = 0
     for step in reversed(steps):
         if (not step.get('completed') or not step['action'].startswith('turn_')
-                or step.get('walked_yards', 0) > .25 or step.get('confirmed_looted_find')):
+                or max(step.get('walked_yards', 0),step.get('vertical_yards',0)) > .25 or step.get('confirmed_looted_find')):
             break
         turns += 1
     state['consecutive_turns_without_approach'] = turns
     stalled = 0
     for step in reversed(steps):
-        if (not (step.get('completed') or step.get('failure')) or step.get('walked_yards', 0) > .25
+        if (not (step.get('completed') or step.get('failure')) or max(step.get('walked_yards', 0),step.get('vertical_yards',0)) > .25
                 or step.get('confirmed_looted_find')):
             break
         stalled += 1

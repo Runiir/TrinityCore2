@@ -59,6 +59,8 @@ RETRYABLE=(
     'camera view interrupted by player state',
     'minimap tooltip observation did not follow the cursor',
     'terrain falling interrupted the continuous approach',
+    'unexpected movement mode during continuous approach',
+    'swimming depth adjustment',
     'no matching public tooltip in bounded interaction search',
     'artifact tooltip observation did not follow the cursor',
     'named artifact mouseover is unavailable',

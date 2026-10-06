@@ -21,7 +21,7 @@ def pending(row):
 def reduce(row,latch=None):
     m,a,ui=row['movement'],row['archaeology'],row.get('farm_ui') or {}
     pickup=pending_find.facts(row,latch)
-    facts={key:a.get(key) for key in ('mounted','flying','falling','casting','loot_open','can_survey')}
+    facts={key:a.get(key) for key in ('mounted','flying','falling','swimming','casting','loot_open','can_survey')}
     facts.update(in_world=m['in_world'],combat=m['in_combat'],dead=m['dead'],
         on_taxi=m['on_taxi'],health_percent=m['health_percent'],speed=m.get('speed'),
         map_id=m['map_id'],world=a.get('world'),

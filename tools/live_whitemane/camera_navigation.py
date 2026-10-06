@@ -13,7 +13,7 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
     from tools.client_compatibility import native_input_adapter
     from .camera_input import Input
     folder.mkdir(parents=True,exist_ok=False)
-    grounded=not before['archaeology']['flying'] and not before['archaeology']['falling']
+    grounded=not before['archaeology']['flying'] and not before['archaeology']['falling'] and not before['archaeology'].get('swimming')
     view=None
     if grounded and (ground_view or target is None or reset_view):
         preset=4 if ground_view else 2

@@ -42,6 +42,21 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             target=world;remaining=0;height_plan=None
             reobserve_ground=False
         if combat_landing and remaining>6:raise RuntimeError('combat landing drifted from its current-position target')
+        if a.get('swimming') and not combat_landing:
+            step['swimming_mode_handoff']={'observed_at':row['observed_at'],'world':world,
+                'flying':False,'can_survey':a.get('can_survey')}
+            if a.get('can_survey'):return receipts
+            from . import laya_ui
+            action,request,response=laya_ui.choose({'task':'Reach the current route destination',
+                'swimming':True,'remaining_yards':remaining,'combat':m['in_combat']},
+                'Swim toward this destination through the water.',
+                {'forward_long':'Swim toward the current destination','wait':'Wait here'})
+            step['water_decision']={'choice':action,'request':request,'response':response}
+            if action=='wait':return receipts
+            step['water_approach']=walk(folder,target,flying=False,tolerance=arrival_tolerance,
+                guidance={'source':'current travel destination through water'},
+                approved_intent=(action,{'model':laya_ui.MODEL,'revision':laya_ui.REVISION},request,response))
+            return receipts
         if (not combat_landing and a.get('can_survey') and a.get('mounted')
                 and not a['flying'] and not a['falling'] and not m['in_combat']
                 and remaining<=arrival_tolerance and not pending_find.load(row)):

@@ -192,8 +192,12 @@ def out_of_range(row,session):
     value.update(out_of_range=True,attempts=value['attempts']+1)
     world=row['archaeology']['world']
     approach=row.get('visible_find') or value.get('approach')
+    height=(approach or {}).get('height_yards',(approach or {}).get('world',{}).get('height_yards'))
+    own_height=(row.get('owned_pose') or {}).get('height_yards')
+    different_depth=(row['archaeology'].get('swimming') and height is not None and own_height is not None
+        and abs(height-own_height)>.5)
     if (approach and approach.get('source')=='owned_authenticated_visible_find_create_after_own_survey'
-            and math.hypot(approach['world']['north']-world['north'],approach['world']['west']-world['west'])>.2):
+            and (different_depth or math.hypot(approach['world']['north']-world['north'],approach['world']['west']-world['west'])>.2)):
         value['approach']=approach;session['pickup_approach']=approach
         runtime.write(runtime.ROOT/'run/pending_find.json',value)
         session.update(pending_find=value,reapproach_find=True,walked_since_survey=True)

@@ -9,7 +9,8 @@ from . import runtime,action_queue,pending_find
 
 COMPONENTS=('guide','camera_steering','camera_navigation','fast_waypoint','smooth_move',
     'flight','combat_target','combat','dig_context','dig_decisions','pickup_intent',
-    'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find')
+    'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find',
+    'world_facts','farm_graph','swim_vertical','clearance','terrain_context')
 
 
 class SourceUpdates:

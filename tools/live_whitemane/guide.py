@@ -56,16 +56,22 @@ def select(row, session, tool):
     find=row.get('visible_find')
     approach=find or session.get('pickup_approach')
     if approach and session.get('reapproach_find'):
-        endpoint=approach['world']
+        endpoint=dict(approach['world'])
+        height=approach.get('height_yards',endpoint.get('height_yards'))
+        if height is not None:endpoint['height_yards']=height
         distance=math.hypot(endpoint['north']-world['north'],endpoint['west']-world['west'])
         if endpoint['instance']!=world['instance'] or distance>40:
             raise RuntimeError('pickup approach is outside its observed local range')
         heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
         error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi
         tolerance=.1 if approach.get('source')=='named find forward range approach' else .5
+        pose=row.get('owned_pose') or {}
+        vertical=(height-pose['height_yards'] if row['archaeology'].get('swimming') and
+            height is not None and pose.get('height_yards') is not None else None)
         return {'source':'visible owned archaeology find' if find else approach.get('source','last green Survey endpoint'),
             'world':endpoint,'color':'green',
-            'distance_yards':distance,'arrived':distance<=tolerance,'arrival_tolerance_yards':tolerance,
+            'distance_yards':distance,'height_error_yards':vertical,
+            'arrived':distance<=tolerance and (vertical is None or abs(vertical)<=.5),'arrival_tolerance_yards':tolerance,
             'heading_relative_to_player':'aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'},error
     visited=session.setdefault('visited_marker_ids',[])
     target=session.get('marker_target')
