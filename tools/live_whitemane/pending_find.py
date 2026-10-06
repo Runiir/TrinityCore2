@@ -94,7 +94,7 @@ def update(row,session):
         value=latch(row,site_id=session.get('site_id'),approach=approach,source='public visible archaeology find')
     if value:
         if 'tooltip_search_misses' not in value and any('action' in s for s in session.get('steps',[])):
-            value['tooltip_search_misses']=sum('no matching public tooltip' in s.get('failure','')
+            value['tooltip_search_misses']=sum('no matching public tooltip' in (s.get('failure') or '')
                 and s.get('started_at',0)>=value['observed_at'] for s in session['steps'])
         if named or row.get('visible_find') or confirmed or row['archaeology']['loot_open']:
             value['discovery_confirmed']=True

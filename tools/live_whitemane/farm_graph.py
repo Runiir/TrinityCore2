@@ -11,7 +11,8 @@ from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 CONFIG=runtime.REPO/'experiments/configs/client_harness/whitemane_farm_graph_v1.json'
 NODES={'dig':'observe','minimap':'scan_minimap','jar':'open_jar','recipe':'recipe_found',
     'turn_left':'approach','turn_right':'approach','forward_short':'approach','forward_long':'approach',
-    'loot':'gather','mouseover_interact':'gather','inspect':'scan_minimap','camera_forward':'observe'}
+    'loot':'gather','mouseover_interact':'gather','inspect':'scan_minimap',
+    'camera_forward':'observe','camera_ground':'observe'}
 
 
 def guard(node,row,pending):
