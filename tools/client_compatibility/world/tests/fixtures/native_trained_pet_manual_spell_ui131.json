@@ -264,5 +264,242 @@
       "time": 1791298738.0754063,
       "event": "pet_action_translation_rejected"
     }
+  },
+  "baseline_public_probe": {
+    "actions": [
+      {
+        "active": false,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton1",
+          "checked": false,
+          "enabled": true,
+          "visible": true,
+          "x": 11887,
+          "y": 59561
+        },
+        "is_token": true,
+        "name": "PET_ACTION_ATTACK",
+        "slot": 1,
+        "texture": "PET_ATTACK_TEXTURE"
+      },
+      {
+        "active": true,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton2",
+          "checked": true,
+          "enabled": true,
+          "visible": true,
+          "x": 13711,
+          "y": 59561
+        },
+        "is_token": true,
+        "name": "PET_ACTION_FOLLOW",
+        "slot": 2,
+        "texture": "PET_FOLLOW_TEXTURE"
+      },
+      {
+        "active": false,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton3",
+          "checked": false,
+          "enabled": true,
+          "visible": true,
+          "x": 15535,
+          "y": 59561
+        },
+        "is_token": true,
+        "name": "PET_ACTION_MOVE_TO",
+        "slot": 3,
+        "texture": "PET_MOVE_TO_TEXTURE"
+      },
+      {
+        "active": false,
+        "autocast_allowed": true,
+        "autocast_enabled": true,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton4",
+          "checked": false,
+          "enabled": true,
+          "visible": true,
+          "x": 17359,
+          "y": 59561
+        },
+        "is_token": false,
+        "name": "Firebolt",
+        "slot": 4,
+        "spell_id": 3110,
+        "texture": 135809
+      },
+      {
+        "active": false,
+        "autocast_allowed": true,
+        "autocast_enabled": true,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton5",
+          "checked": false,
+          "enabled": true,
+          "visible": true,
+          "x": 19183,
+          "y": 59561
+        },
+        "is_token": false,
+        "name": "Blood Pact",
+        "slot": 5,
+        "spell_id": 6307,
+        "texture": 136124
+      },
+      {
+        "active": false,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton6",
+          "checked": false,
+          "enabled": true,
+          "visible": false,
+          "x": 21007,
+          "y": 59561
+        },
+        "is_token": false,
+        "slot": 6
+      },
+      {
+        "active": false,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton7",
+          "checked": false,
+          "enabled": true,
+          "visible": false,
+          "x": 22783,
+          "y": 59561
+        },
+        "is_token": false,
+        "slot": 7
+      },
+      {
+        "active": true,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton8",
+          "checked": true,
+          "enabled": true,
+          "visible": true,
+          "x": 24607,
+          "y": 59561
+        },
+        "is_token": true,
+        "name": "PET_MODE_ASSIST",
+        "slot": 8,
+        "texture": "PET_ASSIST_TEXTURE"
+      },
+      {
+        "active": false,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton9",
+          "checked": false,
+          "enabled": true,
+          "visible": true,
+          "x": 26431,
+          "y": 59561
+        },
+        "is_token": true,
+        "name": "PET_MODE_DEFENSIVE",
+        "slot": 9,
+        "texture": "PET_DEFENSIVE_TEXTURE"
+      },
+      {
+        "active": false,
+        "autocast_allowed": false,
+        "autocast_enabled": false,
+        "available": true,
+        "frame": {
+          "available": true,
+          "button": "PetActionButton10",
+          "checked": false,
+          "enabled": true,
+          "visible": true,
+          "x": 28255,
+          "y": 59561
+        },
+        "is_token": true,
+        "name": "PET_MODE_PASSIVE",
+        "slot": 10,
+        "texture": "PET_PASSIVE_TEXTURE"
+      }
+    ],
+    "distance_squared": {
+      "available": false
+    },
+    "interaction_ranges": [
+      {
+        "available": true,
+        "in_range": true,
+        "index": 1
+      },
+      {
+        "available": true,
+        "in_range": true,
+        "index": 2
+      },
+      {
+        "available": true,
+        "in_range": true,
+        "index": 3
+      },
+      {
+        "available": true,
+        "in_range": true,
+        "index": 4
+      }
+    ],
+    "owner_guid": "Player-1-00000005",
+    "pet_guid": "Pet-0-1-0-0-416-000000001F",
+    "pet_position": {
+      "available": false
+    },
+    "pet_speed": 0,
+    "pet_visible": true,
+    "player_position": {
+      "available": true,
+      "map": 0,
+      "x": -9470.6005859375,
+      "y": -7.3000001907349,
+      "z": 0
+    },
+    "player_speed": 0,
+    "viewport": {
+      "basis": "scaled_game_ui_screen",
+      "height": 768,
+      "width": 1365.3333740234
+    }
   }
 }

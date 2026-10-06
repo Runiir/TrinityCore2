@@ -7,7 +7,8 @@ def test_safe_pet_action_read_and_catalog_names_have_body_evidence(codec,tmp_pat
     (tmp_path/'evidence').mkdir();(tmp_path/'logs').mkdir()
     names=['CMSG_PET_ACTION','CMSG_PET_SPELL_AUTOCAST','CMSG_PET_SET_ACTION',
         'CMSG_REQUEST_PET_INFO','CMSG_QUERY_PET_NAME','CMSG_PET_NAME_QUERY',
-        'SMSG_PET_NAME_QUERY_RESPONSE','SMSG_QUERY_PET_NAME_RESPONSE','SMSG_PET_SPELLS','SMSG_PET_SPELLS_MESSAGE']
+        'SMSG_PET_NAME_QUERY_RESPONSE','SMSG_QUERY_PET_NAME_RESPONSE','SMSG_PET_SPELLS','SMSG_PET_SPELLS_MESSAGE',
+        'SMSG_AURA_UPDATE','SMSG_AURA_UPDATE_ALL']
     for name in names:result(codec,op='packet_diagnostic',root=str(tmp_path),name=name,body='0102')
     rows=[json.loads(line) for line in (tmp_path/'evidence/world_packets.jsonl').read_text().splitlines()]
     assert [r['name'] for r in rows]==names and all(r['body']=='0102' for r in rows)
@@ -19,3 +20,14 @@ def test_pet_allowlist_does_not_admit_authentication_or_unrelated_pet_services(c
         'SMSG_CONNECT_TO','SMSG_BATTLE_PET_JOURNAL','CMSG_PET_RENAME']:
         result(codec,op='packet_diagnostic',root=str(tmp_path),name=name,body='0102')
     assert not (tmp_path/'evidence/world_packets.jsonl').exists()
+
+
+def test_checkpoint_keeps_public_native_aura_outcomes_without_auth_or_rename_bodies():
+    import ast
+    from pathlib import Path
+    path=Path(__file__).parents[2]/'checkpoint_interactions.py'
+    tree=ast.parse(path.read_text())
+    allowed=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign)
+        and any(isinstance(t,ast.Name) and t.id=='SAFE_BODY_NAMES' for t in n.targets))
+    assert {'SMSG_AURA_UPDATE','SMSG_AURA_UPDATE_ALL'}<=allowed
+    assert not {'CMSG_AUTH_SESSION','SMSG_ENTER_ENCRYPTED_MODE','SMSG_CONNECT_TO','CMSG_PET_RENAME'}&allowed
