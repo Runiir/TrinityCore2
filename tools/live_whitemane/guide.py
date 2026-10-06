@@ -39,11 +39,14 @@ def select(row, session, tool):
         guide={**target,'color':color,'distance_yards':round(distance,2),'arrived':distance<=5}
     elif tool or session.get('telescope_target'):
         saved=session.get('telescope_target')
+        if saved and saved['color']=='green' and 'recorded_marker_matches' not in saved:
+            session.pop('telescope_target',None);saved=None
+            if not tool:return None,None
         if saved:
             endpoint=saved['world'];color=saved['color']
             distance=math.hypot(endpoint['north']-world['north'],endpoint['west']-world['west'])
             heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
-            tolerance=6 if saved['color']=='red' else 4 if saved['color']=='yellow' else 3
+            tolerance=6 if saved['color']=='red' else 4 if saved['color']=='yellow' else .5
             guide={**saved,'distance_yards':round(distance,2),'arrived':distance<=tolerance}
             error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi
             guide['heading_relative_to_player']='aligned' if abs(error)<=.18 else 'left' if error>0 else 'right'
@@ -58,8 +61,19 @@ def select(row, session, tool):
             heading=tool['facing_radians'];distance=3
             endpoint={'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
                       'west':world['west']+math.sin(heading)*distance}
+        public=(row.get('farm_ui') or {}).get('survey_guidance') or {}
+        candidate=(public.get('candidate_matches') is True and
+            abs(public.get('at',0)-tool['observed_at'])<=2)
+        if color=='green' and not candidate:
+            # The addon's default 40-yard line is an uncertain color range,
+            # not a measured artifact distance. Follow the user's short-step
+            # rule, then Survey again instead of crossing that whole range.
+            distance=min(distance,3)
+            endpoint={'instance':world['instance'],'north':world['north']+math.cos(heading)*distance,
+                      'west':world['west']+math.sin(heading)*distance}
         guide={'source':'Survey telescope','color':color,'distance_yards':round(distance,2),
-               'arrived':False,'world':endpoint}
+               'arrived':False,'world':endpoint,'recorded_marker_matches':candidate,
+               'distance_is_estimate':True,'arrival_tolerance_yards':.5 if color=='green' else 6 if color=='red' else 4}
         session['telescope_target']=dict(guide)
     else: return None,None
     error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi

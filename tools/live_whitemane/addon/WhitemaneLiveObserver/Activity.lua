@@ -13,6 +13,15 @@ event:SetScript('OnEvent',function(_,kind,unit,_,spell)
     elseif kind=='UNIT_SPELLCAST_SUCCEEDED' then gather.successes=gather.successes+1;gather.last_success=GetTime() end
 end)
 function WhitemaneLiveActivity()
+    local bearings=CanopicHelperDB and CanopicHelperDB.surveyBearings
+    local bearing=bearings and bearings[#bearings]
+    local guidance
+    if bearing and bearing.at and time()-bearing.at<=20 then
+        guidance={at=bearing.at,site_id=bearing.siteID,color=bearing.color,
+            candidate_matches=not not bearing.candidate,candidate_along_yards=bearing.candidateAlong,
+            range_min_yards=bearing.rangeMin,range_max_yards=bearing.rangeMax,
+            displayed_length_yards=bearing.length,minimum_capped=not not bearing.minimumCapped}
+    end
     local current,run,flight,swim=call(GetUnitSpeed,'player')
     local action,id=call(GetActionInfo,1)
     local label=action=='spell' and call(GetSpellInfo,id) or action=='macro' and call(GetMacroInfo,id)
@@ -36,5 +45,6 @@ function WhitemaneLiveActivity()
             channel=channel,spell=spell},
         gcd={starts=gcdStart or 0,duration=gcdDuration or 0,ends=(gcdStart or 0)+(gcdDuration or 0)},
         mount_binding={key='SHIFT-SPACE',action=call(GetBindingAction,'SHIFT-SPACE')},
-        camera_input={right_down=call(IsMouseButtonDown,'RightButton'),mouselooking=call(IsMouselooking)}}
+        camera_input={right_down=call(IsMouseButtonDown,'RightButton'),mouselooking=call(IsMouselooking)},
+        survey_guidance=guidance}
 end

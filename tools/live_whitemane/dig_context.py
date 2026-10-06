@@ -35,6 +35,8 @@ def model_state(row, guide, visible_find, pending, steps):
             bearing_error_degrees=bearing_error(row, guide))
         state['guide_position_is_estimate'] = guide['source'] != 'visible owned archaeology find'
         state['guide_arrived'] = guide['arrived']
+        state['recorded_marker_matches'] = guide.get('recorded_marker_matches')
+        state['survey_range'] = ui.get('survey_guidance')
     recent = []
     for step in steps[-3:]:
         result = {'action': step['action'], 'moved_yards': round(step.get('walked_yards', 0), 2),

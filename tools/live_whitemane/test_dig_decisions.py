@@ -95,3 +95,20 @@ def test_pickup_guide_exposes_its_actual_arrival_tolerance():
     session={'reapproach_find':True,'pickup_approach':{'world':{'instance':1,'north':.93,'west':0}}}
     target,_=guide.select(before,session,None)
     assert not target['arrived'] and target['arrival_tolerance_yards']==.5
+
+
+@pytest.mark.parametrize('candidate,length',[(False,3),(True,17)])
+def test_green_fallback_is_a_short_step_and_is_not_arrived_before_moving(candidate,length):
+    r=row();r['movement']['facing_radians']=0
+    r['archaeology']['world']={'instance':1,'north':0,'west':0}
+    r['archaeology'].update(visible_markers=[],arrow={'boundary_verified':True,'observed_at':100,
+        'endpoint':{'instance':1,'north':17 if candidate else 40,'west':0}})
+    r['farm_ui']['survey_guidance']={'at':100,'candidate_matches':candidate}
+    tool={'entry':204272,'observed_at':100,'facing_radians':0}
+    session={'marker_fallback':True}
+    first,_=guide.select(r,session,tool)
+    assert first['distance_yards']==length and not first['arrived']
+    second,_=guide.select(r,session,None)
+    assert not second['arrived']
+    r['archaeology']['world']['north']=length-.3
+    assert guide.select(r,session,None)[0]['arrived']
