@@ -221,6 +221,21 @@ Task<> Session::gameplay(std::string name, Bytes body)
             co_return;
         }
     }
+    if(name=="SMSG_ATTACKER_STATE_UPDATE")
+    {
+        // An uncaptured optional hit layout is a diagnostic gap. Keep the
+        // gameplay connection healthy while retaining the exact native packet.
+        try
+        {
+            if(auto hit=Protocol::combat_response(state,name,body))send(*hit);
+        }
+        catch(std::exception const &error)
+        {
+            service.events.event("native_melee_result_rejected",{{"session",id},
+                {"name",name},{"error",std::string(error.what()).substr(0,512)}});
+        }
+        co_return;
+    }
     if ((reply = Protocol::combat_response(state, name, body)))
     {
         if(reply->first=="SMSG_ATTACK_SWING_ERROR")this->send(*reply);
