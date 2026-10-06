@@ -142,6 +142,23 @@ def test_interrupted_digsite_landing_surveys_on_ground_instead_of_remounting(mon
     assert not step['grounded_digsite_reobserve']['destination_arrival_confirmed']
 
 
+def test_digsite_landing_drift_does_not_start_another_takeoff(monkeypatch,tmp_path):
+    air=observation(.49,flying=True);ground=observation(1.2);foot=observation(1.2,mounted=False)
+    for r in (air,ground,foot):r['archaeology'].update(site_id=315,can_survey=True)
+    monkeypatch.setattr(flight.runtime,'ROOT',tmp_path)
+    fresh_observer(monkeypatch,iter([air,ground,ground,ground,foot,foot]))
+    monkeypatch.setattr(flight,'choose',lambda state,which,physical_state:
+        (travel_policy.label(physical_state),{},state,{}))
+    monkeypatch.setattr(flight.inputs,'execute',lambda *args:{'arguments':args[-1]})
+    monkeypatch.setattr(flight,'descend',lambda *_,**__:[])
+    monkeypatch.setattr(flight.clearance,'plan',lambda *_ ,**__:pytest.fail('do not plan another ascent after landing'))
+    step={}
+    flight.fly(tmp_path,air,{'endpoint':{'instance':1,'north':0,'west':0},
+        'site_id':315,'arrival_tolerance_yards':.5},step)
+    assert [p['action'] for p in step['travel_decisions']]==['land','dismount','arrived']
+    assert step['grounded_digsite_reobserve']['old_endpoint_distance_yards']==1.2
+
+
 @pytest.mark.parametrize('digsite_descent',[False,True])
 def test_grounded_descent_accepts_two_fresh_facts_past_estimated_endpoint(monkeypatch,tmp_path,digsite_descent):
     from . import smooth_move

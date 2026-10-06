@@ -77,7 +77,7 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
         tolerance=dig_guide.get('arrival_tolerance_yards',
             6 if dig_guide['color']=='red' else 4 if dig_guide['color']=='yellow' else .5)
         actions['flight']=('Fly to the current dig guide if its ground approach is blocked',
-            {**dig_guide['world'],'arrival_tolerance_yards':tolerance})
+            {**dig_guide['world'],'arrival_tolerance_yards':tolerance,'site_id':a.get('site_id')})
     return actions
 
 

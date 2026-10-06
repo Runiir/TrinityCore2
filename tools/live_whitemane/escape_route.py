@@ -13,11 +13,18 @@ def candidates(row,target):
         direction=heading+offset
         point={'instance':world['instance'],'north':world['north']+4*math.cos(direction),
             'west':world['west']+4*math.sin(direction)}
+        site_id=row['archaeology'].get('site_id') if row['archaeology'].get('can_survey') else None
+        if site_id is not None:
+            from .boundaries import constrain
+            bounded=constrain(row,{'world':point,'source':'short obstacle recovery',
+                'color':'green','distance_yards':4,'arrived':False,'arrival_tolerance_yards':.5})
+            point=bounded['world']
         clear=None
         if pose:
             start=[world['north'],world['west'],pose['height_yards']]
             end=[point['north'],point['west'],pose['height_yards']]
             clear=model_collision.clear_body_segment(world['instance'],start,end)
-        result[name]={'target':point,'distance_yards':4,'reference_collision_clear':clear,
+        result[name]={'target':point,'distance_yards':math.hypot(point['north']-world['north'],point['west']-world['west']),
+            'reference_collision_clear':clear,
             'reference_matches_live_assets':False}
     return result

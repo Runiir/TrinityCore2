@@ -59,13 +59,14 @@ def test_existing_digsite_is_finished_before_next_travel_and_recipe_stops_input(
 
 def test_active_digsite_navigation_is_not_replaced_with_a_flight_to_its_center():
     from . import farm_policy
-    r=row();r['archaeology'].update(can_survey=True,falling=False)
+    r=row();r['archaeology'].update(can_survey=True,site_id=315,falling=False)
     r['farm_ui']['route'].update(kind='dig',site={'point':{'instance':1,'north':30,'west':0}})
     guide={'arrived':False,'color':'green','world':{'instance':1,'north':5,'west':0}}
     actions=farm_policy.legal_actions(r,SolveBatches(),guide)
     assert 'dig' in actions and 'flight' not in actions
     flight=farm_policy.legal_actions(r,SolveBatches(),guide,ground_approach_blocked=True)['flight'][1]
     assert flight['north']==5 and flight['arrival_tolerance_yards']==.5
+    assert flight['site_id']==315
     r['archaeology']['can_survey']=False
     assert 'flight' in farm_policy.legal_actions(r,SolveBatches())
 
@@ -170,3 +171,54 @@ def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tm
     session=json.loads((tmp_path/'farm/loop.json').read_text())
     assert session['resumed_at']>0
     assert session['steps'][-1]['recovery']['outcome']=='reobserve_with_Laya_on_next_loop'
+
+
+@pytest.mark.parametrize('in_combat',[False,True])
+def test_dig_intent_survives_a_recoverable_stall_or_combat(monkeypatch,tmp_path,in_combat):
+    from . import observed_state
+    from .intent_queue import IntentQueue
+    monkeypatch.setattr(farm_loop.runtime,'ROOT',tmp_path);(tmp_path/'run').mkdir()
+    r=row();r['archaeology'].update(can_survey=True,site_id=315,loot_open=False,falling=False)
+    monkeypatch.setattr(farm_loop.runtime,'owned_process',lambda:r['runtime'])
+    monkeypatch.setattr(farm_loop.resources,'enable',lambda:None)
+    monkeypatch.setattr(farm_loop.resources,'check',lambda **_:None)
+    monkeypatch.setattr(farm_loop.resources,'phase_boundary',lambda *_:None)
+    monkeypatch.setattr(observed_state,'ensure',lambda _:None)
+    monkeypatch.setattr(farm_loop.farm_graph,'transition',lambda *_,**__:None)
+    def choose(row,batches,session):
+        IntentQueue(session).offer('dig',None,{'choice':'dig'},row)
+        return 'dig',None,{}
+    monkeypatch.setattr(farm_loop.farm_policy,'choose',choose)
+    monkeypatch.setattr(farm_loop.dig_session,'run',lambda *_:{'finished':False,
+        'failure':'continuous waypoint movement is blocked'})
+    monkeypatch.setattr(farm_loop.recovery,'run',lambda *_:{'completed':True})
+    def observe(path):
+        value=copy.deepcopy(r)
+        if path.name!='before.png':value['movement']['in_combat']=in_combat
+        if path.name=='after.png':(tmp_path/'run/stop_dig').touch()
+        return value
+    monkeypatch.setattr(farm_loop,'observe',observe)
+    result=farm_loop.run(tmp_path/'farm')
+    assert result['status']=='supervisor_stopped' and result['failure'] is None
+    session=json.loads((tmp_path/'farm/loop.json').read_text())
+    assert session['accepted_activity_queue'][0]['action']=='dig'
+    assert IntentQueue(session).retained(r,{'dig':('',None)})[0]=='dig'
+
+
+@pytest.mark.parametrize('blocked_fact',['flying','other_site','pending',None])
+def test_interrupted_root_landing_hands_back_to_survey_only_on_current_digsite_ground(monkeypatch,tmp_path,blocked_fact):
+    monkeypatch.setattr(farm_loop.pending_find,'load',lambda _:{'site_id':315} if blocked_fact=='pending' else None)
+    r=row();r['archaeology'].update(can_survey=True,site_id=315,falling=False)
+    if blocked_fact=='flying':r['archaeology']['flying']=True
+    if blocked_fact=='other_site':r['archaeology']['site_id']=321
+    path=tmp_path/'session.json';original={'telescope_target':{},'last_green_endpoint':{},'marker_target':{}}
+    path.write_text(json.dumps(original))
+    step={'phase':'flight','completed':False,'target':{'instance':1,'north':1,'west':0},
+        'travel_decisions':[{'action':'land'}]}
+    session={'steps':[step],'dig_site':315,'dig_output':str(tmp_path)}
+    farm_loop.resume_grounded_flight(session,r)
+    dig=json.loads(path.read_text())
+    if blocked_fact:assert dig==original and 'grounded_digsite_reobserve' not in step
+    else:
+        assert dig=={'marker_fallback':True,'marker_target':None,'walked_since_survey':True}
+        assert not step['grounded_digsite_reobserve']['destination_arrival_confirmed']

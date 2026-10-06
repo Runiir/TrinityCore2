@@ -19,6 +19,29 @@ def distance(world,target):
     return math.inf if not world or world['instance']!=target['instance'] else math.hypot(world['north']-target['north'],world['west']-target['west'])
 
 
+def return_to_survey(session,step):
+    if not step.get('grounded_digsite_reobserve') or not session.get('dig_output'):return
+    path=Path(session['dig_output'])/'session.json'
+    dig=json.loads(path.read_text())
+    dig.update(marker_fallback=True,marker_target=None,walked_since_survey=True)
+    dig.pop('telescope_target',None);dig.pop('last_green_endpoint',None)
+    runtime.write(path,dig)
+
+
+def resume_grounded_flight(session,row):
+    """Recover an interrupted landing from present ground and digsite facts."""
+    step=(session.get('steps') or [{}])[-1];a=row['archaeology']
+    phases=step.get('travel_decisions') or []
+    if (step.get('phase')!='flight' or step.get('completed') or not phases
+            or phases[-1].get('action')!='land' or not a.get('can_survey')
+            or a.get('site_id')!=session.get('dig_site') or a.get('flying') or a.get('falling')
+            or pending_find.load(row)):return
+    step['grounded_digsite_reobserve']={'world':a['world'],'old_endpoint':step['target'],
+        'old_endpoint_distance_yards':distance(a['world'],step['target']),
+        'destination_arrival_confirmed':False,'resumed_from_current_ground_facts':True}
+    return_to_survey(session,step)
+
+
 def phase(row,batches,via_tolbarad=False,pending=None):
     """Historical selector for replay comparison; live selection uses Laya."""
     m,a,ui=row['movement'],row['archaeology'],row.get('farm_ui')
@@ -112,6 +135,7 @@ def run(output,stop_on='recipe'):
                 row=sample(folder/'before.png')
                 pending=pending_find.update(row,{})
                 row['pending_find']=pending
+                resume_grounded_flight(session,row)
                 action,target,decision=farm_policy.choose(row,batches,session)
                 session['next_step_index']=index+1
                 step={'index':index,'phase':action,'target':target,'decision':decision,'before':row,'started_at':time.time(),'completed':False}
@@ -152,7 +176,9 @@ def run(output,stop_on='recipe'):
                         step['graph_path']=str(graph)
                         step['inputs']=fly(folder,row,{
                             'endpoint':target,'arrival_tolerance_yards':target.get('arrival_tolerance_yards',6),
+                            'site_id':target.get('site_id'),
                             'source':'public Canopic travel route'},step)
+                        return_to_survey(session,step)
                         step['orientation_source']='camera steering within the retained Laya flight intent'
                     elif action=='dig':
                         site=pending['site_id'] if pending else row['archaeology']['site_id']
@@ -202,8 +228,7 @@ def run(output,stop_on='recipe'):
                     session['last_progress_at']=time.time()
                 session['active_races']=sorted(batches.active_races)
                 IntentQueue(session).finish(action,retain=action=='dig' and bool(session['dig_output'])
-                    and not step.get('local_failure') and not step.get('combat_interruption')
-                    and not step.get('result',{}).get('failure') and not step.get('result',{}).get('finished'))
+                    and not step.get('result',{}).get('finished'))
                 runtime.write(path,session)
                 resources.phase_boundary(output,session)
                 print(json.dumps({'phase':action,'finds':session['looted_finds'],'sites':session['completed_sites']}),flush=True)

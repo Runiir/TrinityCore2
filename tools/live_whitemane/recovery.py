@@ -18,6 +18,7 @@ RETRYABLE=(
     'calculated ascent exceeded its emergency bound',
     'repeated terrain contact without route progress',
     'flight cruise was blocked',
+    'flight repeated phases without reaching the addon endpoint',
     'walking outcome was blocked or exceeded its bound',
     'mount input did not produce mounted state',
     'dismount input did not produce unmounted state',
@@ -80,9 +81,14 @@ def run(folder,row,step,session,graph):
             and not a['mounted'] and not a['flying'] and not m['in_combat']):
         choices['resurvey']='Discard the failed route estimate and use a fresh Survey from this position'
     alternatives={}
-    if (step['phase']=='flight' and not pending and not m['in_combat'] and not a['casting']
+    if (step['phase'] in ('flight','dig') and not pending and not m['in_combat'] and not a['casting']
             and not a['falling'] and m.get('speed',0)==0):
-        alternatives=escape_route.candidates(row,step.get('target'))
+        target=step.get('target')
+        if step['phase']=='dig' and session.get('dig_output'):
+            dig=json.loads((Path(session['dig_output'])/'session.json').read_text())
+            guide=(dig.get('steps') or [{}])[-1].get('guide') or {}
+            target=guide.get('world') or target
+        alternatives=escape_route.candidates(row,target)
         choices.update({key:'Move 4 yards '+key.removeprefix('step_')+
             ' relative to the route using forward movement and camera steering to clear the obstruction'
             for key in alternatives})
@@ -105,11 +111,12 @@ def run(folder,row,step,session,graph):
             old,new=previous.get('world'),previous.get('after_world')
             if old and new and old['instance']==new['instance']:
                 progressed=progressed or math.hypot(old['north']-new['north'],old['west']-new['west'])>.25
-        context={'task':'Escape an obstruction to resume flying',
+        context={'task':'Escape an obstruction to resume '+('digging' if step['phase']=='dig' else 'flying'),
             'ascent_blocked':bool('ascent' in step['local_failure'] and dz is not None and abs(dz)<.25),
             'position_changed_after_retries':progressed,'flying':a['flying'],'grounded':a.get('grounded'),
             'directions_clear_in_reference_geometry':{key:value['reference_collision_clear'] for key,value in alternatives.items()}}
         descriptions={'retry':'Repeat the blocked movement','wait':'Wait here','land':'Land and dismount',
+            'resurvey':'Survey again from this position',
             'step_left':'Move left around the obstruction','step_right':'Move right around the obstruction',
             'step_back':'Move back away from the obstruction','step_forward':'Move forward toward the destination'}
         choices={key:descriptions[key] for key in choices}
@@ -127,9 +134,10 @@ def run(folder,row,step,session,graph):
         result['target']=alternatives[action]['target']
         try:
             result['movement']=walk(folder,result['target'],flying=a['flying'],tolerance=.5,
+                site_id=a.get('site_id') if a.get('can_survey') else None,
                 guidance={'source':'Laya-selected short obstacle recovery'},
                 approved_intent=('cruise' if a['flying'] else 'forward_short',
-                    {'model':'Laya original UI head'},request,response))
+                    {'model':laya_ui.MODEL,'revision':laya_ui.REVISION},request,response))
         except GroundContact as contact:
             result.update(outcome='short_recovery_reached_ground',ground_contact=contact.observation)
     elif action=='resurvey':

@@ -17,3 +17,15 @@ def test_recovery_offers_short_sides_without_treating_reference_geometry_as_live
         assert math.hypot(point['target']['north'],point['target']['west'])==4
         assert point['reference_matches_live_assets'] is False
     assert len(calls)==4
+
+
+def test_short_escape_stays_inside_the_live_digsite_even_near_its_edge(monkeypatch):
+    from . import boundaries
+    from tools.client_compatibility.site_boundaries import contains
+    r=row();r['archaeology'].update(can_survey=True,site_id=315);r['movement']['facing_radians']=0
+    polygon=[[-10,-10],[2,-10],[2,10],[-10,10]]
+    monkeypatch.setattr(boundaries,'sites',lambda:{'315':{'map':1,'polygon':polygon}})
+    points=escape_route.candidates(r,{'instance':1,'north':100,'west':0})
+    assert points['step_forward']['distance_yards']<4
+    for point in points.values():
+        assert contains(polygon,[point['target']['north'],point['target']['west']])
