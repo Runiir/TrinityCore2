@@ -27,7 +27,7 @@ def run(folder,portal,*,approved_intent=None):
     runtime.write(folder/'portal.json',result)
     if action!='portal':raise RuntimeError('portal approach needs Laya portal action')
     fresh=observe(folder/'precheck.png');stationary(before,fresh)
-    result['approach']=walk(folder/'approach',target,tolerance=2,
+    result['approach']=walk(folder/'approach',target,tolerance=.4,
         guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
     row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
     names={'Portal to '+portal['destination']}

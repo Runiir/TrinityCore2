@@ -17,7 +17,7 @@ def test_portal_retains_its_selected_movement_intent_and_confirms_arrival(monkey
     walks=[]
     def walk(folder,target,**kwargs):
         walks.append(target)
-        assert kwargs['approved_intent'][0]=='portal' and kwargs['tolerance']==2
+        assert kwargs['approved_intent'][0]=='portal' and kwargs['tolerance']==.4
         return []
     monkeypatch.setattr(portal,'walk',walk)
     monkeypatch.setattr(portal.interact,'use',lambda *_:{'completed':True})
