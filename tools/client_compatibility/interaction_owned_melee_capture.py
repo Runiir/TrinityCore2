@@ -72,6 +72,7 @@ def run(t,preparation,entry,stage_path,review_path,require_feedback=False):
                     raise RuntimeError('requires the loaded passive melee observer138')
                 state,frame=read_page(t,'owned_melee_public_outcome','combat_log','/tcui combat_log')
                 public={'probe':state['melee_probe'],'frame':frame,'before_sequence':before['owner_melee']['event_sequence']}
+                t.receipt['melee_public_capture']=public;t.persist()
                 command(t,'/tcui state')
             o.poll();until=time.time()
             packets=[p for p in entries(lab.ROOT/'evidence/world_packets.jsonl') if
@@ -103,8 +104,13 @@ def run(t,preparation,entry,stage_path,review_path,require_feedback=False):
                     v.get('event')=='SWING_DAMAGE' and v.get('source_guid')==t.guid and
                     v.get('destination_guid')==destination and any(p['client'] and
                         v.get('amount')==p['expected']['damage']>0 and
+                        v.get('school')==1 and v.get('overkill')==p['expected']['overkill'] and
+                        isinstance(v.get('timestamp'),(int,float)) and
+                        abs(v['timestamp']-p['native']['time'])<2 and
                         bool(v.get('critical'))==bool(p['expected']['hit_info']&0x200) and
-                        bool(v.get('offhand'))==bool(p['expected']['hit_info']&4) for p in matched)]
+                        bool(v.get('offhand'))==bool(p['expected']['hit_info']&4) and
+                        bool(v.get('glancing'))==bool(p['expected']['hit_info']&0x10000) and
+                        bool(v.get('crushing'))==bool(p['expected']['hit_info']&0x20000) for p in matched)]
                 public['matching_owned_events']=matching
                 checks.update(all_native_hit_results_delivered=bool(matched) and all(p['client'] for p in matched),
                     no_orphan_or_duplicate_hits=not orphaned,public_owned_swing_result=bool(matching),
