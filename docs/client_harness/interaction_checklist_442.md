@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 421 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 423 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -415,7 +415,7 @@ Fixture: `owned_second_actor`.
 - [x] `friends.close` (qualified variant; [evidence](#panel_visibility))
 - [x] `friends.list` (qualified variant; [evidence](#owned_current_offline_friend_and_who_open))
 - [x] `friends.add_friend` (qualified variant; [evidence](#party_invitation))
-- [ ] `friends.online_presence`
+- [x] `friends.online_presence` (qualified variant; [evidence](#owned_friend_presence_whisper))
 - [x] `friends.offline_presence` (qualified variant; [evidence](#owned_current_offline_friend_and_who_open))
 - [x] `friends.note_edit` (qualified variant; [evidence](#owned_offline_friend_note))
 - [x] `friends.note_persist` (qualified variant; [evidence](#owned_offline_friend_note_persistence))
@@ -425,7 +425,7 @@ Fixture: `owned_second_actor`.
 - [x] `friends.remove_ignore` (qualified variant; [evidence](#owned_offline_dwarf_ignore))
 - [x] `friends.who_open` (qualified variant; [evidence](#owned_current_offline_friend_and_who_open))
 - [x] `friends.who_search` (qualified variant; [evidence](#owned_native_who_name_search))
-- [ ] `friends.whisper`
+- [x] `friends.whisper` (qualified variant; [evidence](#owned_friend_presence_whisper))
 - [x] `friends.self_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
 - [x] `friends.nonexistent_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
 - [x] `friends.duplicate_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
@@ -2909,3 +2909,23 @@ Remaining limits: Only normal character logout/reentry for one owned offline fri
 - [442_interactions_20261006_105.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_105.tar.gz.dvc), member `evidence/client_interactions_20261006_ui105/failed_prepare_recovery_review.json`, SHA-256 `3c6fac3b49fd5011b34cb0c4bd0c54d14d83729f68642cc0105c27b639a6859a`.
 - [442_interactions_20261006_105.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_105.tar.gz.dvc), member `evidence/client_interactions_20261006_ui105/selection_caption_correction02.json`, SHA-256 `0dfacbbe99c74150027965f5577ebffc392db12cc327d0bb99c9e77e26158d2f`.
 - [442_interactions_20261006_105.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_105.tar.gz.dvc), member `evidence/client_interactions_20261006_ui105/runtime_closure.json`, SHA-256 `edd367f59797707d1770d49df8756e5a22f386f15cdae24c2ac0724d77545538`.
+
+### owned_friend_presence_whisper
+
+UI106 closed whole friend_presence02 plus cache_prepare02/cache_finish02 pass on the two owned same-realm actors. Exact native/modern status2 and public/stock Friends show Harnesstwo online at level1; stock Send Message opens the exact owned WHISPER recipient and one guarded Return delivers the short marker to Harnesstwo. Native requests, sender echo, peer GUID and modern/public/actual chat agree. Normal scout logout gives exact status3 and19 parked persistent checks. The installed client retains last-known level1 offline, so qualification also requires source-bound ordinary primary logout/reentry to restore the original level0 cache. All5 logout,5 reentry,3 cache,9 native,12 friend and1 chat-settings checks pass against10 carried original fields. Code controller, model None.
+
+Remaining limits: One owned same-realm friend presence cycle and one short stock Send Message whisper. Ignored-chat, other social variants and learned autonomy remain open. Historical whole friend_presence01 remains failed/excluded: the old bare-name row predicate misses the online level/class label, and offline retains cached level1; no whisper was sent. Cleanup01 restores original0 and provides no qualification. Initial test collection SyntaxError is corrected before input; final focused76 pass. A review helper first used the main Pixi environment without PIL; archive scan was interrupted before creating its archive/pointer, then review and checkpoint were rerun correctly. The source scout parked image still shows the last logout countdown; later runtime closure verifies actual character selection. Native server, bridge and both clients retain their lifetimes, no C++ changes/builds/client additions. Scripts stay blocked; original softTargetInteract0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/friend_presence02/primary/episode.json`, SHA-256 `66683849b99cee18e9716a7362328145967254ac5c8c738866231824c0d117de`.
+  Checked cases: `friends.online_presence` (owned_friend_presence_pass), `friends.whisper` (owned_friend_whisper_pass).
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/friend_presence02/cohort.json`, SHA-256 `5215bdc9dc8f057cf8389880adfe5fff42559841a47f20e1dafd28b2c8b80d36`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/friend_presence02/scout/episode.json`, SHA-256 `d6bc42a192c4c9c36956ea287fc4fe26b70d1d0adcc0b519a0cbf33013091ace`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/cache_prepare02/episode.json`, SHA-256 `a03305f5f0b06c33f19041297cdfafad525fd1732666a8f9b7571f7f8d0e7414`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/cache_finish02/episode.json`, SHA-256 `2ae4eee7fb2cae1304f8c1d0fa88d5e654194b89aa03ab8c8f8ab6216208c8d8`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/whole_presence_whisper_review.json`, SHA-256 `89217b5972bf40b97d8b8d14291fa96d87684189799c968ced5a5ff8c4adf88b`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/failed_presence_review01.json`, SHA-256 `b6b4117ec1007569435f64210bc1580f662b564fd667d2a846ef18004d7d0191`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/cache_recovery_review01.json`, SHA-256 `ca3e94d006cfb753a97e5bbc13d686daa73151163440b4f392b13e0cb1387a27`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/verification.json`, SHA-256 `591660fb86b36b6a370c80648c73f5db5ec4b7a72b86e244d2a2f3e9440cb5e8`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/row_cache_verification02.json`, SHA-256 `2c5fecc74488237fca81ed3967ce773f459f3459f4d44dda8f1bf33a846a5af1`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/archive_preparation_diagnostic.json`, SHA-256 `0586ca0f712653baf31fb50c44c32faf551e230a2d24eb3ccb341b8ab56acc89`.
+- [442_interactions_20261006_106.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc), member `evidence/client_interactions_20261006_ui106/runtime_closure.json`, SHA-256 `361628875c87938bc42ef3a3cb862929f4663964077a31cba23b4e0f45693c82`.
