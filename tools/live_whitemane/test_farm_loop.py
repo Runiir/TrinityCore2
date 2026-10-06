@@ -71,6 +71,29 @@ def test_active_digsite_navigation_is_not_replaced_with_a_flight_to_its_center()
     assert 'flight' in farm_policy.legal_actions(r,SolveBatches())
 
 
+def test_grounded_mount_can_enter_dig_without_a_separate_dismount_but_airborne_cannot():
+    from . import farm_policy,dig_session
+    r=row();r['archaeology'].update(can_survey=True,mounted=True,falling=False)
+    assert 'dig' in farm_policy.legal_actions(r,SolveBatches()) and dig_session.healthy(r)
+    r['archaeology']['flying']=True
+    assert 'dig' not in farm_policy.legal_actions(r,SolveBatches()) and not dig_session.healthy(r)
+
+
+def test_combat_root_choice_uses_immediate_facts_and_preserves_all_legal_actions(monkeypatch):
+    from . import farm_policy
+    r=row();r['movement']['in_combat']=True;r['archaeology'].update(mounted=True,flying=True,falling=False)
+    r['farm_ui']['combat']={'target_name':'Attacker','target_attacks_player':True,'attack_in_range':False}
+    session={'via_tolbarad':True,'steps':[],'dig_site':None,'dig_output':None,'active_races':[]}
+    legal=farm_policy.legal_actions(r,SolveBatches())
+    def choose(state,instructions,options):
+        assert set(options)==set(legal)
+        assert state['combat'] and state['flying'] and state['target_attacks_player']
+        assert 'fragments' not in state and 'route_instruction' not in state
+        return 'combat',{},{}
+    monkeypatch.setattr(farm_policy.laya_ui,'choose',choose)
+    assert farm_policy.choose(r,SolveBatches(),session)[0]=='combat'
+
+
 def test_shortcut_keeps_a_future_flight_master_out_of_the_active_route_leg():
     from . import farm_policy
     r=row();r['archaeology']['falling']=False

@@ -29,7 +29,7 @@ def test_graph_remembers_combat_interruption_and_requires_jar_in_bags(tmp_path):
 def test_combat_never_issues_key_one_during_cooldown_or_to_a_dead_target():
     r=row();r['movement']['in_combat']=True;r['farm_ui']['uptime']=10
     r['farm_ui']['combat']={'target_exists':True,'hostile':True,'target_dead':False,
-        'attack_usable':True,'attack_in_range':1,'cooldown_ends':10}
+        'attack_usable':True,'attack_in_range':1,'cooldown_ends':10,'target_attacks_player':True}
     assert combat.ready(r)
     r['archaeology']['mounted']=True
     assert not combat.ready(r)
@@ -42,7 +42,8 @@ def test_combat_never_issues_key_one_during_cooldown_or_to_a_dead_target():
 
 def test_facing_recovery_requires_a_new_error_from_our_current_attack():
     r=row();r['movement']['in_combat']=True;r['farm_ui']['uptime']=10
-    r['farm_ui']['combat']={'target_exists':True,'hostile':True,'attack_usable':True,'attack_in_range':True}
+    r['farm_ui']['combat']={'target_exists':True,'hostile':True,'attack_usable':True,'attack_in_range':True,
+        'target_attacks_player':True}
     r['farm_ui']['error']={'code':51,'at':9}
     assert not combat.needs_facing(r,None,0)
     assert not combat.needs_facing(r,10,0)

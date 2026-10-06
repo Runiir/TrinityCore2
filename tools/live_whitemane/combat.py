@@ -5,13 +5,13 @@ import time
 from . import runtime,inputs,laya_ui,action_queue
 from .observe import observe
 from .motion import turn_duration
-from .combat_target import TargetApproach
+from .combat_target import TargetApproach,living
 
 
 def ready(row):
     c=(row.get('farm_ui') or {}).get('combat') or {}
     return (row['movement']['in_combat'] and not row['movement']['dead'] and c.get('target_exists')
-        and c.get('hostile') and not c.get('target_dead') and c.get('attack_usable')
+        and living(row) and c.get('attack_usable')
         and c.get('attack_in_range') not in (False,0)
         and c.get('cooldown_ends',0)<=row['farm_ui']['uptime']
         and not action_queue.busy(row)

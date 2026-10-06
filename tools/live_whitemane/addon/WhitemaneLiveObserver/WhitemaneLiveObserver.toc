@@ -5,6 +5,7 @@
 WhitemaneLiveObserver.lua
 Snapshot.lua
 Minimap.lua
+CombatFacts.lua
 Activity.lua
 FarmUI.lua
 Relay.lua

@@ -23,6 +23,8 @@ def model_state(row, guide, visible_find, pending, steps):
         named_artifact=ui.get('soft_interact', {}).get('name') or ui.get('tooltip'),
         pickup_range='out_of_range' if pending and pending['out_of_range'] else 'unknown')
     state.update({key:row['archaeology'].get(key) for key in ('mounted','flying','falling')})
+    state['Survey_dismounts_on_ground']=bool(row['archaeology']['mounted'] and
+        not row['archaeology'].get('flying') and not row['archaeology'].get('falling'))
     if pending:
         state['pickup']=pending_find.facts(row,pending)
         state['pickup_activity']=pending_find.stage(state['pickup'],row['archaeology']['casting'])

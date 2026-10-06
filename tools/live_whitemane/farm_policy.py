@@ -29,11 +29,13 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
         if route.get('kind')=='shortcut':
             actions['land']=('Land and dismount here to prepare the teleport shortcut',a['world'])
     if m['in_combat']:return actions
-    if not a['mounted'] and not a['flying']:
+    if not a['flying'] and not a.get('falling'):
         if (a['can_survey'] or row.get('pending_find') or row.get('visible_find') or a.get('loot_open')
                 or (row.get('minimap_finds') or {}).get('confirmed')
-                or (ui.get('soft_interact') or {}).get('name') in FIND_NAMES):
+                or (ui.get('soft_interact') or {}).get('name') in FIND_NAMES) and (
+                not a['mounted'] or a['can_survey'] and not row.get('pending_find')):
             actions['dig']=('Choose Survey, marker/telescope movement or artifact pickup',None)
+    if not a['mounted'] and not a['flying']:
         if pending_find.facts(row,row.get('pending_find'))['uncollected']:return actions
         for r in a['races']:
             required=max(0,r['cost']-12*min(r['sockets'],r['keystones_in_bags']))
@@ -101,6 +103,19 @@ def choose(row,batches,session):
     queued=IntentQueue(session).retained(row,options)
     if queued:return queued
     if len(options)==1:return 'wait',None,{'only_legal_action':'wait'}
+    if m['in_combat']:
+        c=ui.get('combat') or {}
+        state={'task':'End the current combat and resume archaeology','combat':True,
+            'mounted':a['mounted'],'flying':a['flying'],'falling':a.get('falling'),
+            'target_attacks_player':c.get('target_engaged',c.get('target_attacks_player')),
+            'target_in_melee_range':c.get('attack_in_range'),
+            'current_target':c.get('target_name'),'health':m['health_percent']}
+        action,request,response=laya_ui.choose(state,
+            'Respond to the attacker now. Land if airborne, then approach and use Sinister Strike. Resume the interrupted dig afterwards.',
+            {k:v[0] for k,v in options.items()})
+        decision={'state':state,'request':request,'response':response,'choice':action}
+        IntentQueue(session).offer(action,options[action][1],decision,row)
+        return action,options[action][1],decision
     route=ui.get('route') or {};signal=row.get('minimap_finds') or {}
     previous=session.get('steps',[])
     stalled=sum(step.get('started_at',0)>=session.get('last_progress_at',math.inf)
@@ -111,6 +126,7 @@ def choose(row,batches,session):
         'portal_distance_yards':observed['facts']['portal_distance_yards'],
         'health':m['health_percent'],'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
         'casting':a['casting'],'falling':a['falling'],
+        'Survey_dismounts_on_ground':bool(a['mounted'] and not a['flying'] and not a.get('falling')),
         'at_digsite':a['can_survey'],'Survey_ready':(ui.get('survey') or {}).get('ready'),
         'guide':{k:v for k,v in (dig_guide or a.get('arrow') or {}).items()
             if k in ('source','color','distance_yards','heading_relative_to_player','arrived')},

@@ -32,7 +32,7 @@ def healthy(row):
     m, a = row['movement'], row['archaeology']
     return (m['in_world'] and m['position_available'] and m['health_percent'] > 0
             and not any(m[k] for k in ('dead','in_combat','on_taxi'))
-            and a['world'] is not None and not a['flying'] and not a['mounted'])
+            and a['world'] is not None and not a['flying'] and not a.get('falling'))
 
 
 def distance(a, b):

@@ -36,9 +36,11 @@ function WhitemaneLiveActivity()
     local gcdStart,gcdDuration=call(GetSpellCooldown,61304)
     local gcd=call(C_Spell and C_Spell.GetSpellCooldown,61304)
     if type(gcd)=='table' then gcdStart,gcdDuration=gcd.startTime,gcd.duration end
+    local enemies=call(WhitemaneLiveCombatFacts) or {}
     return {activity_schema='whitemane_public_activity_v2',
         move_speeds={current=current,run=run,flight=flight,swim=swim},gathering=gather,
         combat={target_exists=not not call(UnitExists,'target'),hostile=not not call(UnitCanAttack,'player','target'),
+            target_engaged=enemies.target_engaged,attackers=enemies.attackers or {},
             target_guid=call(UnitGUID,'target'),target_name=call(UnitName,'target'),
             target_attacks_player=not not call(UnitIsUnit,'targettarget','player'),
             click_to_move=call(GetCVar,'autointeract'),

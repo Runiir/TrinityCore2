@@ -8,7 +8,8 @@ def enemy():
     r=row();r['movement']['in_combat']=True;r['farm_ui']['uptime']=10
     r['archaeology'].update(falling=False)
     r['farm_ui']['combat']={'target_exists':True,'hostile':True,'target_dead':False,
-        'attack_in_range':False,'target_guid':'enemy','target_name':'Hyena','click_to_move':'1'}
+        'attack_in_range':False,'target_guid':'enemy','target_name':'Hyena','click_to_move':'1',
+        'target_attacks_player':True}
     r['farm_ui']['bindings']['TARGETNEARESTENEMY']=['TAB']
     return r
 
@@ -45,10 +46,24 @@ def test_target_approach_rechecks_facts_before_dispatch(monkeypatch,tmp_path,cha
     assert combat_target.TargetApproach().tick(tmp_path,r,{})
 
 
-def test_laya_can_select_a_hostile_target_when_aggro_has_no_target(monkeypatch,tmp_path):
+def test_laya_selects_a_visible_attacker_instead_of_tab_targeting_unrelated_mobs(monkeypatch,tmp_path):
     r=enemy();r['farm_ui']['combat'].update(target_exists=False,hostile=False,target_guid=None)
-    monkeypatch.setattr(combat_target.laya_ui,'choose',lambda *_:('target_enemy',{},{}))
+    r['farm_ui']['combat']['attackers']=[{'name':'Hyena','guid':'engaged','x':.5,'y':.3}]
+    def choose(state,_,options):
+        assert 'target_enemy' not in options and state['observed_attackers']==['Hyena']
+        return 'target_attacker_0',{},{}
+    monkeypatch.setattr(combat_target.laya_ui,'choose',choose)
     monkeypatch.setattr(combat_target,'observe',lambda _:r)
     calls=[];monkeypatch.setattr(combat_target.inputs,'execute',lambda *args:calls.append(args) or {})
     assert combat_target.TargetApproach().tick(tmp_path,r,{})
-    assert calls[0][2]['key']=='Tab'
+    assert calls[0][1:] == ('click',{'x':640,'y':270,'button':1})
+
+
+def test_an_unrelated_hostile_target_is_neither_approached_nor_attacked(monkeypatch,tmp_path):
+    from . import combat
+    r=enemy();r['farm_ui']['combat'].update(target_attacks_player=False,target_engaged=False,
+        attack_in_range=True,attack_usable=True)
+    monkeypatch.setattr(combat_target.inputs,'execute',lambda *_:pytest.fail('unrelated mob'))
+    monkeypatch.setattr(combat_target.laya_ui,'choose',lambda *_:pytest.fail('no observed attacker to select'))
+    assert not combat.ready(r) and not combat_target.living(r)
+    assert combat_target.TargetApproach().tick(tmp_path,r,{})
