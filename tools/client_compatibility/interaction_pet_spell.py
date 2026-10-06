@@ -6,7 +6,7 @@ from .interaction_social import actor
 from .interaction_trial import Trial
 from .interaction_owned_class_fixture import pets,saved,character,SCRIPT_BOUNDARY
 from .interaction_pet_command_probe import read,expected_guid
-from .interaction_pet_target import retained_imp,pair,PetOracle,read_menu
+from .interaction_pet_target import retained_imp,pair,read_menu
 from .interaction_pet_react_modes import suite as restored_suite,public_bar
 from .interaction_pet_follow_capture import FollowPresence
 from .interaction_pet_dismiss import vitals,dismiss_checks,dismiss_ready,public_pet
@@ -26,6 +26,8 @@ from .interaction_pet_autocast import switch,restore_switches
 class SpellPresence(FollowPresence):
     def __init__(self,session,owner,started):
         super().__init__(session,owner,started);self.auras={};self.aura_packets=[]
+
+    def selected(self):return pair(self.player,'UNIT_FIELD_TARGET')
 
     def inspect_packet(self,p):
         super().inspect_packet(p)
@@ -63,10 +65,11 @@ def reset_pet(t,o,*,enabled=True):
     t.receipt['spell_reset_authority']={'public':control,'pet':copy.deepcopy(o.pet),'ordinary_controls_only':True};t.persist()
     try:
         t.execute({'kind':'chat','value':'/targetexact '+identity['name']})
-        selected,_=t.observe('spell_cleanup_owned_target');target=PetOracle(o.session,5,o.started).poll()
-        if selected['target'].get('guid')!=expected or target.selected()!=guid:
+        selected,_=t.observe('spell_cleanup_owned_target');o.poll()
+        if (selected['target'].get('guid')!=expected or o.selected()!=guid
+            or not o.present() or o.pet['guid']!=guid):
             raise RuntimeError('ordinary spell cleanup target differs from current owned pet')
-        read_menu(t,target,expected);since=time.time()
+        read_menu(t,o,expected);since=time.time()
         def dismissed(b,a,s):
             o.poll();checks,requests=dismiss_checks(o,guid,since,a,s)
             return {'status':'native_owned_pet_dismiss_pass' if all(checks.values()) else 'client_or_protocol_failure',

@@ -1,5 +1,5 @@
 """No pet-reset input without fresh matching owned native/public control and summon eligibility."""
-import copy,json
+import copy,json,struct
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
@@ -32,6 +32,27 @@ def test_disabled_spell_authority_is_only_accepted_when_reset_explicitly_expects
 def test_enabled_spell_cannot_claim_disabled_cleanup_authority(monkeypatch):
     t,o,_=setup(monkeypatch)
     with pytest.raises(RuntimeError):run.cleanup_authority(t,o,enabled=False)
+
+
+def test_spell_cleanup_tracks_selection_after_a_native_destroy_and_resummon(tmp_path,monkeypatch):
+    from tools.client_compatibility import interaction_pet_dismiss as presence
+    monkeypatch.setattr(run.lab,'ROOT',tmp_path)
+    path=tmp_path/'evidence/world_packets.jsonl';path.parent.mkdir()
+    golden=json.loads((Path(__file__).parent/'fixtures/native_pet_ui110.json').read_text())
+    packets=[p['packet'] for p in golden['packets']]
+    path.write_text(''.join(json.dumps(p)+'\n' for p in packets))
+    o=run.SpellPresence(packets[0]['session'],4,packets[0]['time']).poll()
+    old=o.pet['guid'];new=old+1
+    with path.open('a') as h:h.write(json.dumps({**packets[-1],'name':'SMSG_DESTROY_OBJECT',
+        'body':struct.pack('<QB',old,0).hex(),'time':packets[-1]['time']+1})+'\n')
+    assert not o.poll().present()
+    pet=copy.deepcopy(o.pet);pet['guid']=new
+    fields={INDEX['UNIT_FIELD_SUMMON']:new&0xffffffff,INDEX['UNIT_FIELD_SUMMON']+1:new>>32,
+        INDEX['UNIT_FIELD_TARGET']:new&0xffffffff,INDEX['UNIT_FIELD_TARGET']+1:new>>32}
+    monkeypatch.setattr(presence,'records',lambda body:[pet,{'guid':4,'fields':fields}])
+    with path.open('a') as h:h.write(json.dumps({**packets[-1],'body':'00','time':packets[-1]['time']+2})+'\n')
+    assert o.poll().present() and o.pet['guid']==new and o.selected()==new
+    assert old in o.removed
 
 
 @pytest.mark.parametrize('fault',['actor','ui_error','lost_pet','foreign_kind','foreign_owner','wrong_number',
