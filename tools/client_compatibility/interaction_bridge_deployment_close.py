@@ -29,6 +29,9 @@ def close(directory):
     attempts={**report.get('parked_reconnect_attempt',{}),**report.get('reconnect_attempts',{})}
     for name,suffix in [('primary','primary_after'),('scout','scout_parked_after')]:
         p=directory/suffix/'episode.json';attempt=attempts.get(name,{})
+        if name=='scout':
+            from .interaction_parked_bridge import bound_restoration
+            p=bound_restoration(directory,report)
         if attempt.get('episode')!=str(p) or attempt.get('sha256')!=lab.sha256(p) or not attempt.get('completed'):
             raise RuntimeError('deployment attempt does not bind its closed restoration')
         episodes[name]=json.loads(p.read_text())

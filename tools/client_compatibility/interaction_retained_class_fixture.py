@@ -56,7 +56,8 @@ def prepare(t,preparation,parked,origin_finish,deployment_path):
         raise ValueError('requires the completed owned bridge deployment')
     deployment=json.loads(deployment_path.read_text())
     continuity(t,old,park,finish,deployment,lab.sha256(preparation))
-    deployed=closed(deployment_path.parent/'scout_parked_after/episode.json')
+    from .interaction_parked_bridge import bound_restoration
+    deployed=closed(bound_restoration(deployment_path.parent,deployment))
     if (deployed.get('actor')!=t.fixture or deployed.get('runtime')!=t.receipt['runtime'] or
         len(deployed.get('restoration_checks',{}))!=5 or not all(deployed['restoration_checks'].values()) or
         deployed.get('parked_native')!=old['origin_native']):

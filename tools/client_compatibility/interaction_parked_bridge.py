@@ -65,14 +65,35 @@ def baseline(t,path):
     return {'parked':True,'guid':2,'name':'Harnesstwo','level':1}
 
 
-def finish(out,path):
+def bound_restoration(directory,report):
+    """Resolve only the exact closed successful restoration named by this deployment."""
+    directory=directory.resolve();attempt=report.get('parked_reconnect_attempt',{}).get('scout',{})
+    source=Path(attempt.get('episode','')).resolve()
+    if (source.name!='episode.json' or source.parent.parent!=directory or
+        source.parent.name not in ('scout_parked_after','scout_parked_after2') or
+        attempt.get('completed') is not True or attempt.get('failure') is not None or
+        not source.is_file() or attempt.get('sha256')!=lab.sha256(source)):
+        raise RuntimeError('deployment does not bind an exact successful parked restoration')
+    return source
+
+
+def finish(out,path,attempt=1):
     report=json.loads((out/'deployment.json').read_text())
     if (not report.get('parked_scout') or identity('worldserver')!=report['native'] or
         identity('modern_world')!=report['after'] or 'scout' in report['reconnected']):
         raise RuntimeError('parked-scout deployment identity differs or already finished')
     old=out/'scout_before/episode.json';previous=json.loads(old.read_text())
     with actor('scout'):
-        t=Trial(out/'scout_parked_after',controller='code')
+        if attempt not in (1,2):raise ValueError('parked restoration attempts are1 or2')
+        retry=out/'scout_parked_after/episode.json'
+        if attempt==2:
+            failed=json.loads(retry.read_text())
+            if (not failed.get('finished_at') or failed.get('completed') or not failed.get('failure') or
+                failed.get('actor')!=previous.get('actor') or failed.get('cases') or failed.get('cleanup') or
+                failed.get('runtime')!={k:identity(k) for k in ['worldserver','modern_world','client']}):
+                raise RuntimeError('retry requires the closed same-lifetime read-only failed restoration')
+        t=Trial(out/('scout_parked_after' if attempt==1 else 'scout_parked_after2'),controller='code')
+        if attempt==2:t.receipt['prior_failed_restoration']={'path':str(retry),'sha256':lab.sha256(retry)}
         try:
             if t.receipt['runtime']['client']!=previous['runtime']['client'] or native(t)!=previous['parked_native']:
                 raise RuntimeError('parked scout lifetime or native character changed')
@@ -94,8 +115,12 @@ def finish(out,path):
             report['reconnected']['scout']={'completed':True,'parked':True,'session':session}
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
+        history=report.setdefault('parked_restoration_attempts',[])
+        prior=report.get('parked_reconnect_attempt',{}).get('scout')
+        if prior and prior not in history:history.append(prior)
         report.setdefault('parked_reconnect_attempt',{})['scout']={'completed':t.receipt['completed'],
             'failure':t.receipt['failure'],'episode':str(t.out/'episode.json'),'sha256':lab.sha256(t.out/'episode.json')}
+        history.append(report['parked_reconnect_attempt']['scout'])
         if len(report['reconnected'])==2:
             report.update(finished_at=time.time(),completed=all(r['completed'] for r in report['reconnected'].values()))
         lab.private_write(out/'deployment.json',json.dumps(report,indent=2)+'\n')
@@ -105,7 +130,8 @@ def finish(out,path):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['capture','finish'])
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--review',type=Path);a=p.parse_args()
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--review',type=Path)
+    p.add_argument('--attempt',type=int,choices=[1,2],default=1);a=p.parse_args()
     if a.action=='capture':capture(a.output)
-    elif a.review:finish(a.output,a.review)
+    elif a.review:finish(a.output,a.review,a.attempt)
     else:p.error('finish requires the fresh visual review')
