@@ -14,4 +14,4 @@ The expected old-codec capture regression is retained as one failed and one pass
 
 Custom scripts stay blocked by the explicit user choice. Addon Lua remains available. Original softTargetInteract0 remains unrestored at stock-disabled1. No script, level/spell/aura grant, new client or model job occurs in this diagnostic batch. Script permission does not explain the empty pet-action identity.
 
-DVC115 checkpoint and remote review are pending.
+The [DVC115 archive](../../artifacts/client_harness/442_interactions_20261006_115.tar.gz.dvc) contains 208,865,785 bytes, SHA-256 0d9eb11d251c755e18581e44c7f2da2e1da2e9fa893dae4a180aa22a536c3870. Remote and archive review verify 35 JSON receipts and 89 attributed images across 22 closed episodes. The failed dismissal remains excluded. After verification, 110 raw frames totaling 186,414,834 bytes are pruned; the exact archive/cache object is offloaded. Scoped DVC status and push verify the remote.
