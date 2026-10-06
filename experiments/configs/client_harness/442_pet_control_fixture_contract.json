@@ -1,0 +1,13 @@
+{
+  "schema": "client442_pet_control_fixture_contract_v1",
+  "goal": "Capture a legitimate trained native pet-control catalog and installed stock commands on an eligible warlock.",
+  "source": "UI115 empty-GUID stock dismissal and missing Control Demon catalog gate, with remote-reviewed complete restoration.",
+  "fixture": "Separate Harnessctrl human warlock level10 on account2 and the existing scout client. Retain Harnesslock level1 and its saved Imp unchanged.",
+  "preparation": "Native create, offline native-console level10 setup,10000 copper and staging beside existing Maximillian Crowe/trainer154. These setup actions qualify no ordinary player operation. No spell or aura grant; Control Demon80388/93375 must be purchased through the normal trainer UI with native charge and learned outcome.",
+  "observer_version": 130,
+  "controller": "code",
+  "model": null,
+  "custom_scripts": "blocked",
+  "softTargetInteract": {"original": "0", "current_stock_disabled": "1", "original_restored": false},
+  "limits": "The prior no-level-grant restriction remains on the retained level1 UI114/UI115 fixture. This separate native level10 test fixture is explicit setup, not natural leveling coverage. No extra client, model job, native worldserver restart, GUID substitution, fabricated spell catalog or Abandon. Preserve original actors and retained Imp, and checkpoint all closed failures and artifacts with DVC."
+}

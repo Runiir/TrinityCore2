@@ -141,7 +141,10 @@ def lobby(t,path,review_path,stage,returning):
 
 def enter(t,path,review_path):
     old=prepared(t,path);d=reviewed(t,review_path,'Enter World')
-    if (d.get('selected_character'),d.get('selected_level'))!=('Harnesslock',1):
+    name,level=t.fixture['character_name'],t.fixture['level']
+    if ((name,level) not in [('Harnesslock',1),('Harnessctrl',10)] or
+        (t.fixture['race'],t.fixture['class'],t.fixture['account_id'])!=(1,9,2) or
+        (d.get('selected_character'),d.get('selected_level'))!=(name,level)):
         raise RuntimeError('class entry requires its reviewed selected character')
     before=character(t.fixture['guid'],t.fixture['account_id'])
     if before['online']!=0:raise RuntimeError('class fixture is already online')
@@ -155,7 +158,7 @@ def enter(t,path,review_path):
         if r.get('session')==session and r.get('time',0)>=started and
         r.get('name') in ['CMSG_PLAYER_LOGIN','SMSG_LOGIN_VERIFY_WORLD']]
     oracle=Inventory(lab.ROOT,session,t.fixture['guid']).poll();checks=origin_checks(old)
-    checks.update(owned_name=state['player']=='Harnesslock',solo=state['group']['members']==0,
+    checks.update(owned_name=state['player']==name and state['level']==level,solo=state['group']['members']==0,
         no_lua_errors=not state.get('lua_errors'),no_blocked_actions=not state.get('blocked_actions'),
         ordinary_login=any(r['name']=='CMSG_PLAYER_LOGIN' and r['direction']=='from_client' for r in login),
         native_login=any(r['name']=='SMSG_LOGIN_VERIFY_WORLD' and r['direction']=='from_native' for r in login))
