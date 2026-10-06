@@ -44,12 +44,12 @@ def test_cast_and_private_haste_payloads_keep_parser_order(codec,visibility):
     body=result(codec,op='unit_update',snapshot={'guid':1,'map':0,'fields':fields},
         character={},changed=fields,visibility=visibility)
     r=read_block(body,visibility)
-    expected={0,5,32,57,59,60,64,66,67,78,79,81}
+    expected={0,5,32,57,59,60,64,66,67,78,79,80,81}
     if visibility:expected|={68,69,70}
     assert mask(r,8)==expected;r.align();assert r.unpack('q3B')==(123,0,0,3)
     assert r.unpack('2f')==(.875,.75)
     if visibility:assert r.unpack('3f')==(.5,.625,1.0)
-    assert r.unpack('3B')==(1,0,0);r.end()
+    assert r.unpack('4B')==(1,0,0,0);r.end()
 
 
 def test_unrelated_cast_snapshot_does_not_emit_a_change(codec):
