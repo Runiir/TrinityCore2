@@ -19,7 +19,7 @@ from .interaction_macros import require
 from .observation.journal import entries
 from .world.objects import INDEX
 from .pet_autocast_capture_evidence import button
-from .pet_spell_evidence import buffs,native_aura,request_checks
+from .pet_spell_evidence import buffs,native_aura,request_checks,cancel_request_checks
 from .interaction_pet_autocast import switch,restore_switches
 
 
@@ -111,13 +111,30 @@ def restore_spell(t,o,original):
             or sorted(x for x in buffs(state) if x!=6307)!=sorted(original['public_buffs'])
             or buffs(state).count(6307)!=1):
             raise RuntimeError('pet spell cleanup found an unattributed aura change')
-        # The live UI132 failure shows that an enabled newly summoned Imp
-        # reapplies Blood Pact. Disable its captured autocast before resetting
-        # it, then restore the original switch through fresh native readback.
-        cleanup_authority(t,o)
-        switch(t,o,6307,False,'fixture.spell_restore.autocast_off')
-        try:reset_pet(t,o,enabled=False)
-        finally:restore_switches(t,o)
+        control=cleanup_authority(t,o);state,frame=t.observe('spell_cancel_current_owned_buff');o.poll()
+        temporary=[r for r in o.auras.values() if r['spell']==6307]
+        if (len(temporary)!=1 or temporary[0].get('caster')!=o.pet['guid']
+            or not temporary[0].get('flags',0)&16 or buffs(state).count(6307)!=1):
+            raise RuntimeError('ordinary cancellation lacks the current positive owned Blood Pact aura')
+        current=copy.deepcopy(o.pet);since=time.time()
+        t.receipt['spell_cancel_authority']={'public':control,'frame':frame,'aura':temporary[0],
+            'native_pet':current,'started_at':since};t.persist()
+        def cancelled(b,a,s):
+            sample=read(t,'spell_cancel_public_outcome');state,frame=t.observe('spell_cancel_native_outcome');o.poll()
+            checks,requests=cancel_request_checks(entries(lab.ROOT/'evidence/world_packets.jsonl'),o.session,since,time.time(),current)
+            removed=[p for p in o.aura_packets if p['packet']['time']>=since and
+                any(r['slot']==temporary[0]['slot'] and r['spell']==0 for r in p['decoded']['entries'])]
+            checks.update(native_aura_removed=o.auras==original['auras'] and bool(removed),
+                public_buff_removed=buffs(state)==original['public_buffs'],
+                same_owned_pet=o.present() and o.pet['guid']==current['guid'],
+                public_owned_pet=sample['probe'].get('pet_guid')==expected_guid(current),ui_clean=sample['ui_clean'])
+            return {'status':'owned_native_pet_aura_cancel_pass' if all(checks.values()) else 'client_or_protocol_failure',
+                'oracle':{'checks':checks,'requests':requests,'native_removal_packets':removed,
+                    'native_pet':copy.deepcopy(o.pet),'native_auras':copy.deepcopy(o.auras),'state':state,
+                    'public':sample,'frame':frame,'cleanup_only':True}}
+        require(t.step('fixture.spell_restore.cancel','Cancel the current owned Blood Pact through the captured ordinary stock command.',
+            {'cancel':{'kind':'chat','value':'/cancelaura Blood Pact'}},cancelled,diagnostic_action='cancel'),
+            'owned_native_pet_aura_cancel_pass')
     deadline=time.monotonic()+120;samples=[]
     while True:
         o.poll();owned=o.present();owner=vitals(o);pet=pet_vitals(o) if owned else None
