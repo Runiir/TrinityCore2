@@ -6,13 +6,15 @@ from .pet_movement_evidence import following_paths
 from .world.gameobjects import modern_guid
 
 
-def command_checks(requests,pet,command):
+def command_checks(requests,pet,command,action_type=7):
+    if action_type not in (6,7) or command not in ((0,3) if action_type==6 else (0,1,3)):
+        raise ValueError('uncaptured pet action type or value')
     modern=[r for r in requests if r['name']=='CMSG_PET_ACTION' and r['direction']=='from_client']
     native=[r for r in requests if r['name']=='CMSG_PET_ACTION' and r['direction']=='to_native']
     decoded=follow_request(modern[0]) if len(modern)==1 else None
-    expected=struct.pack('<QIQfff',pet['guid'],0x07000000|command,0,0,0,0).hex()
+    expected=struct.pack('<QIQfff',pet['guid'],action_type<<24|command,0,0,0,0).hex()
     return {'one_owned_modern_command':bool(decoded and decoded['guid']==list(modern_guid(pet['guid'],pet['map']))
-        and decoded['word']==0x03800000|command and decoded['target']==[0,0] and decoded['position']==[0.,0.,0.]),
+        and decoded['word']==action_type<<23|command and decoded['target']==[0,0] and decoded['position']==[0.,0.,0.]),
         'one_exact_native_command':len(modern)==1 and len(native)==1 and native[0]['body']==expected
             and 0<=native[0]['time']-modern[0]['time']<2,
         'no_abandon':not any(r['name']=='CMSG_PET_ABANDON' for r in requests)}
