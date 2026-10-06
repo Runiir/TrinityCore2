@@ -68,6 +68,18 @@ def recon(t,preparation,source):
         protected_checks=checks,phase='hunter_trainer_staged',completed=True)
 
 
+def refresh(t,preparation,source):
+    old,session=baseline(t,preparation);e=prior(t,source,session,'hunter_trainer_staged')
+    state,frame=t.observe('hunter_trainer_refreshed');target=state.get('target',{})
+    if target.get('guid')!=e['state']['target']['guid'] or target.get('name')!=NAME or not target.get('visible'):
+        raise RuntimeError('staged Hunter trainer no longer matches the closed source')
+    checks=protected(old)
+    if not all(checks.values()):raise RuntimeError('protected Hunter actors differ')
+    t.receipt.update(state=state,frame=frame,native_session=session,protected_checks=checks,
+        phase='hunter_trainer_staged',completed=True,input_sent=False,
+        qualified_scope='Read-only same-session Hunter trainer staging refresh; no input or qualification.')
+
+
 def open_trainer(t,preparation,source,review_path):
     old,session=baseline(t,preparation);e=prior(t,source,session,'hunter_trainer_staged')
     d=reviewed(t,review_path,NAME)
@@ -186,7 +198,7 @@ def learn(t,preparation,source,lesson='tame'):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','open','select','learn'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','refresh','open','select','learn'])
     for name in ('preparation','source','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--review',type=Path);p.add_argument('--lesson',choices=LESSONS,default='tame');a=p.parse_args()
     if a.action=='open' and not a.review:p.error('requires the fresh trainer image review')
@@ -195,6 +207,7 @@ if __name__=='__main__':
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='recon':recon(t,a.preparation,a.source)
+            elif a.action=='refresh':refresh(t,a.preparation,a.source)
             elif a.action=='open':open_trainer(t,a.preparation,a.source,a.review)
             elif a.action=='select':select(t,a.preparation,a.source,a.lesson)
             else:learn(t,a.preparation,a.source,a.lesson)
