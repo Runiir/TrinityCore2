@@ -2934,8 +2934,8 @@
         "lifecycle.select_realm",
         "lifecycle.reconnect"
       ],
-      "scope": "After a controlled owned bridge disconnect, both existing clients dismiss the separately reviewed Okay modal, activate Reconnect, select the single stock Client442 Lab realm row, confirm it and re-enter their default characters. Exact lobby/world frames are reviewed. Native worldserver and both client lifetimes remain unchanged on HDMI-1; both retain original native inventory/money/saved spell/action state against closed pre-disconnect evidence.",
-      "limits": "Single lab realm and one default character per client, idle fixtures, controlled bridge disconnect. Default character world entry does not qualify selecting among characters. The first two Reconnect inputs per actor are blocked by the modal and do not advance; their input-only completion flags do not qualify world reentry. Successful reentry follows the distinct modal-dismissal path. Primary passive7381 can reapply an extra damage boost on login; damage-stat persistence is unqualified. Other realms, credentials, character creation/deletion, combat and other disconnect causes remain open.",
+      "scope": "After a controlled owned bridge disconnect, both existing clients dismiss the separately reviewed Okay modal, activate Reconnect, select the single stock Client442 Lab realm row, confirm it and re-enter their default characters. Exact lobby/world frames are reviewed. Native worldserver and both client lifetimes remain unchanged on HDMI-1; both retain original native inventory/money/saved spell/action state against closed pre-disconnect evidence. UI108 adds fresh same-client primary proof after a bridge replacement: all9 native restoration checks and exact original resources/stats/spells/actions/pose/AFK/position continuity pass. The scout stays at its original offline selection. This supplements the existing scoped qualification and adds no operation count.",
+      "limits": "Single lab realm and one default character per client, idle fixtures, controlled bridge disconnect. Default character world entry does not qualify selecting among characters. The first two Reconnect inputs per actor are blocked by the modal and do not advance; their input-only completion flags do not qualify world reentry. Successful reentry follows the distinct modal-dismissal path. Primary passive7381 can reapply an extra damage boost on login; damage-stat persistence is unqualified. Other realms, credentials, character creation/deletion, combat and other disconnect causes remain open. UI108 does not qualify another reconnect operation or other login routes. Its original softTargetInteract0 remains unrestored at1 and custom scripts stay blocked.",
       "evidence": [
         {
           "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
@@ -2961,6 +2961,56 @@
           "pointer": "artifacts/client_harness/442_interactions_20261004_53.tar.gz.dvc",
           "member": "evidence/client_interactions_20261004_ui53/reconnect_native_review.json",
           "sha256": "34d48890ceaa4099e528a1fb501715591528691017ad04e0b87beb6b97b264f9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/deployment.json",
+          "sha256": "a6d0bdea425ad7e125ce2c1274d1fd82bac71b48659ffa6da902361f9f962223"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/primary_before/episode.json",
+          "sha256": "25d863bf7afa621abe2b7bcb6a85e14b06eb170b9f603c9e81848cfdfa45fa89"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/primary_after/episode.json",
+          "sha256": "7ecfa432019132dd04aae432e47a78ec25c6abe13ad43e6853f179f801d22f70"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/primary_after/review.json",
+          "sha256": "2cbdcb18e102345e88df3ee70f0208cf48ca8698ea5192ea375437284d680e70"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/disconnect_review.json",
+          "sha256": "834d28b77fb9dfbe52559c46a2910759c6ac7f453d43b0685b650dd0747aec31"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/primary_disconnect_dismiss_key/review.json",
+          "sha256": "4a2e4c5bac97d68a60d749c928a37a664fb0460b51dcc56c9ba7d656993059b8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/primary_login_after_dismiss/review.json",
+          "sha256": "b74723856e42aa7175b6f7a29e7902f79e40fd7228591cbbe44015a71051d408"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/primary_realm/review.json",
+          "sha256": "eb08e8933cfc89cfb3ed78a875f1d953b2cb193c7deab51f8531daea51a73c68"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/bridge_ignore_deployment/scout_parked_after/episode.json",
+          "sha256": "d52c943d5b9177d3ffa21f98d2d2ed9188936dfa099d833ed689639852558c27"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/runtime_closure.json",
+          "sha256": "00e4550298437b2c2176d6d7865a7dbf81f3629d74f26ed402e78e05c43eafc3"
         }
       ]
     },
@@ -5304,6 +5354,74 @@
           "pointer": "artifacts/client_harness/442_interactions_20261006_106.tar.gz.dvc",
           "member": "evidence/client_interactions_20261006_ui106/runtime_closure.json",
           "sha256": "361628875c87938bc42ef3a3cb862929f4663964077a31cba23b4e0f45693c82"
+        }
+      ]
+    },
+    {
+      "id": "owned_friend_ignored_chat",
+      "operations": [
+        "friends.ignored_chat"
+      ],
+      "scope": "UI108 whole ignored_chat02 delivers one short owned same-realm whisper before Ignore, suppresses the middle whisper and delivers another after removal. Stock Ignore changes only the saved Ignore bit while friendship and notes remain original. Exact modern feedback 01a002040800 maps to native 000403; native and modern ignored notices reach the scout, whose stock chat shows Harnessone-Client442Lab is ignoring you. Three primary samples retain the previous token and General stays6->6. All before/ignored/after outcomes pass. Normal scout parking passes19 checks; primary normal logout/reentry restores original offline level0 cache with5 logout,5 entry,3 cache,9 native,12 friend and1 chat checks against10 carried baselines. Code controller, model None.",
+      "limits": "Only this owned same-realm friend, short ASCII markers and default Reason0. Other senders/reasons, live GM notices, persistence and limit behavior remain open. UI107 and UI108 ignored_chat01 stay whole failed/excluded. UI10801 refuses Return because the observation contains a shorter prefix despite a complete rendered token; it sends no whisper and changes no Ignore flag. Its original cache is restored separately. Read-only settling later observes the exact token without retyping and the fresh whole trial passes. The original softTargetInteract0 remains unrestored at1 by user choice; scripts remain blocked. Whole-review wording about original state refers to its checked character/social/chat baselines and does not claim CVar restoration.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/ignored_chat02/primary/episode.json",
+          "sha256": "2dc496357b69926bf344196a010e9e44476e0c760a6f8ba3cb32a1d635eb0baa",
+          "cases": {
+            "friends.ignored_chat": "owned_ignored_chat_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/ignored_chat02/scout/episode.json",
+          "sha256": "f4f466ed6ed8d23af26ea1a7a9ed36220b48ae00e872ca2f4a8818b84005d199"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/ignored_chat02/cohort.json",
+          "sha256": "c8b3f0b2555a3f83f97f2af1672cec158bb5567149ca3de204a5b51b0c7fe1a2"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/prepared_ignored_chat_review02.json",
+          "sha256": "b8d6a6d30a4da0a9d043ba39c392f85a86ba9c2f12d297682918ae9240c57010"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/cache_prepare02/episode.json",
+          "sha256": "7c0d4a83ee6a11bb7995e33f992ce1a532e3caf5deb3e24a2245a399be9d23ed"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/cache_finish02/episode.json",
+          "sha256": "42fe879d2097b2d68172426c1ac80cfd29bf2118aac40672fefaa4751675fc74"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/whole_ignored_chat_review.json",
+          "sha256": "2cdcf882eeb241b2e399adf8e5612c10f897118ecdb93836dc4872dce635471d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/failed_whisper_guard_review01.json",
+          "sha256": "621687256eb960ade3ef57432ede26975b06324427917ec7ed8a2fde37fb9f9f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/failed_whisper_cleanup_review01.json",
+          "sha256": "2978cde6f0b0b6e1502ca370c8d8ad40a2ac6d0311955b7f84d7f6c9e1dc66b2"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/verification.json",
+          "sha256": "6661d5fc15c1bc12444b4752500dab9b8c22bbf9baeeb5782943182d86ecbb44"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_108.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui108/runtime_closure.json",
+          "sha256": "00e4550298437b2c2176d6d7865a7dbf81f3629d74f26ed402e78e05c43eafc3"
         }
       ]
     }
