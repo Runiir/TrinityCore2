@@ -1,5 +1,5 @@
 """Verify selected immutable receipts and attributed game images in one archive pass."""
-import argparse,copy,hashlib,json,subprocess,tarfile,time
+import argparse,copy,hashlib,json,posixpath,subprocess,tarfile,time
 from pathlib import Path,PurePosixPath
 from . import lab_runtime as lab
 
@@ -30,8 +30,16 @@ def frame_members(value,parent,batch,manifest):
                     try:candidates=[str(path.relative_to(lab.ROOT))]
                     except ValueError:raise ValueError('frame is outside the owned lab')
                 else:
-                    if '..' in path.parts:raise ValueError('frame path escapes its receipt')
-                    candidates=[str(PurePosixPath(base)/name),str(PurePosixPath(batch)/name),name]
+                    if '..' in path.parts:
+                        # A sibling lobby review can retain its original frame.
+                        # Resolve exactly that path, with no basename fallback.
+                        sibling=posixpath.normpath(str(PurePosixPath(base)/name))
+                        if not sibling.startswith(batch+'/'):
+                            raise ValueError('frame path escapes its batch')
+                        if sibling not in manifest or not item.get('sha256'):
+                            raise ValueError('sibling frame is absent or lacks a digest')
+                        candidates=[sibling]
+                    else:candidates=[str(PurePosixPath(base)/name),str(PurePosixPath(batch)/name),name]
                 matches=[p for p in dict.fromkeys(candidates) if p in manifest]
                 if not matches:
                     matches=[p for p,r in manifest.items() if p.startswith(batch+'/') and

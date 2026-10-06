@@ -14,6 +14,24 @@ def test_game_image_is_attributed_and_digest_checked(suffix):
         frame_members({**frame,'sha256':'b'*64},'evidence/run/actor','evidence/run',manifest)
 
 
+def test_sibling_lobby_frame_resolves_its_exact_member_and_digest():
+    member='evidence/run/realm/next_screen.png'
+    manifest={member:{'sha256':'a'*64},'evidence/run/other/next_screen.png':{'sha256':'a'*64}}
+    frame={'file':'../realm/next_screen.png','sha256':'a'*64}
+    assert frame_members(frame,'evidence/run/before','evidence/run',manifest)=={member:'a'*64}
+    with pytest.raises(ValueError,match='digest differs'):
+        frame_members({**frame,'sha256':'b'*64},'evidence/run/before','evidence/run',manifest)
+
+
+@pytest.mark.parametrize('name',['../missing/next_screen.png','../../outside/next_screen.png',
+    '../../../run/realm/next_screen.png','../realm/next_screen.png'])
+def test_sibling_frame_cannot_escape_or_borrow_a_basename(name):
+    manifest={'evidence/run/realm/next_screen.png':{'sha256':'a'*64}}
+    frame={'file':name}
+    if name!='../realm/next_screen.png':frame['sha256']='a'*64
+    with pytest.raises(ValueError):frame_members(frame,'evidence/run/before','evidence/run',manifest)
+
+
 @pytest.mark.parametrize('source_hash',['c'*64,'d'*64])
 def test_copied_lobby_frame_uses_its_hash_bound_source_review(monkeypatch,tmp_path,source_hash):
     from tools.client_compatibility import review_interaction_archive as review
