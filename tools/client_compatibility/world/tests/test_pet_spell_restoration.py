@@ -22,6 +22,18 @@ def test_actual_unchanged_owned_public_probe_and_native_pet_allow_cleanup_author
     t,o,sample=setup(monkeypatch);assert run.cleanup_authority(t,o) is sample
 
 
+def test_disabled_spell_authority_is_only_accepted_when_reset_explicitly_expects_disabled(monkeypatch):
+    t,o,sample=setup(monkeypatch)
+    next(r for r in sample['probe']['actions'] if r.get('spell_id')==6307)['autocast_enabled']=False
+    assert run.cleanup_authority(t,o,enabled=False) is sample
+    with pytest.raises(RuntimeError):run.cleanup_authority(t,o)
+
+
+def test_enabled_spell_cannot_claim_disabled_cleanup_authority(monkeypatch):
+    t,o,_=setup(monkeypatch)
+    with pytest.raises(RuntimeError):run.cleanup_authority(t,o,enabled=False)
+
+
 @pytest.mark.parametrize('fault',['actor','ui_error','lost_pet','foreign_kind','foreign_owner','wrong_number',
     'unknown_summon','public_owner','public_pet','disabled_spell','missing_button','invisible_button','unavailable_button'])
 def test_reset_refuses_before_any_gameplay_input_with_stale_or_unowned_cleanup_authority(monkeypatch,fault):

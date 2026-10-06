@@ -62,6 +62,29 @@ def mode(t,o,wanted,label):
         {'mode':action},outcome,diagnostic_action='mode'),'owned_native_react_mode_pass')
 
 
+def whole_restore(t,o,inventory,old,baseline):
+    t.clean_panels();layout=detail(t,'react_cleanup_pose_binding')
+    if pose(inventory)['stand']!=baseline['pose']['stand']:
+        t.execute({'kind':'key','value':binding_key(layout['keys']['SITORSTAND'][0]),'hold':.4})
+    if afk(inventory)!=baseline['afk']:t.execute({'kind':'chat','value':'/afk'})
+    t.execute({'kind':'hover','value':[1000,360]});sample=read(t,'react_whole_restored')
+    state,frame=t.observe('react_whole_complete');o.poll();accepted_position=position(5);identity=retained_imp(t.fixture,pets(5))
+    checks={'resources':resources(inventory)==baseline['resources'],'saved':saved(5)==baseline['saved'],
+        'position':accepted_position==baseline['position'],'vitals':vitals(o)==baseline['vitals'],
+        'retained_pet':{k:identity[k] for k in PET_KEYS}==baseline['pet'],'persisted_assist':identity['Reactstate']==3,
+        'pose':pose(inventory)==baseline['pose'],'afk':afk(inventory)==baseline['afk'],
+        'money':character(5,2)['money']==baseline['money'],'owned_pet':o.present(),
+        'public_assist':active_mode(sample['probe'],'PET_MODE_ASSIST'),
+        'public_pet_bar':public_bar(sample['probe'])==baseline['public_bar'],
+        'empty_selection':not state['target'].get('exists') and pair(o.player,'UNIT_FIELD_TARGET')==0,
+        'public_owner_xy':math.dist(accepted_position[:2],state['world_position'][:2])<.2,
+        'panels_closed':not state.get('panels') and not state.get('bags'),
+        'ui_clean':sample['ui_clean'],'protected':all(protected(old).values())}
+    t.receipt.update(restoration_checks=checks,protected_checks=protected(old),restored_frame=frame,
+        restored_public=sample);t.persist()
+    if not all(checks.values()):raise RuntimeError('native pet reaction-mode restoration differs')
+
+
 def suite(t,preparation,entry,*,sequence=((0,'pets.passive'),(3,'pets.assist')),capture=None):
     diagnostic=sequence==((3,'fixture.pet_assist_restore'),) and callable(capture)
     if not diagnostic and (capture is not None or sequence not in (
@@ -93,26 +116,7 @@ def suite(t,preparation,entry,*,sequence=((0,'pets.passive'),(3,'pets.assist')),
                 # native readback; the failed whole trial remains excluded.
                 mode(t,o,3,'fixture.pet_assist_restore')
         finally:
-            t.clean_panels();layout=detail(t,'react_cleanup_pose_binding')
-            if pose(inventory)['stand']!=baseline['pose']['stand']:
-                t.execute({'kind':'key','value':binding_key(layout['keys']['SITORSTAND'][0]),'hold':.4})
-            if afk(inventory)!=baseline['afk']:t.execute({'kind':'chat','value':'/afk'})
-            t.execute({'kind':'hover','value':[1000,360]});sample=read(t,'react_whole_restored')
-            state,frame=t.observe('react_whole_complete');o.poll();accepted_position=position(5);identity=retained_imp(t.fixture,pets(5))
-            checks={'resources':resources(inventory)==baseline['resources'],'saved':saved(5)==baseline['saved'],
-                'position':accepted_position==baseline['position'],'vitals':vitals(o)==baseline['vitals'],
-                'retained_pet':{k:identity[k] for k in PET_KEYS}==baseline['pet'],'persisted_assist':identity['Reactstate']==3,
-                'pose':pose(inventory)==baseline['pose'],'afk':afk(inventory)==baseline['afk'],
-                'money':character(5,2)['money']==baseline['money'],'owned_pet':o.present(),
-                'public_assist':active_mode(sample['probe'],'PET_MODE_ASSIST'),
-                'public_pet_bar':public_bar(sample['probe'])==baseline['public_bar'],
-                'empty_selection':not state['target'].get('exists') and pair(o.player,'UNIT_FIELD_TARGET')==0,
-                'public_owner_xy':math.dist(accepted_position[:2],state['world_position'][:2])<.2,
-                'panels_closed':not state.get('panels') and not state.get('bags'),
-                'ui_clean':sample['ui_clean'],'protected':all(protected(old).values())}
-            t.receipt.update(restoration_checks=checks,protected_checks=protected(old),restored_frame=frame,
-                restored_public=sample);t.persist()
-            if not all(checks.values()):raise RuntimeError('native pet reaction-mode restoration differs')
+            whole_restore(t,o,inventory,old,baseline)
     t.receipt.update(completed=True,phase='owned_native_react_modes_complete',qualified_scope='One idle trained owned Imp, '
         'captured stock modes '+', '.join(label for _,label in sequence)+', exact owned native commands, actual requested-mode catalogs '
         'on ordinary reload, native persisted Reactstate and public selection, followed by original resources, saved rows, '

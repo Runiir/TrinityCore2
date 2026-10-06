@@ -20,6 +20,7 @@ from .observation.journal import entries
 from .world.objects import INDEX
 from .pet_autocast_capture_evidence import button
 from .pet_spell_evidence import buffs,native_aura,request_checks
+from .interaction_pet_autocast import switch,restore_switches
 
 
 class SpellPresence(FollowPresence):
@@ -45,19 +46,19 @@ def pet_vitals(o):
     return {n:fields[INDEX[n]] for n in names}
 
 
-def cleanup_authority(t,o):
+def cleanup_authority(t,o,*,enabled=True):
     control=read(t,'spell_cleanup_owned_control');o.poll()
     if (t.fixture.get('guid')!=5 or not control['ui_clean'] or not o.present() or o.pet.get('kind')!=3
         or pair(o.pet['fields'],'UNIT_FIELD_SUMMONEDBY')!=5
         or o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])!=2
         or 688 not in wire_known(t,o.session)):
         raise RuntimeError('ordinary spell cleanup lacks current owned pet and native summon authority')
-    button(control['probe'],o.pet,6307,True)
+    button(control['probe'],o.pet,6307,enabled)
     return control
 
 
-def reset_pet(t,o):
-    control=cleanup_authority(t,o)
+def reset_pet(t,o,*,enabled=True):
+    control=cleanup_authority(t,o,enabled=enabled)
     guid=o.pet['guid'];expected=expected_guid(o.pet);identity=retained_imp(t.fixture,pets(5))
     t.receipt['spell_reset_authority']={'public':control,'pet':copy.deepcopy(o.pet),'ordinary_controls_only':True};t.persist()
     try:
@@ -100,7 +101,20 @@ def restore_spell(t,o,original):
         or vitals(o)!=t.receipt['baseline']['vitals'] or pet_vitals(o)!=original['pet_vitals'])
     t.receipt['spell_cleanup_inspection']={'changed':changed,'auras':copy.deepcopy(o.auras),
         'public_buffs':buffs(state),'frame':frame,'input_replayed':False};t.persist()
-    if changed:reset_pet(t,o)
+    if o.auras!=original['auras'] or buffs(state)!=original['public_buffs']:
+        temporary=[r for r in o.auras.values() if r['spell']==6307]
+        if (len(temporary)!=1 or temporary[0].get('caster')!=o.pet['guid']
+            or {k:r for k,r in o.auras.items() if r['spell']!=6307}!=original['auras']
+            or sorted(x for x in buffs(state) if x!=6307)!=sorted(original['public_buffs'])
+            or buffs(state).count(6307)!=1):
+            raise RuntimeError('pet spell cleanup found an unattributed aura change')
+        # The live UI132 failure shows that an enabled newly summoned Imp
+        # reapplies Blood Pact. Disable its captured autocast before resetting
+        # it, then restore the original switch through fresh native readback.
+        cleanup_authority(t,o)
+        switch(t,o,6307,False,'fixture.spell_restore.autocast_off')
+        try:reset_pet(t,o,enabled=False)
+        finally:restore_switches(t,o)
     deadline=time.monotonic()+120;samples=[]
     while True:
         o.poll();owned=o.present();owner=vitals(o);pet=pet_vitals(o) if owned else None
