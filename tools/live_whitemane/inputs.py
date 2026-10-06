@@ -2,10 +2,18 @@
 import argparse
 import fcntl
 import json
+import math
 import time
 
 from Xlib import X, display
 from . import runtime
+
+
+def key_hold(row,minimum=.15):
+    """Keep a selected key down across two measured client frames."""
+    fps=(row.get('farm_ui') or {}).get('frame_rate')
+    if not isinstance(fps,(int,float)) or not math.isfinite(fps) or fps<=0:return minimum
+    return min(2,max(minimum,2/fps))
 
 
 def focus(title):

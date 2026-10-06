@@ -1,10 +1,13 @@
 import copy
+import pytest
 from . import taxi
 from .test_farm_loop import row
 
 
-def test_taxi_honors_model_landing_then_dismount_before_arrival(monkeypatch,tmp_path):
+@pytest.mark.parametrize('frame_rate,hold',[(None,.15),(30,.15),(1,2)])
+def test_taxi_honors_model_landing_then_dismount_before_arrival(monkeypatch,tmp_path,frame_rate,hold):
     air=row();air['archaeology'].update(mounted=True,flying=True,falling=False)
+    air['farm_ui']['frame_rate']=frame_rate
     ground=copy.deepcopy(air);ground['archaeology']['flying']=False
     foot=copy.deepcopy(ground);foot['archaeology']['mounted']=False
     target=air['archaeology']['world']
@@ -24,4 +27,4 @@ def test_taxi_honors_model_landing_then_dismount_before_arrival(monkeypatch,tmp_
     monkeypatch.setattr(taxi.action_queue,'run',queue)
     result=taxi.run(tmp_path/'taxi',origin,destination)
     assert result['completed'] and [p['action'] for p in result['phases']]==['land','dismount','arrived']
-    assert landings==[target] and commands==[{'key':'shift+space','hold':.15}]
+    assert landings==[target] and commands==[{'key':'shift+space','hold':hold}]

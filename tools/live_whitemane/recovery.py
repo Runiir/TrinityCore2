@@ -23,6 +23,7 @@ RETRYABLE=(
     'walking outcome was blocked or exceeded its bound',
     'mount input did not produce mounted state',
     'dismount input did not produce unmounted state',
+    'taxi dismount did not confirm unmounted state',
     'takeoff did not produce flying state',
     'descent did not confirm landing',
     'character drifted away from landing destination',

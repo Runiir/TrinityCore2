@@ -93,7 +93,8 @@ def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
         if fresh['farm_ui']['soft_interact'].get('name')!=soft['name']:
             raise RuntimeError('soft interact target changed before selected interaction')
         result={'source':'confirmed public soft interact name','name':soft['name'],
-                'input':inputs.execute('World of Warcraft','key',{'key':keys[0],'hold':.15})}
+                'input':inputs.execute('World of Warcraft','key',
+                    {'key':keys[0],'hold':inputs.key_hold(fresh)})}
         runtime.write(folder/'interaction.json',result);return result
     from tools.second_client import ctl
     from tools.client_compatibility import native_input_adapter

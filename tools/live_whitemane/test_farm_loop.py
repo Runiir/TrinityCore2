@@ -198,7 +198,10 @@ def test_large_rgb_packet_requires_checksum_valid_scale_calibration():
     assert farm_ui.decode_image(image,**calibration)['text']==value['text']
 
 
-def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tmp_path):
+@pytest.mark.parametrize('action,failure',[
+    ('land','dismount input did not produce unmounted state'),
+    ('taxi','taxi dismount did not confirm unmounted state')])
+def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tmp_path,action,failure):
     from . import observed_state
     monkeypatch.setattr(farm_loop.runtime,'ROOT',tmp_path)
     (tmp_path/'run').mkdir();r=row()
@@ -209,9 +212,11 @@ def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tm
     monkeypatch.setattr(farm_loop.resources,'phase_boundary',lambda *_:None)
     monkeypatch.setattr(observed_state,'ensure',lambda _:None)
     monkeypatch.setattr(farm_loop.farm_graph,'transition',lambda *_,**__:None)
-    monkeypatch.setattr(farm_loop.farm_policy,'choose',lambda *_:('land',r['archaeology']['world'],{}))
-    def failed(*_,**__):raise RuntimeError('dismount input did not produce unmounted state')
+    target=r['archaeology']['world'] if action=='land' else ({'point':r['archaeology']['world']},)*2
+    monkeypatch.setattr(farm_loop.farm_policy,'choose',lambda *_:(action,target,{}))
+    def failed(*_,**__):raise RuntimeError(failure)
     monkeypatch.setattr(farm_loop,'fly',failed)
+    monkeypatch.setattr(farm_loop.taxi,'run',failed)
     monkeypatch.setattr(farm_loop.recovery,'run',failed)
     observations=[0]
     def observe(_):

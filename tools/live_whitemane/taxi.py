@@ -58,7 +58,8 @@ def run(folder,origin,destination):
             if not a['mounted'] or a['flying'] or a['falling']:
                 raise RuntimeError('taxi dismount requires a grounded mounted character')
             phase['dismount']=action_queue.run(folder/f'dismount_{index:02d}',row,'dismount',
-                lambda _:inputs.execute('World of Warcraft','key',{'key':'shift+space','hold':.15}),
+                lambda fresh:inputs.execute('World of Warcraft','key',
+                    {'key':'shift+space','hold':inputs.key_hold(fresh)}),
                 lambda fresh:not fresh['archaeology']['mounted'],observe,
                 allowed=lambda fresh:fresh['archaeology']['mounted'] and not any(
                     fresh['archaeology'].get(k) for k in ('flying','falling')),

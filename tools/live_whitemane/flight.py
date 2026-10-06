@@ -150,7 +150,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         elif action=='mount':
             if a['mounted']:raise RuntimeError('mount toggle requires an unmounted character')
             queued=action_queue.run(folder/f'command_{index:02d}',row,'mount',
-                lambda _:key('shift+space',.15),lambda r:r['archaeology']['mounted'],observe,
+                lambda fresh:key('shift+space',inputs.key_hold(fresh)),lambda r:r['archaeology']['mounted'],observe,
                 allowed=lambda r:not r['movement']['in_combat'] and r['movement'].get('speed',0)==0
                     and not any(r['archaeology'].get(k) for k in ('mounted','flying','falling')),
                 failure='mount input did not produce mounted state')
@@ -186,7 +186,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         elif action=='dismount':
             if not a['mounted'] or a['flying']:raise RuntimeError('dismount toggle requires a grounded mounted character')
             queued=action_queue.run(folder/f'command_{index:02d}',row,'dismount',
-                lambda _:key('shift+space',.15),lambda r:not r['archaeology']['mounted'],observe,
+                lambda fresh:key('shift+space',inputs.key_hold(fresh)),lambda r:not r['archaeology']['mounted'],observe,
                 allowed=lambda r:r['archaeology']['mounted'] and not any(
                     r['archaeology'].get(k) for k in ('flying','falling')),uses_gcd=False,
                 failure='dismount input did not produce unmounted state')
