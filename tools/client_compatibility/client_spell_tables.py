@@ -29,6 +29,8 @@ def extract(directory):
     lib.CascReadFile.restype = ct.c_bool
     lib.CascCloseFile.argtypes = [handle]
     lib.CascCloseStorage.argtypes = [handle]
+    lib.GetCascError.restype = ct.c_uint32
+    failures = []
     storage = handle()
     # Existing local enUS storage only; strict data verification, no online flags.
     if not lib.CascOpenStorage(str(lab.BASE.parent).encode(), 2, ct.byref(storage)):
@@ -44,7 +46,8 @@ def extract(directory):
                     raise RuntimeError('public table exceeds its bounded size')
                 data = ct.create_string_buffer(size);received = ct.c_uint32()
                 if not lib.CascReadFile(file, data, size, ct.byref(received)) or received.value != size:
-                    raise RuntimeError('strict public table read failed: '+name)
+                    raise RuntimeError('strict public table read failed: '+name+
+                        '; CASC error '+str(lib.GetCascError())+'; bytes read '+str(received.value))
                 if data.raw[:8] != b'WDC5\x05\0\0\0':
                     raise RuntimeError('unexpected installed table schema')
                 header = struct.unpack_from('<9I2H7I', data.raw, 136)
@@ -56,10 +59,18 @@ def extract(directory):
                     'header':list(header), 'limits':'Static base table only; no client hotfix replay or gameplay.'}
                 lab.private_write(directory/(name+'.source.json'), json.dumps(record, indent=2)+'\n')
                 print(json.dumps(record), flush=True)
+            except RuntimeError as error:
+                record = {'build':60895, 'source':'local_read_only_CASC', 'path':source,
+                    'failure':str(error), 'accepted':False, 'partial_data_written':False,
+                    'limits':'Keep strict verification; never zero or accept encrypted/missing blocks.'}
+                lab.private_write(directory/(name+'.failure.json'), json.dumps(record, indent=2)+'\n')
+                failures.append(name);print(json.dumps(record), flush=True)
             finally:
                 lib.CascCloseFile(file)
     finally:
         lib.CascCloseStorage(storage)
+    if failures:
+        raise RuntimeError('incomplete installed static evidence: '+', '.join(failures))
 
 
 if __name__ == '__main__':
