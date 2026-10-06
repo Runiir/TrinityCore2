@@ -79,6 +79,19 @@ def matches_expected(actual,expected):
         for key,value in expected.items())
 
 
+def upgrade_bound_callbacks():
+    """Update the startup callback retained by this process's active farm frame."""
+    updated=0
+    for frame in sys._current_frames().values():
+        while frame:
+            if frame.f_globals.get('__name__')==__package__+'.farm_loop' and frame.f_code.co_name=='run':
+                callback=frame.f_locals.get('apply_addon_request')
+                if callback and callback is not apply_addon_request and callback.__module__==__name__:
+                    callback.__code__=apply_addon_request.__code__;updated+=1
+            frame=frame.f_back
+    return updated
+
+
 def apply_addon_request(folder,row):
     path=runtime.ROOT/'run/addon_reload_request.json'
     if not path.exists():return False
