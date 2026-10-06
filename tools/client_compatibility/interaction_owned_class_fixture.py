@@ -92,6 +92,9 @@ def prepared(t,path,returning=False):
         old.get('phase')!='await_owned_class_lobby_review' or old['origin_actor']['guid']!=2 or
         expected!=t.fixture or old['runtime']!=t.receipt['runtime'] or not all(origin_checks(old).values())):
         raise RuntimeError('owned class preparation or original parked state differs')
+    if old.get('protected_baseline'):
+        from .interaction_hunter_fixture import protected
+        if not all(protected(old).values()):raise RuntimeError('prepared Hunter protected actors differ')
     t.receipt.update(fixture_source={'path':str(path),'sha256':lab.sha256(path)},origin_checks=origin_checks(old))
     t.persist();return old
 

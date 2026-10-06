@@ -1,5 +1,7 @@
 """The separate Hunter fixture cannot authorize another actor or class entry."""
 import copy
+import json
+from types import SimpleNamespace
 import pytest
 from tools.client_compatibility.interaction_hunter_fixture import created_identity,preparation_contract
 from tools.client_compatibility.interaction_owned_class_fixture import entry_identity
@@ -64,3 +66,18 @@ def test_hunter_preparation_refuses_stale_or_changed_protected_sources(fault):
     elif fault=='primary_inventory':primary['parked_snapshot']={**primary['parked_snapshot'],'inventory':[99]}
     else:before['3']['native']['online']=1
     with pytest.raises(RuntimeError):preparation_contract(origin,current,park,primary,before)
+
+
+@pytest.mark.parametrize('unchanged',[True,False])
+def test_every_prepared_hunter_lobby_or_entry_rechecks_prior_actors(tmp_path,monkeypatch,unchanged):
+    from tools.client_compatibility import interaction_owned_class_fixture as base,interaction_hunter_fixture as hunter
+    monkeypatch.setattr(base.lab,'ROOT',tmp_path)
+    path=tmp_path/'evidence/prepare/episode.json';path.parent.mkdir(parents=True)
+    row={'completed':True,'failure':None,'finished_at':1.,'phase':'await_owned_class_lobby_review',
+        'origin_actor':{'guid':2},'class_actor':fixture(10),'runtime':{'client':3},'protected_baseline':{'1':{}}}
+    path.write_text(json.dumps(row));monkeypatch.setattr(base,'origin_checks',lambda _: {'original':True})
+    monkeypatch.setattr(hunter,'protected',lambda _: {'prior_actor':unchanged})
+    trial=SimpleNamespace(fixture=fixture(10),receipt={'runtime':{'client':3}},persist=lambda:None)
+    if unchanged:assert base.prepared(trial,path)['class_actor']==fixture(10)
+    else:
+        with pytest.raises(RuntimeError,match='protected actors differ'):base.prepared(trial,path)
