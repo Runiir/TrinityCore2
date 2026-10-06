@@ -21,6 +21,25 @@ def pending(state,text):
         state.get('chat_edit_target') in (FRIEND,FRIEND+'-Client442Lab') and state.get('chat_edit_text')==text)
 
 
+def settling_pending(state,text):
+    value=state.get('chat_edit_text')
+    return isinstance(value,str) and text.startswith(value) and pending(state,value)
+
+
+def await_pending(primary,token):
+    deadline=time.monotonic()+10;samples=[]
+    while True:
+        state,frame=primary.observe('friend_whisper_pending',seconds=2)
+        exact=pending(state,token)
+        samples.append({'frame':frame,'observed_text':state.get('chat_edit_text'),
+            'target':state.get('chat_edit_target'),'exact':exact,'input_replayed':False})
+        primary.receipt['friend_whisper_settling']=samples;primary.persist()
+        if exact:return state,frame
+        if not settling_pending(state,token) or time.monotonic()>deadline:
+            return state,frame
+        time.sleep(.2)
+
+
 def send(primary,scout,packets):
     token='TC442UI:friend_'+hashlib.sha256(str(primary.out).encode()).hexdigest()[:8]
     with actor('primary'):
@@ -37,7 +56,7 @@ def send(primary,scout,packets):
             state,frame=primary.observe('friend_whisper_before_text')
             if not pending(state,''):raise RuntimeError('owned friend whisper focus or recipient differs')
             primary.io.type(token);time.sleep(.2)
-            state,frame=primary.observe('friend_whisper_pending')
+            state,frame=await_pending(primary,token)
             guard={'frame':frame,'target':state.get('chat_edit_target'),'token':token,
                 'exact':pending(state,token),'submitted':False,'input_replayed':False}
             primary.receipt['friend_whisper_guard']=guard;primary.persist()

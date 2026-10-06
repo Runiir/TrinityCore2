@@ -21,6 +21,24 @@ def test_exact_closed_cache_only_difference_can_be_cleaned_without_qualification
     old=fixture(prepared);assert source_matches(old,old)
 
 
+def unsent_fixture():
+    old=fixture();old['failure']='RuntimeError: exact owned friend whisper text or target differs'
+    old['friend_whisper_guard']={'exact':False,'submitted':False,'input_replayed':False,
+        'target':'Harnesstwo','token':'TC442UI:friend_1487b663'}
+    return old
+
+
+def test_closed_unsent_whisper_with_only_cache_difference_can_be_restored():
+    old=unsent_fixture();assert source_matches(old,old)
+
+
+@pytest.mark.parametrize('change',[{'submitted':True},{'input_replayed':True},{'exact':True},
+    {'target':'Anotherplayer'},{'token':'unrelated'}])
+def test_submitted_changed_or_unattributable_whisper_cannot_authorize_cache_cleanup(change):
+    old=unsent_fixture();old['friend_whisper_guard'].update(change)
+    assert not source_matches(old,old)
+
+
 @pytest.mark.parametrize('change',['open','another_failure','actor','runtime','native_failure','missing_native',
     'other_friend_failure','missing_friend','already_restored','different_original_level','different_note',
     'different_social','quest_selection','script_permission','original_cvar_restored','unmarked_prepared'])

@@ -1,5 +1,5 @@
 """Restore the source-bound initial offline friend cache through normal reentry."""
-import argparse,json,time
+import argparse,json,re,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_trial import Trial
@@ -32,6 +32,12 @@ def source_matches(old,current):
     friends=old.get('friend_restoration',{}).get('checks',{})
     failed=(old.get('completed') is False and old.get('failure')==
         'RuntimeError: fresh target control was not observed: fixture.friend_whisper.row')
+    guard=old.get('friend_whisper_guard',{})
+    unsent=(old.get('completed') is False and old.get('failure')==
+        'RuntimeError: exact owned friend whisper text or target differs' and
+        guard.get('exact') is False and guard.get('submitted') is False and
+        guard.get('input_replayed') is False and guard.get('target') in (FRIEND,FRIEND+'-Client442Lab') and
+        isinstance(guard.get('token'),str) and bool(re.fullmatch(r'TC442UI:friend_[0-9a-f]{8}',guard['token'])))
     ignored=old.get('ignored_chat_restoration',{}).get('checks',{})
     ignored_failed=(old.get('completed') is False and old.get('failure')==
         'RuntimeError: owned ignored-chat outcomes differ' and
@@ -39,7 +45,7 @@ def source_matches(old,current):
         all(v is True for v in ignored.values()))
     prepared=(old.get('friend_cache_restore_required') is True and
         ((old.get('completed') is True and old.get('failure') is None) or ignored_failed))
-    return (bool(old.get('finished_at')) and (failed or prepared) and old.get('actor')==current.get('actor') and
+    return (bool(old.get('finished_at')) and (failed or unsent or prepared) and old.get('actor')==current.get('actor') and
         old.get('runtime')==current.get('runtime') and old.get('actor',{}).get('guid')==1 and
         set(native)==NATIVE and all(v is True for v in native.values()) and set(friends)==FRIENDS and
         friends['public_friends'] is False and all(v is True for k,v in friends.items() if k!='public_friends') and

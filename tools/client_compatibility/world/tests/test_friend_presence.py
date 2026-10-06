@@ -2,7 +2,7 @@
 import copy,struct
 import pytest
 from tools.client_compatibility.interaction_friend_presence import wire_checks,source_matches,original_position,public_presence_matches,cache_reset_required,HIGH
-from tools.client_compatibility.interaction_friend_whisper import pending,owned_online_row
+from tools.client_compatibility.interaction_friend_whisper import pending,owned_online_row,settling_pending,await_pending
 from tools.client_compatibility.world.buffer import Writer
 
 
@@ -74,6 +74,43 @@ def test_changed_pending_whisper_is_refused(change):
     state={'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_type':'WHISPER',
         'chat_edit_target':'Harnesstwo','chat_edit_text':'owned marker'};state.update(change)
     assert not pending(state,'owned marker')
+
+
+def test_stale_prefix_can_settle_without_retyping_or_sending():
+    states=[{'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_type':'WHISPER',
+        'chat_edit_target':'Harnesstwo','chat_edit_text':text} for text in ['TC442UI:friend_1487b6','TC442UI:friend_1487b663']]
+    class ReadOnly:
+        receipt={}
+        def observe(self,*args,**kwargs):return states.pop(0),{'file':'sample.png'}
+        def persist(self):pass
+    t=ReadOnly();state,frame=await_pending(t,'TC442UI:friend_1487b663')
+    assert pending(state,'TC442UI:friend_1487b663')
+    assert len(t.receipt['friend_whisper_settling'])==2
+    assert all(s['input_replayed'] is False for s in t.receipt['friend_whisper_settling'])
+
+
+@pytest.mark.parametrize('change',[{'chat_edit_text':'unrelated'},{'chat_edit_target':'Anotherplayer'},
+    {'chat_edit_target':'Harnesstwo-Anotherrealm'},{'chat_edit_type':'SAY'},
+    {'chat_edit_focused':False},{'chat_edit_open':False},{'chat_edit_text':None}])
+def test_changed_editor_cannot_be_treated_as_pending_prefix(change):
+    state={'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_type':'WHISPER',
+        'chat_edit_target':'Harnesstwo','chat_edit_text':'TC442UI:friend_1487b6'};state.update(change)
+    assert not settling_pending(state,'TC442UI:friend_1487b663')
+
+
+def test_pending_prefix_timeout_does_not_accept_or_send(monkeypatch):
+    from tools.client_compatibility import interaction_friend_whisper as whisper
+    ticks=iter([0,11]);monkeypatch.setattr(whisper.time,'monotonic',lambda:next(ticks))
+    state={'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_type':'WHISPER',
+        'chat_edit_target':'Harnesstwo','chat_edit_text':'TC442UI:friend_1487b6'}
+    class ReadOnly:
+        receipt={}
+        def observe(self,*args,**kwargs):return state,{'file':'sample.png'}
+        def persist(self):pass
+    t=ReadOnly();observed,frame=await_pending(t,'TC442UI:friend_1487b663')
+    assert not pending(observed,'TC442UI:friend_1487b663')
+    assert len(t.receipt['friend_whisper_settling'])==1
+    assert t.receipt['friend_whisper_settling'][0]['input_replayed'] is False
 
 
 def test_original_database_position_uses_its_actual_list_shape():
