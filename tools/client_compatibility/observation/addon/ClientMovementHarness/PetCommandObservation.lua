@@ -26,11 +26,24 @@ function Client442ObservePetCommands()
             autocast_enabled=ok and not not autoEnabled or false,spell_id=ok and spell or nil}
     end
     local player,pet=position('player'),position('pet')
+    local ranges={}
+    for index=1,4 do
+        local value=call(CheckInteractDistance,'pet',index)
+        ranges[#ranges+1]={index=index,available=type(value)=='boolean',in_range=value}
+    end
+    local squared={available=false}
+    if type(UnitDistanceSquared)=='function' then
+        local ok,value,checked=pcall(UnitDistanceSquared,'pet')
+        if ok and checked and type(value)=='number' and value==value and value>=0 and value<math.huge then
+            squared={available=true,value=value,checked=not not checked}
+        end
+    end
     local distance
     if player.available and pet.available and player.map==pet.map then
         distance=math.sqrt((player.x-pet.x)^2+(player.y-pet.y)^2+(player.z-pet.z)^2)
     end
     return {owner_guid=call(UnitGUID,'player'),pet_guid=call(UnitGUID,'pet'),
         actions=rows,player_position=player,pet_position=pet,distance=distance,
+        interaction_ranges=ranges,distance_squared=squared,pet_visible=call(UnitIsVisible,'pet'),
         player_speed=call(GetUnitSpeed,'player'),pet_speed=call(GetUnitSpeed,'pet')}
 end

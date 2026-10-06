@@ -13,8 +13,8 @@ def read(t,label):
     t.submit_chat('/tcui petcommands',any_mode=True)
     try:
         state,frame=t.observe(label,mode='petcommands')
-        if state.get('observer_version')!=132 or 'pet_commands' not in state:
-            raise RuntimeError('requires the installed passive pet-command observer132')
+        if state.get('observer_version')!=133 or 'pet_commands' not in state:
+            raise RuntimeError('requires the installed passive pet-command observer133')
         value={'time':time.time(),'probe':state['pet_commands'],'frame':frame,
             'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
         t.receipt.setdefault('pet_command_observations',[]).append(value);t.persist();return value
@@ -38,12 +38,14 @@ def suite(t,preparation,entry):
     sample=read(t,'pet_commands');p=sample['probe'];row=follow_row(p)
     checks={'owner':p.get('owner_guid')==t.guid,'owned_pet':p.get('pet_guid')==expected_guid(o.pet),
         'ten_readable_actions':len(p.get('actions',[]))==10 and all(r['available'] for r in p['actions']),
-        'active_follow':bool(row and row['active']),'positions_available':p['player_position'].get('available')
-            and p['pet_position'].get('available'),'same_public_map':p['player_position'].get('map')==p['pet_position'].get('map'),
+        'active_follow':bool(row and row['active']),'player_position_available':p['player_position'].get('available'),
+        'pet_speed_available':isinstance(p.get('pet_speed'),(int,float)),
+        'public_range_available':all(any(r['index']==i and r['available'] for r in p.get('interaction_ranges',[])) for i in (2,3)),
         'ui_clean':sample['ui_clean'],**origin_checks(old)}
     t.receipt.update(native_session=session,native_pet=o.pet,checks=checks,completed=all(checks.values()),
         sources=[{'path':str(v.resolve()),'sha256':lab.sha256(v)} for v in [preparation,entry]],
         qualified_scope='Passive owned pet command and position diagnostics only; no command or movement qualification.')
+    t.receipt['position_limits']='UnitPosition pet coordinates are unavailable in the observed client. Raw player height is retained without interpreting it as native Z. Range/speed observations remain separate.'
     if not all(checks.values()):raise RuntimeError('public pet command diagnostics differ')
 
 

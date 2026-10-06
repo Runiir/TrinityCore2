@@ -20,6 +20,9 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     end
     UnitGUID=function(unit) return unit=='player' and 'Player-owned' or 'Pet-owned' end
     GetUnitSpeed=function(unit) return unit=='player' and 0 or 1 end
+    CheckInteractDistance=function(unit,index) assert(unit=='pet' and index>=1 and index<=4);return index~=3 end
+    UnitDistanceSquared=function(unit) assert(unit=='pet');return 25,true end
+    UnitIsVisible=function(unit) assert(unit=='pet');return true end
     UnitPosition=function(unit)
         if mode=='missing' then return nil end
         if mode=='invalid' then return 0/0,0,0,0 end
@@ -29,6 +32,10 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     local p=Client442ObservePetCommands()
     assert(#p.actions==10 and p.owner_guid=='Player-owned' and p.pet_guid=='Pet-owned')
     assert(p.player_speed==0 and p.pet_speed==1)
+    assert(p.distance_squared.available and p.distance_squared.value==25 and p.pet_visible)
+    for index,row in ipairs(p.interaction_ranges) do
+        assert(row.index==index and row.available and row.in_range==(index~=3))
+    end
     for i,row in ipairs(p.actions) do
         assert(reads[i]==1 and row.slot==i and row.available and row.is_token)
         assert(row.active==(i==2) and not row.autocast_allowed and not row.autocast_enabled)
@@ -37,9 +44,11 @@ def test_pet_commands_read_ten_actions_without_submitting_or_setting(position_mo
     if mode=='available' then
         assert(p.player_position.available and p.pet_position.available and p.distance==5)
     else assert(not p.player_position.available and not p.pet_position.available and p.distance==nil) end
-    GetPetActionInfo=nil;UnitPosition=nil
+    GetPetActionInfo=nil;UnitPosition=nil;CheckInteractDistance=nil;UnitDistanceSquared=nil
     p=Client442ObservePetCommands()
     for _,row in ipairs(p.actions) do assert(not row.available and not row.active) end
     assert(not p.pet_position.available and p.distance==nil)
+    assert(not p.distance_squared.available)
+    for _,row in ipairs(p.interaction_ranges) do assert(not row.available and row.in_range==nil) end
     '''
     subprocess.run([lua,'-'],input=program,text=True,check=True,capture_output=True)
