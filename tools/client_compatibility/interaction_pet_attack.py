@@ -94,10 +94,12 @@ def run(t,preparation,entry,stage_path,review_path):
                 'oracle':{'checks':checks,'requests':requests,'combat_pairs':pairs,'rejection':rejection,
                     'native_pet':copy.deepcopy(o.pet),'native_target':copy.deepcopy(o.target),'owner_vitals':owner,
                     'native_auras':copy.deepcopy(o.auras),'public':sample,'state':state,'frame':frame}}
-        require(t.step('pets.command_attack','Click the reviewed stock Attack once and prove delivered native combat against the passive dummy.',
-            {'attack':{'kind':'click','value':point,'hold':.4}},outcome,diagnostic_action='attack'),'owned_native_pet_attack_pass')
+        with t.bounded_combat_observation(60):
+            require(t.step('pets.command_attack','Click the reviewed stock Attack once and prove delivered native combat against the passive dummy.',
+                {'attack':{'kind':'click','value':point,'hold':.4}},outcome,diagnostic_action='attack'),'owned_native_pet_attack_pass')
     finally:
-        capture.restore(t,o,inventory,old,fixture,d['original_spell'],d['original_position'],after_follow=stopped if since else None)
+        with t.bounded_combat_observation(60):
+            capture.restore(t,o,inventory,old,fixture,d['original_spell'],d['original_position'],after_follow=stopped if since else None)
     t.receipt.update(completed=True,phase='owned_native_pet_attack_complete',qualified_scope=
         'One owned retained Imp stock Attack against the selected existing passive dummy, exact native command and '
         'delivered Attack Start, native/public pet victim and combat, ordinary Follow stop and delivered Attack Stop, '
