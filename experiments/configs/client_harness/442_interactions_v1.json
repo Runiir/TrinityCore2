@@ -6705,7 +6705,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_owner_melee_stop"
     },
     {
       "id": "combat.ranged_attack",
@@ -15001,8 +15002,103 @@
           "sha256": "08275fb1038c299e9876a06cedae90b1b932a11e298d823b1954060223288b99"
         }
       ]
+    },
+    {
+      "id": "owned_owner_melee_stop",
+      "operations": [
+        "combat.melee_stop"
+      ],
+      "scope": "One owned level10 Warlock uses ordinary /startattack and /stopattack on the separately reviewed existing passive dummy. Fresh whole melee_feedback02 passes14 hit checks, eight exact native/client physical hit pairs, public owned SWING_DAMAGE and four Stop checks including exactly one modern/native Stop request, delivered server Stop and inactive public autoattack. Separate fresh whole melee_health03 proves a5-damage owner hit and exact first native/public target health loss on one existing neutral Sheep, with delivered Start/Stop and no pet damage. Both trials restore all17 actor and6 protected-state checks. Ordinary class logout and separate stock selection restore original Harnesstwo offline; primary saved user pose and complete persisted state are preserved.",
+      "limits": "Only this owner melee Stop fixture is newly counted. Melee Start, autoattack and Imp Attack already have scoped qualifications. Other classes/targets, abilities, cadence, monster combat and full combat compatibility remain open. All six failed UI140 episodes stay excluded, including the earlier health trial whose request-count verifier rejected a server Stop delivered during the chat opener. Final3294 world/auth checks pass. Native world and both existing clients preserve lifetimes on HDMI-1. Scripts stay blocked; original softTargetInteract0 remains unrestored at1. The actual1834636249-byte remote object SHA42d0eeb14aeab8ba552de192836d6c36805dfe1bea23b743e523bb1ec4512043, all89 current JSON/1102 images and18 exact accepted native/client hit packets are verified. A one-bit workspace-copy change is recorded separately; the DVC cache and actual remote object are valid, and exact cache relink restores the workspace without replaying gameplay.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/class_prepare01/episode.json",
+          "sha256": "5400957e7c15832d83de798b1354a4d31292e6df909ec322afff7f7d99f5658a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/class_entry01/episode.json",
+          "sha256": "f444cff09bd6f8c9eb5672be0f725445ea641b54be630242c561a4ac05e84c6c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/melee_stage02/episode.json",
+          "sha256": "d665565457b1649c8783f0099c421e6a98c85ae9346f4263eebe7c32771fc258"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/melee_stage02/review01.json",
+          "sha256": "13d36d2446661c7a0f00fc619c2231912463588e7427831afd6987ac601ddfe8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/melee_feedback02/episode.json",
+          "sha256": "e2c0ca98235eaf8b29dd2de28295ea572555b620b04a9f109fc4e10839356763"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/melee_health_stage06/episode.json",
+          "sha256": "edc434fe5d07371f0f8fb5b8fdd50fa8e71ca5a84c16446c9522a3b48147f99d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/melee_health_stage06/review01.json",
+          "sha256": "a2f2f1b7be30d2d08c12aa17f1c3b4323eefd307ef7f9659b25d5204d007400b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/melee_health03/episode.json",
+          "sha256": "858ca9f257e23943c0a810757b0dd1484d6b9a1e043bad2ea1810139e6654e47"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/combat_visual_reviews01.json",
+          "sha256": "931022335d98707f150d63b9206751c06c619ecc7d149fd4306479307076af4e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/class_park01/episode.json",
+          "sha256": "4e1dcea6d7587e1b3b363007b4f630ed7263a233f2de0e0991ef34c4ced6678b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/origin_select01/review01.json",
+          "sha256": "5454c064b99f927e4f9a105d065633176f4ecf6f2253e209bc64edcb65431ff3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/origin_finish01/episode.json",
+          "sha256": "555e3510ea72adb6826927b9477824c495f9bedf8b36e3a4c031e55ddba20913"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/primary_closure01/episode.json",
+          "sha256": "f20c619d010354f2bb428ed986da33b2ed008c29654956f57ae652e36e4a4e2a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/runtime_closure01.json",
+          "sha256": "6d904183413746feabb2086ef572c1630d9fa692532d567afe21511cfb6714e0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/build_checks01.json",
+          "sha256": "539c52eaf59bf44130c0ed1363fd1427b93ad001ad469622dab768a6d5cff739"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/build_checks02.json",
+          "sha256": "8e0e2d0e969ac7dac76cbb2f866c1e68b0cc523670b837485c6594c0a55eb885"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui140/build_checks03.json",
+          "sha256": "46190b28478c3ca76597d9aaba49d960437a7ddc7e5e6e1808f17578dee73732"
+        }
+      ]
     }
   ],
-  "qualified_operations": 440,
+  "qualified_operations": 441,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }

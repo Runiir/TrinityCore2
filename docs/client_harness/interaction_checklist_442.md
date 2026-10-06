@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 440 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 441 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -883,7 +883,7 @@ Fixture: `owned_targets`.
 Fixture: `class_variants`.
 
 - [x] `combat.melee_start` (qualified variant; [evidence](#ordinary_quest_melee_completion))
-- [ ] `combat.melee_stop`
+- [x] `combat.melee_stop` (qualified variant; [evidence](#owned_owner_melee_stop))
 - [ ] `combat.ranged_attack`
 - [ ] `combat.instant_cast`
 - [ ] `combat.cast_time`
@@ -3194,3 +3194,27 @@ Remaining limits: Attack command and Firebolt feedback on this Imp/dummy only. A
 - [442_interactions_20261006_139.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_139.tar.gz.dvc), member `evidence/client_interactions_20261006_ui139/final_visual_reviews01.json`, SHA-256 `6af86b21efa5a13069902af2abca30ddaf4aad37a55ec4f17e9d14ed12f46cf0`.
 - [442_interactions_20261006_139.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_139.tar.gz.dvc), member `evidence/client_interactions_20261006_ui139/runtime_closure01.json`, SHA-256 `9bd6d585dabcba4a97f77bf7d0b4029310cc2ef835929b5dd62bd6f7e1899ba6`.
 - [442_interactions_20261006_139.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_139.tar.gz.dvc), member `evidence/client_interactions_20261006_ui139/primary_offline_closure01.json`, SHA-256 `08275fb1038c299e9876a06cedae90b1b932a11e298d823b1954060223288b99`.
+
+### owned_owner_melee_stop
+
+One owned level10 Warlock uses ordinary /startattack and /stopattack on the separately reviewed existing passive dummy. Fresh whole melee_feedback02 passes14 hit checks, eight exact native/client physical hit pairs, public owned SWING_DAMAGE and four Stop checks including exactly one modern/native Stop request, delivered server Stop and inactive public autoattack. Separate fresh whole melee_health03 proves a5-damage owner hit and exact first native/public target health loss on one existing neutral Sheep, with delivered Start/Stop and no pet damage. Both trials restore all17 actor and6 protected-state checks. Ordinary class logout and separate stock selection restore original Harnesstwo offline; primary saved user pose and complete persisted state are preserved.
+
+Remaining limits: Only this owner melee Stop fixture is newly counted. Melee Start, autoattack and Imp Attack already have scoped qualifications. Other classes/targets, abilities, cadence, monster combat and full combat compatibility remain open. All six failed UI140 episodes stay excluded, including the earlier health trial whose request-count verifier rejected a server Stop delivered during the chat opener. Final3294 world/auth checks pass. Native world and both existing clients preserve lifetimes on HDMI-1. Scripts stay blocked; original softTargetInteract0 remains unrestored at1. The actual1834636249-byte remote object SHA42d0eeb14aeab8ba552de192836d6c36805dfe1bea23b743e523bb1ec4512043, all89 current JSON/1102 images and18 exact accepted native/client hit packets are verified. A one-bit workspace-copy change is recorded separately; the DVC cache and actual remote object are valid, and exact cache relink restores the workspace without replaying gameplay.
+
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/class_prepare01/episode.json`, SHA-256 `5400957e7c15832d83de798b1354a4d31292e6df909ec322afff7f7d99f5658a`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/class_entry01/episode.json`, SHA-256 `f444cff09bd6f8c9eb5672be0f725445ea641b54be630242c561a4ac05e84c6c`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/melee_stage02/episode.json`, SHA-256 `d665565457b1649c8783f0099c421e6a98c85ae9346f4263eebe7c32771fc258`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/melee_stage02/review01.json`, SHA-256 `13d36d2446661c7a0f00fc619c2231912463588e7427831afd6987ac601ddfe8`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/melee_feedback02/episode.json`, SHA-256 `e2c0ca98235eaf8b29dd2de28295ea572555b620b04a9f109fc4e10839356763`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/melee_health_stage06/episode.json`, SHA-256 `edc434fe5d07371f0f8fb5b8fdd50fa8e71ca5a84c16446c9522a3b48147f99d`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/melee_health_stage06/review01.json`, SHA-256 `a2f2f1b7be30d2d08c12aa17f1c3b4323eefd307ef7f9659b25d5204d007400b`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/melee_health03/episode.json`, SHA-256 `858ca9f257e23943c0a810757b0dd1484d6b9a1e043bad2ea1810139e6654e47`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/combat_visual_reviews01.json`, SHA-256 `931022335d98707f150d63b9206751c06c619ecc7d149fd4306479307076af4e`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/class_park01/episode.json`, SHA-256 `4e1dcea6d7587e1b3b363007b4f630ed7263a233f2de0e0991ef34c4ced6678b`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/origin_select01/review01.json`, SHA-256 `5454c064b99f927e4f9a105d065633176f4ecf6f2253e209bc64edcb65431ff3`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/origin_finish01/episode.json`, SHA-256 `555e3510ea72adb6826927b9477824c495f9bedf8b36e3a4c031e55ddba20913`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/primary_closure01/episode.json`, SHA-256 `f20c619d010354f2bb428ed986da33b2ed008c29654956f57ae652e36e4a4e2a`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/runtime_closure01.json`, SHA-256 `6d904183413746feabb2086ef572c1630d9fa692532d567afe21511cfb6714e0`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/build_checks01.json`, SHA-256 `539c52eaf59bf44130c0ed1363fd1427b93ad001ad469622dab768a6d5cff739`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/build_checks02.json`, SHA-256 `8e0e2d0e969ac7dac76cbb2f866c1e68b0cc523670b837485c6594c0a55eb885`.
+- [442_interactions_20261006_140.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_140.tar.gz.dvc), member `evidence/client_interactions_20261006_ui140/build_checks03.json`, SHA-256 `46190b28478c3ca76597d9aaba49d960437a7ddc7e5e6e1808f17578dee73732`.
