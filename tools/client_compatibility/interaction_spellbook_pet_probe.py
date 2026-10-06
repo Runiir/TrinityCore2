@@ -7,6 +7,7 @@ from .interaction_trial import Trial
 from .interaction_operations import click_case,point,controls
 from .interaction_macros import require
 from .interaction_spellbook_navigation import wire_known,detail,navigate
+from .interaction_observation import read_current_page
 from .interaction_bridge_restoration import capture
 from .interaction_bridge_deploy import shot
 from .interaction_owned_class_fixture import prepared,origin_checks
@@ -32,13 +33,22 @@ def summon_button(t,learned):
     slots=(row or {}).get('flyout',{}).get('slots',[])
     if row is None or not any(r.get('id')==688 and r.get('known') is True for r in slots):
         raise RuntimeError('native-known Imp is absent from the public summon flyout')
-    def opened(b,a,s):
-        probe=detail(t,'summon_flyout_open');flyout=probe.get('flyout',{})
-        valid=s and flyout.get('visible') and flyout.get('parent')==row['button'] and any(
+    def ready(state):
+        flyout=state.get('spellbook_probe',{}).get('flyout',{})
+        return flyout.get('visible') and flyout.get('parent')==row['button'] and any(
             r.get('id')==688 and r.get('known') is True and r.get('enabled') for r in flyout.get('buttons',[]))
+    def opened(b,a,s):
+        state,frame=read_current_page(t,'summon_flyout_open','spellbook',ready=ready)
+        probe=state['spellbook_probe']
+        t.receipt.setdefault('spellbook_details',{})['summon_flyout_open']={'state':state,'frame':frame,'input_sent':False}
+        valid=s=='open' and ready(state)
         return {'status':'summon_flyout_open_pass' if valid else 'client_or_protocol_failure','oracle':{'probe':probe}}
-    require(click_case(t,'spellbook.pet_probe.flyout','Open the observed stock Summon Demon flyout.',
-        lambda c:c['name']==row['button'],opened),'summon_flyout_open_pass')
+    candidates=[c for c in controls(t) if c['name']==row['button'] and c.get('enabled')]
+    if len(candidates)!=1:raise RuntimeError('observed Summon Demon control is absent or ambiguous')
+    require(t.step('spellbook.pet_probe.flyout','Open the observed stock Summon Demon flyout.',
+        {'open':{'kind':'click','value':point(candidates[0]),'button':3,'hold':1.2,
+            'description':'Right-click the observed stock Summon Demon row once.'}},
+        opened,diagnostic_action='open'),'summon_flyout_open_pass')
     probe=detail(t,'summon_flyout_before_cast');buttons=[r for r in probe['flyout']['buttons'] if
         r.get('id')==688 and r.get('known') is True and r.get('enabled') and r.get('name')=='Summon Imp']
     candidates=[c for c in controls(t) if c.get('spell_flyout') and c.get('spell_id')==688 and c.get('enabled')]
