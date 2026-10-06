@@ -1,14 +1,22 @@
 from types import SimpleNamespace
-from . import inputs
+import pytest
+from . import inputs,runtime,resources
+from tools.client_compatibility import native_input_adapter
 
 
-def test_command_typing_obeys_observed_frames_and_preserves_separate_repeated_keys(monkeypatch):
-    from tools.second_client import ctl
-    monkeypatch.setattr(ctl,'key_for_char',lambda c:(c,False))
-    sleeps=[];taps=[]
-    monkeypatch.setattr(inputs.time,'sleep',sleeps.append)
-    sender=SimpleNamespace(XK=SimpleNamespace(string_to_keysym=lambda c:c),
-        _keycode=lambda c:(c,False),_tap=lambda keys,hold:taps.append((keys,hold)))
-    inputs.type_command(sender,'/run aa',1/30)
-    assert len(taps)==7 and all(hold==1/30 for _,hold in taps)
-    assert taps[-2:]==[(['a'],1/30)]*2 and sleeps==[1/30]*7
+@pytest.mark.parametrize('steps,button',[(2,5),(-2,4)])
+def test_wheel_input_preserves_notches_and_client_frames_without_any_typing(monkeypatch,tmp_path,steps,button):
+    monkeypatch.setattr(runtime,'ROOT',tmp_path);(tmp_path/'run').mkdir()
+    monkeypatch.setattr(inputs,'focus',lambda _: {'owned':True})
+    monkeypatch.setattr(resources,'check',lambda:None)
+    monkeypatch.setattr(resources,'append_action',lambda _:None)
+    events=[]
+    sender=SimpleNamespace(initialization={},X=SimpleNamespace(ButtonPress='down',ButtonRelease='up'),
+        move=lambda x,y:events.append(('move',x,y)),_send=lambda *args:events.append(args),
+        key=lambda *_ ,**__:pytest.fail('wheel must never open chat'),
+        close=lambda:events.append(('close',)))
+    monkeypatch.setattr(native_input_adapter,'Input',lambda:sender)
+    monkeypatch.setattr(inputs.time,'sleep',lambda seconds:events.append(('wait',seconds)))
+    inputs.execute('World of Warcraft','scroll',{'steps':steps,'frame_period_seconds':1/30})
+    assert events==[('move',640,150),('wait',1/30),('down',button),('up',button),('wait',1/30),
+        ('down',button),('up',button),('wait',1/30),('wait',.15),('close',)]

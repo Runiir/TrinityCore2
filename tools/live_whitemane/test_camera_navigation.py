@@ -1,21 +1,21 @@
 import math
 import pytest
-from . import camera_navigation,camera_input,runtime
+from . import camera_navigation,camera_input,runtime,camera_recovery
 
 
 @pytest.mark.parametrize('sensitivity',[-.006,.004])
 @pytest.mark.parametrize('ground_view,starting_pitch',[(False,-1.5),(True,math.pi/4)])
 @pytest.mark.parametrize('preferred_zoom',[None,20])
 @pytest.mark.parametrize('mouselook_after',[None,3])
-def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
+def test_ground_camera_uses_the_macro_without_steering_body_pitch(
         monkeypatch,tmp_path,sensitivity,ground_view,starting_pitch,preferred_zoom,mouselook_after):
     (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
     monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
-    commands=[];monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *args:commands.append(args) or {'completed':True})
+    commands=[];monkeypatch.setattr(camera_recovery,'use',lambda *args:commands.append(args) or {'executed':True})
     zoom_restored=[]
     monkeypatch.setattr(camera_navigation.camera_zoom,'goal',lambda _:preferred_zoom)
     monkeypatch.setattr(camera_navigation.camera_zoom,'restore',lambda folder,row,desired,**kw:
-        zoom_restored.append((desired,kw['save_preset'])) or {'confirmed':True})
+        zoom_restored.append(desired) or {'confirmed':True})
     monkeypatch.setattr(camera_navigation.time,'sleep',lambda _:None)
     actual={'yaw':0,'pitch':starting_pitch,'sequence':0,'released':False};deltas=[]
     class Sender:
@@ -51,14 +51,14 @@ def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
     rows=camera_navigation.align(tmp_path/'camera',row(),ground_view=ground_view)
     assert actual['pitch']==starting_pitch and all(y==0 for _,y in deltas)
     assert abs(actual['yaw'])<=.18 and len(rows)>=2
-    assert commands[0][2]['text']==('/run ResetView(4)SetView(4)' if ground_view else '/run ResetView(3)SetView(3)')
-    assert zoom_restored==([] if preferred_zoom is None else [(20,4 if ground_view else 3)])
+    assert len(commands)==1 and commands[0][0].name=='reset_macro'
+    assert zoom_restored==([] if preferred_zoom is None else [20])
 
 
 def test_ground_turn_does_not_require_or_steer_a_stale_body_pitch(monkeypatch,tmp_path):
     (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
     monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
-    monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *_:pytest.fail('ground yaw turn should not reset the view'))
+    monkeypatch.setattr(camera_recovery,'use',lambda *_:pytest.fail('ground yaw turn should not reset the view'))
     from . import camera_input
     state={'yaw':0,'sequence':0};deltas=[]
     class Sender:
@@ -92,7 +92,7 @@ def test_camera_recovery_resets_a_suspect_saved_angle_without_reusing_the_portal
     before={'runtime':{'pid':1},'movement':{'facing_radians':0,'client_uptime_ms':100,'sequence':1},
         'archaeology':{'flying':False,'falling':False}}
     commands=[]
-    monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *a:commands.append(a[-1]['text']) or {'completed':True})
+    monkeypatch.setattr(camera_recovery,'use',lambda *a:commands.append('macro') or {'executed':True})
     monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
     class Sender:
         initialization={}
@@ -112,20 +112,21 @@ def test_camera_recovery_resets_a_suspect_saved_angle_without_reusing_the_portal
     for index in range(2):
         with pytest.raises(RuntimeError,match='player state'):
             camera_navigation.align(tmp_path/str(index),before)
-    assert commands==['/run ResetView(3)SetView(3)']*2
+    assert commands==['macro']*2
     assert json.loads((tmp_path/'run/camera_presets.json').read_text())['camera_pose_measured'] is False
 
 
-def test_portal_retry_keeps_one_zoom_goal_in_the_saved_view(monkeypatch,tmp_path):
+def test_portal_retry_retains_the_macro_view_and_uses_only_wheel_zoom(monkeypatch,tmp_path):
     (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
-    actual={'yaw':0,'zoom':20,'preset':20,'sequence':0};commands=[]
-    def execute(*args):
-        text=args[-1]['text'];commands.append(text)
-        if 'SetView(2)' in text:actual['zoom']=actual['preset']
-        elif 'CameraZoomIn(' in text:actual['zoom']-=float(text.split('(')[1].split(')')[0])
-        elif 'CameraZoomOut(' in text:actual['zoom']+=float(text.split('(')[1].split(')')[0])
-        elif 'SaveView(2)' in text:actual['preset']=actual['zoom']
+    actual={'yaw':0,'zoom':20,'sequence':0};commands=[]
+    def macro(*args):
+        commands.append('macro');actual['zoom']=20
+        return {'executed':True}
+    def execute(title,action,arguments):
+        assert action=='scroll'
+        commands.append('wheel');actual['zoom']+=arguments['steps']*1.5
         return {'completed':True}
+    monkeypatch.setattr(camera_recovery,'use',macro)
     monkeypatch.setattr(camera_navigation.inputs,'execute',execute)
     monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
     monkeypatch.setattr(camera_navigation.camera_zoom,'goal',lambda _:20)
@@ -158,6 +159,6 @@ def test_portal_retry_keeps_one_zoom_goal_in_the_saved_view(monkeypatch,tmp_path
     for attempt in range(2):
         camera_navigation.align(tmp_path/str(attempt),observe(),
             {'instance':732,'north':8,'west':0},reset_view=True,zoom_target=5.55)
-    assert commands==['/run ResetView(2)SetView(2)','/run CameraZoomIn(14.45)',
-        '/run if SaveView then SaveView(2) end','/run SetView(2)']
-    assert actual['preset']==pytest.approx(5.55)
+    assert commands[0]=='macro' and commands.count('macro')==1
+    assert all(command in ('macro','wheel') for command in commands)
+    assert abs(actual['zoom']-5.55)<=1

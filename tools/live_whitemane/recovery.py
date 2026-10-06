@@ -9,6 +9,8 @@ from .observe import observe
 
 RETRYABLE=(
     'selected client action invalidated',
+    'text-box input is disabled',
+    'Laya waited with an unopened jar',
     'client changed, casting started, or supervisor moved before input',
     'selected client action readiness timed out',
     'character or owned client unavailable for UI input',

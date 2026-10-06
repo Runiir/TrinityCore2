@@ -111,7 +111,7 @@ def run(args):
     step=None
     try:
         pending=session['steps'][-1] if session['steps'] else None
-        if (pending and pending.get('action') in ('loot','mouseover_interact') and not pending.get('confirmed_looted_find')
+        if (pending and pending.get('action') in ('loot','mouseover_interact','right_click_approach') and not pending.get('confirmed_looted_find')
             and pending_find.range_error((pending.get('after',{}).get('farm_ui') or {}).get('error') or {})
             and not session.get('reapproach_find')):
             current=observe(output/'range_resume.png')
@@ -180,7 +180,15 @@ def run(args):
                     before=observe(folder/f'arrow_wait_{attempt:02d}.png')
                 a,m=before['archaeology'],before['movement']
             guide,error=routes.select(before,session,tool) if not visible_find or session.get('reapproach_find') else (None,None)
-            guide=constrain(before,guide,site_id=value['site_id'] if value else None) if guide else None
+            guide_error=None
+            if guide:
+                try:guide=constrain(before,guide,site_id=value['site_id'] if value else None)
+                except RuntimeError as rejected:
+                    if str(rejected)!='current point does not match the active public digsite perimeter':raise
+                    # A local polygon mismatch removes this movement estimate.
+                    # Public can_survey still permits a fresh Survey in place.
+                    # It does not authorize crossing an unverified boundary.
+                    guide_error=str(rejected);guide,error=None,None
             ui=before.get('farm_ui') or {}
             cooldown=ui.get('survey') or {}
             if (not args.loot_at and not visible_find and not value
@@ -202,6 +210,7 @@ def run(args):
                 if hovered['archaeology']['tooltip_checksum'] not in {checksum(n.encode()) for n in names}:
                     raise RuntimeError('hovered object is not a confirmed archaeology find')
             state=dig_context.model_state(before,guide,bool(args.loot_at) or visible_find,value,session['steps'])
+            if guide_error:state['guide_error']=guide_error
             retained=pickup_intent.retained(session,before,value,state=state)
             action,model,request,result=retained or choose(state)
             pickup_intent.offer(session,before,value,action,model,request,result,state=state)
@@ -307,12 +316,20 @@ def run(args):
                 step['outcome']=step['water_depth_adjustment']['outcome']
                 step['inputs']=[]
                 session['walked_since_survey']=True
-            elif action in ('loot','mouseover_interact'):
+            elif action in ('loot','mouseover_interact','right_click_approach'):
                 if auto_loot:
                     if not fresh['archaeology']['loot_open']:
-                        step['interaction']=(interact.mouseover if action=='mouseover_interact' else interact.use)(
-                            folder/'interaction',fresh,set(FIND_NAMES))
-                    step['pickup_feedback']=dig_feedback.pickup(folder,fresh,observe)
+                        if action=='right_click_approach':
+                            if not interact.native_approach_available(fresh,set(FIND_NAMES)):
+                                raise RuntimeError('selected client action invalidated: artifact native mouseover approach changed')
+                            step['interaction']=interact.use(folder/'interaction',fresh,set(FIND_NAMES),
+                                maximum=1,native_right_click=True)
+                        else:
+                            step['interaction']=(interact.mouseover if action=='mouseover_interact' else interact.use)(
+                                folder/'interaction',fresh,set(FIND_NAMES))
+                    step['pickup_feedback']=dig_feedback.pickup(folder,fresh,observe,
+                        native_approach=bool(step.get('interaction',{}).get('native_approach')),
+                        interaction=step.get('interaction'))
                     step['gathering_cast_started']=step['pickup_feedback']['cast_observed']
                     # An interact can open the normal loot window while auto
                     # loot is disabled. Laya chooses each visible loot button.
@@ -376,7 +393,7 @@ def run(args):
                     # last green endpoint is a local estimate, not a hidden
                     # artifact coordinate. Recheck range by interaction there.
                     session['pickup_approach']=dict(session['last_green_endpoint'])
-            if action in ('loot','mouseover_interact'):
+            if action in ('loot','mouseover_interact','right_click_approach'):
                 if graph:farm_graph.transition(graph,'verify_pickup',after,pending=pending_find.load(after),outcome='fragments_increased' if found else 'pickup_unconfirmed')
                 if not found:
                     error=(after.get('farm_ui') or {}).get('error') or {}

@@ -2,6 +2,7 @@
 import math
 from . import guide as routes
 from . import pending_find
+from .interact import native_approach_available
 
 
 def bearing_error(row, guide):
@@ -36,6 +37,7 @@ def model_state(row, guide, visible_find, pending, steps):
     if ui.get('tooltip') in pending_find.FIND_NAMES:
         state['mouseover_artifact']=ui['tooltip']
         state['mouseover_interact_binding']='Mouse Button 5'
+    state['native_artifact_approach_available']=native_approach_available(row,set(pending_find.FIND_NAMES))
     if guide:
         state['telescope'] = {key: guide[key] for key in ('color', 'heading_relative_to_player')}
         state['telescope'].update(distance_yards=round(guide['distance_yards'], 2),

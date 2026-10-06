@@ -11,7 +11,7 @@ COMPONENTS=('action_queue','guide','camera_steering','camera_navigation','fast_w
     'flight','combat_target','combat','dig_context','dig_decisions','pickup_intent',
     'dig_feedback','dig_session','farm_policy','recovery','interact','survey_find','pending_find',
     'world_facts','farm_graph','swim_vertical','clearance','terrain_context','inputs','portal','taxi','ground_jump','controller_updates','interaction_search',
-    'laya_ui','decisions','decision_backend','portal_view','sticky_input','boundaries','route_facts','camera_zoom','camera_recovery','farm_actions','resources','solve_batch')
+    'laya_ui','decisions','decision_backend','portal_view','sticky_input','boundaries','route_facts','camera_zoom','camera_recovery','farm_actions','resources','solve_batch','native_approach')
 
 
 class SourceUpdates:
@@ -108,16 +108,11 @@ def apply_addon_request(folder,row):
             or any(a.get(k) for k in ('flying','falling','casting')) or pending_find.load(row)
             or time.time()-request.get('last_attempt',0)<10):return False
     request['last_attempt']=time.time();runtime.write(path,request)
-    from .farm_actions import command_choice
-    try:
-        request['selection']=command_choice(folder/'addon_update',row,'/reload',
-            request.get('goal','Load installed facts identifying mobs attacking this player'),
-            request.get('label','Reload the installed attacker observation telemetry'))
-    except RuntimeError as error:
-        request['retry_reason']=str(error)
-        runtime.write(Path(request['receipt']),request);return False
-    runtime.write(Path(request['receipt']),request)
-    return request['selection']['executed']
+    # Loading installed addon code now needs the supervisor's normal UI
+    # reload. The actor has no chat input and cannot issue /reload itself.
+    request.update(completed=False,reason='text-box input is disabled; waiting for an observed addon reload')
+    runtime.write(Path(request['receipt']),request);runtime.write(path,request)
+    return False
 
 
 def apply_camera_request(folder,row):
@@ -150,13 +145,9 @@ def apply_camera_request(folder,row):
             or any(a.get(k) for k in ('flying','falling','casting'))
             or time.time()-request.get('last_attempt',0)<10):return False
     request['last_attempt']=time.time();runtime.write(path,request)
-    from .farm_actions import command_choice
-    fn='CameraZoomOut' if desired>current else 'CameraZoomIn'
+    from .camera_zoom import choose_restore
     try:
-        request['selection']=command_choice(folder/'camera_zoom_update',row,
-            f'/run {fn}({abs(desired-current):.2f})',
-            'Use a wider view for supervised archaeology and object searches',
-            f'Adjust the camera zoom from {current:.1f} to {desired:.1f} yards')
+        request['selection']=choose_restore(folder/'camera_zoom_update',row,desired)
     except RuntimeError as error:
         request['retry_reason']=str(error)
         runtime.write(Path(request['receipt']),request);return False

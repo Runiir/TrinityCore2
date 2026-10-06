@@ -1,9 +1,21 @@
 """Use an ordinary interact binding or a rechecked named game tooltip."""
 import time
-from . import runtime, inputs, native_control, action_queue
+from . import runtime, inputs, native_control, action_queue,native_approach
 from .observe import observe
 from .farm_actions import stationary
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
+
+
+def native_approach_available(row,names):
+    """A named mouseover can use the client's click-to-move interaction."""
+    ui=row.get('farm_ui') or {};camera=ui.get('camera_input') or {};a=row['archaeology']
+    cursor=ui.get('cursor') or {}
+    return (ui.get('tooltip') in names and (ui.get('combat') or {}).get('click_to_move')=='1'
+        and all(isinstance(cursor.get(k),(int,float)) and 0<=cursor[k]<1 for k in ('x','y'))
+        and not any(a.get(k) for k in ('flying','falling','casting','swimming'))
+        and not row['movement'].get('in_combat')
+        and not native_approach.recent_refusal(row,ui.get('tooltip'))
+        and not camera.get('right_down') and not camera.get('mouselooking'))
 
 
 def search_points(maximum,*,portal=False):
@@ -83,12 +95,13 @@ def mouseover(folder,before,names,*,sender=None,identity=None):
     runtime.write(folder/'interaction.json',result);return result
 
 
-def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
+def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=(),native_right_click=False):
     folder.mkdir(parents=True,exist_ok=False)
     before=action_queue.wait_ready(folder,before,observe)
     ui=before['farm_ui'];soft=ui['soft_interact'];keys=ui['bindings']['INTERACTTARGET']
+    native_right_click=native_right_click or native_approach_available(before,names)
     # Game objects have a valid public softinteract name but UnitExists is false.
-    if soft.get('name') in names and soft.get('enabled')=='3' and keys:
+    if not native_right_click and soft.get('name') in names and soft.get('enabled')=='3' and keys:
         fresh=observe(folder/'key_precheck.png');stationary(before,fresh)
         if fresh['farm_ui']['soft_interact'].get('name')!=soft['name']:
             raise RuntimeError('soft interact target changed before selected interaction')
@@ -144,9 +157,14 @@ def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
                     'recheck':'Move away and recheck the tooltip before a right click'} if artifact else
                     {'right_click':'Right-click the freshly named route object with camera mouse-look released',
                      'recheck':'Move away and recheck the tooltip before a right click'})
+                if native_approach_available(row,names):
+                    state['client_click_to_move']=True
+                    options['right_click']='Right-click the named object; the client moves into range and interacts'
+                    if native_right_click:options.pop('mouseover_interact',None)
                 action,request,response=laya_ui.choose(state,
-                    'Interact with the currently named '+('archaeology find using the user mouseover binding.'
-                        if artifact else 'route object using a right click after camera release.'),options)
+                    ('Right-click the freshly named object so the client approaches and interacts. Release the right button after clicking.'
+                        if native_right_click else 'Interact with the currently named '+('archaeology find using the user mouseover binding.'
+                        if artifact else 'route object using a right click after camera release.')),options)
                 runtime.write(folder/'mouseover_choice.json',{'state':state,'choice':action,'request':request,'response':response})
                 if action=='mouseover_interact':
                     result=mouseover(folder/'mouse5',row,names,sender=sender,identity=identity)
@@ -160,12 +178,18 @@ def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
                     camera=confirmed['farm_ui'].get('camera_input') or {}
                     if camera.get('right_down') or camera.get('mouselooking'):
                         raise RuntimeError('selected client action invalidated: camera mouse-look active before portal click')
+                    if native_right_click and not native_approach_available(confirmed,names):
+                        raise RuntimeError('selected client action invalidated: named native approach changed before click')
                     sender._send(sender.X.ButtonPress,3)
                     try:time.sleep(inputs.key_hold(confirmed,minimum=.2))
                     finally:sender._send(sender.X.ButtonRelease,3)
                     time.sleep(1/max(1,confirmed['farm_ui'].get('frame_rate') or 30))
                     result={'source':'fresh named route object right click after camera release',
-                        'name':name,'point':list(actual),'identity':identity}
+                        'name':name,'point':list(actual),'identity':identity,
+                        'client_uptime_at_click':confirmed['farm_ui'].get('uptime',0)}
+                    if native_approach_available(confirmed,names):
+                        result['native_approach']=True
+                        result['source']='fresh named object right click; client owns approach and interaction'
                     interaction_search.save(search,0,completed=True)
                     runtime.write(folder/'interaction.json',result);return result
                 cleared=hover(sender,(1000,750),row,folder)
@@ -182,10 +206,16 @@ def use(folder,before,names,*,maximum=100,search_seconds=2,preferred_points=()):
                 camera=confirmed['farm_ui'].get('camera_input') or {}
                 if camera.get('right_down') or camera.get('mouselooking'):
                     raise RuntimeError('selected client action invalidated: camera mouse-look active before object click')
+                if native_right_click and not native_approach_available(confirmed,names):
+                    raise RuntimeError('selected client action invalidated: named native approach changed before click')
                 sender._send(sender.X.ButtonPress,3)
                 try:time.sleep(.2)
                 finally:sender._send(sender.X.ButtonRelease,3)
                 result={'source':'rechecked public game tooltip','name':name,'point':[x,y],'identity':identity}
+                result['client_uptime_at_click']=confirmed['farm_ui'].get('uptime',0)
+                if native_approach_available(confirmed,names):
+                    result['native_approach']=True
+                    result['source']='rechecked named object right click; client owns approach and interaction'
                 interaction_search.save(search,0,completed=True)
                 runtime.write(folder/'interaction.json',result);return result
             interaction_search.save(search,0)

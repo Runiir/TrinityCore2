@@ -49,7 +49,6 @@ class TargetApproach:
                 for index,enemy in enumerate(attackers)})
         elif outside and bindings.get('INTERACTTARGET'):
             if c.get('click_to_move')=='1':options['approach']='Interact with the selected hostile target to move into melee range'
-            elif c.get('click_to_move')=='0':options['enable_approach']='Enable click to move so interact can approach the target'
         state={'task':'Reach melee range of the selected hostile target','combat':True,
             'target_alive':living(row),'in_melee_range':not outside if living(row) else None,
             'click_to_move':c.get('click_to_move')=='1','target_name':c.get('target_name'),
@@ -75,10 +74,7 @@ class TargetApproach:
             decision['selected_attacker']=current
             decision['input']=inputs.execute('World of Warcraft','click',
                 {'x':round(current['x']*runtime.WIDTH),'y':round(current['y']*runtime.HEIGHT),'button':1})
-        if action=='enable_approach':
-            decision['input']=inputs.execute('World of Warcraft','command',{'text':'/console autointeract 1',
-                'frame_period_seconds':1/max(1,row['farm_ui'].get('frame_rate') or 1)})
-        elif action=='approach':
+        if action=='approach':
             key=binding_key(bindings['INTERACTTARGET'][0])
             decision['input']=inputs.execute('World of Warcraft','key',{'key':key,'hold':.15})
             if action=='approach':

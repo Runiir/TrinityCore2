@@ -11,7 +11,7 @@ from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 CONFIG=runtime.REPO/'experiments/configs/client_harness/whitemane_farm_graph_v1.json'
 NODES={'dig':'observe','minimap':'scan_minimap','jar':'open_jar','recipe':'recipe_found',
     'turn_left':'approach','turn_right':'approach','forward_short':'approach','forward_long':'approach',
-    'loot':'gather','mouseover_interact':'gather','inspect':'scan_minimap',
+    'loot':'gather','mouseover_interact':'gather','right_click_approach':'gather','inspect':'scan_minimap',
     'camera_forward':'observe','camera_ground':'observe','camera_macro':'observe',
     'swim_up':'approach','swim_down':'approach','follow_detour':'approach',
     'step_left':'approach','step_right':'approach','step_back':'approach','step_forward':'approach'}
@@ -22,7 +22,8 @@ def guard(node,row,pending):
     if node=='survey' and ((row.get('farm_ui') or {}).get('survey') or {}).get('ready') is False:
         raise RuntimeError('Survey is still on cooldown')
     if node=='gather' and not (pending or a['loot_open'] or
-        ((row.get('farm_ui') or {}).get('soft_interact') or {}).get('name') in FIND_NAMES):
+        ((row.get('farm_ui') or {}).get('soft_interact') or {}).get('name') in FIND_NAMES or
+        (row.get('farm_ui') or {}).get('tooltip') in FIND_NAMES):
         raise RuntimeError('graph gather requires a public find observation')
     if node=='jar_found' and not a['canopic_jars_in_bags']:
         raise RuntimeError('graph jar completion requires the item in bags')

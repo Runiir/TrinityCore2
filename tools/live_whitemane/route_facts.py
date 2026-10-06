@@ -20,8 +20,11 @@ def describe(route,options):
             or key=='portal' and kind=='portal' or key=='teleport' and kind=='shortcut')
         facts={'follows_addon_next_leg':bool(matching)}
         if matching and kind=='taxi':
-            label=('Reach flight master ' if key=='flight' else 'Take the flight from ')+str(result['flight_master'])
+            native=label.startswith('Right-click')
+            facts['native_approach_available']=native
+            label=('Right-click ' if native else 'Reach flight master ' if key=='flight' else 'Take the flight from ')+str(result['flight_master'])
             label+=' for '+str(exit.get('name'))
+            if native:label+='; client approaches and opens taxi'
             if current is not None:label+=f'; known fare {current} copper'
         if key.startswith(('portal_','flight_portal_')) and target:
             portal=(target if target.get('to') else next((p for p in route.get('known_portals',[])

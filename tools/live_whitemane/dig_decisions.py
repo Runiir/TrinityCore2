@@ -36,7 +36,8 @@ def choose(state):
     measured_vertical_gap=vertical is not None and abs(vertical)>.5 and pickup.get('uncollected')
     repeat_here=state.get('survey_at_pickup_position_untried') is True
     camera_issue=state.get('camera_recovery_macro_available') and state.get('camera_recovery_relevant')
-    if not camera_issue and not decision_backend.vision_enabled() and not adjust_depth and not measured_vertical_gap and not repeat_here and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
+    native_approach=state.get('native_artifact_approach_available')
+    if not native_approach and not camera_issue and not decision_backend.vision_enabled() and not adjust_depth and not measured_vertical_gap and not repeat_here and (named_pickup or ((state.get('survey_ready') or state.get('instrument_current'))
             and not state['artifact_visible'] and not pickup.get('uncollected'))):
         # Keep the already-trained navigation schema. Pickup and new UI
         # operations use the original head below; navigation does not ask an
@@ -53,13 +54,15 @@ def choose(state):
         'inspect':'Search the minimap if an artifact was discovered but cannot be located'}
     if state['available'] and not state['casting']:
         options['camera_forward']='Restore the camera if it has not been aligned recently'
-        options['camera_ground']='Look down toward the nearby ground if artifact tooltip searches missed the pending find'
+        options['camera_ground']='Use ArchaeologyView to reset the camera for nearby ground searches'
         if state.get('camera_recovery_macro_available'):
             options['camera_macro']='Click ArchaeologyView to stop mouse-look, reset a poor camera angle and widen the view'
         if state['artifact_visible'] or (state.get('pickup') or {}).get('uncollected'):
             options['loot']='Interact if a discovered artifact is uncollected and nearby; verify gathering cast or fragments'
         if state.get('mouseover_artifact'):
             options['mouseover_interact']='Press Mouse Button 5 on the artifact under the cursor'
+        if native_approach:
+            options['right_click_approach']='Right-click the named artifact; the client moves into range and gathers it'
         provisional=(pickup.get('uncollected') and not pickup.get('discovery_confirmed')
             and pickup.get('tooltip_search_misses',0)>0)
         if (state.get('can_survey') and state.get('survey_ready')
@@ -131,9 +134,10 @@ def choose(state):
                 'route; walking at the same horizontal position or changing the camera does not close this height gap.')
         descriptions={'observe':'Wait while casting or unavailable',
             'inspect':'Locate an artifact whose position is unknown',
-            'camera_forward':'Align the camera with the character','camera_ground':'Look down at the ground',
+            'camera_forward':'Align the camera with the character','camera_ground':'Reset the camera for ground searches',
             'camera_macro':'Reset a poor camera view using ArchaeologyView',
             'loot':'Interact with the named artifact','mouseover_interact':'Interact with the artifact under the mouse',
+            'right_click_approach':'Right-click the artifact and let the client approach and gather it',
             'forward_short':'Walk closer to the artifact','forward_long':'Move toward the destination'}
         descriptions.update(swim_up='Swim upward toward the artifact depth',swim_down='Swim downward toward the artifact depth')
         options={key:descriptions[key] for key in options}

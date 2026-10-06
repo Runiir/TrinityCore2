@@ -19,29 +19,30 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
     view=None
     before_zoom=(before.get('farm_ui') or {}).get('camera_zoom')
     preferred_zoom=camera_zoom.goal(before)
-    # A confirmed portal view has its own measured zoom. Apply and save that
-    # goal with the preset instead of restoring the ordinary view first.
+    # A confirmed portal view has its own measured zoom. Keep that goal
+    # through retries instead of restoring the ordinary view first.
     desired_zoom=zoom_target if zoom_target is not None else (
         max(x for x in (before_zoom,preferred_zoom) if x is not None) if (
             before_zoom is not None or preferred_zoom is not None) else None)
     if grounded and (ground_view or target is None or reset_view):
-        recovery_view=target is None and not ground_view
-        # The portal keeps view 2. Ordinary camera recovery owns view 3 and
-        # resets its saved angle so a bad pitch cannot be restored repeatedly.
-        preset=4 if ground_view else 3 if recovery_view else 2
+        from . import camera_recovery
         path=runtime.ROOT/'run/camera_presets.json'
         previous=json.loads(path.read_text()) if path.exists() else {}
-        identity=before.get('runtime')
-        initialized=previous.get('runtime')==identity and preset in previous.get('initialized',[])
-        text=('/run SetView(%d)'%preset if initialized and not recovery_view else '/run ResetView(%d)SetView(%d)'%(preset,preset))
-        view=inputs.execute('World of Warcraft','command',{
-            'text':text,
-            'frame_period_seconds':1/max(1,(before.get('farm_ui') or {}).get('frame_rate') or 1)})
-        if view.get('completed'):
-            presets=previous.get('initialized',[]) if previous.get('runtime')==identity else []
-            runtime.write(path,{'runtime':identity,'initialized':sorted(set(presets+[preset])),
-                'last_preset':preset,'submitted_at':time.time(),
-                'camera_pose_measured':False})
+        context={'runtime':before.get('runtime'),'target':target,
+            'world':before['archaeology'].get('world'),'desired_zoom':desired_zoom}
+        # Keep an already restored portal view through its tooltip retries.
+        # Explicit camera recovery always activates the macro again.
+        retained=(reset_view and target is not None and previous.get('context')==context
+            and time.time()-previous.get('submitted_at',0)<180
+            and before_zoom is not None and desired_zoom is not None
+            and abs(before_zoom-desired_zoom)<=1)
+        if not retained:
+            view=camera_recovery.use(folder/'reset_macro',before)
+            if not view.get('executed'):
+                raise RuntimeError('selected client action invalidated: camera reset macro was not activated')
+            runtime.write(path,{'context':context,'macro':camera_recovery.NAME,
+                'submitted_at':time.time(),'camera_pose_measured':False})
+        else:view={'executed':False,'retained_macro_view':True}
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
     desired=before['movement']['facing_radians']
@@ -50,7 +51,7 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
         desired=math.atan2(target['west']-world['west'],target['north']-world['north'])
     rows=[];row=None;steering=CameraSteering();started=time.monotonic()
     pitch_steering=CameraSteering(minimum_deadband=.01,maximum_deadband=.03)
-    desired_pitch=math.pi/4 if ground_view else 0
+    desired_pitch=0
     with (runtime.ROOT/'run/input.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         identity=inputs.focus('World of Warcraft');sender=Input();sticky=StickyInput(sender,lease=observation_lease(before))
@@ -86,7 +87,7 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
                 pose=row.get('owned_pose') or {};pitch=pose.get('pitch_radians');vertical=0
                 # The owned packet measures character movement pitch. On
                 # ground it can remain unchanged while the camera tilts.
-                # Ground camera restoration uses a normal client view preset;
+                # Ground camera restoration uses the existing reset macro;
                 # yaw alignment must not wait for that stale body-pitch value.
                 pitch_aligned=grounded;pitch_info=None
                 if not grounded and pitch is not None:
@@ -118,12 +119,12 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False,zoom_ta
                 'alignment_heading_radians':desired,'yaw_samples':list(steering.samples),
                 'keyboard_turns':0,'forward_key_presses':0,'ground_view':ground_view,
                 'desired_pitch_radians':desired_pitch,'pitch_samples':list(pitch_steering.samples),
-                'view_preset_input':view,
-                'pitch_basis':'client view preset on ground; owned movement pitch only while airborne'})
+                'view_macro_input':view,
+                'pitch_basis':'ArchaeologyView macro on ground; owned movement pitch only while airborne'})
             if not interrupted and release.get('confirmed') is False:
                 raise RuntimeError(release['failure'])
     if view and desired_zoom is not None:
-        zoom=camera_zoom.restore(folder/'zoom',row,desired_zoom,save_preset=preset)
+        zoom=camera_zoom.restore(folder/'zoom',row,desired_zoom)
         saved=json.loads((folder/'camera_view.json').read_text());saved['preserved_zoom']=zoom
         runtime.write(folder/'camera_view.json',saved)
     return rows

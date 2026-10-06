@@ -55,10 +55,14 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
     for p in portals:
         selected=route.get('portal')==p and (route.get('kind')=='portal'
             or m['map_id']==245 or not p.get('key'))
-        if distance(a['world'],p.get('from'))<30:
+        from .portal import native_approach_available
+        native_portal=native_approach_available(row,p)
+        if distance(a['world'],p.get('from'))<30 or (a['world'] and
+                a['world']['instance']==p['from']['instance'] and native_portal):
             if not a['flying'] and not a['falling']:
                 key='portal' if selected else 'portal_'+p['key']
-                actions[key]=(('Use the next portal in the addon route' if selected else
+                actions[key]=(('Right-click the named portal; the client approaches and uses the next addon portal' if selected and native_portal else
+                    'Use the next portal in the addon route' if selected else
                     'Use nearby portal to '+p['destination']+', which differs from the addon next leg'),p)
             if ui.get('flyable'):
                 key='flight' if selected else 'flight_portal_'+p['key']
@@ -70,7 +74,11 @@ def legal_actions(row,batches,dig_guide=None,*,ground_approach_blocked=False):
     # master becomes the active destination only after the shortcut arrives.
     if route.get('origin') and route.get('exit') and route.get('kind')=='taxi':
         target=route['origin']['point']
-        if distance(a['world'],target)<12:actions['taxi']=('Take the route taxi',(route['origin'],route['exit']))
+        from .taxi import native_approach_available as native_taxi
+        if distance(a['world'],target)<12 or (a['world'] and a['world']['instance']==target['instance']
+                and native_taxi(row,route['origin'])):
+            actions['taxi']=('Right-click the named flight master to approach and open the route taxi' if
+                native_taxi(row,route['origin']) else 'Take the route taxi',(route['origin'],route['exit']))
         elif a['world'] and a['world']['instance']==target['instance']:
             remaining=distance(a['world'],target)
             label=f'Fly directly {remaining:.0f} yards to the flight master'
@@ -147,6 +155,8 @@ def choose(row,batches,session):
         'guide':{k:v for k,v in (dig_guide or a.get('arrow') or {}).items()
             if k in ('source','color','distance_yards','heading_relative_to_player','arrived')},
         'named_object':(ui.get('soft_interact') or {}).get('name'),
+        'named_mouseover':ui.get('tooltip'),
+        'client_click_to_move_enabled':(ui.get('combat') or {}).get('click_to_move')=='1',
         'pending_pickup':bool(row.get('pending_find')),'minimap':signal.get('status'),
         'minimap_clear':signal.get('clear'),
         'recent_actions':[{'action':step['phase'],'completed':step.get('completed',False),

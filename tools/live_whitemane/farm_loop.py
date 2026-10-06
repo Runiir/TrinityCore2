@@ -173,7 +173,8 @@ def run(output,stop_on='recipe'):
                         step['result']=minimap_finds.inspect(folder/'minimap',row)
                     elif action=='jar':
                         step['result']=command_choice(folder/'jar',row,'/use Canopic Jar','Open the collected Canopic Jar','Open a Canopic Jar from the bags')
-                        if not step['result']['executed']:raise RuntimeError('Laya waited with an unopened jar')
+                        if not step['result']['executed']:
+                            raise RuntimeError('Canopic Jar needs an inventory button or item macro: '+step['result']['reason'])
                     elif action=='solve':
                         step['result']=solve_batch.run(folder/'solve',batches,race_id=target['race'])
                         if step['result'].get('failure'):raise RuntimeError(step['result']['failure'])

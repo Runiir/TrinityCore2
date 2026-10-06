@@ -36,19 +36,11 @@ def focus(title):
         screen.close()
 
 
-def type_command(sender,text,period):
-    """Pace normal key events at the observed client frame rate."""
-    from tools.second_client import ctl
-    for char in text:
-        mapped=ctl.key_for_char(char)
-        if mapped:
-            code,_=sender._keycode(sender.XK.string_to_keysym(mapped[0]));shifted=mapped[1]
-        else:code,shifted=sender._keycode(ord(char))
-        shift=[sender._keycode(sender.XK.string_to_keysym('Shift_L'))[0]] if shifted else []
-        sender._tap(shift+[code],period);time.sleep(period)
-
-
 def execute(title, action, arguments):
+    # Reject before focus, sender creation, or any key event. This also covers
+    # old helpers retained by a running controller during a source update.
+    if action in ('command','type','edit_text'):
+        raise RuntimeError('text-box input is disabled; use an existing action-bar macro')
     from .resources import check,append_action
     check()
     from tools.second_client import ctl
@@ -100,21 +92,18 @@ def execute(title, action, arguments):
                 try:sender.key(arguments['key'], hold=arguments['hold'])
                 except SystemExit as error:
                     raise RuntimeError('selected client binding is unavailable: '+str(error)) from error
-            elif action == 'type':
-                if not arguments['text'].startswith('/') or len(arguments['text']) > 500:
-                    raise ValueError('only bounded ordinary in-game slash commands are supported')
-                sender.type(arguments['text'])
-            elif action == 'edit_text':
-                text=arguments['text'];period=arguments.get('frame_period_seconds',1/30)
-                if not isinstance(text,str) or len(text)>255 or not 0<period<=2:
-                    raise ValueError('macro edit text exceeds its client bound')
-                hold=max(.15,period)
-                sender.key('Ctrl+a',hold=hold);time.sleep(period)
-                # The stock macro edit box is focused and checked by the actor.
-                for index,line in enumerate(text.split('\n')):
-                    if index:sender.key('Return',hold=hold);time.sleep(period)
-                    type_command(sender,line,period)
-                time.sleep(period)
+            elif action == 'scroll':
+                steps=arguments['steps'];period=arguments.get('frame_period_seconds',1/30)
+                if type(steps) is not int or not 1<=abs(steps)<=8 or not 0<period<=2:
+                    raise ValueError('camera wheel input exceeds its bounded interval')
+                # Place the cursor over the world, rather than a scrollable UI.
+                sender.move(runtime.WIDTH//2,runtime.HEIGHT//6);time.sleep(period)
+                button=5 if steps>0 else 4
+                for _ in range(abs(steps)):
+                    sender._send(sender.X.ButtonPress,button)
+                    sender._send(sender.X.ButtonRelease,button)
+                    time.sleep(period)
+                time.sleep(max(.15,2*period))
             elif action == 'drag':
                 origin,destination=arguments['from'],arguments['to']
                 period=arguments.get('frame_period_seconds',1/30)
@@ -133,17 +122,6 @@ def execute(title, action, arguments):
                         time.sleep(period)
                 finally:sender._send(sender.X.ButtonRelease,1)
                 time.sleep(max(.15,period))
-            elif action == 'command':
-                text=arguments['text'];period=arguments.get('frame_period_seconds',.1)
-                if not text.startswith('/') or len(text)>500 or not 0<period<=2:
-                    raise ValueError('only bounded ordinary slash commands are supported')
-                # Keep the same EI device alive across chat entry, typing and
-                # submission. Removing it between parts can lose queued input
-                # when the client renders a background frame late.
-                hold=max(.15,period)
-                sender.key('Return',hold=hold);time.sleep(period)
-                type_command(sender,text,period);time.sleep(period)
-                sender.key('Return',hold=hold);time.sleep(period)
             else:
                 raise ValueError('unknown input action')
             receipt['completed'] = True
@@ -165,8 +143,8 @@ def main():
     key = commands.add_parser('key')
     key.add_argument('key')
     key.add_argument('--hold', type=float, default=.15)
-    text = commands.add_parser('type')
-    text.add_argument('text')
+    scroll = commands.add_parser('scroll')
+    scroll.add_argument('steps',type=int)
     args = vars(parser.parse_args())
     title, action = args.pop('title'), args.pop('action')
     print(json.dumps(execute(title, action, args)))

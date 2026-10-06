@@ -82,7 +82,8 @@ def select(row, session, tool):
             raise RuntimeError('pickup approach is outside its observed local range')
         heading=math.atan2(endpoint['west']-world['west'],endpoint['north']-world['north'])
         error=(heading-m['facing_radians']+math.pi)%math.tau-math.pi
-        tolerance=.1 if approach.get('source')=='named find forward range approach' else .5
+        tolerance=.1 if (approach.get('source')=='named find forward range approach'
+            or (session.get('pending_find') or {}).get('out_of_range')) else .5
         pose=row.get('owned_pose') or {}
         vertical=(height-pose['height_yards'] if height is not None and
             pose.get('height_yards') is not None else None)

@@ -70,3 +70,27 @@ def test_old_range_error_cannot_end_a_new_gathering_attempt(clock,tmp_path):
         return r
     result=dig_feedback.pickup(tmp_path,before,observe)
     assert result['outcome']=='fragments_increased' and clock[0]>=.2
+
+
+def test_native_artifact_approach_waits_through_movement_then_gathering_cast(clock,tmp_path):
+    before=row();before['archaeology']['world']={'instance':1,'north':0,'west':0}
+    sequence=[1]
+    def observe(_):
+        sequence[0]+=1;t=clock[0]
+        r=row(sequence[0],casting=4<=t<5.5,uptime=t,ends=5.5,fragments=15 if t>=5.6 else 10)
+        r['archaeology']['world']={'instance':1,'north':min(t,4)*7,'west':0}
+        r['farm_ui']['error']={'message':'Out of range.','at':.01}
+        if t>=4:r['farm_ui']['gathering']={'starts':1}
+        return r
+    result=dig_feedback.pickup(tmp_path,before,observe,native_approach=True)
+    assert result['cast_observed'] and result['outcome']=='fragments_increased'
+    assert 5.6<=clock[0]<5.7
+
+
+def test_blocked_native_artifact_approach_returns_range_error_for_a_new_decision(clock,tmp_path):
+    before=row(uptime=10);after=row(2,uptime=10.1)
+    before['archaeology']['world']=after['archaeology']['world']={'instance':1,'north':0,'west':0}
+    after['farm_ui']['error']={'message':'Out of range.','at':10.05}
+    result=dig_feedback.pickup(tmp_path,before,lambda _:copy.deepcopy(after),native_approach=True)
+    assert result['outcome']=='out_of_range'
+    assert action_queue.ACCEPTANCE_TIMEOUT<=clock[0]<action_queue.ACCEPTANCE_TIMEOUT+.1

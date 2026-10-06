@@ -3,7 +3,7 @@ import math
 import time
 from . import runtime, inputs, laya_ui, action_queue
 from .observe import observe
-from .archaeology_probe import command, ready
+from .archaeology_probe import ready
 
 
 def stationary(before, fresh):
@@ -56,41 +56,9 @@ def click_choice(folder, before, collection, goal, expected=None,*,matching_only
 
 
 def command_choice(folder, before, text, goal, description):
+    """Compatibility entry point for old callers, with no text-input authority."""
     folder.mkdir(parents=True,exist_ok=False)
-    choice,request,response=laya_ui.choose({'goal':goal,'ready':ready(before),'command':text},
-        'Choose the command when it fulfils the goal and the player is ready.',
-        {'command':description,'wait':'Wait without input'})
-    record={'before':before,'choice':choice,'request':request,'response':response,'executed':False}
-    runtime.write(folder/'decision.json',record)
-    if choice=='command':
-        if before.get('setup_only'):
-            from .observe import setup_movement
-            if text!='/reload':raise RuntimeError('movement-only setup can only reload the observer')
-            fresh=setup_movement(folder/'precheck.png')
-            if (not ready(fresh) or before['runtime']!=fresh['runtime'] or
-                    before['movement']['position']!=fresh['movement']['position'] or
-                    (runtime.ROOT/'run/stop_dig').exists()):
-                raise RuntimeError('owned stationary player changed before observer repair reload')
-        else:
-            fresh=action_queue.wait_ready(folder,observe(folder/'precheck.png'),observe)
-            stationary(before,fresh)
-        fps=(fresh.get('farm_ui') or {}).get('frame_rate')
-        record['inputs']=command(text,frame_period_seconds=1/max(1,fps or 10))
-        record['executed']=True
-        runtime.write(folder/'decision.json',record)
-        time.sleep(2)
-        if text=='/reload':
-            import json
-            mode=runtime.ROOT/'run/observation_mode.json'
-            setting=json.loads(mode.read_text()) if mode.exists() else {}
-            if setting.get('transport')=='local_tiles':
-                from .telemetry_tiles import calibrate
-                # GetTime excludes part of reload/loading time on this client.
-                # Re-anchor only after an explicit reload and fresh generations.
-                for attempt in range(16):
-                    try:record['tile_clock']=calibrate(setting.get('extension',True));break
-                    except ValueError:
-                        if attempt==15:raise
-                        time.sleep(.25)
+    record={'before':before,'goal':goal,'choice':'wait','executed':False,
+        'reason':'text-box input is disabled; use an existing action-bar macro'}
     runtime.write(folder/'decision.json',record)
     return record

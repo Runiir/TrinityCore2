@@ -2,7 +2,7 @@
 import math
 import time
 from . import runtime, inputs, interact,action_queue
-from . import portal_view
+from . import portal_view,native_approach as native_feedback
 from .observe import observe
 from .decisions import choose
 from .fast_waypoint import walk
@@ -11,11 +11,18 @@ from .camera_navigation import align
 from tools.client_compatibility import travel_policy
 
 
+def native_approach_available(row,portal):
+    if not portal.get('destination'):return False
+    names={'Portal to '+portal['destination']}
+    if portal.get('key')=='org-uldum':names.add('Portal to Uldum')
+    return interact.native_approach_available(row,names)
+
+
 def run(folder,portal,*,approved_intent=None):
     folder.mkdir(parents=True,exist_ok=False)
     before=observe(folder/'before.png');m,a=before['movement'],before['archaeology']
     world=a['world'];target=portal['from'];remaining=math.hypot(target['north']-world['north'],target['west']-world['west'])
-    if world['instance']!=target['instance'] or remaining>30:
+    if world['instance']!=target['instance'] or (remaining>30 and not native_approach_available(before,portal)):
         raise RuntimeError('portal use requires arrival near the public entrance')
     if a['flying'] or a['falling'] or a['casting'] or m['in_combat']:
         raise RuntimeError('selected client action invalidated: portal approach requires ground and idle cast state')
@@ -35,7 +42,14 @@ def run(folder,portal,*,approved_intent=None):
     hint=None
     named=(soft.get('name') in names and soft.get('enabled')=='3'
         and fresh.get('farm_ui',{}).get('bindings',{}).get('INTERACTTARGET'))
-    if named:
+    native_approach=native_approach_available(fresh,portal)
+    if native_approach:
+        row=fresh
+        result['approach']={'source':'fresh named portal right click with client click-to-move enabled',
+            'exact_coordinate_required':False,'client_owns_approach_and_interaction':True}
+    elif remaining>30:
+        raise RuntimeError('selected client action invalidated: distant portal mouseover changed')
+    elif named:
         row=action_queue.wait_stopped(folder,fresh,observe,camera_released=True)
         result['approach']={'source':'confirmed public named portal interaction',
             'exact_coordinate_required':False}
@@ -59,11 +73,17 @@ def run(folder,portal,*,approved_intent=None):
         row=action_queue.wait_stopped(folder,row,observe,camera_released=True)
     runtime.write(folder/'portal.json',result)
     point=portal_view.search_point(hint,row)
-    if point:
+    if native_approach:
+        result['interaction']=interact.use(folder/'interaction',row,names,
+            maximum=1,native_right_click=True)
+    elif point:
         result['preferred_tooltip_probe']=point
         result['interaction']=interact.use(folder/'interaction',row,names,preferred_points=[point])
     else:result['interaction']=interact.use(folder/'interaction',row,names)
-    for index in range(25):
+    speed=(row.get('farm_ui',{}).get('move_speeds') or {}).get('run') or 7
+    feedback=native_feedback.Feedback(row,result['interaction'])
+    deadline=time.monotonic()+(remaining/max(.1,speed)+10 if native_approach else 10)
+    while time.monotonic()<deadline:
         time.sleep(.4)
         try:after=observe(folder/'arrival.png')
         except RuntimeError as error:
@@ -73,6 +93,13 @@ def run(folder,portal,*,approved_intent=None):
         w=after['archaeology']['world'];destination=portal['to']
         if w and w['instance']==destination['instance'] and math.hypot(w['north']-destination['north'],w['west']-destination['west'])<100:
             result.update(completed=True,after=after);break
+        if ((runtime.ROOT/'run/stop_dig').exists() or after['movement']['dead']
+                or after['movement']['in_combat'] or after.get('runtime')!=before.get('runtime')):
+            raise RuntimeError('selected client action invalidated: native portal approach interrupted')
+        if result['interaction'].get('native_approach') and feedback.refused(after):
+            result.update(native_range_refusal=True,after=after)
+            runtime.write(folder/'portal.json',result)
+            raise RuntimeError('selected client action invalidated: native portal click was out of range without approach; move closer')
     runtime.write(folder/'portal.json',result)
     if not result['completed']:raise RuntimeError('portal interaction did not confirm destination arrival')
     result['view_hint_saved']=portal_view.remember(portal,row,result['interaction'],result['after'],
