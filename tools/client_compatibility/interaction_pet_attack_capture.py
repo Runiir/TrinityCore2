@@ -21,7 +21,7 @@ from .interaction_pet_control_training import protected
 from .interaction_pet_follow_capture import follow_request
 from . import interaction_pet_moveto_capture as cleanup
 from .pet_attack_fixture import PetAttackFixture
-from .pet_attack_capture_evidence import button,target_checks
+from .pet_attack_capture_evidence import button,target_checks,native_dummy
 from .observation.inventory import Inventory
 from .observation.journal import latest
 from .world.native_objects import records
@@ -37,7 +37,9 @@ class AttackPresence(SpellPresence):
         super().inspect_packet(p)
         if p.get('direction')!='from_native' or p.get('name')!='SMSG_UPDATE_OBJECT':return
         for r in records(bytes.fromhex(p['body'])):
-            if r.get('kind')==3 and r['guid']>>52==0xf13 and r['guid']&0xffffffff==279984:self.target=r
+            if native_dummy(r):
+                if self.target and self.target['guid']!=r['guid']:raise RuntimeError('ambiguous native dummy creation')
+                self.target=r
             elif self.target and r.get('guid')==self.target['guid']:self.target['fields'].update(r.get('fields',{}))
             if self.target and self.target['guid'] in r.get('removed',[]):self.target=None
 
@@ -51,7 +53,18 @@ def restore(t,o,inventory,old,fixture,original,original_position):
             t.receipt['attack_fixture_restoration']=fixture.restore()
             t.receipt['baseline']['position']=original_position;t.persist()
             restore_spell(t,o,original)
-    cleanup.restore(t,o,inventory,old,before_whole=before_whole)
+    try:
+        # Actual UI137 Follow includes the selected dummy GUID. The admitted
+        # captured Follow variant uses an empty target, so clear ordinary
+        # selection before submitting that restoration command.
+        state,_=t.observe('attack_before_follow_cleanup')
+        if state['target'].get('exists'):t.execute({'kind':'chat','value':'/cleartarget'})
+        state,frame=t.observe('attack_follow_empty_selection');o.poll()
+        checks={'public_selection_empty':state['target'].get('exists') is False,
+            'native_selection_empty':pair(o.player,'UNIT_FIELD_TARGET')==0}
+        t.receipt['attack_follow_cleanup_selection']={'checks':checks,'frame':frame};t.persist()
+        if not all(checks.values()):raise RuntimeError('ordinary Attack cleanup did not clear selection')
+    finally:cleanup.restore(t,o,inventory,old,before_whole=before_whole)
 
 
 def stage(t,preparation,entry):

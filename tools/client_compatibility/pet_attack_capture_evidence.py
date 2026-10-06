@@ -1,7 +1,18 @@
 """Require an observed owned Attack button and an actual selected passive target."""
+import math
 from .interaction_pet_command_probe import expected_guid
 from .interaction_pet_target import pair
 from .world.objects import INDEX
+
+DUMMY_POSE=(-8962.05,-157.16,81.5856,2.54818)
+
+
+def native_dummy(target):
+    if not target:return False
+    guid=target.get('guid',0);pose=target.get('movement',{}).get('position',())
+    return bool(target.get('kind')==3 and guid>>52==0xf13 and guid>>32&0xfffff==44548
+        and target.get('map')==0 and len(pose)==4 and all(math.isfinite(v) for v in pose)
+        and all(abs(a-b)<.01 for a,b in zip(pose,DUMMY_POSE)))
 
 
 def target_guid(target):
@@ -12,8 +23,7 @@ def target_guid(target):
 def target_checks(target,state,owner):
     fields=target.get('fields',{}) if target else {};guid=target.get('guid',0) if target else 0
     expected=target_guid(target) if target else None
-    return {'native_dummy_identity':bool(target and target.get('kind')==3 and guid>>52==0xf13
-            and guid>>32&0xfffff==44548 and guid&0xffffffff==279984 and target.get('map')==0),
+    return {'native_dummy_identity':native_dummy(target),
         'living_native_dummy':fields.get(INDEX['UNIT_FIELD_HEALTH'],0)>0,
         'native_selection':bool(guid and pair(owner,'UNIT_FIELD_TARGET')==guid),
         'public_dummy_identity':bool(expected and state.get('target',{}).get('guid')==expected
