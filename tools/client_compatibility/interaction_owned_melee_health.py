@@ -59,8 +59,9 @@ def entry_pvp(session,entry):
         if (p.get('session')!=session or p.get('direction')!='from_native' or p.get('name')!='SMSG_UPDATE_OBJECT' or
             not entry['started_at']<=p.get('time',0)<=entry['finished_at']):continue
         for row in records(bytes.fromhex(p['body'])):
-            if row.get('guid')==5 and INDEX['UNIT_FIELD_BYTES_2'] in row.get('fields',{}):
-                return {'value':row['fields'][INDEX['UNIT_FIELD_BYTES_2']]&0xff00,'packet':p}
+            if row.get('guid')==5 and row.get('kind')==4:
+                return {'value':row['fields'].get(INDEX['UNIT_FIELD_BYTES_2'],0)&0xff00,'packet':p,
+                    'zero_default_from_creation':INDEX['UNIT_FIELD_BYTES_2'] not in row['fields']}
     raise RuntimeError('entry-bound original native PvP bytes are absent')
 
 
