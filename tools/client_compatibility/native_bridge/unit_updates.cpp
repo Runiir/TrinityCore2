@@ -11,6 +11,8 @@ Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const
     static Scalar const scalars[] = {
         {"Health",5,'q',"UNIT_FIELD_HEALTH"}, {"MaxHealth",6,'q',"UNIT_FIELD_MAXHEALTH"},
         {"DisplayID",7,'i',"UNIT_FIELD_DISPLAYID"},
+        {"Summon",14,'g',"UNIT_FIELD_SUMMON"},
+        {"SummonedBy",17,'g',"UNIT_FIELD_SUMMONEDBY"}, {"CreatedBy",18,'g',"UNIT_FIELD_CREATEDBY"},
         {"Target",21,'g',"UNIT_FIELD_TARGET"}, {"Flags",41,'I',"UNIT_FIELD_FLAGS"},
         {"Flags2",42,'I',"UNIT_FIELD_FLAGS_2"},
         {"RangedAttackRoundBaseTime",46,'I',"UNIT_FIELD_RANGEDATTACKTIME"},
@@ -19,6 +21,7 @@ Bytes Protocol::scalar_block(Value const &s, Value const &character, Value const
         {"MinOffHandDamage",55,'f',"UNIT_FIELD_MINOFFHANDDAMAGE",true}, {"MaxOffHandDamage",56,'f',"UNIT_FIELD_MAXOFFHANDDAMAGE",true},
         {"StandState",57,'B',"UNIT_FIELD_BYTES_1"}, {"VisFlags",59,'B',"UNIT_FIELD_BYTES_1"},
         {"AnimTier",60,'B',"UNIT_FIELD_BYTES_1"},
+        {"PetNumber",61,'I',"UNIT_FIELD_PETNUMBER"}, {"PetNameTimestamp",62,'I',"UNIT_FIELD_PET_NAME_TIMESTAMP"},
         {"ModCastingSpeed",66,'f',"UNIT_MOD_CAST_SPEED"},
         {"ModSpellHaste",67,'f',"UNIT_MOD_CAST_HASTE"},
         {"ModHaste",68,'f',"PLAYER_FIELD_MOD_HASTE",true},

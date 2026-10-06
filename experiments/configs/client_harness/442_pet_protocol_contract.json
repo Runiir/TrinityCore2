@@ -1,0 +1,69 @@
+{
+  "schema": "client442_pet_protocol_contract_v1",
+  "native_golden_fixture": "tools/client_compatibility/world/tests/fixtures/native_pet_ui110.json",
+  "modern_sources": [
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/PetPackets.cpp",
+      "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+      "sha256": "5f3e4ad729259637326f7a772cf57bf06deb3d7b42ad2e5eaf038b2edc04f645",
+      "bytes": 6049,
+      "file": "PetPackets.cpp"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/PetPackets.h",
+      "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+      "sha256": "db2e3ac6f534249f1d1b7aea0245cb427b02d87d81e40718229a6c13e6fce53b",
+      "bytes": 8373,
+      "file": "PetPackets.h"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/QueryPackets.cpp",
+      "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+      "sha256": "710b4d2de394758ce144bb471866fa2000752dd5a55542e964418957ffd9ec35",
+      "bytes": 15023,
+      "file": "QueryPackets.cpp"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Entities/Object/ObjectGuid.h",
+      "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+      "sha256": "6bd18b82fd51c6b80959d28a025c45fccd71e2a4a5859f68df51a9584fb88753",
+      "bytes": 26751,
+      "file": "ObjectGuid.h"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Entities/Object/Updates/UpdateFields.h",
+      "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+      "sha256": "340098be42e26d78b67a12e5c71dd2d8ce39faf6cb7f43d16630cdad802e9d81",
+      "bytes": 51111,
+      "file": "UpdateFields.h"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Protocol/Opcodes.cpp",
+      "sha256": "df7a075c0b114160d15c365f260056f6e063feffc2c7547ad6300b59ffba5b9c",
+      "file": "Opcodes.cpp",
+      "bytes": 252711
+    }
+  ],
+  "field_indices": {
+    "Summon": 14,
+    "SummonedBy": 17,
+    "CreatedBy": 18,
+    "PetNumber": 61,
+    "PetNameTimestamp": 62
+  },
+  "guid_types": {
+    "Pet": 10,
+    "Vehicle": 9
+  },
+  "authority": "Native-visible Pet creation plus exact SummonedBy, PetNumber and player Summon agreement before pet spell catalog. Public name reads require visible exact GUID and native pet number. No synthesized or granted spells.",
+  "limits": [
+    "Pet commands, casts, talent changes, renaming and dismissing remain open.",
+    "Live validation required before pet-tab qualification."
+  ],
+  "custom_scripts": {
+    "original": "0",
+    "current_stock_disabled": "1",
+    "original_restored": false
+  },
+  "script_permission": "blocked"
+}

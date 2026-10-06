@@ -34,6 +34,11 @@ Value Protocol::field_values(Value const &s, Value const &c) const
                 {"EffectiveLevel", val("UNIT_FIELD_LEVEL")},
                 {"Target", modern_guid(target, integer(get(s, "map")))}};
     for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
+             {"Summon", "UNIT_FIELD_SUMMON"}, {"SummonedBy", "UNIT_FIELD_SUMMONEDBY"},
+             {"CreatedBy", "UNIT_FIELD_CREATEDBY"}})
+        unit[modern] = modern_guid(static_cast<std::uint64_t>(val(old)) |
+            (static_cast<std::uint64_t>(val(old, 1)) << 32), integer(get(s, "map")));
+    for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
              {"Health", "UNIT_FIELD_HEALTH"},
              {"MaxHealth", "UNIT_FIELD_MAXHEALTH"},
              {"DisplayID", "UNIT_FIELD_DISPLAYID"},
@@ -49,6 +54,8 @@ Value Protocol::field_values(Value const &s, Value const &c) const
              {"EmoteState", "UNIT_NPC_EMOTESTATE"},
              {"NpcFlags", "UNIT_NPC_FLAGS"}})
         unit[modern] = val(old);
+    unit["PetNumber"] = val("UNIT_FIELD_PETNUMBER");
+    unit["PetNameTimestamp"] = val("UNIT_FIELD_PET_NAME_TIMESTAMP");
     for (auto const &[modern, old] : std::initializer_list<std::pair<char const *, char const *>>{
              {"AttackPower", "UNIT_FIELD_ATTACK_POWER"},
              {"AttackPowerModPos", "UNIT_FIELD_ATTACK_POWER_MOD_POS"},

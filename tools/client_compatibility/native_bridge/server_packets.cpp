@@ -12,6 +12,7 @@
 #include "archaeology.hpp"
 #include "player_ui_state.hpp"
 #include "item_text.hpp"
+#include "pet_packets.hpp"
 #include <ctime>
 
 namespace bridge
@@ -138,6 +139,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if(name=="SMSG_PET_SPELLS" || name=="SMSG_PET_NAME_QUERY_RESPONSE")
+    {
+        if(auto pet=pet_response(protocol,state,name,body))send(*pet);
+        co_return;
+    }
     if(research_complete(name,body))
     {
         // The completion packet reports count 1 even on repeats. Fetch native
@@ -329,6 +335,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
         bool was_created = state.created;
         if (auto reply = protocol.object_updates(state, body,visible_players))
             send(*reply);
+        if(auto pet=pet_ready(protocol,state))send(*pet);
         if (!was_created && state.created)
         {
             native->send("CMSG_REQUEST_RESEARCH_HISTORY",{});

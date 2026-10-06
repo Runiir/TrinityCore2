@@ -37,6 +37,12 @@ def field_values(snapshot, character):
     from .gameobjects import modern_guid
     target=value('UNIT_FIELD_TARGET') | value('UNIT_FIELD_TARGET',1)<<32
     unit['Target']=modern_guid(target,snapshot.get('map',0))
+    for modern,old in {'Summon':'UNIT_FIELD_SUMMON','SummonedBy':'UNIT_FIELD_SUMMONEDBY',
+                      'CreatedBy':'UNIT_FIELD_CREATEDBY'}.items():
+        guid=value(old) | value(old,1)<<32
+        unit[modern]=modern_guid(guid,snapshot.get('map',0))
+    unit['PetNumber']=value('UNIT_FIELD_PETNUMBER')
+    unit['PetNameTimestamp']=value('UNIT_FIELD_PET_NAME_TIMESTAMP')
     for modern,old in {'AttackPower':'UNIT_FIELD_ATTACK_POWER','AttackPowerModPos':'UNIT_FIELD_ATTACK_POWER_MOD_POS',
         'AttackPowerModNeg':'UNIT_FIELD_ATTACK_POWER_MOD_NEG','RangedAttackPower':'UNIT_FIELD_RANGED_ATTACK_POWER',
         'RangedAttackPowerModPos':'UNIT_FIELD_RANGED_ATTACK_POWER_MOD_POS','RangedAttackPowerModNeg':'UNIT_FIELD_RANGED_ATTACK_POWER_MOD_NEG'}.items():

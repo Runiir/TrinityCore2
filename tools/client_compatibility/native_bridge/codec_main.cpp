@@ -26,6 +26,7 @@
 #include "player_ui_state.hpp"
 #include "item_text.hpp"
 #include "who.hpp"
+#include "pet_packets.hpp"
 #include <iostream>
 #include <memory>
 
@@ -335,7 +336,10 @@ int main(int argc, char **argv)
                         Reply reply;
                         try
                         {
-                            if(fn=="combat_request")
+                            if(fn=="pet_request")reply=pet_request(protocol,state,name,body);
+                            else if(fn=="pet_response")reply=pet_response(protocol,state,name,body);
+                            else if(fn=="pet_ready")reply=pet_ready(protocol,state);
+                            else if(fn=="combat_request")
                                 reply=Protocol::combat_request(state,name,body);
                             else if(fn=="combat_response")
                                 reply=Protocol::combat_response(state,name,body);
