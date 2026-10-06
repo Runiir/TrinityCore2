@@ -28,11 +28,9 @@ def ready(row):
             and state['speed'] == 0 and not any(state[k] for k in ('dead', 'in_combat', 'on_taxi')))
 
 
-def command(text):
-    receipts = [inputs.execute('World of Warcraft', 'key', {'key': 'Return', 'hold': .15}),
-                inputs.execute('World of Warcraft', 'type', {'text': text}),
-                inputs.execute('World of Warcraft', 'key', {'key': 'Return', 'hold': .15})]
-    return receipts
+def command(text,*,frame_period_seconds=.1):
+    return [inputs.execute('World of Warcraft','command',
+        {'text':text,'frame_period_seconds':frame_period_seconds})]
 
 
 def run(args):

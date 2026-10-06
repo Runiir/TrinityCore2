@@ -76,6 +76,17 @@ def execute(title, action, arguments):
                 if not arguments['text'].startswith('/') or len(arguments['text']) > 500:
                     raise ValueError('only bounded ordinary in-game slash commands are supported')
                 sender.type(arguments['text'])
+            elif action == 'command':
+                text=arguments['text'];period=arguments.get('frame_period_seconds',.1)
+                if not text.startswith('/') or len(text)>500 or not 0<period<=2:
+                    raise ValueError('only bounded ordinary slash commands are supported')
+                # Keep the same EI device alive across chat entry, typing and
+                # submission. Removing it between parts can lose queued input
+                # when the client renders a background frame late.
+                hold=max(.15,period)
+                sender.key('Return',hold=hold);time.sleep(period)
+                sender.type(text);time.sleep(period)
+                sender.key('Return',hold=hold);time.sleep(period)
             else:
                 raise ValueError('unknown input action')
             receipt['completed'] = True

@@ -70,7 +70,8 @@ def command_choice(folder, before, text, goal, description):
         else:
             fresh=action_queue.wait_ready(folder,observe(folder/'precheck.png'),observe)
             stationary(before,fresh)
-        record['inputs']=command(text)
+        fps=(fresh.get('farm_ui') or {}).get('frame_rate')
+        record['inputs']=command(text,frame_period_seconds=1/max(1,fps or 10))
         record['executed']=True
         runtime.write(folder/'decision.json',record)
         time.sleep(2)
