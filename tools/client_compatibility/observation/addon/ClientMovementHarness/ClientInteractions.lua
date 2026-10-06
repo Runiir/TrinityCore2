@@ -151,6 +151,8 @@ local function snapshot(viewMode,viewPage)
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
+    local melee=Client442ObserveMelee()
+    data.owner_melee={active=melee.active,event_sequence=melee.event_sequence}
     local cast,_,_,started,finished,trade,castID,uninterruptible,spell=call(UnitCastingInfo,'player')
     local bar=PlayerCastingBarFrame or CastingBarFrame
     data.player_cast={active=cast~=nil,name=cast,started_ms=started,finished_ms=finished,
@@ -170,7 +172,7 @@ local function snapshot(viewMode,viewPage)
     if mode=='recipes' then data.recipe_probe=Client442ObserveTradeSkill();return data end
     if mode=='chat' then data.chat_window_probe=Client442ObserveChatWindows();return data end
     if mode=='combat_log' then
-        data.combat_log_probe=Client442ObserveCombatLog();data.melee_probe=Client442ObserveMelee();return data
+        data.combat_log_probe=Client442ObserveCombatLog();data.melee_probe=melee;return data
     end
     if mode=='equipment' then data.equipment_probe=Client442ObserveEquipment();return data end
     if mode=='spellbook' then data.spellbook_probe=Client442ObserveSpellBook();return data end

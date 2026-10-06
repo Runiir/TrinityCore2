@@ -74,7 +74,7 @@ def stage(t,preparation,entry):
     old,e,base,inventory,identity=eligibility(t,preparation,entry);t.clean_panels()
     o=AttackPresence(base.session,5,base.started).poll();sample=read(t,'attack_original_bar')
     state,frame=t.observe('attack_original_scene');catalogs=[c for c in o.catalogs if c['guid']==o.pet['guid']]
-    if state.get('observer_version')!=137 or sample['probe'].get('pet_cast',{}).get('available') is not True:
+    if state.get('observer_version') not in (137,138) or sample['probe'].get('pet_cast',{}).get('available') is not True:
         raise RuntimeError('requires the loaded observer137 and passive pet casting API before pose staging')
     follow=follow_row(sample['probe'])
     if (not catalogs or catalogs[-1]['command']!=1 or catalogs[-1]['react']!=3 or

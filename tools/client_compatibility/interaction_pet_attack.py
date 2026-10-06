@@ -64,7 +64,7 @@ def run(t,preparation,entry,stage_path,review_path):
             checked.get('point')!=d['attack_point'] or checked['frame']['sha256']!=d['frame']['sha256']):
             raise RuntimeError('fresh source-bound Attack image review differs')
         state,_=t.observe('attack_reviewed_native_input');sample=read(t,'attack_current_native_control');o.poll()
-        if state.get('observer_version')!=137 or sample['probe'].get('pet_cast',{}).get('available') is not True:
+        if state.get('observer_version') not in (137,138) or sample['probe'].get('pet_cast',{}).get('available') is not True:
             raise RuntimeError('requires loaded observer137 and passive pet casting API before Attack')
         row,point=button(sample['probe'],o.pet)
         if (not all(target_checks(o.target,state,o.player).values()) or point!=d['attack_point'] or
