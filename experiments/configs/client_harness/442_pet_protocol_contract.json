@@ -42,6 +42,20 @@
       "sha256": "df7a075c0b114160d15c365f260056f6e063feffc2c7547ad6300b59ffba5b9c",
       "file": "Opcodes.cpp",
       "bytes": 252711
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/TalentPackets.cpp",
+      "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+      "sha256": "16667bad51ccbb8a42d0211bf0a22b790d787532ab7febd4b49a04395020cdf3",
+      "bytes": 3746,
+      "file": "TalentPackets.cpp"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TrinityCore/TrinityCore/6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2/src/server/game/Server/Packets/TalentPackets.h",
+      "revision": "6426c2bdadb6273774a9e1c894a9ecb6a55ef0a2",
+      "sha256": "cdd655d1b60a82e6d8a1351272bc6e5d7f0c82cbf26722ce07fa516bbf05be1c",
+      "bytes": 4926,
+      "file": "TalentPackets.h"
     }
   ],
   "field_indices": {
@@ -65,5 +79,6 @@
     "current_stock_disabled": "1",
     "original_restored": false
   },
-  "script_permission": "blocked"
+  "script_permission": "blocked",
+  "pet_talents": "Native points and ranked catalog become one modern pet-marked group, with no player spec or glyph allocation. Captured empty Warlock packet 010000000000 must not terminate entry. Talent mutations remain unqualified."
 }

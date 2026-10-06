@@ -10,9 +10,25 @@ Reply talent_response(std::string const &name,View body)
     if(name!="SMSG_TALENTS_INFO")return {};
     Reader r(body);auto pet=r.take<std::uint8_t>();auto points=r.take<std::uint32_t>();
     if(pet>1 || points>100)throw std::runtime_error("invalid native talent header");
-    // Pet talents have a separate native layout and require their own actor
-    // qualification. Never interpret that layout as a player specialization.
-    if(pet)throw std::runtime_error("native pet talent update is not yet translated");
+    // Native pet data has one rank catalog, without player specs or glyphs.
+    // The pinned modern container distinguishes it with IsPetTalents.
+    if(pet)
+    {
+        auto count=r.take<std::uint8_t>();
+        if(count>100)throw std::runtime_error("native pet talent catalog exceeds bound");
+        Array rows;std::set<std::uint32_t> seen;
+        for(unsigned i=0;i<count;++i)
+        {
+            auto id=r.take<std::uint32_t>();auto rank=r.take<std::uint8_t>();
+            if(!id || id>0x7fffffff || rank>4 || !seen.insert(id).second)
+                throw std::runtime_error("invalid native learned pet talent");
+            rows.push_back(id);rows.push_back(rank);
+        }
+        r.end();
+        return Packet{"SMSG_UPDATE_TALENT_DATA",Writer().pack("IBI",{points,0,1})
+            .pack("BIBIBI",{count,count,0,0,0,0}).pack(std::string(count*2,'I'),rows)
+            .bits(1,1).finish()};
+    }
     auto count=r.take<std::uint8_t>(),active=r.take<std::uint8_t>();
     if(count>2 || (count && active>=count) || (!count && active))
         throw std::runtime_error("invalid native talent specialization identity");
