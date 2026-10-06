@@ -182,3 +182,40 @@ def test_diagnostic_waits_for_close_and_retries_only_exact_pending_text(monkeypa
         trial.submit_chat('/tcui state',any_mode=True)
         assert events.count(('key','Return'))==(3 if expired else 2)
     assert events.count(('type','/tcui state'))==1
+
+
+@pytest.mark.parametrize('change',[{}, {'chat_edit_focused':True}, {'chat_edit_text':'/quit'},
+    {'chat_edit_open':None}])
+def test_opener_retry_requires_confirmed_closed_empty_edit(monkeypatch,change):
+    from types import SimpleNamespace
+    t=module.Trial.__new__(module.Trial);t.receipt={'cases':[]};t.persist=lambda:None
+    t.chat_key_hold=1.2;t.chat_open_retry=True;events=[]
+    t.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value,kw['hold'])),
+        type=lambda value:events.append(('type',value)))
+    closed={'chat_edit_open':False,'chat_edit_focused':False,'chat_edit_text':''};closed.update(change)
+    states=iter([closed, {'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_text':''},
+        {'chat_edit_open':True,'chat_edit_focused':True,'chat_edit_text':'/petfollow'}])
+    t.observe=lambda *args,**kw:(next(states),{'file':'observed.png'})
+    ticks=iter([0,13,14,15]);monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    if change:
+        with pytest.raises(RuntimeError,match='did not open'):t.submit_chat('/petfollow')
+        assert events==[('key','Return',1.2)]
+    else:
+        t.submit_chat('/petfollow')
+        assert events==[('key','Return',1.2),('key','Return',.4),('type','/petfollow'),('key','Return',1.2)]
+        assert t.receipt['chat_open_retries'][0]['gameplay_input_replayed'] is False
+
+
+def test_closed_opener_can_retry_only_once(monkeypatch):
+    from types import SimpleNamespace
+    t=module.Trial.__new__(module.Trial);t.receipt={'cases':[]};t.persist=lambda:None
+    t.chat_key_hold=1.2;t.chat_open_retry=True;events=[]
+    t.io=SimpleNamespace(key=lambda value,**kw:events.append(value),type=lambda value:pytest.fail('No text'))
+    t.observe=lambda *args,**kw:({'chat_edit_open':False,'chat_edit_focused':False,'chat_edit_text':''},{})
+    ticks=iter([0,13,14,27]);monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    with pytest.raises(RuntimeError,match='did not open'):t.submit_chat('/petfollow')
+    assert events==['Return','Return']

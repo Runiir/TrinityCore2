@@ -140,7 +140,7 @@ if __name__=='__main__':
     for n in ('preparation','entry','stage','review','output'):p.add_argument('--'+n,type=Path,required=True)
     a=p.parse_args()
     with actor('scout'):
-        t=Trial(a.output,controller='code',chat_key_hold=1.2);t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
+        t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True);t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:run(t,a.preparation,a.entry,a.stage,a.review)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()

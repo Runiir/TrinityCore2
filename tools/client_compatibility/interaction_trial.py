@@ -91,10 +91,11 @@ def choose(goal,state,actions,seed):
 
 
 class Trial:
-    def __init__(self,out,controller='code',chat_key_hold=.4):
+    def __init__(self,out,controller='code',chat_key_hold=.4,chat_open_retry=False):
         if controller not in ['laya','code']:raise ValueError('unknown interaction controller')
         if not .05<=chat_key_hold<=2:raise ValueError('ordinary chat key hold exceeds its bounded duration')
         self.chat_key_hold=chat_key_hold
+        self.chat_open_retry=chat_open_retry
         self.controller=controller
         self.combat_observation_deadline=None
         self.out=out;out.mkdir(parents=True,exist_ok=False,mode=0o700)
@@ -105,6 +106,7 @@ class Trial:
             'code_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
             'controller':'laya_candidate_selection' if controller=='laya' else 'code_diagnostic_ordinary_inputs',
             'ordinary_chat_key_hold':chat_key_hold,
+            'ordinary_closed_chat_opener_retry':chat_open_retry,
             'model':MODEL if controller=='laya' else None,'revision':REVISION if controller=='laya' else None,'fine_tuned':False,
             'model_observes':'normal addon-visible state; screenshots retained for human verification',
             'cases':[],'cleanup':[],'completed':False,'failure':None}
@@ -196,13 +198,23 @@ class Trial:
                 if 'chat_edit_open' not in before or before['chat_edit_open']:
                     raise RuntimeError('diagnostic requires a closed observed chat edit before Return')
             self.io.key('Return',hold=hold);time.sleep(.2)
-            deadline=time.monotonic()+12
+            deadline=time.monotonic()+12;opener_retried=False
             while True:
                 opened,opened_frame=observe(f'input_{len(self.receipt["cases"]):03}_chat_open')
                 self.receipt.setdefault('chat_open_checks',[]).append({'frame':opened_frame,
                     'open':bool(opened.get('chat_edit_open')),'input_replayed':False});self.persist()
                 if opened.get('chat_edit_open') and (not any_mode or opened.get('chat_edit_focused')):break
                 if time.monotonic()>deadline:
+                    if (getattr(self,'chat_open_retry',False) and not opener_retried and
+                        opened.get('chat_edit_open') is False and opened.get('chat_edit_focused') is False and
+                        opened.get('chat_edit_text')==''):
+                        retry_hold=.4 if hold>.4 else 1.2
+                        self.receipt.setdefault('chat_open_retries',[]).append({'frame':opened_frame,
+                            'closed':True,'focused':False,'text':'','key_hold':retry_hold,
+                            'source':'One stock opener retry after a confirmed closed empty chat edit.',
+                            'gameplay_input_replayed':False,'command_text_replayed':False})
+                        self.persist();self.io.key('Return',hold=retry_hold)
+                        opener_retried=True;deadline=time.monotonic()+12;continue
                     raise RuntimeError('ordinary chat edit did not open; refusing to type the command')
                 time.sleep(.2)
             self.io.type(value);time.sleep(.2)

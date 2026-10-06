@@ -180,7 +180,7 @@ if __name__=='__main__':
     p.add_argument('--stage',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
     if a.action=='run' and (a.stage is None or a.review is None):p.error('run requires closed staging and a fresh review')
     with actor('scout'):
-        t=Trial(a.output,controller='code',chat_key_hold=1.2);t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
+        t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True);t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='stage':stage(t,a.preparation,a.entry)
             else:run(t,a.preparation,a.entry,a.stage,a.review)
