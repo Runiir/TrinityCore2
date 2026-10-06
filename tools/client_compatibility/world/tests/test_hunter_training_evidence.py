@@ -52,3 +52,18 @@ def test_hunter_catalog_requires_its_native_entry_and_trainer(monkeypatch):
     with pytest.raises(RuntimeError,match='catalog absent'):training.catalog('owned',9,entry=46983,trainer_id=154)
     with pytest.raises(RuntimeError,match='catalog absent'):training.catalog('foreign',9,entry=46983,trainer_id=40)
     with pytest.raises(RuntimeError,match='catalog absent'):training.catalog('owned',11,entry=46983,trainer_id=40)
+
+
+@pytest.mark.parametrize('fault',[None,'child_persisted','parent_learned','wrong_relation','borrow_tame'])
+def test_control_pet_persists_parent_and_delivers_only_its_native_child(fault):
+    rows=[{'direction':d,'name':n,'body':b.hex()} for d,n,b in (
+        ('to_native','CMSG_TRAINER_BUY_SPELL',struct.pack('<QII',GUID,40,79682)),
+        ('from_native','SMSG_LEARNED_SPELL',struct.pack('<II',93321,0)),
+        ('to_client','SMSG_LEARNED_SPELLS',struct.pack('<IIBIB',1,0,0,93321,0)))]
+    saved=[[1515,1,0],[79682,1,0]];relation=[[79682,93321,1]]
+    if fault=='child_persisted':saved.append([93321,1,0])
+    elif fault=='parent_learned':rows[1]['body']=struct.pack('<II',79682,0).hex()
+    elif fault=='wrong_relation':relation[0][2]=0
+    elif fault=='borrow_tame':rows[0]['body']=struct.pack('<QII',GUID,40,1515).hex()
+    checks=learned_checks(rows,GUID,[[1515,1,0]],saved,{'money':9354},{'money':8708},relation,'control')
+    assert all(checks.values())==(fault is None)
