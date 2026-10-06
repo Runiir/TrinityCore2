@@ -96,6 +96,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     unit["AnimTier"] = bytes1 >> 24;
     unit["SheatheState"] = bytes2 & 255;
     unit["PvpFlags"] = (bytes2 >> 8) & 255;
+    unit["PetFlags"] = (bytes2 >> 16) & 255;
     unit["ShapeshiftForm"] = bytes2 >> 24;
     Object player{{"Name", get(c, "name")},
                   {"NativeSex", get(c, "gender")},

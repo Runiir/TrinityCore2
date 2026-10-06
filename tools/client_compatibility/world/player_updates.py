@@ -10,7 +10,8 @@ SCALARS = {"Health": (5, "q", "UNIT_FIELD_HEALTH"), "MaxHealth": (6, "q", "UNIT_
     "Flags2": (42, "I", "UNIT_FIELD_FLAGS_2"), "MountDisplayID": (52, "i", "UNIT_FIELD_MOUNTDISPLAYID"),
     "StandState": (57, "B", "UNIT_FIELD_BYTES_1"), "VisFlags": (59, "B", "UNIT_FIELD_BYTES_1"),
     "AnimTier": (60, "B", "UNIT_FIELD_BYTES_1"), "SheatheState": (78, "B", "UNIT_FIELD_BYTES_2"),
-    "PvpFlags": (79, "B", "UNIT_FIELD_BYTES_2"), "ShapeshiftForm": (81, "B", "UNIT_FIELD_BYTES_2")}
+    "PvpFlags": (79, "B", "UNIT_FIELD_BYTES_2"), "PetFlags": (80, "B", "UNIT_FIELD_BYTES_2"),
+    "ShapeshiftForm": (81, "B", "UNIT_FIELD_BYTES_2")}
 
 
 def scalar_block(snapshot, character, changed, visibility=0):

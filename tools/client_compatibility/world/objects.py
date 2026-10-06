@@ -67,7 +67,8 @@ def field_values(snapshot, character):
                 AttackRoundBaseTime=array("UNIT_FIELD_BASEATTACKTIME", 2)+[value('UNIT_FIELD_RANGEDATTACKTIME')])
     bytes1, bytes2 = value("UNIT_FIELD_BYTES_1"), value("UNIT_FIELD_BYTES_2")
     unit.update(StandState=bytes1 & 255, VisFlags=bytes1 >> 16 & 255, AnimTier=bytes1 >> 24 & 255,
-                SheatheState=bytes2 & 255, PvpFlags=bytes2 >> 8 & 255, ShapeshiftForm=bytes2 >> 24 & 255)
+                SheatheState=bytes2 & 255, PvpFlags=bytes2 >> 8 & 255,
+                PetFlags=bytes2 >> 16 & 255, ShapeshiftForm=bytes2 >> 24 & 255)
     # Retired differential oracle: pinned Classic visibility is in extended
     # flags, rather than the modern warmode positions of PlayerFlags.
     flags=value('PLAYER_FLAGS')
