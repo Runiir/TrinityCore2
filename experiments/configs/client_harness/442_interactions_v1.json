@@ -7042,7 +7042,8 @@
       "fixture": "pet_class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_trained_imp_stay_follow"
     },
     {
       "id": "pets.command_stay",
@@ -7051,7 +7052,8 @@
       "fixture": "pet_class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_trained_imp_stay_follow"
     },
     {
       "id": "pets.command_move_to",
@@ -14544,8 +14546,73 @@
           "sha256": "33406e91e13e080794cc2e94b51761872dc88316957f75b04c5e50102754760b"
         }
       ]
+    },
+    {
+      "id": "owned_trained_imp_stay_follow",
+      "operations": [
+        "pets.command_stay",
+        "pets.command_follow"
+      ],
+      "scope": "One trained owned level10 warlock and retained Imp2 on map0 open ground. Stock Stay and Follow preserve the submitted native-owned pet GUID and catalog authority. Stay clears public Follow selection and keeps the idle pet behind while the owner moves14.05 meters through an observed binding; public ranges2/3 change to far and no native following path occurs. Follow selects its public indicator, delivers owned native splines to the client and returns the pet into both public ranges, with a native endpoint3.01 meters from the stationary owner. The original position, resources, saved rows, money9354, trained80388, retained Imp2, pose/bar and protected actors restore.",
+      "limits": "Pet coordinates and UnitDistanceSquared are unavailable; range, idle speed, accepted owner XY, owned native paths and reviewed frames remain separate evidence. Only this ordinary ground fixture is qualified. Other pets/classes, MoveTo, attack, react modes, auto-cast, combat and the complete pet family remain open. Thirty episodes close27 successful3 failed; all failed prerequisites and earlier test/build/metadata adapter failures remain preserved and excluded. Remote review verifies50 JSON/137 images;174 frames320724978 bytes and exact340375171-byte archive/cache copies are offloaded. Native and both existing client lifetimes remain unchanged through bridge-only deployment; two clients on HDMI-1. Scripts blocked; original softTargetInteract0 remains unrestored at1.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/class_prepare01/episode.json",
+          "sha256": "d4590f9988f9975edd82a3729c5a3bb962035022f38888b0c8337a6c60d20216"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/class_enter01/episode.json",
+          "sha256": "c5a26c62b39a89e4fc1cdfb54443c93994f6356b77571a051b8967f79f80c0af"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/pet_command_probe02/episode.json",
+          "sha256": "42d7c86fb060a47f4dec08ac2a42b18307d1a187ee109f3ef85048b4e39de771"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/pet_ground_stage01/episode.json",
+          "sha256": "fcd722bf7dcc4f607c1be012d5f1794e575e01268fbdd75376ca122e52e5068d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/pet_commands01/episode.json",
+          "sha256": "73093e5e21d4694df9185e4377518333f73be1b2dd86af22b310ac6595b5e62b",
+          "cases": {
+            "pets.command_stay": "owned_pet_command_pass",
+            "pets.command_follow": "owned_pet_command_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/class_park01/episode.json",
+          "sha256": "49ab46227f85495bd5969bb398addf16acf6b668acb0965216729d8b94e2b19e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/origin_finish01/episode.json",
+          "sha256": "cac907dfc658b32c2b69da7c64e55536e88dc9b627d8375382518ac05f19963b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/primary_native_close01/episode.json",
+          "sha256": "ce6f965afff3e7dbb0d3cf6338918a9265a1158bcf2c4f60684d3daae261f30d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/pet_commands_whole_review01.json",
+          "sha256": "99c6c91dd975d34207db2cd81168c1c1376b50d667382b3a59159d7acb8f2ad4"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261006_125.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261006_ui125/verification.json",
+          "sha256": "16ea4e6db6d7f86318889228fa9f1b5b44aaded6156f6dad8a25b4ee30a5bd0a"
+        }
+      ]
     }
   ],
-  "qualified_operations": 431,
+  "qualified_operations": 433,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
