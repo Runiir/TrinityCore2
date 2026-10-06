@@ -1,0 +1,14 @@
+{
+  "schema": "client442_pet_dismiss_capture_contract_v1",
+  "source": "Remote-reviewed UI114 stock menu and unmapped20-byte dismissal, with complete class/scout/primary restoration.",
+  "goal": "Capture one exact ordinary CMSG_PET_ACTION body and determine whether the installed client's GUID/action/target/position are usable before implementing a translation.",
+  "fixture": "Retained level1 Harnesslock guid4/account2/class9 and saved Imp id1/entry416/owner4/nameVolrot, on the existing scout.",
+  "bridge_change": "Only add CMSG_PET_ACTION to the packet diagnostic allowlist. No request translation or gameplay behavior changes.",
+  "deployment": "One single-job bridge build with at least6GiB available memory, bridge-only deployment, complete original primary/scout preservation, then a fresh ordinary class entry and stock menu click.",
+  "observer_version": 130,
+  "controller": "code",
+  "model": null,
+  "custom_scripts": "blocked",
+  "softTargetInteract": {"original": "0", "current_stock_disabled": "1", "original_restored": false},
+  "limits": "Diagnostic only; no qualification. No Abandon, level/spell/aura grant, native worldserver restart, new client or model job. Authentication and unrelated pet-service bodies remain excluded. Preserve each failed whole attempt and all original restoration checks."
+}
