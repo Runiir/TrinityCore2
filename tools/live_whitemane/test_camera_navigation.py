@@ -6,8 +6,9 @@ from . import camera_navigation,camera_input,runtime
 @pytest.mark.parametrize('sensitivity',[-.006,.004])
 @pytest.mark.parametrize('ground_view,starting_pitch',[(False,-1.5),(True,math.pi/4)])
 @pytest.mark.parametrize('preferred_zoom',[None,20])
+@pytest.mark.parametrize('mouselook_after',[None,3])
 def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
-        monkeypatch,tmp_path,sensitivity,ground_view,starting_pitch,preferred_zoom):
+        monkeypatch,tmp_path,sensitivity,ground_view,starting_pitch,preferred_zoom,mouselook_after):
     (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
     monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
     commands=[];monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *args:commands.append(args) or {'completed':True})
@@ -25,18 +26,23 @@ def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
         def renew(self):pass
         def button(self,*_):pass
         def relative(self,x,y):
+            if mouselook_after is not None:assert actual['sequence']>=mouselook_after
             deltas.append((x,y));actual['yaw']-=x*.006;actual['pitch']+=y*sensitivity
         def close(self):pass
     monkeypatch.setattr(camera_input,'Input',Sender)
     monkeypatch.setattr(camera_navigation,'StickyInput',Sticky)
     monkeypatch.setattr(camera_navigation,'observation_lease',lambda _:1)
     def row():
-        return {'observed_at':actual['sequence'],'movement':{
+        value={'observed_at':actual['sequence'],'movement':{
             'sequence':actual['sequence'],'client_uptime_ms':actual['sequence']*100,
             'facing_radians':actual['yaw'],'in_world':True,'dead':False,
             'in_combat':False,'on_taxi':False,'speed':0},
             'archaeology':{'casting':False,'flying':False,'falling':False},
             'owned_pose':{'pitch_radians':actual['pitch'],'client_uptime_ms':actual['sequence']*100}}
+        if mouselook_after is not None:value['farm_ui']={'camera_input':{
+            'mouselooking':actual['sequence']>=mouselook_after,
+            'right_down':actual['sequence']>=mouselook_after}}
+        return value
     def observe(_):actual['sequence']+=1;return row()
     monkeypatch.setattr(camera_navigation,'observe',observe)
     rows=camera_navigation.align(tmp_path/'camera',row(),ground_view=ground_view)

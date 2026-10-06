@@ -53,9 +53,7 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
                 raise RuntimeError('ground camera view requires a grounded character')
             # Obtain a current owned movement sample even after a stationary
             # teleport. The tiny yaw probe also calibrates this input device.
-            steering.pending={'facing':before['movement']['facing_radians'],
-                'uptime':before['movement']['client_uptime_ms'],'pixels':-8}
-            sticky.relative(-8,0)
+            probe_sent=False
             last_sequence=before['movement']['sequence'];aligned=0
             while time.monotonic()-started<8:
                 row=observe(folder/'view.png');m=row['movement'];a=row['archaeology']
@@ -65,6 +63,18 @@ def align(folder,before,target=None,*,ground_view=False,reset_view=False):
                 sticky.renew()
                 if m['sequence']==last_sequence:time.sleep(.01);continue
                 last_sequence=m['sequence'];error=angle(desired-m['facing_radians'])
+                if not probe_sent:
+                    camera=(row.get('farm_ui') or {}).get('camera_input')
+                    if camera and not (camera.get('mouselooking') and camera.get('right_down')):
+                        if time.monotonic()-started>2:
+                            raise RuntimeError('camera mouse-look did not activate')
+                        time.sleep(.02);continue
+                    # EI acknowledges delivery before the game necessarily
+                    # processes RMB. Calibrate against a fresh active view.
+                    steering.pending={'facing':m['facing_radians'],
+                        'uptime':m['client_uptime_ms'],'pixels':-8}
+                    sticky.relative(-8,0);probe_sent=True
+                    continue
                 pixels,info=steering.update(m['facing_radians'],m['client_uptime_ms'],error,1,.18)
                 pose=row.get('owned_pose') or {};pitch=pose.get('pitch_radians');vertical=0
                 # The owned packet measures character movement pitch. On

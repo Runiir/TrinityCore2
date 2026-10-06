@@ -6,7 +6,14 @@ from .farm_actions import stationary
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
-def search_points(maximum):
+def search_points(maximum,*,portal=False):
+    if portal:
+        # Upright portals can be above the ground-object search band. This is
+        # a cursor scan, never a claim that a portal is at a fixed screen point.
+        center=[(640,y) for y in range(80,741,24)]
+        broad=[(x,y) for x in range(400,921,40) for y in range(100,701,40)]
+        broad.sort(key=lambda p:(p[0]-640)**2+(p[1]-380)**2)
+        return list(dict.fromkeys(center+broad))[:maximum]
     # Small finds near the character's feet can lie between 40-pixel rows.
     # Interleave a denser local scan with the broader ground search.
     center=[(640,y) for y in range(260,621,24)]
@@ -93,7 +100,7 @@ def use(folder,before,names,*,maximum=100,search_seconds=2):
     import fcntl
     ctl._launcher_env=runtime.client_environment
     native_input_adapter.lab=runtime;native_input_adapter.control=native_control
-    points=search_points(maximum)
+    points=search_points(maximum,portal=any(name.startswith('Portal to ') for name in names))
     cursor=ui.get('cursor') or {}
     if ui.get('tooltip') in names and 'x' in cursor and 'y' in cursor:
         point=(round(cursor['x']*runtime.WIDTH),round(cursor['y']*runtime.HEIGHT))

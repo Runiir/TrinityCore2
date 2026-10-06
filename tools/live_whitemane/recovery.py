@@ -55,6 +55,7 @@ RETRYABLE=(
     'Survey is still on cooldown',
     'new Survey replaced the active telescope route',
     'camera steering did not produce observed yaw',
+    'camera mouse-look did not activate',
     'camera view did not reach forward alignment',
     'camera view interrupted by player state',
     'minimap tooltip observation did not follow the cursor',

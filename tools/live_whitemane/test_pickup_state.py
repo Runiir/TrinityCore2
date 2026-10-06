@@ -31,6 +31,12 @@ def test_pickup_scan_covers_small_ground_objects_between_coarse_rows():
     assert any(592<=x<=608 and 516<=y<=528 for x,y in points)
 
 
+def test_portal_scan_includes_upright_objects_above_the_ground_search():
+    points=interact.search_points(100,portal=True)
+    assert len(points)==100 and len(set(points))==100
+    assert (640,80) in points and any(y<220 for _,y in points)
+
+
 def test_a_tooltip_search_miss_is_given_to_laya_as_an_unfinished_pickup():
     r=row();pending={'out_of_range':False,'approach':None,'gathering_starts':2}
     r['farm_ui']['gathering']={'starts':2}

@@ -2,7 +2,7 @@
 import math
 import time
 from . import runtime, inputs, interact,action_queue
-from . import portal_view
+from . import portal_view,camera_zoom
 from .observe import observe
 from .decisions import choose
 from .fast_waypoint import walk
@@ -42,20 +42,22 @@ def run(folder,portal,*,approved_intent=None):
         hint=portal_view.read(portal,fresh)
         approach_target=hint['world'] if hint else target
         result['learned_view_hint']=hint
+        runtime.write(folder/'portal.json',result)
         result['approach']=walk(folder/'approach',approach_target,tolerance=.4,
             guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
         row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
         if hint:
-            desired_zoom=hint.get('zoom');current_zoom=row.get('farm_ui',{}).get('camera_zoom')
-            if desired_zoom is not None and current_zoom is not None and abs(desired_zoom-current_zoom)>1:
-                zoom='CameraZoomOut' if desired_zoom>current_zoom else 'CameraZoomIn'
-                result['view_zoom_input']=inputs.execute('World of Warcraft','command',{
-                    'text':'/run '+zoom+'('+str(round(abs(desired_zoom-current_zoom),2))+')',
-                    'frame_period_seconds':1/max(1,row.get('farm_ui',{}).get('frame_rate') or 1)})
+            # Ground body pitch does not measure camera tilt. Restore a normal
+            # view before reproducing the successful facing and measured zoom.
+            result['camera_view']=align(folder/'view',row,portal_view.aim(hint,row),reset_view=True)
+            row=observe(folder/'view_ready.png')
+            if hint.get('zoom') is not None:
+                result['view_zoom']=camera_zoom.restore(folder/'portal_zoom',row,hint['zoom'])
                 row=observe(folder/'zoom_ready.png')
-            result['camera_view']=align(folder/'view',row,portal_view.aim(hint,row),reset_view=False)
-        else:result['camera_view']=align(folder/'view',row,target,reset_view=True)
-        row=observe(folder/'view_ready.png')
+        else:
+            result['camera_view']=align(folder/'view',row,target,reset_view=True)
+            row=observe(folder/'view_ready.png')
+    runtime.write(folder/'portal.json',result)
     result['interaction']=interact.use(folder/'interaction',row,names)
     for index in range(25):
         time.sleep(.4)

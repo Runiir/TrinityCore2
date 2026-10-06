@@ -104,7 +104,7 @@ def test_verified_portal_view_approaches_the_successful_standing_position(monkey
     walks=[]
     monkeypatch.setattr(portal,'walk',lambda folder,target,**_:walks.append(target) or [])
     def align(folder,row,target,**kwargs):
-        assert not kwargs['reset_view']
+        assert kwargs['reset_view']
         assert target==portal_view.aim(hint,row)
         return []
     monkeypatch.setattr(portal,'align',align)
