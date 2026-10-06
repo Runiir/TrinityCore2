@@ -6,6 +6,26 @@ import pytest
 from tools.client_compatibility import interaction_hunter_rename_persistence as module
 
 
+@pytest.mark.parametrize('fault',('none','same_transport','old_entry','overlap','missing_offline',
+    'missing_request','missing_native','stale_request','late_native','wrong_direction','unfinished'))
+def test_persistence_uses_fresh_character_login_instead_of_transport_identity(fault):
+    old={'finished_at':2,'native_session':'same'}
+    entry={'started_at':3,'finished_at':6,'native_before_entry':{'online':0},'native_session':'new',
+        'login_packets':[{'name':'CMSG_PLAYER_LOGIN','direction':'from_client','time':4},
+            {'name':'SMSG_LOGIN_VERIFY_WORLD','direction':'from_native','time':5}]}
+    if fault=='same_transport':entry['native_session']='same'
+    elif fault=='old_entry':entry['started_at']=1
+    elif fault=='overlap':entry['started_at']=2
+    elif fault=='missing_offline':entry['native_before_entry']={}
+    elif fault=='missing_request':entry['login_packets'].pop(0)
+    elif fault=='missing_native':entry['login_packets'].pop()
+    elif fault=='stale_request':entry['login_packets'][0]['time']=1
+    elif fault=='late_native':entry['login_packets'][1]['time']=7
+    elif fault=='wrong_direction':entry['login_packets'][1]['direction']='to_client'
+    elif fault=='unfinished':entry['finished_at']=0
+    assert module.fresh_entry(entry,old)==(fault in ('none','same_transport'))
+
+
 @pytest.mark.parametrize('fault',('none','wrong_actor','wrong_runtime','wrong_fixture','wrong_phase',
     'partial_rename','false_rename','partial_restoration','false_restoration','missing_menu','missing_name',
     'missing_protection','source_hash','overlapping_logout','changed_pet','changed_saved'))

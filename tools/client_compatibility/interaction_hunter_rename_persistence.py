@@ -48,6 +48,17 @@ def source(t,old,path):
     return e
 
 
+def fresh_entry(entered,renamed):
+    """Character logout/login reuses its healthy bridge transport session."""
+    start,end=entered.get('started_at',0),entered.get('finished_at',0)
+    packets=entered.get('login_packets',[])
+    return (renamed['finished_at']<start<end and
+        entered.get('native_before_entry',{}).get('online')==0 and
+        bool(packets) and all(start<=p.get('time',0)<=end for p in packets) and
+        any(p.get('name')=='CMSG_PLAYER_LOGIN' and p.get('direction')=='from_client' for p in packets) and
+        any(p.get('name')=='SMSG_LOGIN_VERIFY_WORLD' and p.get('direction')=='from_native' for p in packets))
+
+
 def suite(t,preparation,entry,renamed):
     old=prepared(t,preparation);e=source(t,old,renamed);session=actors.session_entry(t.fixture)['session']
     entered=entry_source(t,entry,session,preparation);since=min(p['time'] for p in entered['login_packets'])
@@ -66,7 +77,7 @@ def suite(t,preparation,entry,renamed):
         n=[{'packet':p,'decoded':native_name(p)} for p in packets if p['direction']=='from_native']
         m=[{'packet':p,'decoded':modern_name(p)} for p in packets if p['direction']=='to_client']
         timestamp=o.pet['fields'].get(INDEX['UNIT_FIELD_PET_NAME_TIMESTAMP'])
-        checks={'fresh_entry_session':session!=e['native_session'],
+        checks={'fresh_character_entry':fresh_entry(entered,e),
             'new_runtime_guid_same_saved_pet':o.pet['guid']!=e['native_pet']['guid'] and
                 o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])==4,
             'native_one_time_permission':o.pet['fields'].get(INDEX['UNIT_FIELD_BYTES_2'],0)>>16&255==2,
