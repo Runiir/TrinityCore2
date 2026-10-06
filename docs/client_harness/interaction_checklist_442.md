@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 419 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 420 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -424,7 +424,7 @@ Fixture: `owned_second_actor`.
 - [ ] `friends.ignored_chat`
 - [x] `friends.remove_ignore` (qualified variant; [evidence](#owned_offline_dwarf_ignore))
 - [x] `friends.who_open` (qualified variant; [evidence](#owned_current_offline_friend_and_who_open))
-- [ ] `friends.who_search`
+- [x] `friends.who_search` (qualified variant; [evidence](#owned_native_who_name_search))
 - [ ] `friends.whisper`
 - [x] `friends.self_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
 - [x] `friends.nonexistent_friend_error` (qualified variant; [evidence](#owned_offline_friend_removal_errors))
@@ -2881,3 +2881,16 @@ Remaining limits: One current owned offline game-character entry and list displa
 - [442_interactions_20261006_103.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc), member `evidence/client_interactions_20261006_ui103/whole_friend_read_review.json`, SHA-256 `bf612456f68a7837287a496d7ab222d1dee76b35b67d1a4499c24d246b316353`.
 - [442_interactions_20261006_103.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc), member `evidence/client_interactions_20261006_ui103/verification.json`, SHA-256 `5f4a7c5c7bb5c0b1dd36723fe437c79e482d20165eae95d9ab8ce5cd48c324c7`.
 - [442_interactions_20261006_103.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_103.tar.gz.dvc), member `evidence/client_interactions_20261006_ui103/runtime_closure.json`, SHA-256 `261414bf060c6c30d987c308c75b28c87e146ae4cd3308c8ce4db056c1b6812f`.
+
+### owned_native_who_name_search
+
+UI104 who_search01 whole completed pass on owned Harnessone/build60895. One ordinary n-Harnessone stock query and Refresh click produce exactly one modern request, translated native request, native Who response and correlated modern response. RequestID1 is echoed; GUID1, name, level85, class1, race1, native gender0, empty guild and Badlands area3 agree. Passive public Who getters and actual stock columns show Harnessone, Badlands,85,Warrior and 1 Person Found. The case passes21 wire/public/UI checks; all8 pre-repair fixture,9 native and12 friend restoration checks pass. Original query field is empty and panels/chat close. Code controller, model None.
+
+Remaining limits: One owned-primary name query only. No filtered-race, cross-realm/enemy/arena/addon queries, non-ASCII exact-name folding, sorting, selection, invitation, whisper, missing-name results or long lists acceptance. Transient Who cache changes0 to1 and remains as the read response; no extra cleanup query was sent. Whole failed unmapped who_probe01 is retained and excluded. Two failed C++ builds,46 fixture failures and4 independent-reader failures were corrected and retained;46 focused and1786 full tests pass. Historical priming regression fails once at2500 retained records; streaming fix peaks at<=2 and full memory foundation1740 passes. Native worldserver/client lifetimes unchanged; bridge alone restarted with one build job and scout parked offline. Scripts stay blocked; original softTargetInteract0 remains unrestored at stock-disabled1.
+
+- [442_interactions_20261006_104.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_104.tar.gz.dvc), member `evidence/client_interactions_20261006_ui104/who_search01/episode.json`, SHA-256 `1e9f853cbb674e4d5b784975cbf0454155a8d0790d8993e0feb9af3544410600`.
+  Checked cases: `friends.who_search` (owned_who_search_pass).
+- [442_interactions_20261006_104.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_104.tar.gz.dvc), member `evidence/client_interactions_20261006_ui104/whole_who_review.json`, SHA-256 `86a58f451fc4ae8d6430a264d9e7ad52ea5519408f2dd6ea23d8268abce19853`.
+- [442_interactions_20261006_104.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_104.tar.gz.dvc), member `evidence/client_interactions_20261006_ui104/verification.json`, SHA-256 `3dc816b6337fe4dbdb36758054946dd5f5bfb3a1d143058433ddd72c18717072`.
+- [442_interactions_20261006_104.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_104.tar.gz.dvc), member `evidence/client_interactions_20261006_ui104/memory_verification.json`, SHA-256 `c8391556390dff047a1927c12e4756254e87a8420ddb3a4c1a6bc693a16f85ba`.
+- [442_interactions_20261006_104.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261006_104.tar.gz.dvc), member `evidence/client_interactions_20261006_ui104/runtime_closure.json`, SHA-256 `67d4b5c9b501099ff2060b8175aa8d379f1a58da70e1c33888c2c1d6da24635a`.
