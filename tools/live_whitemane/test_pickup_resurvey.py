@@ -75,3 +75,11 @@ def test_observed_find_height_on_land_does_not_count_a_roof_as_artifact_arrival(
 def test_missing_pickup_receipt_cannot_invent_a_collection(monkeypatch,tmp_path):
     monkeypatch.setattr(runtime,'ROOT',tmp_path)
     assert not pending_find.pickup_position_facts(row())['survey_at_pickup_position_untried']
+
+
+def test_successful_survey_at_pickup_refreshes_an_unreached_marker_without_marking_it_failed():
+    target={'source':'GatherMate marker','arrived':False,'marker_id':'next marker'}
+    session={'marker_target':target,'visited_marker_ids':['collected marker']}
+    guide.marker_survey_outcome(session,target,{'observed_at':10},False)
+    assert session['marker_target'] is None
+    assert session['visited_marker_ids']==['collected marker'] and not session.get('failed_marker_ids')

@@ -169,6 +169,13 @@ def marker_survey_outcome(session, guide, fresh_tool, artifact_discovered):
         session['marker_target']=None
         session['marker_fallback']=True
         session.pop('telescope_target',None)
+    elif guide and not guide['arrived'] and fresh_tool:
+        # Survey at a pickup spot can replace a marker selected for later
+        # travel. The new bearing must get a fresh saved-candidate match.
+        # An unreached marker has not failed and remains available.
+        session['marker_target']=None
+        session['marker_failed_surveys']=0
+        session.pop('telescope_target',None)
 
 
 def pickup(session,row=None):
