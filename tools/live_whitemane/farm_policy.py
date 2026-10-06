@@ -3,6 +3,7 @@ import math
 import json
 from pathlib import Path
 from . import laya_ui,pending_find,dig_decisions,world_facts
+from .intent_queue import IntentQueue
 from tools.client_compatibility.archaeology_inputs import FIND_NAMES
 
 
@@ -88,6 +89,8 @@ def choose(row,batches,session):
             try:dig_guide,_=guide.select(row,dig,dig_session.telescope(row,dig))
             except RuntimeError as error:guide_error=str(error)
     options=legal_actions(row,batches,dig_guide,ground_approach_blocked=ground_blocked)
+    queued=IntentQueue(session).retained(row,options)
+    if queued:return queued
     if len(options)==1:return 'wait',None,{'only_legal_action':'wait'}
     route=ui.get('route') or {};signal=row.get('minimap_finds') or {}
     previous=session.get('steps',[])
@@ -125,4 +128,7 @@ def choose(row,batches,session):
         'Use a nearby portal; if its ground approach is blocked, fly to that entrance and land. Learn from the last failure.',
         {k:v[0] for k,v in options.items()})
     action=dig_decisions.explore(action,response,options,state)
-    return ('solve' if action.startswith('solve_') else action),options[action][1],{'state':state,'request':request,'response':response,'choice':action}
+    phase='solve' if action.startswith('solve_') else action
+    decision={'state':state,'request':request,'response':response,'choice':action}
+    IntentQueue(session).offer(phase,options[action][1],decision,row)
+    return phase,options[action][1],decision

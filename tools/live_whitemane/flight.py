@@ -44,7 +44,7 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
             step.setdefault('height_refreshes',[]).append(refresh)
             row=refresh['after'];m,a=row['movement'],row['archaeology'];world=a['world']
         if remaining>arrival_tolerance and height_plan is None:
-            height_plan=clearance.plan(row,target,maximum_distance=maximum_distance)
+            height_plan=clearance.plan(row,target,maximum_distance=maximum_distance,arrival_tolerance=arrival_tolerance)
             step['height_plan']=height_plan
         if height_plan:
             pose=row.get('owned_pose')

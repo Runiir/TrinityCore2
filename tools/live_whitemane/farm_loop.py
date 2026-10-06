@@ -9,10 +9,10 @@ import time
 from . import runtime, dig_session, portal, taxi, solve_batch, resources,pending_find,minimap_finds,combat,farm_graph,recovery,farm_policy
 from .observe import observe
 from .farm_actions import click_choice, command_choice
-from .navigation import orient
 from .flight import fly
 from .dig_policy import SolveBatches
 from . import observation_wait
+from .intent_queue import IntentQueue
 
 
 def distance(world,target):
@@ -149,11 +149,11 @@ def run(output,stop_on='recipe'):
                             step['final_target']=target
                             origin=row['archaeology']['world'];fraction=1250/length
                             target={**target,**{k:origin[k]+(target[k]-origin[k])*fraction for k in ('north','west')}}
-                        step['orientation']=orient(folder/'orient',row,target)
                         step['graph_path']=str(graph)
-                        step['inputs']=fly(folder,step['orientation']['after'],{
+                        step['inputs']=fly(folder,row,{
                             'endpoint':target,'arrival_tolerance_yards':target.get('arrival_tolerance_yards',6),
-                            'source':'public Canopic travel route'},step) if step['orientation']['completed'] else []
+                            'source':'public Canopic travel route'},step)
+                        step['orientation_source']='camera steering within the retained Laya flight intent'
                     elif action=='dig':
                         site=pending['site_id'] if pending else row['archaeology']['site_id']
                         if session['dig_output'] is None or (site is not None and site!=session['dig_site']):
@@ -200,7 +200,11 @@ def run(output,stop_on='recipe'):
                 solved=any(new['fragments']<old['fragments'] for old,new in zip(before_a['races'],after_a['races']))
                 if finds or sites or moved>.25 or solved or after_a['canopic_jars_in_bags']!=before_a['canopic_jars_in_bags']:
                     session['last_progress_at']=time.time()
-                session['active_races']=sorted(batches.active_races);runtime.write(path,session)
+                session['active_races']=sorted(batches.active_races)
+                IntentQueue(session).finish(action,retain=action=='dig' and bool(session['dig_output'])
+                    and not step.get('local_failure') and not step.get('combat_interruption')
+                    and not step.get('result',{}).get('failure') and not step.get('result',{}).get('finished'))
+                runtime.write(path,session)
                 resources.phase_boundary(output,session)
                 print(json.dumps({'phase':action,'finds':session['looted_finds'],'sites':session['completed_sites']}),flush=True)
         except observation_wait.InactiveObservation:

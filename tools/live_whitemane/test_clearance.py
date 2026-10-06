@@ -1,4 +1,5 @@
 import copy
+import math
 import pytest
 from tools.client_compatibility.world.buffer import Writer
 from tools.live_whitemane import own_pose, clearance, guide
@@ -80,6 +81,36 @@ def test_red_endpoint_arrival_matches_flight_braking_radius():
         'world':{'instance':1,'north':5.5,'west':0},'color':'red','source':'Survey telescope'}}
     result,_=guide.select(row,session,None)
     assert result['arrived']
+
+
+@pytest.mark.parametrize('clear,ceiling',[(True,13),(False,58)])
+def test_near_site_flight_stays_below_an_overhead_roof_only_when_body_path_is_clear(monkeypatch,clear,ceiling):
+    def surface(_,point):return {'terrain_height':10,'model_collision_height':50,'highest_surface':50}
+    monkeypatch.setattr(clearance.model_collision,'supporting_surface',surface)
+    monkeypatch.setattr(clearance.model_collision,'column',lambda *_:{'support_height':10})
+    segments=[]
+    def check(_,a,b):segments.append((a,b));return clear
+    monkeypatch.setattr(clearance.model_collision,'clear_body_segment',check)
+    row={'owned_pose':{'height_yards':10},'archaeology':{
+        'world':{'instance':1,'north':0,'west':0},'grounded':True,'can_survey':True}}
+    result=clearance.plan(row,{'instance':1,'north':60,'west':0})
+    assert result['ceiling_yards']==ceiling
+    assert result['near_ground_route_clear']==clear
+    assert max(math.dist(a[:2],b[:2]) for a,b in segments)<=40
+
+
+def test_clearance_does_not_climb_over_a_roof_beyond_the_flight_arrival_radius(monkeypatch):
+    def surface(_,p):
+        roof=60 if p[0]>15 else 10
+        return {'terrain_height':10,'model_collision_height':roof,'highest_surface':roof}
+    monkeypatch.setattr(clearance.model_collision,'supporting_surface',surface)
+    monkeypatch.setattr(clearance.model_collision,'column',lambda *_:{'support_height':10})
+    monkeypatch.setattr(clearance.model_collision,'clear_body_segment',lambda *_:True)
+    r={'owned_pose':{'height_yards':10},'archaeology':{
+        'world':{'instance':1,'north':0,'west':0},'grounded':True,'can_survey':True}}
+    p=clearance.plan(r,{'instance':1,'north':20,'west':0},arrival_tolerance=6)
+    assert p['planned_horizontal_yards']==14 and p['ceiling_yards']==13
+    assert max(c['north'] for c in p['columns'])==14
 
 
 def test_a_real_high_corridor_is_not_rejected_by_an_arbitrary_climb_cutoff(monkeypatch):

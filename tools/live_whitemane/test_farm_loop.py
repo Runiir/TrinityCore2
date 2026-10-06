@@ -130,7 +130,6 @@ def test_retryable_failure_inside_recovery_returns_to_observation(monkeypatch,tm
     monkeypatch.setattr(observed_state,'ensure',lambda _:None)
     monkeypatch.setattr(farm_loop.farm_graph,'transition',lambda *_,**__:None)
     monkeypatch.setattr(farm_loop.farm_policy,'choose',lambda *_:('land',r['archaeology']['world'],{}))
-    monkeypatch.setattr(farm_loop,'orient',lambda *_,**__:{'completed':True,'after':r})
     def failed(*_,**__):raise RuntimeError('dismount input did not produce unmounted state')
     monkeypatch.setattr(farm_loop,'fly',failed)
     monkeypatch.setattr(farm_loop.recovery,'run',failed)
