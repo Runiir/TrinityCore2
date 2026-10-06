@@ -57,11 +57,11 @@ def public_events(probe,before_sequence,matched,source,destination):
             for p in matched)]
 
 
-def health_checks(before,after,matched,public_health,foreign_hits):
-    damage=sum(p['expected']['damage'] for p in matched)
+def health_checks(before,after,matched,public_health,foreign_hits,*,allow_death=False,public_death=False):
+    damage=sum(p['expected']['damage']-max(0,p['expected'].get('overkill',-1)) for p in matched)
     return {'positive_owned_damage':damage>0,
         'all_owned_results_delivered':bool(matched) and all(p['client'] for p in matched),
-        'target_alive':0<after<before,
+        'target_health_outcome':(0<=after<before if allow_death else 0<after<before),
         'exact_native_health_loss':before-after==damage,
-        'exact_public_health':public_health==after,
+        'exact_public_health':public_health==after or allow_death and after==0 and public_death,
         'no_foreign_target_hits':not foreign_hits}

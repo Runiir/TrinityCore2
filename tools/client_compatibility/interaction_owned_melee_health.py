@@ -48,10 +48,20 @@ class HealthPresence(SpellPresence):
                 if self.target and self.target['guid']!=r['guid']:raise RuntimeError('ambiguous health target creation')
                 self.target=r
             elif self.target and r.get('guid')==self.target['guid']:self.target['fields'].update(r.get('fields',{}))
-            if self.target and self.target['guid'] in r.get('removed',[]):self.target=None
+            if self.target and self.target['guid'] in r.get('removed',[]):self.target['removed']=True
 
 
 def health(o):return o.target['fields'][INDEX['UNIT_FIELD_HEALTH']]
+
+
+def entry_pvp(session,entry):
+    for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
+        if (p.get('session')!=session or p.get('direction')!='from_native' or p.get('name')!='SMSG_UPDATE_OBJECT' or
+            not entry['started_at']<=p.get('time',0)<=entry['finished_at']):continue
+        for row in records(bytes.fromhex(p['body'])):
+            if row.get('guid')==5 and INDEX['UNIT_FIELD_BYTES_2'] in row.get('fields',{}):
+                return {'value':row['fields'][INDEX['UNIT_FIELD_BYTES_2']]&0xff00,'packet':p}
+    raise RuntimeError('entry-bound original native PvP bytes are absent')
 
 
 def retained_presence(t,o,label):
@@ -91,7 +101,7 @@ def stage(t,preparation,entry):
     baseline={'resources':resources(inventory),'saved':e['entered_saved'],'position':position(5),
         'vitals':vitals(o),'pet':{k:identity[k] for k in PET_KEYS},'pose':pose(inventory),'afk':afk(inventory),
         'money':character(5,2)['money'],'public_bar':public_bar(sample['probe']),
-        'pvp_bytes':o.player.get(INDEX['UNIT_FIELD_BYTES_2'],0)&0xff00}
+        'pvp_bytes':entry_pvp(o.session,e)['value']}
     original={'auras':copy.deepcopy(o.auras),'public_buffs':state.get('buffs',{}),'pet_vitals':pet_vitals(o)}
     # Use the shared spell parser's canonical public aura identity.
     from .pet_spell_evidence import buffs
@@ -100,6 +110,7 @@ def stage(t,preparation,entry):
     t.receipt.update(baseline=baseline,original_position=baseline['position'],original_spell=original,
         qualification_added=False);t.persist();fixture=MeleeHealthFixture(t.out,t.fixture)
     try:
+        t.receipt['original_pvp_source']=entry_pvp(o.session,e);original_pvp(t,o)
         mode(t,o,0,'fixture.health_pet_passive')
         staged=fixture.prepare();t.receipt['baseline']['position']=staged;t.persist()
         retained_presence(t,o,'fixture.health_transfer_pet')
@@ -111,13 +122,13 @@ def stage(t,preparation,entry):
             time.sleep(2)
         passive=read(t,'health_passive_cleanup_bar')
         restore_spell(t,o,original,expected_bar=public_bar(passive['probe']))
-        t.execute({'kind':'chat','value':'/targetexact Training Dummy'})
+        t.execute({'kind':'chat','value':'/targetexact '+fixture.dummy[2]})
         state,_=t.observe('health_selected_target');o.poll();sample=read(t,'health_passive_control');o.poll()
         frozen=position(5);time.sleep(.5)
         checks={'exact_native_target':native_target(o.target),'native_selection':o.selected()==o.target['guid'] if o.target else False,
             'exact_public_target':bool(o.target and state['target'].get('guid')==target_guid(o.target)),
             'undamaged_target':bool(o.target and health(o)==o.target['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]),
-            'safe_target_health':bool(o.target and health(o)>=100),
+            'safe_target_health':bool(o.target and health(o)>=10 and any(r[0]==228 and r[1]==r[2] for r in baseline['saved']['skills'])),
             'public_health':bool(o.target and state['target'].get('health')==health(o)),
             'in_melee_range':bool(o.target and math.dist(frozen[:3],o.target['movement']['position'][:3])<4),
             'stable_position':position(5)==frozen,'native_passive':o.catalogs[-1]['react']==0,
@@ -168,8 +179,12 @@ def run(t,preparation,entry,stage_path,review_path):
                 'source':str(review_path),'source_sha256':lab.sha256(review_path),'checked_at':time.time()}
         with t.bounded_combat_observation(60):
             def started(before,after,selected):
-                o.poll();checks={'public_active':after['owner_melee']['active'] is True,
-                    'public_target':after['target'].get('guid')==target_guid(target),'native_health_loss':0<health(o)<target['fields'][INDEX['UNIT_FIELD_HEALTH']]}
+                o.poll();dead=health(o)==0
+                checks={'public_active_or_native_death_stop':after['owner_melee']['active'] is True or dead,
+                    'public_target_or_native_death_clear':after['target'].get('guid')==target_guid(target) or dead and not after['target'].get('exists'),
+                    'native_health_loss':0<=health(o)<target['fields'][INDEX['UNIT_FIELD_HEALTH']]}
+                t.receipt['first_health_observation']={'time':time.time(),'native':copy.deepcopy(o.target),
+                    'public_target':copy.deepcopy(after['target']),'public_autoattack':copy.deepcopy(after['owner_melee'])};t.persist()
                 return {'status':'owned_melee_health_started_pass' if all(checks.values()) else 'client_or_protocol_failure','oracle':checks}
             require(t.step('combat.autoattack_health','Apply ordinary owner melee damage to the reviewed existing target.',
                 {'attack':{'kind':'chat','value':'/startattack'}},started,diagnostic_action='attack',before_input=admit),
@@ -189,22 +204,26 @@ def run(t,preparation,entry,stage_path,review_path):
                     if caster==d['native_pet']['guid'] and spell==3110:petcasts.append(p)
             swing_events=public_events(public['melee_probe'],t.receipt['cases'][0]['before']['owner_melee']['event_sequence'],
                 matched,t.guid,target_guid(target))
-            checks=health_checks(target['fields'][INDEX['UNIT_FIELD_HEALTH']],health(o),matched,state['target'].get('health'),foreign)
+            first=t.receipt['first_health_observation'];first_health=first['native']['fields'][INDEX['UNIT_FIELD_HEALTH']]
+            first_hits=[p for p in matched if p['native']['time']<=first['time']]
+            public_death=not first['public_target'].get('exists') and any(v.get('overkill',-1)>=0 for v in swing_events)
+            checks=health_checks(target['fields'][INDEX['UNIT_FIELD_HEALTH']],first_health,first_hits,
+                first['public_target'].get('health'),foreign,allow_death=True,public_death=public_death)
             starts=combat_pairs(packets,session,since,until,owner,target,'SMSG_ATTACK_START')
-            stops=combat_pairs(packets,session,stop_since,until,owner,target,'SMSG_ATTACK_STOP')
+            stops=combat_pairs(packets,session,since,until,owner,target,'SMSG_ATTACK_STOP')
             modern=[p for p in packets if p.get('name')=='CMSG_ATTACK_SWING' and p.get('direction')=='from_client']
             native=[p for p in packets if p.get('name')=='CMSG_ATTACK_SWING' and p.get('direction')=='to_native']
             identity=None
             if len(modern)==1:r=Reader(bytes.fromhex(modern[0]['body']));identity=r.guid();r.end()
+            modern_stops=sum(p.get('name')=='CMSG_ATTACK_STOP' and p.get('direction')=='from_client' and p['time']>=stop_since for p in packets)
+            native_stops=sum(p.get('name')=='CMSG_ATTACK_STOP' and p.get('direction')=='to_native' and p['time']>=stop_since and p['body']=='' for p in packets)
             checks.update(one_owned_modern_attack=len(modern)==1 and identity==modern_guid(target['guid'],0),
                 one_exact_native_attack=len(native)==1 and native[0]['body']==struct.pack('<Q',target['guid']).hex(),
-                one_modern_stop=sum(p.get('name')=='CMSG_ATTACK_STOP' and p.get('direction')=='from_client' and
-                    p['time']>=stop_since for p in packets)==1,
-                one_native_stop=sum(p.get('name')=='CMSG_ATTACK_STOP' and p.get('direction')=='to_native' and
-                    p['time']>=stop_since and p['body']=='' for p in packets)==1,
+                ordinary_stop_request_contract=modern_stops==native_stops and (modern_stops==1 or
+                    modern_stops==0 and first_health==0 and first['public_autoattack']['active'] is False),
                 attack_start_delivered=bool(starts) and all(p['client'] for p in starts),
                 attack_stop_delivered=bool(stops) and all(p['client'] for p in stops),
-                final_public_target=state['target'].get('guid')==target_guid(target),
+                final_public_target=state['target'].get('guid')==target_guid(target) or health(o)==0 and not state['target'].get('exists'),
                 target_max_health_unchanged=o.target['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]==target['fields'][INDEX['UNIT_FIELD_MAXHEALTH']],
                 native_pet_passive=o.catalogs[-1]['react']==0,
                 native_pet_target_empty=pair(o.pet['fields'],'UNIT_FIELD_TARGET')==0,
@@ -213,7 +232,8 @@ def run(t,preparation,entry,stage_path,review_path):
                 owner_alive=vitals(o)['UNIT_FIELD_HEALTH']>0,owner_position=position(5)==d['staged_position'],
                 ui_clean=not state.get('lua_errors') and not state.get('blocked_actions'))
             t.receipt['health_outcome']={'checks':checks,'native_before':target,'native_after':copy.deepcopy(o.target),
-                'health_loss':target['fields'][INDEX['UNIT_FIELD_HEALTH']]-health(o),'hit_pairs':matched,'orphan_hits':orphaned,
+                'health_loss':target['fields'][INDEX['UNIT_FIELD_HEALTH']]-first_health,'first_observation':first,
+                'first_hit_pairs':first_hits,'hit_pairs':matched,'orphan_hits':orphaned,
                 'foreign_hits':foreign,'pet_firebolts':petcasts,'public_events':swing_events,'public_probe':public['melee_probe'],
                 'public_frame':frame,'state':state,'health_frame':health_frame,'start_pairs':starts,'stop_pairs':stops};t.persist()
             if not all(checks.values()):raise RuntimeError('native/public owner applied damage differs')
@@ -227,9 +247,9 @@ def run(t,preparation,entry,stage_path,review_path):
             retained_presence(t,o,'fixture.health_return_pet');original_pvp(t,o)
             restore(t,o,inventory,old,fixture,d['original_spell'],d['original_position'])
     t.receipt.update(completed=True,phase='owned_melee_health_complete',qualified_scope=
-        'Ordinary owner autoattack on one existing level-three SmartAI target, exact native/public health loss, '
-        'delivered owner hit feedback and public SWING_DAMAGE, ordinary Stop, no pet damage, and whole actor restoration. '
-        'Earned target damage is retained. Other classes, kills, ability damage and cadence remain open.')
+        'Ordinary owner autoattack on one existing neutral level-three Sheep, exact first native/public health loss, '
+        'delivered owner hit feedback and public SWING_DAMAGE, ordinary Stop or native death-stop, no pet damage, and whole actor restoration. '
+        'Earned target damage/death and kill statistics are retained. Monster combat, other classes, ability damage and cadence remain open.')
 
 
 if __name__=='__main__':

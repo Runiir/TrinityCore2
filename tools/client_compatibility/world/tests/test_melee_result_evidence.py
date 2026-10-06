@@ -58,3 +58,11 @@ def test_applied_damage_requires_living_target_and_exact_native_public_health_lo
     elif fault=='dead_target':after=public=0
     elif fault=='missing_delivery':matched[0]['client']=None
     assert all(health_checks(before,after,matched,public,foreign).values())==(fault is None)
+
+
+def test_native_critters_death_clips_overkill_and_requires_public_lethal_feedback():
+    matched=[{'expected':{'damage':6,'overkill':-1},'client':{'time':1.1}},
+        {'expected':{'damage':12,'overkill':4},'client':{'time':2.1}}]
+    assert all(health_checks(14,0,matched,None,[],allow_death=True,public_death=True).values())
+    assert not all(health_checks(14,0,matched,None,[],allow_death=True).values())
+    assert not all(health_checks(14,0,matched,None,[],public_death=True).values())

@@ -1,36 +1,37 @@
-"""Pose staging beside one existing SmartAI target with ordinary health damage."""
+"""Pose staging beside one existing neutral critter with ordinary health damage."""
 import json,time
 from . import lab_runtime as lab
 from .pet_attack_fixture import PetAttackFixture
 from .interaction_bridge_deploy import identity
 
 NAMES=('TC442MeleeHealthRestore','TC442MeleeHealthTarget')
-POSE=(1818.73,1596.82,96.1702,6.10865)
+POSE=(-9260.11,132.509,70.1893,1.59228)
 
 
 def target():
     with lab.connection() as c,c.cursor() as q:
         q.execute('SELECT c.guid,c.id,t.name,c.map,c.position_x,c.position_y,c.position_z,c.orientation,'
             'c.phaseMask,t.minlevel,t.maxlevel,t.faction,t.ScriptName,c.MovementType,t.flags_extra,t.AIName '
-            'FROM client442_world.creature c JOIN client442_world.creature_template t ON t.entry=c.id WHERE c.guid=325163')
+            'FROM client442_world.creature c JOIN client442_world.creature_template t ON t.entry=c.id WHERE c.guid=280635')
         row=q.fetchone()
-        if (not row or row[:4]!=(325163,44794,'Training Dummy',0) or
-            row[8:]!=(1,3,3,7,'',0,270336,'SmartAI') or
+        if (not row or row[:4]!=(280635,1933,'Sheep',0) or
+            row[8:]!=(1,3,3,31,'',0,2,'') or
             any(abs(a-b)>.01 for a,b in zip(row[4:8],POSE))):
-            raise RuntimeError('existing damageable SmartAI target contract differs')
-        q.execute('SELECT event_type,action_type FROM client442_world.smart_scripts WHERE entryorguid=44794 ORDER BY id')
-        if q.fetchall()!=((8,33),)*5:raise RuntimeError('target must have only the five existing spell-credit events')
-        # The chosen western point is over 30m from the hostile level-30 NPCs.
+            raise RuntimeError('existing neutral Sheep target contract differs')
+        q.execute('SELECT type,HealthModifier FROM client442_world.creature_template WHERE entry=1933')
+        if q.fetchone()!=(8,.2):raise RuntimeError('requires the existing non-reward-bearing critter')
+        q.execute('SELECT creature_id FROM client442_world.creature_onkill_reward WHERE creature_id=1933')
+        if q.fetchone():raise RuntimeError('unexpected critter reputation reward')
         q.execute('SELECT c.guid FROM client442_world.creature c JOIN client442_world.creature_template t ON t.entry=c.id '
-            'WHERE c.map=0 AND POW(c.position_x-%s,2)+POW(c.position_y-%s,2)<900 '
-            'AND t.faction NOT IN (7,31,35)',(POSE[0]-3,POSE[1]))
-        if q.fetchone():raise RuntimeError('unexpected non-neutral creature inside the reviewed 30m staging area')
+            'WHERE c.map=0 AND POW(c.position_x-%s,2)+POW(c.position_y-%s,2)<400 '
+            'AND t.faction NOT IN (7,12,31,35)',(POSE[0]-3,POSE[1]))
+        if q.fetchone():raise RuntimeError('unexpected hostile creature inside the reviewed 20m staging area')
     return list(row)
 
 
 def native_target(row):
     return bool(row and row.get('kind')==3 and row.get('map')==0 and
-        row.get('guid',0)>>52==0xf13 and row['guid']>>32&0xfffff==44794 and
+        row.get('guid',0)>>52==0xf13 and row['guid']>>32&0xfffff==1933 and
         len(row.get('movement',{}).get('position',[]))==4 and
         all(abs(a-b)<.01 for a,b in zip(row['movement']['position'],POSE)))
 
