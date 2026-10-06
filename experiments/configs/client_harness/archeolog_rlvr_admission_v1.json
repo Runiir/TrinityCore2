@@ -3,7 +3,7 @@
   "$id": "archeolog_rlvr_rollout_v1",
   "title": "Future on-policy rollout evidence; historical SFT rows do not qualify",
   "type": "object",
-  "required": ["policy", "input_sha256", "rollout_source", "behavior_policy_probabilities", "selected_action_probability", "intervention_ledger", "transition_gap_free", "terminal_state", "transition"],
+  "required": ["policy", "input_sha256", "rollout_source", "behavior_policy_probabilities", "selected_action_probability", "executed_input", "intervention_ledger", "transition_gap_free", "terminal_state", "transition"],
   "properties": {
     "policy": {
       "type": "object",
@@ -17,6 +17,7 @@
     "selected_action_probability": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
     "rollout_source": {"const": "on_policy"},
     "behavior_policy_probabilities": {"type": "object", "minProperties": 2, "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "executed_input": {"type": "object", "required": ["runtime", "started_at", "finished_at", "completed"], "properties": {"runtime": {"type": "object"}, "started_at": {"type": "number"}, "finished_at": {"type": "number"}, "completed": {"const": true}}},
     "intervention_ledger": {
       "type": "object", "required": ["complete", "events"],
       "properties": {"complete": {"const": true}, "events": {"type": "array", "maxItems": 0}}

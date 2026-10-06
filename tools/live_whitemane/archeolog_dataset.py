@@ -110,6 +110,7 @@ def verifier(step, action):
     finish = step.get('finished_at', after['observed_at'])
     if (not 0 <= start - before['observed_at'] <= 2.5
             or after['observed_at'] <= before['observed_at']
+            or after['observed_at'] < start or finish < start
             or after['observed_at'] > finish + 2.5):
         return None, 'stale_or_nonmonotonic_observations'
     for row in (before, after):
@@ -263,6 +264,14 @@ def rlvr_admission(trajectory):
         return None, 'rlvr_input_identity_mismatch'
     if not step.get('input_evidence'):
         return None, 'rlvr_executed_input_evidence_missing'
+    executed = trajectory.get('executed_input') or {}
+    before, after = step.get('before') or {}, step.get('after') or {}
+    if (executed.get('completed') is not True or executed.get('runtime') != before.get('runtime')
+            or not isinstance(executed.get('started_at'), (int, float))
+            or not isinstance(executed.get('finished_at'), (int, float))
+            or not before.get('observed_at', math.inf) <= executed['started_at']
+            <= executed['finished_at'] <= after.get('observed_at', -math.inf)):
+        return None, 'rlvr_executed_input_identity_or_timing_invalid'
     reward, reason = verifier(step, action)
     if reason in ('no_measured_approach', 'no_measured_bearing_improvement'):
         reward = {'kind': 'valid_executed_no_progress', 'reward': 0.}

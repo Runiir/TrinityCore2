@@ -108,6 +108,8 @@ class ArcheologAdmissionTests(unittest.TestCase):
             'input_sha256': digest({'state': transition['request']['state'], 'question': question}),
             'selected_action_probability': .8, 'rollout_source': 'on_policy',
             'behavior_policy_probabilities': {'forward_short': .8, 'observe': .2},
+            'executed_input': {'runtime': transition['before']['runtime'], 'started_at': 10.2,
+                               'finished_at': 10.3, 'completed': True},
             'transition': transition}
         self.assertIsNone(rlvr_admission(trajectory)[1])
         unknown = copy.deepcopy(trajectory)
@@ -127,6 +129,8 @@ class ArcheologAdmissionTests(unittest.TestCase):
             'input_sha256': digest({'state': transition['request']['state'], 'question': question}),
             'selected_action_probability': .8, 'rollout_source': 'on_policy',
             'behavior_policy_probabilities': {'forward_short': .8, 'observe': .2},
+            'executed_input': {'runtime': transition['before']['runtime'], 'started_at': 10.2,
+                               'finished_at': 10.3, 'completed': True},
             'transition': transition}
         self.assertEqual(rlvr_admission(trajectory)[0]['outcome']['reward'], 0.)
         transition['failure'] = 'stale frame'
