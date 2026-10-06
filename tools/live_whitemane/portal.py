@@ -31,7 +31,7 @@ def run(folder,portal,*,approved_intent=None):
     result['approach']=walk(folder/'approach',target,tolerance=.4,
         guidance={'source':'public portal route'},approved_intent=(action,model,request,response))
     row=action_queue.wait_stopped(folder,observe(folder/'approached.png'),observe)
-    result['camera_view']=align(folder/'view',row,target)
+    result['camera_view']=align(folder/'view',row,target,reset_view=True)
     row=observe(folder/'view_ready.png')
     names={'Portal to '+portal['destination']}
     if portal.get('key')=='org-uldum':names.add('Portal to Uldum')

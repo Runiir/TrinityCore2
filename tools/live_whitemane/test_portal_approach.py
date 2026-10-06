@@ -13,7 +13,7 @@ def test_portal_retains_its_selected_movement_intent_and_confirms_arrival(monkey
     monkeypatch.setattr(portal,'observe',lambda _:next(frames))
     monkeypatch.setattr(portal,'stationary',lambda *_:None)
     monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
-    monkeypatch.setattr(portal,'align',lambda folder,row,target:[{'pitch_radians':0}])
+    monkeypatch.setattr(portal,'align',lambda folder,row,target,**kwargs:[{'view_reset':kwargs['reset_view']}])
     monkeypatch.setattr(portal,'choose',lambda *_,**kwargs:('portal',{}, {}, {}))
     walks=[]
     def walk(folder,target,**kwargs):
@@ -36,7 +36,7 @@ def test_selected_portal_intent_is_not_replaced_by_a_second_model_choice(monkeyp
     monkeypatch.setattr(portal,'observe',lambda _:next(frames))
     monkeypatch.setattr(portal,'stationary',lambda *_:None)
     monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
-    monkeypatch.setattr(portal,'align',lambda folder,row,target:[{'pitch_radians':0}])
+    monkeypatch.setattr(portal,'align',lambda folder,row,target,**kwargs:[{'view_reset':kwargs['reset_view']}])
     monkeypatch.setattr(portal,'choose',lambda *_,**__:pytest.fail('do not replace selected intent'))
     intent=('portal','Laya',{'selected':'portal'},{'choice':'portal'})
     def walk(folder,target,**kwargs):
@@ -57,7 +57,7 @@ def test_uldum_route_label_uses_the_observed_portal_name(monkeypatch,tmp_path):
     monkeypatch.setattr(portal,'observe',lambda _:next(frames))
     monkeypatch.setattr(portal,'stationary',lambda *_:None)
     monkeypatch.setattr(portal.action_queue,'wait_stopped',lambda folder,row,observer:row)
-    monkeypatch.setattr(portal,'align',lambda folder,row,target:[{'pitch_radians':0}])
+    monkeypatch.setattr(portal,'align',lambda folder,row,target,**kwargs:[{'view_reset':kwargs['reset_view']}])
     monkeypatch.setattr(portal,'walk',lambda *_,**__:[])
     def interact(folder,row,names):
         assert 'Portal to Uldum' in names

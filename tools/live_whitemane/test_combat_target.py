@@ -9,7 +9,7 @@ def enemy():
     r['archaeology'].update(falling=False)
     r['farm_ui']['combat']={'target_exists':True,'hostile':True,'target_dead':False,
         'attack_in_range':False,'target_guid':'enemy','target_name':'Hyena','click_to_move':'1'}
-    r['farm_ui']['bindings']['TARGETNEARESTENEMY']=['Tab']
+    r['farm_ui']['bindings']['TARGETNEARESTENEMY']=['TAB']
     return r
 
 

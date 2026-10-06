@@ -77,7 +77,9 @@ def execute(title, action, arguments):
             elif action == 'key':
                 if not .05 <= arguments['hold'] <= 2:
                     raise ValueError('key hold is outside its bounded interval')
-                sender.key(arguments['key'], hold=arguments['hold'])
+                try:sender.key(arguments['key'], hold=arguments['hold'])
+                except SystemExit as error:
+                    raise RuntimeError('selected client binding is unavailable: '+str(error)) from error
             elif action == 'type':
                 if not arguments['text'].startswith('/') or len(arguments['text']) > 500:
                     raise ValueError('only bounded ordinary in-game slash commands are supported')

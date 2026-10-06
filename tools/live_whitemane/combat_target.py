@@ -4,6 +4,7 @@ import math
 import time
 from . import inputs,laya_ui,runtime,action_queue
 from .observe import observe
+from tools.client_compatibility.interaction_trial import binding_key
 
 
 def living(row):
@@ -64,7 +65,7 @@ class TargetApproach:
             decision['input']=inputs.execute('World of Warcraft','command',{'text':'/console autointeract 1',
                 'frame_period_seconds':1/max(1,row['farm_ui'].get('frame_rate') or 1)})
         elif action in ('target_enemy','approach'):
-            key=bindings['TARGETNEARESTENEMY' if action=='target_enemy' else 'INTERACTTARGET'][0]
+            key=binding_key(bindings['TARGETNEARESTENEMY' if action=='target_enemy' else 'INTERACTTARGET'][0])
             decision['input']=inputs.execute('World of Warcraft','key',{'key':key,'hold':.15})
             if action=='approach':
                 self.active={'target_guid':target,'last_world':world,'last_progress':time.monotonic(),

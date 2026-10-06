@@ -5,10 +5,11 @@ from . import camera_navigation,camera_input,runtime
 
 @pytest.mark.parametrize('sensitivity',[-.006,.004])
 @pytest.mark.parametrize('ground_view,starting_pitch',[(False,-1.5),(True,math.pi/4)])
-def test_camera_pitch_is_absolute_feedback_not_an_accumulating_ground_delta(
+def test_ground_camera_uses_a_view_preset_without_steering_body_pitch(
         monkeypatch,tmp_path,sensitivity,ground_view,starting_pitch):
     (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
     monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
+    commands=[];monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *args:commands.append(args) or {})
     monkeypatch.setattr(camera_navigation.time,'sleep',lambda _:None)
     actual={'yaw':0,'pitch':starting_pitch,'sequence':0};deltas=[]
     class Sender:
@@ -34,7 +35,35 @@ def test_camera_pitch_is_absolute_feedback_not_an_accumulating_ground_delta(
     def observe(_):actual['sequence']+=1;return row()
     monkeypatch.setattr(camera_navigation,'observe',observe)
     rows=camera_navigation.align(tmp_path/'camera',row(),ground_view=ground_view)
-    target=math.pi/4 if ground_view else 0
-    assert abs(actual['pitch']-target)<=.03 and rows[-1]['desired_pitch_radians']==target
-    if ground_view:assert all(y==0 for _,y in deltas)
-    else:assert any(y for _,y in deltas)
+    assert actual['pitch']==starting_pitch and all(y==0 for _,y in deltas)
+    assert abs(actual['yaw'])<=.18 and len(rows)>=2
+    assert commands[0][2]['text']==('/run ResetView(4)SetView(4)' if ground_view else '/run ResetView(2)SetView(2)')
+
+
+def test_ground_turn_does_not_require_or_steer_a_stale_body_pitch(monkeypatch,tmp_path):
+    (tmp_path/'run').mkdir();monkeypatch.setattr(runtime,'ROOT',tmp_path)
+    monkeypatch.setattr(camera_navigation.inputs,'focus',lambda _: {})
+    monkeypatch.setattr(camera_navigation.inputs,'execute',lambda *_:pytest.fail('ground yaw turn should not reset the view'))
+    from . import camera_input
+    state={'yaw':0,'sequence':0};deltas=[]
+    class Sender:
+        initialization={}
+        def move(self,*_):pass
+    class Sticky:
+        def __init__(self,*_,**__):pass
+        def renew(self):pass
+        def button(self,*_):pass
+        def relative(self,x,y):deltas.append((x,y));state['yaw']-=x*.006
+        def close(self):pass
+    monkeypatch.setattr(camera_input,'Input',Sender);monkeypatch.setattr(camera_navigation,'StickyInput',Sticky)
+    def row():
+        state['sequence']+=1
+        return {'observed_at':state['sequence'],'movement':{'sequence':state['sequence'],
+            'client_uptime_ms':state['sequence']*100,'facing_radians':state['yaw'],
+            'in_world':True,'dead':False,'in_combat':False,'on_taxi':False,'speed':0},
+            'archaeology':{'world':{'instance':1,'north':0,'west':0},'casting':False,'flying':False,'falling':False},
+            'owned_pose':{'pitch_radians':-1.0856,'client_uptime_ms':100}}
+    monkeypatch.setattr(camera_navigation,'observe',lambda _:row())
+    monkeypatch.setattr(camera_navigation.time,'sleep',lambda _:None)
+    camera_navigation.align(tmp_path/'camera',row(),{'instance':1,'north':0,'west':10})
+    assert abs(state['yaw']-math.pi/2)<.18 and all(y==0 for _,y in deltas)
