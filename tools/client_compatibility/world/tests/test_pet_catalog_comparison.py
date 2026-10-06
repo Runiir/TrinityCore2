@@ -35,7 +35,7 @@ def test_public_catalog_cannot_pass_lost_or_changed_native_authority(change):
 
 
 def test_modern_reader_consumes_the_complete_pinned_packet():
-    n,m=sample();w=Writer().guid(*m['guid']).pack('HHIBBB',[23,0,0,1,0,3])
-    body=w.pack('10I',m['buttons']).pack('3I',[4,0,0]).pack('4I',m['actions']).finish()
+    n,m=sample();w=Writer().guid(*m['guid']).pack('HHIBBB',23,0,0,1,0,3)
+    body=w.pack('10I',*m['buttons']).pack('3I',4,0,0).pack('4I',*m['actions']).finish()
     assert modern_catalog(body.hex())==m
     with pytest.raises(ValueError):modern_catalog((body+b'x').hex())
