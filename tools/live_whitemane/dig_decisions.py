@@ -74,6 +74,16 @@ def choose(state):
             options['swim_down']='Swim downward toward the artifact depth or to test a lower interaction position'
             if 'forward_long' in options:options['forward_long']='Swim toward the current recorded marker or telescope guide'
     context=state
+    if decision_backend.vision_enabled():
+        pending=state['artifact_visible'] or pickup.get('uncollected')
+        goal=('Collect the discovered uncollected artifact' if pending else
+            'Reach the current recorded marker or telescope destination' if state.get('telescope')
+                and not state.get('guide_arrived') else
+            'Locate the next buried archaeology artifact at the current digsite')
+        context={**state,'task':goal,'action_effects':{
+            'survey':'Reveals a buried artifact or a telescope direction; dismounts automatically on ground',
+            'inspect':'Locates a discovered artifact on the minimap; cannot reveal a buried artifact',
+            'camera':'Changes the view; cannot reveal a buried artifact'}}
     instructions=(
         'Collect discovered finds before more Survey or travel. A missed tooltip means locate the same find again. '
         'Estimated arrival is not pickup. A gathering cast confirms interaction range. '
@@ -84,6 +94,11 @@ def choose(state):
         'survey_at_pickup_position_untried is true. Another artifact may be at the same spot. '
         'A successful Survey clears that fact; choosing Survey without success does not. '
         'A measured vertical gap means horizontal arrival alone is insufficient for pickup.')
+    if decision_backend.vision_enabled():
+        instructions=('Survey reveals buried archaeology finds. Without a discovered find or a current '
+            'direction, the next find is still buried. Camera changes and minimap inspection cannot uncover it. '
+            'When swimming, negative artifact_height_error_yards means swim down; positive means swim up. '
+            +instructions)
     if repeat_here and not pickup.get('uncollected') and not state['artifact_visible']:
         # Keep the whole movement context and every legal alternative. Explain
         # the immediate goal and action effects instead of overriding a vote.

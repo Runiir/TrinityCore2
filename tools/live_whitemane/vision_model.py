@@ -85,13 +85,17 @@ def serve(args):
     def health():
         return health_data()
 
-    def infer(payload, questions):
+    def infer(payload, questions, image_mode='real', diagnostic_frame=None):
         if payload.get('model') != backend.VISION_MODEL or not isinstance(payload.get('state'), dict):
             raise HTTPException(422, 'invalid vision model or state')
         started = time.perf_counter()
         with lock:
-            image, frame = capture()
-            state = {'image': image, 'controller': payload['state']}
+            image, frame = diagnostic_frame or capture()
+            state = {'controller': payload['state']}
+            if image_mode == 'real':state['image'] = image
+            elif image_mode == 'blank':
+                from PIL import Image
+                state['image'] = Image.new('RGB', image.size, (0, 0, 0))
             try:
                 tokens = budget(agent, state, questions)
                 if any(value['truncated_fields'] for value in tokens.values()):
@@ -103,7 +107,8 @@ def serve(args):
             torch.cuda.synchronize()
         # The checkpoint's act-probability head is untrained; choices are never gated by it.
         result.update(**identity, device=str(agent.device), weights_dtype='fp32', precision=args.precision, action_authority=False,
-            model_saw_pixels=True, frame=frame, token_budget=tokens,
+            model_saw_pixels=image_mode == 'real', diagnostic_image_mode=image_mode,
+            frame=frame, token_budget=tokens,
             context_limit=args.context_tokens, question_token_limit=args.question_tokens,
             elapsed_sec=time.perf_counter() - started)
         return result
@@ -125,6 +130,19 @@ def serve(args):
         result = infer(payload, {'action': policies[name].question()})
         result['policy'] = name
         return result
+
+    @app.post('/v1/diagnostic')
+    def diagnostic(payload: dict):
+        from . import runtime
+        if not (runtime.ROOT / 'run/stop_dig').exists():
+            raise HTTPException(409, 'image ablation requires a paused gameplay actor')
+        try:
+            questions = validate_ui_request(payload, expected_model=backend.VISION_MODEL)
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
+        frame = capture()
+        return {'action_authority': False, 'cases': {mode: infer(payload, questions, mode, frame)
+            for mode in ('real', 'blank', 'none')}}
 
     print(json.dumps({'status': 'ready', **identity, 'warmup_seconds': warmup_seconds}), flush=True)
     uvicorn.run(app, host='127.0.0.1', port=args.port, log_level='warning')

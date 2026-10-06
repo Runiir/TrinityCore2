@@ -32,7 +32,9 @@ def test_vision_dig_receives_full_state_without_legacy_navigation_projection(tmp
     monkeypatch.setattr(dig_decisions.decisions, 'choose',
         lambda *_: pytest.fail('vision cannot use the old narrow trained schema'))
     def choose(context, instructions, options):
-        assert context == state
+        assert context['extra_observed_facts'] == state['extra_observed_facts']
+        assert context['task'] == 'Reach the current recorded marker or telescope destination'
+        assert context['action_effects']['survey'].startswith('Reveals a buried artifact')
         assert {'forward_short', 'forward_long', 'camera_forward', 'observe'} <= options.keys()
         return 'forward_short', {}, {**backend.selected(), 'model_saw_pixels': True}
     monkeypatch.setattr(dig_decisions.laya_ui, 'choose', choose)

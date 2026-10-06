@@ -5,7 +5,7 @@ from . import inputs, runtime, action_queue
 from .observe import observe
 from .decisions import choose
 from .smooth_move import walk, descend, ascend, GroundContact
-from . import clearance
+from . import clearance,decision_backend
 from . import farm_graph,pending_find
 from pathlib import Path
 from tools.client_compatibility import travel_policy
@@ -100,7 +100,21 @@ def fly(folder, row, arrow, step, *, combat_landing=False):
         error=(math.atan2(target['west']-world['west'],target['north']-world['north'])-m['facing_radians']+math.pi)%math.tau-math.pi
         state=travel_policy.model_state(flags)
         alternatives={};detour={}
-        if not combat_landing and height_plan and height_plan.get('reference_departure_column_clear') is False and not at_height:
+        if combat_landing and decision_backend.vision_enabled():
+            from . import laya_ui
+            state={**state,'task':'Get onto the ground and off the mount to fight the current attacker',
+                'combat':m['in_combat'],'mounted':a['mounted'],'flying':a['flying'],
+                'falling':a['falling'],'grounded':a.get('grounded'),
+                'target':(row.get('farm_ui') or {}).get('combat',{}).get('target_name')}
+            options={'observe':'Wait here and observe'}
+            if a['flying'] or a['falling']:options['land']='Descend to the ground here'
+            elif a['mounted']:options['dismount']='Toggle off the mount on the ground to fight'
+            else:options['arrived']='Finish landing; now on foot and ready for combat'
+            action,request,response=laya_ui.choose(state,
+                'Prepare to fight the attacker: land if airborne, dismount if mounted on ground, '
+                'then finish this landing phase when on foot. Further flight does not complete this task.',options)
+            model=laya_ui.identity(response)
+        elif not combat_landing and height_plan and height_plan.get('reference_departure_column_clear') is False and not at_height:
             from . import terrain_context,escape_route,laya_ui
             alternatives=escape_route.candidates(row,target);detour=terrain_context.detour(row,target)
             state={'task':'Reach the retained destination from beneath an obstruction',

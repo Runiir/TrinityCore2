@@ -8,8 +8,12 @@ VISION_REVISION = 'f2fe3c12cb6d04c59d8a190250bf3fb40fc828dc'
 VISION_CODE_REVISION = '9e1e2419d855ad3e1a2af4d4bd1ef6be5418842c'
 
 
+def configuration_path():
+    return runtime.ROOT / 'run/decision_backend.json'
+
+
 def selected():
-    path = runtime.ROOT / 'run/decision_backend.json'
+    path = configuration_path()
     if not path.exists():
         return {'kind': 'text', 'model': MODEL, 'revision': REVISION, 'adapter': None}
     value = json.loads(path.read_text())
