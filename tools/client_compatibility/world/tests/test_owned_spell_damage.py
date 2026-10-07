@@ -25,7 +25,7 @@ def native(*,target=TARGET,caster=1,spell=57755,damage=1200,overkill=1000,
 
 
 def response(codec,body=None,*,owner=1,snapshot=1,units=None,requests=1):
-    actions=[{'fn':'cast_request','body':CAPTURE['body']} for _ in range(requests)]
+    actions=[{'fn':'cast_request','name':'CMSG_CAST_SPELL','body':CAPTURE['body']} for _ in range(requests)]
     actions.append({'fn':'combat_response','name':'SMSG_SPELLNONMELEEDAMAGELOG',
                     'body':(native() if body is None else body).hex()})
     return result(codec,op='stateful',character={'guid':owner,'map':0},snapshot={'guid':snapshot},
