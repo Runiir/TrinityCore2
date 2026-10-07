@@ -19,7 +19,7 @@ from .world import casting
 
 NAMES = {name: 'hunter_revive_' + suffix + '/episode.json' for name, suffix in (
     ('fixture', 'fixture01'), ('preparation', 'prepare01'), ('entry', 'entry01'),
-    ('recon', 'recon02'), ('cast', 'cast01'), ('park', 'park01'),
+    ('recon', 'recon03'), ('cast', 'cast01'), ('park', 'park01'),
     ('finish', 'original_finish01'), ('normalize', 'normalize01'), ('close', 'close01'))}
 PAUSE = 'scout_revive_pause01/episode.json'
 CAST_NAMES = {'CMSG_CAST_SPELL', 'SMSG_SPELL_START', 'SMSG_SPELL_GO',
@@ -74,23 +74,45 @@ def collect(member, lines, data, tracking):
     cast, budget, since, until = window(data)
     entry = data[NAMES['entry']]
     session, guid = cast['native_session'], budget['guid']
+    lower = budget['lifetime_source']
+    previous = [lower['previous_creation_packet'], lower['destruction_packet']]
+    previous_keys = {packet_key(p) for p in previous}
     for packet in lines:
         if member == 'tracking/events.jsonl':
             if (packet.get('event') == 'instance_authenticated' and packet.get('account_id') == 2 and
                 entry['started_at'] <= packet.get('time', 0) <= entry['finished_at']):
                 tracking['instances'].add(packet['session'])
+            prior_metadata = packet.get('event') == 'native_packet' and packet.get('session') == session and any(
+                (packet.get('name'), packet.get('direction'), packet.get('bytes')) ==
+                (p['name'], p['direction'], len(bytes.fromhex(p['body']))) and
+                0 <= p['time'] - packet.get('time', 0) < .1 for p in previous)
             if (packet.get('session') in {session} | tracking['instances'] and
-                since <= packet.get('time', 0) <= until and
+                (since <= packet.get('time', 0) <= until or prior_metadata) and
                 packet.get('event') in ('native_packet', 'modern_packet') and
                 packet.get('name') in CAST_NAMES | FAILURES | {'SMSG_UPDATE_OBJECT', 'SMSG_DESTROY_OBJECT'}):
                 tracking['events'].append(packet)
-        elif member == 'tracking/packets.jsonl' and packet.get('session') == session and since <= packet.get('time', 0) <= until:
-            if packet.get('name') in CAST_NAMES and cast['cast_started_at'] <= packet['time']:
+        elif member == 'tracking/packets.jsonl' and packet.get('session') == session:
+            prior_packet = packet.get('name') in ('SMSG_UPDATE_OBJECT', 'SMSG_DESTROY_OBJECT') and packet_key(packet) in previous_keys
+            in_window = since <= packet.get('time', 0) <= until
+            if in_window and packet.get('name') in CAST_NAMES and cast['cast_started_at'] <= packet['time']:
                 tracking['packets'].add(packet_key(packet))
-            if relevant(packet, guid): tracking['wire'].append(packet)
+            if prior_packet or in_window and relevant(packet, guid): tracking['wire'].append(packet)
         require(len(tracking['packets']) <= 256 and len(tracking['wire']) <= 512 and
             len(tracking['events']) <= 2048 and len(tracking['instances']) <= 1,
             'Revive journal bound exceeded')
+
+
+def dead_creation(packet, guid, session):
+    require(packet['name'] == 'SMSG_UPDATE_OBJECT' and packet['direction'] == 'from_native' and
+        packet['session'] == session, 'dead native pet creation attribution differs')
+    born = [r for r in records(bytes.fromhex(packet['body'])) if r.get('guid') == guid and r.get('update_type') in (1, 2)]
+    require(len(born) == 1 and born[0].get('kind') == 3, 'dead native pet creation differs')
+    pet = fields(born[0])
+    require(guid >> 52 == 0xf14 and pet.get(INDEX['OBJECT_FIELD_ENTRY']) == 299 and
+        pet.get(INDEX['UNIT_FIELD_PETNUMBER']) == 16 and pair(pet, 'UNIT_FIELD_SUMMONEDBY') == 6 and
+        pet.get(INDEX['UNIT_CREATED_BY_SPELL']) in (13481, 883) and pet.get(INDEX['UNIT_FIELD_HEALTH'], 0) == 0 and
+        pet.get(INDEX['UNIT_FIELD_MAXHEALTH'], 0) > 0, 'actual created dead Wolf16 identity differs')
+    return pet
 
 
 def wire_proof(cast, tracking):
@@ -115,6 +137,15 @@ def wire_proof(cast, tracking):
         cast.get('ordinary_input') == {'kind': 'chat', 'value': '/cast Revive Pet'},
         'actual ordinary Revive982 payload differs')
     lower = budget['lifetime_source']; setup = lower['started_at']; creation = budget['creation_packet']
+    previous_guid = lower['previous_guid']; prior_creation = lower['previous_creation_packet']; destruction = lower['destruction_packet']
+    require(previous_guid != guid and previous_guid >> 52 == 0xf14 and
+        prior_creation['time'] <= destruction['time'] <= setup and
+        destruction['session'] == session and destruction['direction'] == 'from_native' and
+        destruction['name'] == 'SMSG_DESTROY_OBJECT' and
+        struct.unpack_from('<Q', bytes.fromhex(destruction['body']))[0] == previous_guid and
+        {packet_key(prior_creation), packet_key(destruction)} <= {packet_key(p) for p in wire},
+        'previous expired corpse and distinct fresh creation attribution differs')
+    dead_creation(prior_creation, previous_guid, session)
     calls = [p for p in wire if (p['direction'], p['name']) == ('to_native', 'CMSG_CAST_SPELL') and
         p['time'] < creation['time']]
     require(lower['source'] == 'ordinary_call_pet_fixture_chat_setup_before_native_request' and
@@ -143,13 +174,7 @@ def wire_proof(cast, tracking):
     require(cast['native_completions'] == [{k: completion[k] for k in ('caster', 'unit', 'counter', 'spell')}] and
         native[0]['time'] <= timing['starts'][0]['time'] < completion['time'] <= cast['cast_finished_at'],
         'actual Revive completion identity/order differs')
-    born = [r for r in records(bytes.fromhex(creation['body'])) if r.get('guid') == guid and r.get('update_type') in (1, 2)]
-    require(len(born) == 1 and born[0].get('kind') == 3, 'dead native pet creation differs')
-    pet = fields(born[0]); owner = {}; before = None; health_packet = None
-    require(guid >> 52 == 0xf14 and pet.get(INDEX['OBJECT_FIELD_ENTRY']) == 299 and
-        pet.get(INDEX['UNIT_FIELD_PETNUMBER']) == 16 and pair(pet, 'UNIT_FIELD_SUMMONEDBY') == 6 and
-        pet.get(INDEX['UNIT_CREATED_BY_SPELL']) == 883 and pet.get(INDEX['UNIT_FIELD_HEALTH'], 0) == 0 and
-        pet.get(INDEX['UNIT_FIELD_MAXHEALTH'], 0) > 0, 'actual created dead Wolf16 identity differs')
+    pet = dead_creation(creation, guid, session); owner = {}; before = None; health_packet = None
     for packet in wire:
         if packet['time'] < creation['time']: continue
         if packet['time'] >= native[0]['time'] and before is None:
@@ -180,7 +205,7 @@ def wire_proof(cast, tracking):
         cast['public_pet'].get('exists') is True and cast['public_pet'].get('guid') == public['guid'],
         'stock public living owned pet differs')
     require(len(tracking['instances']) == 1, 'fresh physical Revive instance attribution absent')
-    important = [native[0], creation, health_packet]
+    important = [prior_creation, destruction, native[0], creation, health_packet]
     public_packets = [modern[0]]
     modern_identity = None
     for packet in recorded:

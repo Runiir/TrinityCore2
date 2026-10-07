@@ -12,6 +12,8 @@ from tools.client_compatibility.interaction_pet_summon import cast_identity
 from tools.client_compatibility.interaction_pet_command_probe import expected_guid
 from tools.client_compatibility.review_native_feedback_checkpoint import packet_key
 from tools.client_compatibility.world.native_objects import records
+from tools.client_compatibility.world.native_objects import guid as native_guid
+from tools.client_compatibility.world.buffer import Reader
 from tools.client_compatibility.world.objects import INDEX
 
 
@@ -24,6 +26,7 @@ except ImportError:
     evidence = importlib.util.module_from_spec(spec); sys.modules[name] = evidence; spec.loader.exec_module(evidence)
 
 TRACE = json.loads((lab.REPO / 'tools/client_compatibility/world/tests/fixtures/hunter_revive_expiry_ui167.json').read_text())
+RELOAD = json.loads((lab.REPO / 'tools/client_compatibility/world/tests/fixtures/hunter_revive_reload_creator_ui168.json').read_text())
 
 
 def packed_guid(guid):
@@ -31,15 +34,40 @@ def packed_guid(guid):
     return bytes([sum(1 << i for i, value in enumerate(octets) if value)]) + bytes(value for value in octets if value)
 
 
-def fixture():
-    """Construct a positive ten-second cast using the trace's actual dead create."""
-    packets = deepcopy(TRACE['packets'][:6]); creation = packets[4]; guid = TRACE['pet_guid']
-    setup = TRACE['call_fixture_chat_setup_started_at']; request_at = setup + 20
-    modern = {'session': TRACE['session'], 'time': request_at, 'direction': 'from_client', 'name': 'CMSG_CAST_SPELL',
+def creation_for(packets, guid):
+    return next(p for p in packets if p['name'] == 'SMSG_UPDATE_OBJECT' and p['direction'] == 'from_native' and any(
+        r.get('guid') == guid and r.get('update_type') in (1, 2) for r in records(bytes.fromhex(p['body']))))
+
+
+def destruction_for(packets, guid):
+    return next(p for p in packets if p['name'] == 'SMSG_DESTROY_OBJECT' and p['direction'] == 'from_native' and
+        struct.unpack_from('<Q', bytes.fromhex(p['body']))[0] == guid)
+
+
+def revive_packet(name):
+    for packet in TRACE['packets']:
+        if packet['name'] != name or packet['direction'] != 'from_native': continue
+        reader = Reader(bytes.fromhex(packet['body'])); native_guid(reader); native_guid(reader)
+        if reader.unpack('Bi')[1] == 982: return packet
+    raise AssertionError('trace lacks native Revive' + name)
+
+
+def fixture(trace=TRACE):
+    """Construct a synthetic Revive outcome after actual dead-creation packets."""
+    guid = trace['pet_guid']; source_creation = creation_for(trace['packets'], guid)
+    source_call = trace['call_fixture_native_requests'][0]
+    packets = deepcopy([p for p in trace['packets'] if source_call['time'] <= p['time'] <= source_creation['time'] + .01])
+    call = next(p for p in packets if p == source_call); creation = creation_for(packets, guid)
+    setup = trace['call_fixture_chat_setup_started_at']; request_at = setup + 20
+    previous_guid = trace.get('previous_pet_guid', trace.get('previous_guid'))
+    previous = deepcopy(creation_for(trace['prior_packets'], previous_guid) if 'prior_packets' in trace else trace['previous_creation_packet'])
+    destruction = deepcopy(destruction_for(trace['prior_packets'], previous_guid) if 'prior_packets' in trace else trace['destruction_packet'])
+    packets[:0] = [previous, destruction]
+    modern = {'session': trace['session'], 'time': request_at, 'direction': 'from_client', 'name': 'CMSG_CAST_SPELL',
         'body': '01830482f5bc0000000000000000d6030000069d030000000000000000000000000000000000000000000000000000000000000000000000'}
     native = {**modern, 'time': request_at + .0001, 'direction': 'to_native', 'body': '04d6030000000000000000000000'}
-    start = {**TRACE['packets'][8], 'time': request_at + .01}
-    go = {**TRACE['packets'][9], 'time': request_at + 10.0106}
+    start = {**revive_packet('SMSG_SPELL_START'), 'session': trace['session'], 'time': request_at + .01}
+    go = {**revive_packet('SMSG_SPELL_GO'), 'session': trace['session'], 'time': request_at + 10.0106}
     modern_start = {**start, 'direction': 'to_client', 'time': start['time'] + .0001,
         'body': '01a006040801a006040801a30483f504bc0000d6030000069d0300020804000000000010270000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000164000000'}
     modern_go = {**go, 'direction': 'to_client', 'time': go['time'] + .0001,
@@ -49,17 +77,22 @@ def fixture():
     recorded = [modern, native, start, modern_start, go, modern_go]
     packets.extend([*recorded, health])
     pet = next(r for r in records(bytes.fromhex(creation['body'])) if r.get('guid') == guid)
+    for packet in packets:
+        if packet['time'] < creation['time'] or packet['time'] >= request_at or packet['name'] != 'SMSG_UPDATE_OBJECT': continue
+        for row in records(bytes.fromhex(packet['body'])):
+            if row.get('guid') == guid: pet['fields'].update(row.get('fields', {}))
     living = deepcopy(pet); living['fields'][INDEX['UNIT_FIELD_HEALTH']] = 29
     observed = setup + 17
     budget = {'guid': guid, 'pet_number': 16, 'created_at': creation['time'], 'observed_at': observed,
         'age_seconds': observed - creation['time'], 'conservative_corpse_seconds': 59,
         'remaining_seconds': 59 - (observed - setup), 'lifetime_started_at': setup,
         'lifetime_age_seconds': observed - setup, 'lifetime_source': {'started_at': setup,
-            'source': 'ordinary_call_pet_fixture_chat_setup_before_native_request', 'native_request': packets[0]},
+            'source': 'ordinary_call_pet_fixture_chat_setup_before_native_request', 'native_request': call,
+            'previous_guid': previous_guid, 'previous_creation_packet': previous, 'destruction_packet': destruction},
         'native_present': True, 'submission_budget': True, 'minimum_submission_remaining_seconds': 15,
         'creation_packet': creation}
     request = cast_identity(native)
-    cast = {'native_session': TRACE['session'], 'final_submission_corpse_budget': budget, 'final_submission_ready': True,
+    cast = {'native_session': trace['session'], 'final_submission_corpse_budget': budget, 'final_submission_ready': True,
         'cast_started_at': observed + .01, 'cast_finished_at': health['time'] + .1, 'cast_packets': recorded,
         'native_cast_requests': [request], 'modern_cast_requests': [cast_identity(modern)],
         'native_completions': [{k: 6 if k in ('caster', 'unit') else 4 if k == 'counter' else 982
@@ -72,7 +105,7 @@ def fixture():
     tracking['packets'] = {packet_key(p) for p in recorded}; tracking['wire'] = packets
     tracking['events'] = [{'session': p['session'], 'event': 'native_packet', 'name': p['name'],
         'direction': p['direction'], 'bytes': len(bytes.fromhex(p['body'])), 'time': p['time'] - .00002}
-        for p in [native, creation, health, start, go]]
+        for p in [previous, destruction, native, creation, health, start, go]]
     tracking['events'].extend({'session': 'physical', 'event': 'modern_packet', 'name': p['name'],
         'direction': p['direction'], 'bytes': len(bytes.fromhex(p['body'])), 'time': p['time'] - .00002}
         for p in (modern, modern_start, modern_go))
@@ -85,6 +118,34 @@ def test_native_raw_health_update_is_required_for_one_revive():
     assert result['native_dead_to_alive'] and result['native_requests'] == 1
     assert result['actual_cast_seconds'] == pytest.approx(10.0006)
     assert result['raw_health_update']['body'] == tracking['wire'][-1]['body']
+
+
+def test_actual_ui168_retained_tame_creator_passes_only_with_fresh_callpet_ancestry():
+    cast, tracking = fixture(RELOAD)
+    creation = cast['final_submission_corpse_budget']['creation_packet']
+    born = next(r for r in records(bytes.fromhex(creation['body'])) if r.get('guid') == RELOAD['pet_guid'])
+    assert born['fields'][INDEX['UNIT_CREATED_BY_SPELL']] == 13481
+    assert cast['native_pet_before']['fields'][INDEX['UNIT_CREATED_BY_SPELL']] == 883
+    assert evidence.wire_proof(cast, tracking)['native_dead_to_alive']
+    assert creation == creation_for(RELOAD['packets'], RELOAD['pet_guid'])
+
+
+@pytest.mark.parametrize('fault', ['wrong_creator','same_guid','missing_prior_creation','missing_prior_destruction',
+    'wrong_destroyed_guid','late_destruction','prior_metadata'])
+def test_retained_creator_never_substitutes_for_actual_prior_expiry_and_fresh_creation(fault):
+    cast, tracking = fixture(RELOAD); lower = cast['final_submission_corpse_budget']['lifetime_source']
+    if fault == 'wrong_creator':
+        creation = cast['final_submission_corpse_budget']['creation_packet']
+        assert creation['body'].count('a9340000') == 1
+        creation['body'] = creation['body'].replace('a9340000', 'aa340000')
+    elif fault == 'same_guid': lower['previous_guid'] = RELOAD['pet_guid']
+    elif fault in ('missing_prior_creation','missing_prior_destruction'):
+        key = packet_key(lower['previous_creation_packet' if fault == 'missing_prior_creation' else 'destruction_packet'])
+        tracking['wire'] = [p for p in tracking['wire'] if packet_key(p) != key]
+    elif fault == 'wrong_destroyed_guid': lower['destruction_packet']['body'] = struct.pack('<QB', RELOAD['pet_guid'], 0).hex()
+    elif fault == 'late_destruction': lower['destruction_packet']['time'] = lower['started_at'] + .1
+    elif fault == 'prior_metadata': tracking['events'].pop(0)
+    with pytest.raises(RuntimeError): evidence.wire_proof(cast, tracking)
 
 
 @pytest.mark.parametrize('fault', ['missing_packet', 'body', 'duplicate', 'second_request', 'failure', 'cancel',
@@ -102,7 +163,7 @@ def test_unsupported_or_substituted_live_outcome_cannot_be_admitted(fault):
     elif fault in ('failure', 'cancel'):
         tracking['wire'].append({**cast['cast_packets'][1], 'name': 'SMSG_CAST_FAILED' if fault == 'failure' else 'CMSG_CANCEL_CAST'})
     elif fault == 'late_setup': budget['lifetime_source']['started_at'] = budget['creation_packet']['time'] + 1
-    elif fault == 'missing_call': tracking['wire'].pop(0)
+    elif fault == 'missing_call': tracking['wire'].pop(2)
     elif fault == 'unsupported_clock': budget['lifetime_source']['source'] = 'pet_name_timestamp'
     elif fault == 'short_budget': budget['remaining_seconds'] = 14
     elif fault == 'wrong_duration':
@@ -112,7 +173,7 @@ def test_unsupported_or_substituted_live_outcome_cannot_be_admitted(fault):
     elif fault == 'no_health': tracking['wire'].pop()
     elif fault == 'alive_before_go': tracking['wire'][-1]['time'] = cast['cast_packets'][2]['time'] + 1
     elif fault == 'destroy':
-        tracking['wire'].append({**TRACE['packets'][6], 'time': cast['cast_packets'][2]['time'] + 1})
+        tracking['wire'].append({**destruction_for(TRACE['packets'], TRACE['pet_guid']), 'time': cast['cast_packets'][2]['time'] + 1})
     elif fault == 'wrong_pet': cast['native_pet_after']['guid'] += 1
     elif fault == 'public_dead': cast['outcome_state']['target']['health'] = 0
     elif fault == 'missing_instance': tracking['instances'].clear()
@@ -138,12 +199,12 @@ def test_unsupported_or_substituted_live_outcome_cannot_be_admitted(fault):
 def test_actual_ui167_expiry_cannot_pass_even_with_successful_go_and_claimed_checks():
     cast, tracking = fixture()
     # The real corpse destruction occurs before its recorded Revive completion.
-    cast['cast_packets'][2]['time'] = TRACE['packets'][8]['time']
-    cast['cast_packets'][4]['time'] = TRACE['packets'][9]['time']
+    cast['cast_packets'][2]['time'] = revive_packet('SMSG_SPELL_START')['time']
+    cast['cast_packets'][4]['time'] = revive_packet('SMSG_SPELL_GO')['time']
     cast['native_cast_timing'] = native_revive_timing(cast['cast_packets'], cast['native_cast_requests'][0],
         cast['final_submission_corpse_budget']['lifetime_source']['started_at'])
     tracking['packets'] = {packet_key(p) for p in cast['cast_packets']}
-    tracking['wire'].insert(-1, TRACE['packets'][6])
+    tracking['wire'].insert(-1, destruction_for(TRACE['packets'], TRACE['pet_guid']))
     with pytest.raises(RuntimeError, match='START10000/GO timing'): evidence.wire_proof(cast, tracking)
 
 
@@ -160,9 +221,10 @@ def test_collect_ignores_ambient_movement_and_binds_exact_global_cast_window():
 
 def test_collect_cannot_replace_a_recorded_packet_with_another_session():
     cast, tracking = fixture(); data = {evidence.NAMES['cast']: cast, evidence.NAMES['entry']: {'started_at': 1, 'finished_at': 2}}
-    actual = evidence.tracking_state(); rows = deepcopy(tracking['wire']); rows[6]['session'] = 'foreign'
+    actual = evidence.tracking_state(); rows = deepcopy(tracking['wire']); index = rows.index(cast['cast_packets'][0])
+    rows[index]['session'] = 'foreign'
     evidence.collect('tracking/packets.jsonl', rows, data, actual)
-    assert packet_key(tracking['wire'][6]) not in actual['packets']
+    assert packet_key(tracking['wire'][index]) not in actual['packets']
 
 
 def test_collect_rejects_unbounded_relevant_packets():
@@ -172,9 +234,9 @@ def test_collect_rejects_unbounded_relevant_packets():
         evidence.collect('tracking/packets.jsonl', [tracking['wire'][0]] * 513, data, actual)
 
 
-def complete_fixture():
+def complete_fixture(trace=TRACE):
     """Synthetic archived chain; actual native packet formats come from UI167."""
-    cast, tracking = fixture(); data = {}; digests = {}; directory = lab.ROOT / 'evidence/test_revive_batch'
+    cast, tracking = fixture(trace); data = {}; digests = {}; directory = lab.ROOT / 'evidence/test_revive_batch'
     hunter = dict(guid=6, account_id=2, actor='scout', **{'class': 3}, level=10, character_name='Harnesshunt')
     origin = dict(guid=2, account_id=2, actor='scout', **{'class': 1}, level=1, character_name='Harnesstwo')
     runtime = {'worldserver': {'pid': 100, 'start_ticks': '1'}, 'modern_world': {'pid': 101, 'start_ticks': '2'},
@@ -290,14 +352,15 @@ def test_complete_synthetic_archived_source_chain_passes_without_ledger_admissio
     assert proof['closure_checks'] == 21 and proof['both_owned_clients_stopped']
 
 
-def test_failed_first_recon_stays_archived_and_cannot_substitute_the_second_recon():
+@pytest.mark.parametrize('failed_suffix', ['recon01','recon02'])
+def test_failed_recons_stay_archived_and_cannot_substitute_the_third_recon(failed_suffix):
     data, digests, tracking = complete_fixture()
-    failed_key = 'hunter_revive_recon01/episode.json'
+    failed_key = 'hunter_revive_' + failed_suffix + '/episode.json'
     failed = deepcopy(data[evidence.NAMES['recon']])
     failed.update(completed=False, failure='dead-pet target expired during caption', input_sent=False)
     data[failed_key] = failed; digests[failed_key] = 'f'*64
     # Retaining the excluded earlier receipt must not reject the later complete
-    # evidence, and the cast remains bound to its exact accepted second recon.
+    # evidence, and the cast remains bound to its exact accepted third recon.
     assert evidence.proof(data, digests, tracking)['operation'] == 'pets.revive'
     directory = Path(data[evidence.NAMES['cast']]['fixture_source']['path']).parent.parent
     data[evidence.NAMES['cast']]['recon_source'] = {'path': str(directory / failed_key), 'sha256': digests[failed_key]}

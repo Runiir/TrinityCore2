@@ -14,6 +14,7 @@ from tools.client_compatibility.interaction_pet_command_probe import expected_gu
 
 TRACE = json.loads((Path(__file__).parent / 'fixtures/hunter_revive_expiry_ui167.json').read_text())
 RECON_TRACE = json.loads((Path(__file__).parent / 'fixtures/hunter_revive_recon_expiry_ui168.json').read_text())
+CALL_TRACE = json.loads((Path(__file__).parent / 'fixtures/hunter_revive_call_creator_ui168.json').read_text())
 
 
 @pytest.fixture
@@ -21,10 +22,11 @@ def native_corpse(tmp_path, monkeypatch):
     monkeypatch.setattr(lab, 'ROOT', tmp_path)
     path = tmp_path / 'evidence/world_packets.jsonl'
     path.parent.mkdir()
-    packets = [p for p in TRACE['packets'] if p['time'] < 1791394497]
+    packets = TRACE['prior_packets'] + [p for p in TRACE['packets'] if p['time'] < 1791394497]
     path.write_text(''.join(json.dumps(p) + '\n' for p in packets))
-    oracle = lifecycle.RevivePresence(TRACE['session'], 6, 1791394430).poll()
-    lifecycle.bind_call_lifetime(oracle, TRACE['call_fixture_chat_setup_started_at'], TRACE['call_fixture_native_requests'])
+    oracle = lifecycle.RevivePresence(TRACE['session'], 6, TRACE['entry_started_at']).poll()
+    lifecycle.bind_call_lifetime(oracle, TRACE['call_fixture_chat_setup_started_at'], TRACE['call_fixture_native_requests'],
+        TRACE['previous_pet_guid'])
     return oracle, path
 
 
@@ -116,9 +118,44 @@ def test_fixture_clock_requires_earlier_bound_input_and_the_actual_native883(nat
     elif change == 'foreign_request': requests[0]['session'] = 'foreign'
     elif change == 'late_setup': started = requests[0]['time'] + .1
     elif change == 'before_entry': started = oracle.started - .1
-    elif change == 'not_call_creation': oracle.creations[oracle.pet['guid']]['object']['fields'][INDEX['UNIT_CREATED_BY_SPELL']] = 13481
+    elif change == 'not_call_creation': oracle.creations[oracle.pet['guid']]['object']['fields'][INDEX['UNIT_CREATED_BY_SPELL']] = 982
     with pytest.raises(RuntimeError, match='earlier one-CallPet fixture clock'):
-        lifecycle.bind_call_lifetime(oracle, started, requests)
+        lifecycle.bind_call_lifetime(oracle, started, requests, TRACE['previous_pet_guid'])
+
+
+def test_actual_call_creation_can_retain_tame_creator_before_sparse_current_creator(tmp_path, monkeypatch):
+    monkeypatch.setattr(lab, 'ROOT', tmp_path)
+    path = tmp_path / 'evidence/world_packets.jsonl'
+    path.parent.mkdir()
+    path.write_text(''.join(json.dumps(p) + '\n' for p in CALL_TRACE['packets']))
+    oracle = lifecycle.RevivePresence(CALL_TRACE['session'], 6, CALL_TRACE['entry_started_at']).poll()
+    fields = oracle.creations[oracle.pet['guid']]['object']['fields']
+    assert fields[INDEX['UNIT_CREATED_BY_SPELL']] == 13481
+    assert oracle.pet['fields'][INDEX['UNIT_CREATED_BY_SPELL']] == 883
+    lifecycle.bind_call_lifetime(oracle, CALL_TRACE['call_fixture_chat_setup_started_at'],
+        CALL_TRACE['call_fixture_native_requests'], CALL_TRACE['previous_pet_guid'])
+    bound = oracle.lifetime_lower_bounds[oracle.pet['guid']]
+    assert bound['previous_guid'] != oracle.pet['guid']
+    assert bound['previous_creation_packet']['time'] <= bound['destruction_packet']['time'] <= bound['started_at']
+    assert bound['native_request'] == CALL_TRACE['call_fixture_native_requests'][0]
+    budget = lifecycle.corpse_budget(oracle, 1791397759.3691154)
+    assert budget['setup_budget'] and budget['submission_budget']
+
+
+@pytest.mark.parametrize('change', ('same_guid', 'not_removed', 'missing_destroy', 'foreign_destroy',
+    'destroy_after_setup', 'foreign_previous_pet', 'invalid_new_creator'))
+def test_retained_creator_does_not_relax_prior_destruction_and_new_incarnation_guards(native_corpse, change):
+    oracle, _ = native_corpse
+    previous = TRACE['previous_pet_guid']
+    if change == 'same_guid': previous = oracle.pet['guid']
+    elif change == 'not_removed': oracle.removed.discard(previous)
+    elif change == 'missing_destroy': oracle.destructions.pop(previous)
+    elif change == 'foreign_destroy': oracle.destructions[previous]['session'] = 'foreign'
+    elif change == 'destroy_after_setup': oracle.destructions[previous]['time'] = TRACE['call_fixture_chat_setup_started_at'] + .1
+    elif change == 'foreign_previous_pet': oracle.creations[previous]['object']['fields'][INDEX['UNIT_FIELD_SUMMONEDBY']] = 1
+    elif change == 'invalid_new_creator': oracle.creations[oracle.pet['guid']]['object']['fields'][INDEX['UNIT_CREATED_BY_SPELL']] = 982
+    with pytest.raises(RuntimeError, match='earlier one-CallPet fixture clock'):
+        lifecycle.bind_call_lifetime(oracle, TRACE['call_fixture_chat_setup_started_at'], TRACE['call_fixture_native_requests'], previous)
 
 
 def fake_trial():
@@ -217,6 +254,7 @@ def test_one_absent_fixture_call_binds_its_earlier_setup_clock(native_corpse, mo
     oracle, _ = native_corpse
     old_guid = oracle.pet['guid']
     oracle.removed.add(old_guid)
+    oracle.destructions[old_guid] = next(p for p in TRACE['packets'] if p['name'] == 'SMSG_DESTROY_OBJECT')
     oracle.player[INDEX['UNIT_FIELD_SUMMON']] = oracle.player[INDEX['UNIT_FIELD_SUMMON'] + 1] = 0
     trial = fake_trial()
     clock = {'now': 1791394500}

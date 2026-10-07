@@ -119,7 +119,8 @@ def load_dead(t, oracle, session, fixture_guard=None):
     if 883 not in wire_known(t, session): raise RuntimeError('ordinary Call Pet1 is not native-known')
     since = time.time()
     old_guid = oracle.pet['guid']
-    t.receipt.update(call_dead_pet_started_at=since, call_dead_pet_fixture_only=True, call_dead_pet_input_sent=False)
+    t.receipt.update(call_dead_pet_started_at=since, call_dead_pet_fixture_only=True, call_dead_pet_input_sent=False,
+        call_dead_pet_previous_guid=old_guid)
     t.persist()
     def before_call(state):
         oracle.poll()
@@ -146,7 +147,7 @@ def load_dead(t, oracle, session, fixture_guard=None):
         not oracle.present() or oracle.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
         oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH'], 0) != 0):
         raise RuntimeError('one ordinary fixture Call Pet did not load the same dead Wolf16')
-    bind_call_lifetime(oracle, since, requested)
+    bind_call_lifetime(oracle, since, requested, old_guid)
     t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
 
 
@@ -239,7 +240,8 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
         raise RuntimeError('closed same-entry observed Revive caption differs')
     if (recon.get('native_ready_pet', {}).get('guid') == oracle.pet['guid'] and
         recon.get('call_dead_pet_started_at') is not None):
-        bind_call_lifetime(oracle, recon['call_dead_pet_started_at'], recon.get('call_dead_pet_native_requests', []))
+        bind_call_lifetime(oracle, recon['call_dead_pet_started_at'], recon.get('call_dead_pet_native_requests', []),
+            recon.get('call_dead_pet_previous_guid'))
     if action == 'cast':
         checked = reviewed(t, review_path, 'Revive Pet')
         if checked.get('source') != bound(source) or checked.get('frame') != recon['frame']:

@@ -81,19 +81,30 @@ def corpse_budget(oracle, now):
         'creation_packet': packet}
 
 
-def bind_call_lifetime(oracle, started_at, requests):
+def bind_call_lifetime(oracle, started_at, requests, previous_guid):
     """Bind this creation to one actual883 and its earlier fixture input setup."""
     pet = oracle.pet
     creation = oracle.creations.get(pet['guid']) if pet else None
-    if (not creation or not dead_identity(pet, oracle.owner) or len(requests) != 1 or
+    previous = oracle.creations.get(previous_guid)
+    destruction = oracle.destructions.get(previous_guid)
+    if (not creation or not dead_identity(pet, oracle.owner) or not dead_identity(creation['object'], oracle.owner) or
+        not previous or not dead_identity(previous['object'], oracle.owner) or not destruction or
+        previous_guid == pet['guid'] or previous_guid not in oracle.removed or
+        destruction.get('session') != oracle.session or destruction.get('direction') != 'from_native' or
+        destruction.get('name') not in ('SMSG_DESTROY_OBJECT', 'SMSG_UPDATE_OBJECT') or
+        len(requests) != 1 or
         requests[0] not in oracle.call_requests or cast_identity(requests[0])['spell'] != 883 or
         type(started_at) not in (int, float) or not math.isfinite(started_at) or
-        not oracle.started <= started_at <= requests[0]['time'] <= creation['packet']['time'] or
-        creation['object']['fields'].get(INDEX['UNIT_CREATED_BY_SPELL']) != 883):
+        not oracle.started <= previous['packet']['time'] <= destruction['time'] <= started_at <= requests[0]['time'] <= creation['packet']['time']):
         raise RuntimeError('dead corpse lacks an attributable earlier one-CallPet fixture clock')
+    # Native LoadPetData creates from the saved summon spell (13481 or 883).
+    # EffectSummonPet sets the current 883 only after loading returns; a sparse
+    # update can follow creation. The actual request and new incarnation bind it.
     oracle.lifetime_lower_bounds.setdefault(pet['guid'], {
         'source': 'ordinary_call_pet_fixture_chat_setup_before_native_request',
-        'started_at': started_at, 'native_request': deepcopy(requests[0])})
+        'started_at': started_at, 'native_request': deepcopy(requests[0]),
+        'previous_guid': previous_guid, 'previous_creation_packet': deepcopy(previous['packet']),
+        'destruction_packet': deepcopy(destruction)})
 
 
 def dead_pet_rows(fixture, current):
