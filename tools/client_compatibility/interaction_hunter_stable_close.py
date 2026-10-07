@@ -31,7 +31,12 @@ def close(t,preparation,opening,park,finish,primary):
     primary_runtime=protected_primary.get('runtime',{})
     if any(primary_runtime.get(k)!=t.receipt['runtime'][k] for k in ('worldserver','modern_world')):
         raise RuntimeError('primary closure is from another server lifetime')
-    proof=packet_proof(opened,list(entries(lab.ROOT/'evidence/world_packets.jsonl')))
+    cfg=opened['capture_config']
+    notifications=[row for row in entries(lab.ROOT/'evidence/world_packets.jsonl') if
+        row.get('session')==cfg['session'] and row.get('direction')=='to_client' and
+        row.get('name')=='SMSG_NPC_INTERACTION_OPEN_RESULT' and
+        cfg['created_at']<=row.get('time',0)<=cfg['expires_at']]
+    proof=packet_proof(opened,notifications)
     retained=pets(6);fixture=character(6,2)
     checks={**origin_checks(old),**protected(old),
         'accepted_whole_opening':proof['outcome_checks']==9 and proof['restoration_checks']==13,
