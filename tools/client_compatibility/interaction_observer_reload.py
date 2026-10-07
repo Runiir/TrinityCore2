@@ -10,14 +10,14 @@ from .interaction_social import actor
 from .interaction_macros import require
 
 
-def reload(out,version):
+def reload(out,version,names=None):
     out.mkdir(exist_ok=False,parents=True,mode=0o700)
     native=lab.owned_process('worldserver');bridge=lab.owned_process('modern_world')
     identity=lambda p:{key:p[key] for key in ['pid','start_ticks']}
     report={'schema':'client442_observer_reload_v1','started_at':time.time(),'completed':False,
         'native':identity(native),'bridge':identity(bridge),'version':version}
     try:
-        for name in ['primary','scout']:
+        for name in names or ['primary','scout']:
             with actor(name):
                 t=Trial(out/name,controller='code')
                 try:
@@ -54,4 +54,5 @@ def reload(out,version):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--version',type=int,required=True);a=p.parse_args();reload(a.output,a.version)
+    p.add_argument('--version',type=int,required=True);p.add_argument('--actor',choices=['primary','scout'])
+    a=p.parse_args();reload(a.output,a.version,[a.actor] if a.actor else None)

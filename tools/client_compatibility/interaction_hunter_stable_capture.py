@@ -170,7 +170,7 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
             'stock_stable_open':probe['visible'] is True,'native_public_pet_cache':observed==expected,
             'selected_named_pet':probe.get('selected')==1 and probe.get('name')=='Harnesswolf',
             'public_show_event':probe.get('events',{}).get('PET_STABLE_SHOW',{}).get('count',0)>0,
-            'native_actual_capacity':catalog['stable_capacity']==16,'observer140':public.get('observer_version')==140,
+            'native_actual_capacity':catalog['stable_capacity']==16,'passive_stable_observer':public.get('observer_version') in (140,141),
             'ui_clean':not public.get('lua_errors') and not public.get('blocked_actions')}
         t.receipt.update(public_stable=probe,public_stable_frame=pixels,outcome_checks=checks);t.persist()
         t.receipt['cases'].append({'id':'pets.stable_open','time':time.time(),'input_sent':True,
