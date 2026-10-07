@@ -99,7 +99,7 @@ def test_normal_green_stays_on_foot_and_only_terrain_failure_can_fly(scene,tmp_p
     from tools.client_compatibility import archaeology_inputs as inputs,ground_navigation
     from tools.client_compatibility.ground_escape import TerrainBlocked
     tcp,_,extra=scene;path=tmp_path/'frame.png';Image.new('RGB',(1,1)).save(path)
-    monkeypatch.setattr(inputs.ctl,'Input',lambda:object())
+    monkeypatch.setattr(inputs.owned_input,'Inputs',lambda:object())
     monkeypatch.setattr(inputs.travel,'decode_image',lambda image:extra)
     monkeypatch.setattr(inputs.time,'sleep',lambda seconds:None)
     calls=[]

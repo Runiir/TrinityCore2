@@ -46,11 +46,13 @@ def test_focus_input_lease_serializes_two_processes(tmp_path):
 
 
 def test_owned_input_refuses_to_send_when_monitor_verification_fails(monkeypatch):
-    from tools.second_client import ctl
+    from tools.client_compatibility import native_input_adapter
     calls=[]
     class Raw:
+        initialization={}
         def key(self,*a,**kw):calls.append(a)
-    monkeypatch.setattr(ctl,'Input',Raw)
+    monkeypatch.setattr(native_input_adapter,'Input',Raw)
+    monkeypatch.setattr(lab,'owned_process',lambda kind:{'pid':11,'start_ticks':'11'})
     def fail():raise RuntimeError('wrong monitor')
     monkeypatch.setattr(owned_input,'focus',fail)
     with pytest.raises(RuntimeError,match='wrong monitor'):owned_input.Inputs().key('w',hold=.1)
