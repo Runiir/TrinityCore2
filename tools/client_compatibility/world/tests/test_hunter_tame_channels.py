@@ -113,7 +113,9 @@ def probe(codec,tmp_path,c,body=None,direction='from_native',name='MSG_CHANNEL_S
 
 
 def pet_added(level=1,slot=0,flags=1,entry=299,number=6,name='Wolf'):
-    return Writer().pack('iiBii',level,slot,flags,entry,number).bits(len(name),8).raw(name.encode()).finish()
+    # PetPackets.cpp writes a length byte and ByteBuffer::operator<<(string)
+    # appends the final NUL. This is a native writer fixture, not a captured body.
+    return Writer().pack('iiBii',level,slot,flags,entry,number).bits(len(name),8).raw(name.encode()+b'\0').finish()
 
 
 def test_private_probe_accepts_exact_native_and_delivered_owned_contracts(codec,tmp_path):
@@ -141,6 +143,12 @@ def test_private_probe_excludes_foreign_or_incomplete_channels(codec,tmp_path,bo
     {'number':4},{'name':'Harnesswolf'}])
 def test_private_probe_excludes_unrelated_pet_catalogs(codec,tmp_path,change):
     assert not probe(codec,tmp_path,config(),pet_added(**change),name='SMSG_PET_ADDED')
+
+
+@pytest.mark.parametrize('body',[pet_added()[:-1],pet_added()[:-2],pet_added()+b'\0',
+    pet_added()[:-1]+b'x',pet_added()+b'x'])
+def test_private_probe_requires_exact_native_pet_name_terminator(codec,tmp_path,body):
+    assert not probe(codec,tmp_path,config(),body,name='SMSG_PET_ADDED')
 
 
 def test_private_probe_excludes_auth_and_never_expands_global_packet_bodies(codec,tmp_path):

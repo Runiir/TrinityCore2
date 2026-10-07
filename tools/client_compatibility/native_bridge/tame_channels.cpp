@@ -78,6 +78,9 @@ bool owned_tame_probe(std::filesystem::path const &root,std::string const &direc
                 r.take<std::int32_t>()!=299 || r.take<std::int32_t>()<=4)return false;
             auto size=r.bits(8);if(size!=4)return false;
             auto text=r.raw(size);if(std::string_view(reinterpret_cast<char const *>(text.data()),text.size())!="Wolf")return false;
+            // PetPackets::PetAdded::Write uses ByteBuffer's string insertion,
+            // which includes a terminal NUL after the separately written length.
+            if(r.take<std::uint8_t>()!=0)return false;
         }
         else if(delivered)
         {
