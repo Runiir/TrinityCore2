@@ -13,17 +13,18 @@ from .interaction_hunter_tame_stage import NAMES
 from .interaction_primary_combat_reentry import retained
 from .interaction_parked_client_resource_pause import snapshot
 from .hunter_tame_boundary import successful_chain,retained_tame_pets
+from .scout_relaunch_lineage import verified_deployment
 
 
-def close(t,paths,primary_stop,deployment):
+def close(t,paths,primary_stop,deployment,relaunch=None):
     old=prepared(t,paths['preparation'],True)
     rows={k:closed(p) for k,p in paths.items() if k!='preparation'}
     refs={k:bound(p) for k,p in paths.items()};stop=closed(primary_stop)
     deployment=deployment.resolve()
     if (deployment.name!='deployment.json' or not deployment.is_relative_to(lab.ROOT/'evidence') or
         deployment.is_symlink()):raise ValueError('requires the owned single-scout deployment')
-    d=json.loads(deployment.read_text())
-    successful_chain(old,t.receipt['runtime'],rows,refs,stop,d,bound(primary_stop))
+    d,lineage=verified_deployment(deployment,t.receipt['runtime'],relaunch)
+    successful_chain(old,t.receipt['runtime'],rows,refs,stop,d,bound(primary_stop),lineage)
     with actor('primary'):
         primary_ok=lab.owned_process('client') is None and retained(1,1)==stop['after']
     current=pets(6);park=rows['park'];all_offline=snapshot()
@@ -52,6 +53,7 @@ def close(t,paths,primary_stop,deployment):
         qualified_scope='Read-only closure of one successful ordinary Tame and normal parking. '
             'Original pose, saved state and all protected actors preserved; Harnesswolf and new Wolf retained. '
             'PetAdded body/delivery remains open. No qualification or gameplay input replay.')
+    if relaunch:t.receipt['relaunch_source']=bound(relaunch)
     if not all(checks.values()):raise RuntimeError('fresh diagnostic Tame parked preservation differs')
 
 
@@ -59,11 +61,12 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     names=('preparation','entry','stored','stage','refresh','cast','restore','park','finish')
     for name in (*names,'primary-stop','deployment','output'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--relaunch',type=Path)
     a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code')
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:close(t,{k:getattr(a,k) for k in names},a.primary_stop,a.deployment)
+        try:close(t,{k:getattr(a,k) for k in names},a.primary_stop,a.deployment,a.relaunch)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure','checks')}),flush=True)

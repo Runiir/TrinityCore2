@@ -1,11 +1,12 @@
 """Pure provenance checks for a fresh Tame with the primary client stopped."""
 import time
+from .scout_relaunch_lineage import transition,SINGLE_SCHEMA
 
 
 DEPLOYMENT_SCHEMA='client442_resource_paused_scout_deployment_v1'
 
 
-def successful_chain(old,runtime,episodes,refs,stop,deployment,primary_ref):
+def successful_chain(old,runtime,episodes,refs,stop,deployment,primary_ref,relaunch=None):
     counts={'entry':('checks',9),'stored':('checks',15),'stage':('stage_checks',13),
         'cast':('capture_checks',14),'restore':(None,8),'park':('checks',4),'finish':('checks',5)}
     for name,(key,count) in counts.items():
@@ -39,14 +40,15 @@ def successful_chain(old,runtime,episodes,refs,stop,deployment,primary_ref):
         cast.get('qualification_added') is not False or episodes['refresh'].get('input_sent') is not False or
         episodes['stored'].get('pet_command_sent') is not False):
         raise RuntimeError('fresh Tame input/capture boundary differs')
+    deployment_runtime=transition(runtime=runtime,deployment=deployment,**relaunch) if relaunch else runtime
     if (stop.get('phase')!='user_requested_primary_client_stopped' or
         len(stop.get('checks',{}))!=8 or not all(v is True for v in stop['checks'].values()) or
-        stop.get('before')!=stop.get('after') or deployment.get('schema')!=DEPLOYMENT_SCHEMA or
+        stop.get('before')!=stop.get('after') or deployment.get('schema') not in (DEPLOYMENT_SCHEMA,SINGLE_SCHEMA) or
         deployment.get('completed') is not True or not deployment.get('finished_at') or
         deployment.get('primary_stop_source')!=primary_ref or
         deployment.get('native')!=runtime['worldserver'] or deployment.get('after')!=runtime['modern_world'] or
-        deployment.get('scout_lifetime')!=runtime['client'] or
-        deployment.get('before')!=stop['runtime']['modern_world'] or
+        deployment.get('scout_lifetime')!=deployment_runtime['client'] or
+        (deployment.get('schema')==DEPLOYMENT_SCHEMA and deployment.get('before')!=stop['runtime']['modern_world']) or
         deployment.get('native')!=stop['runtime']['worldserver'] or
         set(deployment.get('parked_reconnect_attempt',{}))!={'scout'} or
         deployment['parked_reconnect_attempt']['scout'].get('completed') is not True):

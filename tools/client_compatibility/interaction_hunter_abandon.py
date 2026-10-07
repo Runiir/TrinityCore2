@@ -1,4 +1,4 @@
-"""Stage or cancel ordinary Abandon only for disposable test Wolf6."""
+"""Stage or cancel ordinary Abandon for the source-bound disposable Wolf."""
 import argparse,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
@@ -51,7 +51,7 @@ def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None
     frozen=pair_preserved if tame_source else identities
     valid_pair=lambda rows: disposable_number(closed(tame_source),rows,t.receipt['runtime']['worldserver'])==number if tame_source else disposable_pair(rows)
     if (t.fixture['guid'],t.fixture['class'],t.fixture['level'])!=(6,3,10) or not valid_pair(retained):
-        raise RuntimeError('requires disposable Wolf6 active and named Harnesswolf4 stored5')
+        raise RuntimeError(f'requires disposable Wolf{number} active and named Harnesswolf4 stored5')
     if not frozen(old['retained_class_pets'],retained) or not primary_absent():
         raise RuntimeError('frozen pair or user-requested primary absence differs')
     o=Presence(session,6,e['started_at']).poll();inv=Inventory(lab.ROOT,session,6).poll()
@@ -59,7 +59,7 @@ def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None
         o.pet['fields'].get(INDEX['OBJECT_FIELD_ENTRY'])!=299 or
         pair(o.pet['fields'],'UNIT_FIELD_SUMMONEDBY')!=6 or
         resources(inv)!=e['resources'] or saved(6)!=e['entered_saved']):
-        raise RuntimeError('current runtime pet6 or owner baseline differs')
+        raise RuntimeError(f'current runtime pet{number} or owner baseline differs')
     t.receipt.update(native_session=session,entry_source=bound(entry),native_pet=o.pet,
         retained_pet_before=retained,baseline_resources=resources(inv),baseline_saved=saved(6),
         input_sent=False,qualification_added=False,abandon_confirmation_sent=False)
@@ -74,12 +74,12 @@ def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None
         state,_=t.observe('test_pet_abandon_selected');oracle=PetOracle(session,6,e['started_at']).poll()
         guid=expected_guid(o.pet)
         if state['target'].get('guid')!=guid or oracle.selected()!=o.pet['guid']:
-            raise RuntimeError('ordinary selected disposable Wolf6 differs')
+            raise RuntimeError(f'ordinary selected disposable Wolf{number} differs')
         pet_frame_menu(t,oracle,guid,name='Wolf',rename_allowed=True)
         if len([c for c in t.receipt['pet_menu']['controls'] if c.get('text')=='Abandon' and c.get('enabled')])!=1:
             raise RuntimeError('requires one observed stock Wolf Abandon menu control')
         t.receipt['input_sent']=True;t.persist()
-        require(click_case(t,'diagnostic.test_pet.abandon_open','Open Abandon for the disposable Wolf6.',
+        require(click_case(t,'diagnostic.test_pet.abandon_open',f'Open Abandon for the disposable Wolf{number}.',
             lambda c:c.get('text')=='Abandon' and c.get('enabled') is True,
             lambda b,a,s:{'status':'test_pet_abandon_dialog_pass' if s and dialog(a) and
                 not a.get('lua_errors') and not a.get('blocked_actions') else 'client_or_protocol_failure'},
@@ -106,7 +106,7 @@ def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None
         stage.get('native_pet',{}).get('guid')!=o.pet['guid'] or
         len(stage.get('checks',{}))!=11 or not all(stage['checks'].values()) or
         (tame_source and stage.get('disposable_tame_source')!=bound(tame_source))):
-        raise RuntimeError('requires whole same-entry disposable Wolf6 Abandon dialog')
+        raise RuntimeError(f'requires whole same-entry disposable Wolf{number} Abandon dialog')
     d=reviewed(t,review_path,'Cancel Abandon')
     button=next(c for c in stage['dialog_controls'] if c['text']=='Cancel')
     if d.get('source')!=bound(source) or d.get('frame')!=stage['frame'] or d['point']!=point(button):
@@ -134,7 +134,7 @@ def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None
         'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
     t.receipt.update(state=state,frame=frame,public_pet=public,checks=checks,retained_pet_after=pets(6),
         completed=all(checks.values()),phase='owned_test_pet_abandon_cancelled')
-    if not all(checks.values()):raise RuntimeError('ordinary Wolf6 Abandon Cancel preservation differs')
+    if not all(checks.values()):raise RuntimeError(f'ordinary Wolf{number} Abandon Cancel preservation differs')
 
 
 if __name__=='__main__':

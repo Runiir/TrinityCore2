@@ -1,4 +1,4 @@
-"""Confirm stock Abandon only for the frozen disposable owned Wolf6."""
+"""Confirm stock Abandon only for the source-bound disposable owned Wolf."""
 import argparse,json,time
 from contextlib import contextmanager
 from pathlib import Path
@@ -61,19 +61,19 @@ def run(t,preparation,entry,source,review_path,tame_source=None):
         len(s.get('checks',{}))!=11 or not all(s['checks'].values()) or
         not frozen(s.get('retained_pet_before',[]),before) or
         (tame_source and (s.get('disposable_tame_source')!=bound(tame_source) or s.get('disposable_pet_number')!=number))):
-        raise RuntimeError('requires whole same-entry disposable Wolf6 dialog with named Harnesswolf stored5')
+        raise RuntimeError(f'requires whole same-entry disposable Wolf{number} dialog with named Harnesswolf stored5')
     o=Presence(session,6,e['started_at']).poll();inv=Inventory(lab.ROOT,session,6).poll()
     if (not o.present() or o.pet['guid']!=s['native_pet']['guid'] or o.pet.get('map')!=0 or
         o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])!=number or
         o.pet['fields'].get(INDEX['OBJECT_FIELD_ENTRY'])!=299 or pair(o.pet['fields'],'UNIT_FIELD_SUMMONEDBY')!=6 or
         resources(inv)!=e['resources'] or saved(6)!=e['entered_saved']):
-        raise RuntimeError('current disposable native Wolf6 or owner baseline differs')
+        raise RuntimeError(f'current disposable native Wolf{number} or owner baseline differs')
     d=reviewed(t,review_path,f'Confirm Abandon Wolf{number}');button=next(c for c in s['dialog_controls'] if c['text']=='Okay')
     if d.get('source')!=bound(source) or d.get('frame')!=s['frame'] or d['point']!=point(button):
         raise RuntimeError('fresh stock Okay review differs')
     state,_=t.observe('test_pet_abandon_confirm_before')
     if not dialog(state) or state['pet_popups']!=s['state']['pet_popups']:
-        raise RuntimeError('current disposable Wolf6 dialog differs')
+        raise RuntimeError(f'current disposable Wolf{number} dialog differs')
     guid=o.pet['guid'];t.receipt.update(fixture_source=bound(preparation),entry_source=bound(entry),source=bound(source),
         native_session=session,native_pet_before=o.pet,retained_pet_before=before,
         ordinary_input={'kind':'click','value':d['point'],'hold':.4},input_sent=False,
