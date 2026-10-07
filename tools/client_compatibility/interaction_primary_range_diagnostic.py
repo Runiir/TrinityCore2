@@ -18,9 +18,9 @@ from .world.gameobjects import modern_guid
 from .world.buffer import Reader
 from .interaction_macros import require
 
-# Separately inspected stock caption in UI145/primary_range_stage01/review_ready.png.
-# The native template2830 name remains Buzzard; both identities are checked.
-PUBLIC_NAME='Scorched Buzzard'
+# The diagnostic strip obscures the caption prefix. The actual owned native
+# query reply and template2830 both establish this full name.
+PUBLIC_NAME='Parched Buzzard'
 
 
 class RangePresence(Presence):
@@ -50,7 +50,7 @@ def static_position(target):
             'WHERE c.id=2830 AND c.map=0 AND ABS(c.position_x-%s)<.01 AND ABS(c.position_y-%s)<.01 '
             'AND ABS(c.position_z-%s)<.01',target['movement']['position'][:3])
         rows=q.fetchall()
-    return list(rows[0]) if len(rows)==1 and rows[0][1:6]==(2830,'Buzzard',0,1,0) else None
+    return list(rows[0]) if len(rows)==1 and rows[0][1:6]==(2830,PUBLIC_NAME,0,1,0) else None
 
 
 def source(t,path,phase):
@@ -85,7 +85,7 @@ def capture(t,path):
         phase='await_primary_range_selection',input_sent=False,qualification_added=False)
 
 
-def stage(t,path,selection_review):
+def stage(t,path,selection_review,name_authority=None):
     d=source(t,path,'primary_melee_damage_verified')
     if len(d.get('combat_checks',{}))!=13 or not all(d['combat_checks'].values()) or len(d.get('restoration_checks',{}))!=10 or not all(d['restoration_checks'].values()):
         raise RuntimeError('primary melee whole result is incomplete')
@@ -94,21 +94,35 @@ def stage(t,path,selection_review):
     o=RangePresence(d['session'],1,entry['entry_started_at']).poll()
     t.receipt.update(baseline=base,session=d['session'],entry_started_at=entry['entry_started_at'],qualification_added=False);t.persist()
     try:
-        r=json.loads(selection_review.read_text());capture_path=Path(r['source']['path']);c=closed(capture_path)
-        if c.get('phase')!='await_primary_range_selection' or c.get('actor')!=t.fixture or c.get('runtime')!=t.receipt['runtime'] or c.get('baseline')!=base or c.get('source',{}).get('sha256')!=lab.sha256(path):
-            raise RuntimeError('range selection capture is not bound to this primary result')
-        review(t,selection_review,c,capture_path,'primary_range_target_selection')
-        point=r.get('point',[])
-        if len(point)!=2 or any(type(v) is not int for v in point) or not (200<=point[0]<1000 and 100<=point[1]<500):
-            raise RuntimeError('reviewed ordinary target point is outside the world viewport')
-        t.io.click(*point,button=1,hold=1.2);time.sleep(1.5)
+        if name_authority:
+            if name_authority.is_symlink() or not name_authority.resolve().is_relative_to(lab.ROOT/'evidence'):
+                raise RuntimeError('name authority is outside the owned evidence')
+            a=json.loads(name_authority.read_text())
+            native=[p for p in a.get('packets',[]) if p.get('session')==d['session'] and p.get('direction')=='from_native' and
+                p.get('name')=='SMSG_CREATURE_QUERY_RESPONSE' and bytes.fromhex(p['body']).startswith(struct.pack('<I',2830)+PUBLIC_NAME.encode()+b'\0')]
+            with lab.connection() as con,con.cursor() as q:
+                q.execute('SELECT entry,name,unit_flags,unit_flags2,flags_extra,scale,modelid1 '
+                    'FROM client442_world.creature_template WHERE entry=2830');template=list(q.fetchone() or ())
+            if not native and (a.get('native_template')!=template or template!=[2830,PUBLIC_NAME,0,2048,0,1.0,1105] or a.get('session')!=d['session']):
+                raise RuntimeError('exact current native Buzzard name authority is absent')
+            t.receipt['name_authority']={'path':str(name_authority),'sha256':lab.sha256(name_authority)};t.persist()
+            t.execute({'kind':'chat','value':'/targetexact '+PUBLIC_NAME})
+        else:
+            r=json.loads(selection_review.read_text());capture_path=Path(r['source']['path']);c=closed(capture_path)
+            if c.get('phase')!='await_primary_range_selection' or c.get('actor')!=t.fixture or c.get('runtime')!=t.receipt['runtime'] or c.get('baseline')!=base or c.get('source',{}).get('sha256')!=lab.sha256(path):
+                raise RuntimeError('range selection capture is not bound to this primary result')
+            review(t,selection_review,c,capture_path,'primary_range_target_selection')
+            point=r.get('point',[])
+            if len(point)!=2 or any(type(v) is not int for v in point) or not (200<=point[0]<1000 and 100<=point[1]<500):
+                raise RuntimeError('reviewed ordinary target point is outside the world viewport')
+            t.io.click(*point,button=1,hold=1.2);time.sleep(1.5)
         state,_=t.observe('range_selected_buzzard');o.poll();target=o.target()
         distance=math.dist(base['position'][:3],target['movement']['position'][:3]) if target else 0
         fixed=static_position(target)
         # Use the same pinned public native-GUID conversion as the melee oracle.
         from .pet_attack_capture_evidence import target_guid
         checks={'selected_native':bool(target and target['guid'] not in o.removed),'selected_public':bool(target and state['target'].get('guid')==target_guid(target)),
-            'public_name':state['target'].get('name') in ('Buzzard',PUBLIC_NAME),'native_alive':bool(target and target['fields'][INDEX['UNIT_FIELD_HEALTH']]>0),
+            'public_name':state['target'].get('name')==PUBLIC_NAME,'native_alive':bool(target and target['fields'][INDEX['UNIT_FIELD_HEALTH']]>0),
             'public_health':bool(target and state['target'].get('health')==target['fields'][INDEX['UNIT_FIELD_HEALTH']]),
             'outside_melee_reach':12<distance<40,'static_native_position':bool(fixed),
             'unchanged_user_pose':position(1)==base['position'],'protected':protected_snapshot()==base['protected'],
@@ -169,14 +183,16 @@ def run(t,path,review_path):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['capture','stage','run'])
-    p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    if a.action in ('stage','run') and not a.review:p.error('requires separately reviewed target or selection')
+    p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path);p.add_argument('--name-authority',type=Path)
+    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    if a.action=='run' and not a.review:p.error('run requires separately reviewed target')
+    if a.action=='stage' and not (a.review or a.name_authority):p.error('stage requires reviewed selection or exact native name authority')
     with actor('primary'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='capture':capture(t,a.source)
-            elif a.action=='stage':stage(t,a.source,a.review)
+            elif a.action=='stage':stage(t,a.source,a.review,a.name_authority)
             else:run(t,a.source,a.review)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
