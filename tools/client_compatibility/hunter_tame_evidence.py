@@ -1,4 +1,5 @@
 """Join one captured ordinary Tame, modern stable delivery and full parked closure."""
+import json
 from pathlib import Path
 from . import lab_runtime as lab
 from .hunter_tame_boundary import successful_chain,retained_tame_pets
@@ -64,7 +65,7 @@ def proof(data,digests,tracking):
         cast['finished_at']<after['started_at']<after['finished_at']<rows['restore']['started_at'],
         'stable projection chronology differs')
     wire=prove(cast,before['public_stable'],after['public_stable'])
-    require(wire==after['wire_projection'],'actual recorded stable projection differs')
+    require(json.loads(json.dumps(wire))==after['wire_projection'],'actual recorded stable projection differs')
     require(retained_tame_pets(cast,after['retained_pet_before']) and
         retained_tame_pets(cast,after['retained_pet_after']),'passive read pet preservation differs')
     for key,row in [*[(NAMES[k],v) for k,v in rows.items()],(BEFORE,before),(AFTER,after),(CLOSURE,c)]:
