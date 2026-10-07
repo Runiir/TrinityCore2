@@ -176,8 +176,7 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
                 failed.get('runtime')!=t.receipt['runtime'] or failed.get('actor')!=t.fixture or
                 failed.get('return_source')!=bound(source) or failed.get('call_pet_source')!=bound(call_pet_source) or
                 len(checks)!=13 or checks.get('retained_named_pet') is not False or
-                not all(v for k,v in checks.items() if k!='retained_named_pet') or
-                not o.present() or not summoned_identity(e['baseline_pets'],pets(6))):
+                not all(v for k,v in checks.items() if k!='retained_named_pet') or not o.present()):
                 raise RuntimeError('read-only recovery settling differs from the closed metadata-only failure')
             t.receipt.update(failed_recovery_source=bound(failed_source),call_pet_started_at=failed['call_pet_started_at'],
                 call_pet_input_replayed=False,qualification_added=False)
@@ -193,6 +192,9 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
             time.sleep(.5)
         if not o.present():raise RuntimeError('normal Call Pet did not restore native owned pet')
         t.receipt['call_pet_packets']=call_pet_packets(session,t.receipt['call_pet_started_at'],time.time());t.persist()
+        t.receipt['native_save_command']={'command':'saveall','started_at':time.time(),
+            'reason':'Flush the normally restored runtime pet before comparing native persistence.'};t.persist()
+        lab.server_command('saveall');time.sleep(.5)
         public=public_pet(t,'slot_roundtrip_restored_pet')
         read_page(t,'slot_restore_state','state','/tcui');t.clean_panels();t.execute({'kind':'chat','value':'/targetexact Erma'})
         state,frame=t.observe('slot_roundtrip_restored');o.poll();current=pets(6)

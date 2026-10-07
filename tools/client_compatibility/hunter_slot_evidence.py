@@ -122,16 +122,26 @@ def proof(data,digests,packets):
     require(call and all(packet_key(p) in packets and p['session']==session and
         e['call_pet_started_at']<=p['time']<=e['finished_at'] for p in call),
         'actual archived ordinary recovery packet differs')
-    request=[];completed=[]
+    request=[];completed=[];loaded=[]
     for p in call:
         r=Reader(bytes.fromhex(p['body']))
         if (p['direction'],p['name'])==('to_native','CMSG_CAST_SPELL'):
-            _,spell=r.unpack('BI');request.append(spell)
+            counter,spell=r.unpack('BI');request.append((counter,spell))
         elif (p['direction'],p['name'])==('from_native','SMSG_SPELL_GO'):
-            caster=native_guid(r);native_guid(r);_,spell=r.unpack('Bi');completed.append((caster,spell))
+            caster=native_guid(r);unit=native_guid(r);counter,spell=r.unpack('Bi')
+            if counter==0:
+                flags,zero,_=r.unpack('III');r.end()
+                require((caster,unit,spell,flags,zero)==(6,6,883,256,0),
+                    'native PetPersistence cooldown notification differs')
+                loaded.append(p)
+            else:completed.append((caster,counter,spell))
         else:raise RuntimeError('foreign recovery packet')
-    require(request==[883] and completed==[(6,883)] and call[0]['time']<=call[-1]['time'],
+    require(len(request)==1 and request[0][1]==883 and completed==[(6,*request[0])] and
+        len(loaded)==1 and call[0]['time']<=call[-1]['time'],
         'native owned Call Pet883 request/completion differs')
+    require(e['native_save_command']['command']=='saveall' and
+        e['call_pet_started_at']<e['native_save_command']['started_at']<e['finished_at'],
+        'normal native persistence flush differs')
     same_pet(baseline,e['retained_pet_after'],0,1,e['finished_at'])
     require(e['restored_public_pet']['exists'] is True and e['restored_public_pet']['name']=='Harnesswolf' and
         [c['status'] for c in e['cases'] if c['id']=='pets.stable_slot']==['native_owned_stable_slot_roundtrip_pass'],
