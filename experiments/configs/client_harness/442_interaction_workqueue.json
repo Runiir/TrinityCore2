@@ -3,9 +3,9 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "449/916 qualified,467 open. UI160 has captured the actual23-byte native PetAdded for fresh Wolf10. One ordinary1515 cast passes14, pose8/park4/original5/closure20 pass, then scout pause8 preserves all six full offline snapshots. Both owned clients are stopped; primary remains stopped until a real two-client test. Native1971415/51951236 and deployed bridge2494000/53080128 remain unchanged. Harnesswolf4 is stored5/inactive; Wolf10 is active0, level10/model18156/Created13481. Captured Added reports wild level1; later native links establish owned level10. The60895 table has no PetAdded opcode. A source-bound candidate adds only the current owned pet to the existing ActivePlayer StableInfo catalog. Actual delayed packet replay and168 focused/4135 full world-auth tests pass. Candidate source4d7f66eb549cd45d2baf9fa5d5eb3488971eb5f5c245d1b166654c44c23629a9/binaryf146c636ab3b2042917a770aa56043e0a65cf1a5a0c1605236f815102cfbd794 is built but undeployed. Nine initial test failures came from an invalid test catalog capacity204; corrected20 passes. Same-client reentry stalls remain unresolved and excluded. No Tame qualification added. Scripts remain blocked/CVar0 unrestored at1.",
+  "current": "449/916 qualified,467 open. UI160 is remotely verified and offloaded:308273359 bytes/SHAecedc50aa07170c203b6a48083c862f589674de0d3f99b0846626806b869a2cd,103 JSON/170 PNG,170 frames286621099 bytes and exact archive/cache evicted. UI161 deployed the tested Tame StableInfo candidate with one scout. Ordinary Abandon10 passes16, park4/original5/closure19 preserve Harnesswolf4. Fresh entry9/stored15 succeed, but the passive pre-Tame cache baseline fails before any Tame input: native login sends39-byte catalog and modern correct87-byte StableInfo, then a44-byte ResearchHistory update writes optional stable presence0 and clears the stock cache. Actual packets are retained in research_stable_clear_diagnostic01.json. The new research-preservation regression reproduces the bug with1 failure. A narrow current-catalog presence fix is committed and built one job/18441552KiB available, sourceb6c286a5bc5447918df8b98d376aabaaf013b028b627c507eb29ec46b038a416/binary9782429eaa4b75f7b3cd3ee5f4466492e306f88ab38119652bc980d4f19785a0;140 focused/4152 full tests pass. No-Tame closure20 and scout resource pause8 preserve all six offline snapshots; corrected bridge deployment03 preserves them and only scout relaunches on HDMI-1. The earlier observer-mode parking timeout remains excluded; a source-bound9-check state-page restore and fresh normal park4/original5 succeed. Native1971415/51951236 unchanged. No Tame qualification added; fresh baseline and Tame still pending. Primary stays stopped; scripts blocked/CVar0 unrestored at1.",
   "queued": [
-    "Checkpoint and offload UI160, deploy the tested StableInfo candidate with one scout, ordinarily Abandon source-bound Wolf10 while preserving Harnesswolf4, then capture one fresh Tame with native Added and modern public stable-cache proof. Use a fresh scout lifetime after a whole offline closure until the observed second-entry loading stall is diagnosed. Continue the467 open interactions; primary only for genuine two-client validation.",
+    "Validate the corrected native-login stable cache, then one fresh ordinary Tame with native Added, modern StableInfo and passive stock-cache proof. Close all protected state and remote-verify UI161 before admitting pets.tame. Same-client reentry stall, stable capacity200/revive and the other467 operations remain open. Preserve Harnesswolf4 and user-stopped primary; one scout only when a live test needs it.",
     "remaining spellbook learn/unlearn and rank-resolution class variants; generic casting and general/class/professions tabs already have scoped qualification and must not be counted again; native-account fixture setup does not qualify modern character creation",
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -365,7 +365,8 @@
     "UI159 origin_finish01 and02 both refuse aged owned images before input; fresh capture03 is viewed and original finish03 passes5. Both failed whole episodes remain excluded. Native PetAdded writer-contract regression against old codec fails2/pass47 on missing CString NUL, then exact-terminal fix passes117 focused/3954 full. Diagnostic local review01 fails import before output/input; corrected native_objects GUID reader yields separate local review02 with4 actual channel packets/5 exact metadata matches. No gameplay replay or PetAdded qualification.",
     "UI160 post-archive workqueue update first addresses nonexistent owned_client_policy and refuses before writing the workqueue. The real key is client_policy; correction records the closed20-check scout boundary. No game input, actor mutation or ledger change accompanies this metadata repair.",
     "UI160 same-scout first entry and later second entry both remain whole loading failures, with no native player login. Fresh source-bound scout relaunch recovers. Unmapped GET_ACCOUNT_CHARACTER_LIST is observed; its causal role is unproven. All six offline snapshots are verified before recovery.",
-    "UI160 new Tame Added fixture first has9 failed/138 passed because its baseline uses unsupported capacity204. Corrected native capacity20 passes147; final focused168/full4135 pass. Initial guessed test path collection error and old-codec unknown-function regression remain retained. No failed receipt is admitted."
+    "UI160 new Tame Added fixture first has9 failed/138 passed because its baseline uses unsupported capacity204. Corrected native capacity20 passes147; final focused168/full4135 pass. Initial guessed test path collection error and old-codec unknown-function regression remain retained. No failed receipt is admitted.",
+    "UI161 stable_before01 remains whole failed before Tame. Correct modern catalog is cleared by a later archaeology-history optional stable presence0; actual87/3/44-byte chain retained, regression red1 followed by140 focused/4152 full passing candidate tests. Precast park01 times out before logout because observer remained pinned to stables; restore9, fresh park4, original5, no-Tame closure20 and pause8 pass. Initial guessed pre-cast guard filename collection failure is retained; corrected109 guards pass. No Tame gameplay input was sent in this failed chain."
   ],
   "client_policy": {
     "default": "One owned scout client when a live test needs it; zero during resource-limited builds. Primary only for an actual two-client test.",
@@ -373,20 +374,20 @@
     "reason": "user requested lower concurrent client resource use",
     "requested_stop_source": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui155/user_stop_primary01/episode.json",
     "scout_resource_pause": {
-      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui160/scout_tame_build_pause01/episode.json",
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui161/scout_research_build_pause01/episode.json",
       "checks": 8,
       "all_six_saved_snapshots_preserved": true
     },
-    "scout": "stopped at a verified full offline boundary for the candidate build",
+    "scout": "single scout relaunched for the corrected bridge live validation; primary remains stopped",
     "scout_closed_boundary": {
-      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui160/hunter_tame_success_close01/episode.json",
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui161/hunter_tame_precast_close01/episode.json",
       "checks": 20,
       "all_six_offline": true,
       "original_selected": "Harnesstwo",
       "retained_pet_numbers": [
-        4,
-        10
-      ]
+        4
+      ],
+      "tame_input_sent": false
     }
   }
 }
