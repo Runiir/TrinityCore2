@@ -122,7 +122,7 @@ def run(t,preparation,entry,stored,recon,action,source=None):
         (280666,299,0,1,1,1,1,1)):
         raise RuntimeError('existing level1 tameable wolf prerequisite differs')
     existing_wolf(wolf)
-    read_page(t,'tame_stage_core','state','/tcui');t.clean_panels();state,frame=t.observe('tame_stage_before')
+    t.clean_panels();read_page(t,'tame_stage_core','state','/tcui');state,frame=t.observe('tame_stage_before')
     if frame['movement']['in_combat'] or frame['movement']['dead'] or frame['movement']['speed']:
         raise RuntimeError('tame staging requires an idle living Hunter')
     lab.server_command('saveall');time.sleep(.5);original=pose()
@@ -160,7 +160,11 @@ def run(t,preparation,entry,stored,recon,action,source=None):
         t.receipt.update(completed=True,phase='owned_existing_wolf_staged',qualification_added=False,
             qualified_scope='Existing tameable wolf and reversible owned Hunter pose only; no Tame Beast input yet.')
     except Exception as error:
-        t.receipt['staging_failure']=f'{type(error).__name__}: {error}';t.persist()
+        import traceback
+        t.receipt.update(staging_failure=f'{type(error).__name__}: {error}',
+            staging_failure_traceback=traceback.format_exc());t.persist()
+        try:t.clean_panels()
+        except Exception as cleanup:t.receipt['chat_cleanup_failure']=f'{type(cleanup).__name__}: {cleanup}';t.persist()
         restore(t,fixture,old,baseline);raise
 
 
