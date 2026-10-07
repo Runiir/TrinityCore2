@@ -175,7 +175,7 @@ def run(t,path,review_path):
                 o.poll();native=[p for p in o.combat if p['time']>=since and p['name']=='SMSG_ATTACKSWING_NOTINRANGE' and p['direction']=='from_native']
                 client=[p for p in o.combat if p['time']>=since and p['name']=='SMSG_ATTACK_SWING_ERROR' and p['direction']=='to_client' and p['body']=='00']
                 delivered=[{'native':n,'client':next((c for c in client if 0<=c['time']-n['time']<2),None)} for n in native]
-                stock=[v for v in a.get('errors',[]) if stock_range_error(v) and v not in b.get('errors',[])]
+                stock=[v for v in a.get('errors',[]) if stock_range_error(v) and v not in (b.get('errors') or [])]
                 t.receipt.update(error_pairs=delivered,public_errors=stock,range_outcome_frame=t.receipt['cases'][-1].get('after_frame'));t.persist()
                 passed=bool(delivered and all(p['client'] for p in delivered) and stock)
                 return {'status':'primary_range_feedback_pass' if passed else 'client_or_protocol_failure','oracle':{'native_client_stock_range_feedback':passed}}
