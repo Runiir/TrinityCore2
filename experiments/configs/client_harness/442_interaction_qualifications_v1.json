@@ -6444,6 +6444,73 @@
           "sha256": "2b98009088c616c78a4a375c06230893a4dcfab3d12b94376d6164f1b9096170"
         }
       ]
+    },
+    {
+      "id": "owned_hunter_native_stable_open",
+      "operations": [
+        "pets.stable_open"
+      ],
+      "scope": "Ordinary owned Hunter6 Erma gossip service opens the stock stable panel with retained Harnesswolf pet4, level10, entry42717, model903 and active slot1 selected. Exact native catalog, one public stable read, type22 notification and passive PET_STABLE_SHOW agree. All9 opening,13 restoration,5 protected-actor and22 final closure checks pass; both original actors finish offline and selected with saved primary user pose unchanged.",
+      "limits": "Opening only. Stable slot mutation, swapping,200-cell capacity, tame, revive, abandon and combat variants remain open. Native stable capacity is16. Earlier whole failed openings and the old mirrored decoder stay excluded. Scripts remain blocked; original CVar0 remains unrestored at1. Actual701117520-byte remote compressed SHA and all242 JSON/369 PNG hashes are verified. No retained pet rename, purchase or permission reset.",
+      "archive_sha256": "6e2e1c3edefe958617965755995751a0b2be2e13f251011c2e2f95883ca79522",
+      "actual_remote_review_sha256": "f1d780cc0c2a7d462246d744ec677ea37fe825e56a1302f94d80fbda20ac0a2e",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/stable_alignment_deploy01/deployment.json",
+          "sha256": "5ec3fcd779e4bdfbfc585ea5e07919b64ead5b1c38f6fe57a31a80fb9da42cb5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_alignment_prepare01/episode.json",
+          "sha256": "5a6dfefbb497d0ae56ba1e1976802262651729754c85086c237130c5019e60cf"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_alignment_entry01/episode.json",
+          "sha256": "eebfcab834f5ea2805c4bab4b70a2ef814b80e8f9fedf5db0e2a83c749b2c5c0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_alignment_stage01/episode.json",
+          "sha256": "1ed5ca5f58bcf092578476612fa7bae9d98ccc1e5ba6d17e54900c9681533f8a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_alignment_stage01/review01.json",
+          "sha256": "be597c2e536ca88b58c107fb052954c865c425a3db0d48453561dfd0418ff3c8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_native_open05/episode.json",
+          "sha256": "0bb8f8ab1a793f75578b4955de7cb50413124b2003f83b3547eeb7805673f9de"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/stable_open_visual_review01.json",
+          "sha256": "1a5def5f3a0507809db32b162c75ccae50da9be3037a380854cce43be764dcf3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_final_park01/episode.json",
+          "sha256": "c346ff2562719ef1c6ef37186bf3dff994486e301cf85344e72ad51220703cc5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_final_origin_finish01/episode.json",
+          "sha256": "d48359ba1a2a439f03500089be7c383ab6683d5a2c0ce4d9333593810ed04f8d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/hunter_stable_closed_boundary01/episode.json",
+          "sha256": "0d8ef6aa8c45b6afe558fff59b17c2fa0a29cc72ec87dbfc4f6da4318e74b8ac"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui144/stable_closed_visual_review01.json",
+          "sha256": "b52fcb310952d37df6fe0ef1a5b86b791a8555c37f01c74a530643550d0b959d"
+        }
+      ]
     }
   ]
 }

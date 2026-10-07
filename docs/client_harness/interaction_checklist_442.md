@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 442 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 443 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -938,7 +938,7 @@ Fixture: `pet_class_variants`.
 - [x] `pets.pet_power` (qualified variant; [evidence](#owned_imp_power))
 - [ ] `pets.happiness_if_available`
 - [x] `pets.rename` (qualified variant; [evidence](#owned_hunter_one_time_rename))
-- [ ] `pets.stable_open`
+- [x] `pets.stable_open` (qualified variant; [evidence](#owned_hunter_native_stable_open))
 - [ ] `pets.stable_slot`
 - [ ] `pets.stable_swap`
 - [ ] `pets.tame`
@@ -3240,3 +3240,21 @@ Remaining limits: One synthetic Hunter6/pet4 ASCII name, with no declined names.
 - [442_interactions_20261007_143.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_143.tar.gz.dvc), member `evidence/client_interactions_20261007_ui143/hunter_name_final_origin_select01/review01.json`, SHA-256 `8708b8ba54657c4552983ce4e2009f66a8e0cdcd0df961a13fb5de3dd771e67d`.
 - [442_interactions_20261007_143.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_143.tar.gz.dvc), member `evidence/client_interactions_20261007_ui143/hunter_name_final_origin_finish01/episode.json`, SHA-256 `520dd30bb4a6c86f1e422353ed8711ac53c18acf3f78802b6f05ddc58505ec58`.
 - [442_interactions_20261007_143.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_143.tar.gz.dvc), member `evidence/client_interactions_20261007_ui143/hunter_rename_closed_boundary01.json`, SHA-256 `2b98009088c616c78a4a375c06230893a4dcfab3d12b94376d6164f1b9096170`.
+
+### owned_hunter_native_stable_open
+
+Ordinary owned Hunter6 Erma gossip service opens the stock stable panel with retained Harnesswolf pet4, level10, entry42717, model903 and active slot1 selected. Exact native catalog, one public stable read, type22 notification and passive PET_STABLE_SHOW agree. All9 opening,13 restoration,5 protected-actor and22 final closure checks pass; both original actors finish offline and selected with saved primary user pose unchanged.
+
+Remaining limits: Opening only. Stable slot mutation, swapping,200-cell capacity, tame, revive, abandon and combat variants remain open. Native stable capacity is16. Earlier whole failed openings and the old mirrored decoder stay excluded. Scripts remain blocked; original CVar0 remains unrestored at1. Actual701117520-byte remote compressed SHA and all242 JSON/369 PNG hashes are verified. No retained pet rename, purchase or permission reset.
+
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/stable_alignment_deploy01/deployment.json`, SHA-256 `5ec3fcd779e4bdfbfc585ea5e07919b64ead5b1c38f6fe57a31a80fb9da42cb5`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_alignment_prepare01/episode.json`, SHA-256 `5a6dfefbb497d0ae56ba1e1976802262651729754c85086c237130c5019e60cf`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_alignment_entry01/episode.json`, SHA-256 `eebfcab834f5ea2805c4bab4b70a2ef814b80e8f9fedf5db0e2a83c749b2c5c0`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_alignment_stage01/episode.json`, SHA-256 `1ed5ca5f58bcf092578476612fa7bae9d98ccc1e5ba6d17e54900c9681533f8a`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_alignment_stage01/review01.json`, SHA-256 `be597c2e536ca88b58c107fb052954c865c425a3db0d48453561dfd0418ff3c8`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_native_open05/episode.json`, SHA-256 `0bb8f8ab1a793f75578b4955de7cb50413124b2003f83b3547eeb7805673f9de`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/stable_open_visual_review01.json`, SHA-256 `1a5def5f3a0507809db32b162c75ccae50da9be3037a380854cce43be764dcf3`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_final_park01/episode.json`, SHA-256 `c346ff2562719ef1c6ef37186bf3dff994486e301cf85344e72ad51220703cc5`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_final_origin_finish01/episode.json`, SHA-256 `d48359ba1a2a439f03500089be7c383ab6683d5a2c0ce4d9333593810ed04f8d`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/hunter_stable_closed_boundary01/episode.json`, SHA-256 `0d8ef6aa8c45b6afe558fff59b17c2fa0a29cc72ec87dbfc4f6da4318e74b8ac`.
+- [442_interactions_20261007_144.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_144.tar.gz.dvc), member `evidence/client_interactions_20261007_ui144/stable_closed_visual_review01.json`, SHA-256 `b52fcb310952d37df6fe0ef1a5b86b791a8555c37f01c74a530643550d0b959d`.
