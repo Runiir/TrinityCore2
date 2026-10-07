@@ -16,8 +16,9 @@ def closed(e,field,count):
     require(len(e.get(field,{}))==count and all(e[field].values()),'whole '+field+' guards required')
 
 
-def packet(e,name,direction):
+def packet(e,name,direction,predicate=None):
     rows=[p for p in e['packets'] if p['name']==name and p['direction']==direction]
+    if predicate:rows=[p for p in rows if predicate(Reader(bytes.fromhex(p['body'])))]
     require(len(rows)==1,'requires exactly one '+direction+' '+name)
     p=rows[0]
     require(p.get('session')==e['session'] and e['started_at']<=p['time']<=e['finished_at'],
@@ -37,15 +38,17 @@ def verify(e,stage,entry):
     r=packet(e,'CMSG_CAST_SPELL','to_native');counter,request,_,flags,mask=r.unpack('BiiBI')
     require(request==spell and flags==0 and mask==2 and guid(r)==native_target,
         'native cast target/spell differs');r.end()
-    r=packet(e,'SMSG_SPELL_START','from_native')
+    def owned_cast(r):return guid(r)==1 and guid(r)==1 and r.unpack('Bi')==(counter,spell)
+    def owned_damage(r):return guid(r)==native_target and guid(r)==1 and r.unpack('I')==(spell,)
+    r=packet(e,'SMSG_SPELL_START','from_native',owned_cast)
     require(guid(r)==1 and guid(r)==1,'native start is not owned')
     start_counter,start_spell,_,_,duration=r.unpack('BiIII')
     require(start_counter==counter and start_spell==spell and duration==0,'native instant start differs')
-    r=packet(e,'SMSG_SPELL_GO','from_native')
+    r=packet(e,'SMSG_SPELL_GO','from_native',owned_cast)
     require(guid(r)==1 and guid(r)==1 and r.unpack('Bi')==(counter,spell),'native completion differs')
     r=packet(e,'SMSG_SPELL_GO','to_client');caster=r.guid();unit=r.guid();cast=r.guid()
     require(caster==unit==(1,player_high()) and r.unpack('iI')==(spell,347658),'client completion differs')
-    r=packet(e,'SMSG_SPELLNONMELEEDAMAGELOG','from_native')
+    r=packet(e,'SMSG_SPELLNONMELEEDAMAGELOG','from_native',owned_damage)
     require(guid(r)==native_target and guid(r)==1,'native damage identity differs')
     native_spell,damage,overkill,school,absorbed,resisted,periodic,unused,blocked,hit,debug=r.unpack('IIIBIIBBIIB');r.end()
     require(native_spell==spell and not(periodic or unused or debug or hit&~2) and damage>0,
