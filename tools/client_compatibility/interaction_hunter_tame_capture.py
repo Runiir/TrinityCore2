@@ -23,6 +23,7 @@ from .world.buffer import Reader
 from .world.native_objects import guid as native_guid
 from .world.objects import INDEX
 from .world.native_objects import records
+from .interaction_hunter_tame_stage import pose
 
 
 class TamePresence(Presence):
@@ -87,7 +88,53 @@ def target(t,staged,session,started):
     return state,frame,p
 
 
-def run(t,preparation,entry,staging,action,source=None,review_path=None):
+def settle(t,old,entered,staged,session,failed_path,pose_path):
+    path=failed_path.resolve();f=json.loads(path.read_text());p=closed(pose_path)
+    if (failed_path.is_symlink() or path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence') or
+        f.get('completed') is not False or not f.get('finished_at') or f.get('input_sent') is not True or
+        f.get('failure')!='RuntimeError: one ordinary Tame Beast produced no owned native pet' or
+        f.get('actor')!=t.fixture or f.get('runtime')!=t.receipt['runtime'] or f.get('native_session')!=session or
+        f.get('staging_source')!=t.receipt['staging_source'] or
+        len(f.get('native_cast_requests',[]))!=1 or f['native_cast_requests'][0]['spell']!=1515 or
+        len(f.get('native_completions',[]))!=1 or
+        f['native_completions'][0]['counter']!=f['native_cast_requests'][0]['counter'] or
+        p.get('phase')!='owned_tame_pose_restored' or p.get('runtime')!=t.receipt['runtime'] or
+        p.get('stage_source')!=t.receipt['staging_source'] or
+        len(p.get('pose_restoration',{}).get('checks',{}))!=8 or not all(p['pose_restoration']['checks'].values())):
+        raise RuntimeError('requires the closed single-Tame observation failure and exact staged pose cleanup')
+    o=TamePresence(session,6,entered['started_at']).poll();current=pets(6)
+    if not o.present():raise RuntimeError('late native tame ownership is not currently complete')
+    fields=o.pet['fields'];number=fields.get(INDEX['UNIT_FIELD_PETNUMBER']);new=[r for r in current if r['id']==number]
+    retained=[r for r in current if r['id']==4]
+    if len(current)!=2 or len(new)!=1 or number==4:
+        raise RuntimeError('one separately tamed test pet and stored Harnesswolf required')
+    t.receipt.update(failed_source=bound(failed_path),pose_restoration_source=bound(pose_path),
+        native_session=session,tame_input_replayed=False,input_sent=False,qualification_added=False,
+        native_pet=o.pet,retained_pet_before=current);t.persist()
+    public=public_pet(t,'late_owned_tame_public_pet');read_page(t,'late_owned_tame_core','state','/tcui')
+    state,frame=t.observe('late_owned_tame_settled');inv=Inventory(lab.ROOT,session,6).poll()
+    expected=f"Pet-0-1-{o.pet['map']}-0-299-{o.pet['guid']&0xffffffff:010X}"
+    checks={'native_late_owner':pair(fields,'UNIT_FIELD_SUMMONEDBY')==pair(fields,'UNIT_FIELD_CREATEDBY')==6,
+        'native_current_summon':pair(o.player,'UNIT_FIELD_SUMMON')==o.pet['guid'],
+        'native_level10_wolf':fields.get(INDEX['OBJECT_FIELD_ENTRY'])==299 and fields.get(INDEX['UNIT_FIELD_LEVEL'])==10,
+        'normal_saved_tame':tuple(new[0][k] for k in ('owner','entry','CreatedBySpell','PetType','level','slot','active'))==
+            (6,299,13481,1,10,0,1),
+        'stored_Harnesswolf':pet_identity(f['baseline_pets'],retained,5,0),
+        'public_owned_wolf':public.get('exists') is True and public.get('name')=='Wolf' and public.get('guid')==expected,
+        'resources':resources(inv)==staged['baseline_resources'],'saved_rows':saved(6)==staged['baseline_saved'],
+        'native_pose_returned':pose()==p['pose_restoration']['restored'],
+        'living_idle_owner':not frame['movement']['dead'] and not frame['movement']['in_combat'] and
+            frame['movement']['health_percent']==100,
+        'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions'),**protected(old)}
+    t.receipt.update(public_pet=public,frame=frame,state=state,settling_checks=checks,
+        retained_pet_after=pets(6));t.persist()
+    if not all(checks.values()):raise RuntimeError('source-bound late tame ownership/public reconciliation differs')
+    t.receipt.update(completed=True,phase='owned_tame_late_owner_reconciled',
+        qualified_scope='Readback after the single failed observation trial, without repeating Tame. '
+            'One normally tamed test pet retained; named Harnesswolf remains stored. Failed whole trial stays excluded.')
+
+
+def run(t,preparation,entry,staging,action,source=None,review_path=None,pose_path=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     entered=entry_source(t,entry,session,preparation);staged=closed(staging)
     if (staged.get('phase')!='owned_existing_wolf_staged' or staged.get('actor')!=t.fixture or
@@ -95,6 +142,9 @@ def run(t,preparation,entry,staging,action,source=None,review_path=None):
         staged.get('fixture_source')!=bound(preparation) or staged.get('entry_source')!=bound(entry) or
         len(staged.get('stage_checks',{}))!=13 or not all(staged['stage_checks'].values())):
         raise RuntimeError('requires the complete same-runtime existing wolf staging')
+    t.receipt.update(staging_source=bound(staging),entry_source=bound(entry));t.persist()
+    if action=='settle':
+        settle(t,old,entered,staged,session,source,pose_path);return
     inv=Inventory(lab.ROOT,session,6).poll();retained=pets(6)
     if (not pet_identity(staged['retained_pet_before'],retained,5,0) or
         resources(inv)!=staged['baseline_resources'] or saved(6)!=staged['baseline_saved']):
@@ -177,14 +227,16 @@ def run(t,preparation,entry,staging,action,source=None,review_path=None):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','cast'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','cast','settle'])
     for k in ('preparation','entry','staging','output'):p.add_argument('--'+k,type=Path,required=True)
-    p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
+    p.add_argument('--source',type=Path);p.add_argument('--review',type=Path)
+    p.add_argument('--pose-restoration',type=Path);a=p.parse_args()
     if a.action=='cast' and (not a.source or not a.review):p.error('requires a closed caption recon and fresh image review')
+    if a.action=='settle' and (not a.source or not a.pose_restoration):p.error('requires a failed single-Tame and closed pose restoration')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:run(t,a.preparation,a.entry,a.staging,a.action,a.source,a.review)
+        try:run(t,a.preparation,a.entry,a.staging,a.action,a.source,a.review,a.pose_restoration)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure','capture_checks')}),flush=True)
