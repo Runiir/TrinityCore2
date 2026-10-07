@@ -92,6 +92,7 @@ bool capture(std::string const &name)
                                                           "SMSG_ATTACKSWING_NOTINRANGE", "SMSG_ATTACKSWING_BADFACING",
                                                           "SMSG_ATTACKSWING_CANT_ATTACK", "SMSG_ATTACKSWING_DEADTARGET",
                                                           "SMSG_ATTACK_SWING_ERROR", "SMSG_ATTACKER_STATE_UPDATE",
+                                                          "SMSG_SPELLNONMELEEDAMAGELOG", "SMSG_SPELL_NON_MELEE_DAMAGE_LOG",
                                                           "SMSG_ON_MONSTER_MOVE",
                                                           "SMSG_ON_MONSTER_MOVE_TRANSPORT",
                                                           "CMSG_GAME_OBJ_USE",
