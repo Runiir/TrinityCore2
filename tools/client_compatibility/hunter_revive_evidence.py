@@ -19,7 +19,7 @@ from .world import casting
 
 NAMES = {name: 'hunter_revive_' + suffix + '/episode.json' for name, suffix in (
     ('fixture', 'fixture01'), ('preparation', 'prepare01'), ('entry', 'entry01'),
-    ('recon', 'recon01'), ('cast', 'cast01'), ('park', 'park01'),
+    ('recon', 'recon02'), ('cast', 'cast01'), ('park', 'park01'),
     ('finish', 'original_finish01'), ('normalize', 'normalize01'), ('close', 'close01'))}
 PAUSE = 'scout_revive_pause01/episode.json'
 CAST_NAMES = {'CMSG_CAST_SPELL', 'SMSG_SPELL_START', 'SMSG_SPELL_GO',

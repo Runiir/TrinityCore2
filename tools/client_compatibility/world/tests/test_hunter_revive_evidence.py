@@ -279,7 +279,7 @@ def complete_fixture():
                 'input_isolation': {'actor': 'scout', 'host_activation_sent': False, 'display': ':3'}}}
     review = {'reviewed': True, 'control': 'Revive Pet', 'source': recon_ref, 'frame': recon['frame'],
         'fixture_source_sha256': prep_ref['sha256']}
-    cast['screen_review'] = put('hunter_revive_recon01/review.json', review)
+    cast['screen_review'] = put(str(Path(evidence.NAMES['recon']).with_name('review.json')), review)
     return data, digests, tracking
 
 
@@ -288,6 +288,21 @@ def test_complete_synthetic_archived_source_chain_passes_without_ledger_admissio
     proof = evidence.proof(data, digests, tracking)
     assert proof['operation'] == 'pets.revive' and not proof['qualification_added']
     assert proof['closure_checks'] == 21 and proof['both_owned_clients_stopped']
+
+
+def test_failed_first_recon_stays_archived_and_cannot_substitute_the_second_recon():
+    data, digests, tracking = complete_fixture()
+    failed_key = 'hunter_revive_recon01/episode.json'
+    failed = deepcopy(data[evidence.NAMES['recon']])
+    failed.update(completed=False, failure='dead-pet target expired during caption', input_sent=False)
+    data[failed_key] = failed; digests[failed_key] = 'f'*64
+    # Retaining the excluded earlier receipt must not reject the later complete
+    # evidence, and the cast remains bound to its exact accepted second recon.
+    assert evidence.proof(data, digests, tracking)['operation'] == 'pets.revive'
+    directory = Path(data[evidence.NAMES['cast']]['fixture_source']['path']).parent.parent
+    data[evidence.NAMES['cast']]['recon_source'] = {'path': str(directory / failed_key), 'sha256': digests[failed_key]}
+    with pytest.raises(RuntimeError, match='complete Revive source chain'):
+        evidence.proof(data, digests, tracking)
 
 
 @pytest.mark.parametrize('fault', ['fixture_digest','missing_frame','wrong_monitor','wrong_runtime','missing_resume',

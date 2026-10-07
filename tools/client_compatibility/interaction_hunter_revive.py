@@ -227,9 +227,7 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
     owner_vitals = hunter_vitals(oracle)
     if action == 'recon':
         spell = caption(t, session)
-        load_dead(t, oracle, session, lambda: guard_fixture(t, old, fixture, inventory, oracle, owner_vitals))
-        t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
-        state, frame = ready(t, oracle)
+        state, frame = prepare_cast_corpse(t, oracle, session, old, fixture, inventory, owner_vitals)
         t.receipt.update(revive_spell=spell, state=state, frame=frame, protected_checks=protected(old),
             native_ready_pet=deepcopy(oracle.pet), native_corpse_budget=corpse_budget(oracle, time.time()),
             completed=True, phase='await_owned_revive_cast_review')

@@ -13,6 +13,7 @@ from tools.client_compatibility.interaction_pet_command_probe import expected_gu
 
 
 TRACE = json.loads((Path(__file__).parent / 'fixtures/hunter_revive_expiry_ui167.json').read_text())
+RECON_TRACE = json.loads((Path(__file__).parent / 'fixtures/hunter_revive_recon_expiry_ui168.json').read_text())
 
 
 @pytest.fixture
@@ -278,6 +279,77 @@ def test_later_native_regeneration_cannot_rewrite_the_closed_outcome_window(nati
     assert oracle.pet['fields'][INDEX['UNIT_FIELD_HEALTH']] == 198
     assert trial.receipt['native_pet_after']['fields'][INDEX['UNIT_FIELD_HEALTH']] == 120
     assert trial.receipt['cast_finished_at'] == 1791394480.5
+
+
+def test_recon_caption_corpse_expiry_is_prepared_before_the_target_read(tmp_path, monkeypatch):
+    """Replay the UI168 login lifetime; recon must replace it only after expiry."""
+    monkeypatch.setattr(lab, 'ROOT', tmp_path)
+    path = tmp_path / 'evidence/world_packets.jsonl'
+    path.parent.mkdir()
+    creation = [p for p in RECON_TRACE['packets'] if p['name'] == 'SMSG_UPDATE_OBJECT' and p['time'] < 1791397301]
+    expiry = [p for p in RECON_TRACE['packets'] if p['time'] >= 1791397301]
+    path.write_text(''.join(json.dumps(p) + '\n' for p in creation))
+    oracle = lifecycle.RevivePresence(RECON_TRACE['session'], 6, 1791397230).poll()
+    old_guid = oracle.pet['guid']
+    trial = fake_trial()
+    clock = {'now': RECON_TRACE['recon_started_at']}
+    actions = []
+    monkeypatch.setattr(controller.time, 'time', lambda: clock['now'])
+    monkeypatch.setattr(controller.time, 'monotonic', lambda: clock['now'])
+    def expire():
+        with path.open('a') as handle: handle.write(''.join(json.dumps(p) + '\n' for p in expiry))
+        clock['now'] = expiry[-1]['time'] + .01
+        oracle.poll()
+    def sleep(seconds):
+        assert actions == []  # Natural expiry cannot send target, dismiss or cast input.
+        expire()
+    monkeypatch.setattr(controller.time, 'sleep', sleep)
+    monkeypatch.setattr(controller, 'context', lambda *args: ({}, {}, {}, oracle.session, oracle, None))
+    monkeypatch.setattr(controller, 'bound', lambda p: {'path': str(p), 'sha256': 'test-bound-source'})
+    monkeypatch.setattr(controller, 'resources', lambda inventory: {})
+    monkeypatch.setattr(controller, 'saved', lambda guid: {})
+    # This compact trace retains the pet/summon lifecycle; owner resource
+    # decoding and full fixture checks have separate native guard regressions.
+    monkeypatch.setattr(controller, 'hunter_vitals', lambda o: {'health': 209, 'focus': 100})
+    monkeypatch.setattr(controller, 'protected', lambda old: {'actor_' + str(n) + '_unchanged': True for n in range(1, 6)})
+    monkeypatch.setattr(controller, 'guard_fixture', lambda *args: None)
+    def caption(t, session):
+        assert oracle.present() and oracle.pet['guid'] == old_guid
+        clock['now'] = 1791397290  # Still present after the real stock caption inspection.
+        return {'id': 982, 'name': 'Revive Pet', 'known': True}
+    monkeypatch.setattr(controller, 'caption', caption)
+    def load(t, o, session, fixture_guard=None):
+        if o.poll().present(): return
+        assert old_guid in o.removed and actions == []
+        actions.append('/cast Call Pet 1')
+        pet = deepcopy(o.pet)
+        pet['guid'] += 1
+        pet['fields'][INDEX['UNIT_CREATED_BY_SPELL']] = 883
+        o.pet = pet
+        o.player[INDEX['UNIT_FIELD_SUMMON']], o.player[INDEX['UNIT_FIELD_SUMMON'] + 1] = pet['guid'] & 0xffffffff, pet['guid'] >> 32
+        o.player[INDEX['UNIT_FIELD_TARGET']], o.player[INDEX['UNIT_FIELD_TARGET'] + 1] = pet['guid'] & 0xffffffff, pet['guid'] >> 32
+        packet = {**o.creations[old_guid]['packet'], 'time': clock['now']}
+        o.creations[pet['guid']] = {'packet': packet, 'object': deepcopy(pet)}
+        o.lifetime_lower_bounds[pet['guid']] = {'started_at': clock['now'], 'source': 'mocked one fresh CallPet fixture'}
+        actions.append('/targetexact Wolf')
+    monkeypatch.setattr(controller, 'load_dead', load)
+    trial.execute = lambda action: actions.append(action['value'])
+    def ready(t, o):
+        if o.pet['guid'] == old_guid:
+            expire()  # The old recon path reached this read with the expired login corpse.
+            raise RuntimeError(RECON_TRACE['failure'].split(': ', 1)[1])
+        clock['now'] += 5
+        assert o.present()
+        return public_dead(o), {'file': 'fresh_ready.png'}
+    monkeypatch.setattr(controller, 'ready', ready)
+    controller.run(trial, Path('preparation'), Path('entry'), Path('fixture'), 'recon', None, None)
+    assert actions == ['/cast Call Pet 1', '/targetexact Wolf']
+    assert trial.receipt['completed'] is True and trial.receipt['phase'] == 'await_owned_revive_cast_review'
+    assert trial.receipt['native_ready_pet']['guid'] != old_guid
+    assert trial.receipt['native_corpse_budget']['setup_budget']
+    assert trial.receipt['natural_corpse_expiry_wait']['inputs_sent'] is False
+    assert not trial.receipt['input_sent'] and not trial.receipt['cast_input_sent']
+    assert '/cast Revive Pet' not in actions
 
 
 def test_fresh_present_corpse_never_sends_fixture_call(native_corpse, monkeypatch):
