@@ -50,11 +50,15 @@ def prepare(t,previous,park,finish,original,primary):
             all(current['1'][k]==base[k]==primary_before[k] for k in ('saved','pets','inventory')),
         **{f'actor_{g}_unchanged':current[g]==old['protected_baseline'][g]==base['protected'][g]
             for g in ('2','3','4','5')}}
-    if (retained!=base['protected']['6'] or
-        any(row['native']['online']!=0 for row in current.values()) or
-        not all(guards.values()) or roster(t)!=old['origin_roster'] or
-        len(retained['pets'])!=1 or tuple(retained['pets'][0].get(k) for k in
-        ('id','entry','owner','name','renamed','slot'))!=(4,42717,6,'Harnesswolf',1,0)):
+    expected_roster=[*old['origin_roster'],[retained['native'][k] for k in
+        ('guid','name','race','class','gender','level','online')]]
+    prerequisites={'current_retained_snapshot':retained==base['protected']['6'],
+        'all_originals_offline':all(row['native']['online']==0 for row in current.values()),
+        'exact_roster':not any(r[0]==6 for r in old['origin_roster']) and roster(t)==expected_roster,
+        'retained_named_pet':len(retained['pets'])==1 and tuple(retained['pets'][0].get(k) for k in
+            ('id','entry','owner','name','renamed','slot'))==(4,42717,6,'Harnesswolf',1,0)}
+    t.receipt.update(checks=guards,prerequisite_checks=prerequisites);t.persist()
+    if not all(guards.values()) or not all(prerequisites.values()):
         raise RuntimeError('unchanged retained Hunter or current protected saved boundary differs')
     t.receipt.update(origin_actor=t.fixture,origin_native=current['2']['native'],origin_saved=current['2']['saved'],
         origin_roster=old['origin_roster'],class_actor=fixture,natural_native=retained['native'],
