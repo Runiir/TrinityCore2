@@ -16,6 +16,7 @@
 #include "pet_casts.hpp"
 #include "stables.hpp"
 #include "tame_channels.hpp"
+#include "tame_pet_added.hpp"
 #include <ctime>
 
 namespace bridge
@@ -162,6 +163,13 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if(name=="SMSG_PET_ADDED")
+    {
+        try {if(auto stable=tame_pet_added_response(protocol,state,name,body))send(*stable);}
+        catch(std::exception const &error)
+        {service.events.event("tame_pet_added_rejected",{{"session",id},{"name",name},{"error",error.what()}});}
+        co_return;
+    }
     if(name=="MSG_CHANNEL_START" || name=="MSG_CHANNEL_UPDATE")
     {
         try {if(auto channel=tame_channel_response(state,name,body))send(*channel);}
@@ -418,6 +426,9 @@ Task<> Session::gameplay(std::string name, Bytes body)
         if (auto reply = protocol.object_updates(state, body,visible_players))
             send(*reply);
         if(auto pet=pet_ready(protocol,state))send(*pet);
+        try {if(auto stable=tame_pet_added_ready(protocol,state))send(*stable);}
+        catch(std::exception const &error)
+        {service.events.event("tame_pet_added_rejected",{{"session",id},{"name","SMSG_UPDATE_OBJECT"},{"error",error.what()}});}
         if (!was_created && state.created)
         {
             native->send("CMSG_REQUEST_RESEARCH_HISTORY",{});

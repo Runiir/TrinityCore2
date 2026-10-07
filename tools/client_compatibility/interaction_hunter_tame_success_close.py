@@ -52,7 +52,7 @@ def close(t,paths,primary_stop,deployment,relaunch=None):
         phase='owned_tame_diagnostic_parked_boundary',
         qualified_scope='Read-only closure of one successful ordinary Tame and normal parking. '
             'Original pose, saved state and all protected actors preserved; Harnesswolf and new Wolf retained. '
-            'PetAdded body/delivery remains open. No qualification or gameplay input replay.')
+            'Modern stable-cache delivery remains open. No qualification or gameplay input replay.')
     if relaunch:t.receipt['relaunch_source']=bound(relaunch)
     if not all(checks.values()):raise RuntimeError('fresh diagnostic Tame parked preservation differs')
 

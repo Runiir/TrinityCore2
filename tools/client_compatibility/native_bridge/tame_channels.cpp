@@ -10,6 +10,8 @@ void arm_tame_channel(State &owner,unsigned counter)
         if(signed_integer(get(cast,"spell"))!=1515)continue;
         cast.as_object()["tame_channel_pending"]=id==counter;
         cast.as_object()["tame_channel_started"]=false;
+        cast.as_object()["tame_pet_added_pending"]=id==counter;
+        cast.as_object()["native_tame_added"]=nullptr;
     }
 }
 Reply tame_channel_response(State &owner,std::string const &name,View body)
