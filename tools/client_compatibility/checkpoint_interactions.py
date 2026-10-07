@@ -3,6 +3,7 @@ import argparse
 import hashlib
 from collections import Counter
 import json
+import math
 from pathlib import Path
 import re
 import subprocess
@@ -10,12 +11,59 @@ import tarfile
 import tempfile
 import time
 import xml.etree.ElementTree as ET
-from dvclive import Live
 from . import lab_runtime as lab
 from .observation.journal import entries
 from .interaction_metrics import choice_counts
 from .native_input.control import verified as verified_input
 from .archive_integrity import archive_digest,unchanged_archive
+from .hunter_rest_accrual import precision_source
+
+REST_PRECISION_SCHEMA='client442_owned_hunter_readonly_rest_precision_v1'
+
+
+def checkpoint_runs(episodes,directory):
+    """Separate the one known read-only diagnostic from attributed Trial cases."""
+    cases=[];runs=[];trials=[]
+    for path,run in episodes:
+        relative=str(path.relative_to(lab.ROOT))
+        if run.get('schema')==REST_PRECISION_SCHEMA:
+            fields={'schema','phase','completed','started_at','finished_at','input_sent','mutation_sent',
+                'qualification_added','query','row','sources','before','after','checks'}
+            if set(run)!=fields:
+                raise RuntimeError('readonly rest precision diagnostic fields differ')
+            if (not all(type(run[k]) in (int,float) and math.isfinite(run[k]) for k in ('started_at','finished_at')) or
+                not 0<run['started_at']<run['finished_at']):
+                raise RuntimeError('readonly rest precision diagnostic closed timestamps differ')
+            for ref in run['sources']:
+                source=Path(ref['path'])
+                if source.is_symlink() or not source.resolve().is_relative_to(directory.resolve()):
+                    raise RuntimeError('readonly rest precision source is outside the archived batch')
+            for key,snapshot in run['before'].items():
+                if (set(snapshot)!={'native','saved','pets','inventory'} or
+                    snapshot['native'].get('guid')!=int(key) or not isinstance(snapshot['saved'],dict) or
+                    not isinstance(snapshot['pets'],list) or not isinstance(snapshot['inventory'],list)):
+                    raise RuntimeError('readonly rest precision offline snapshot shape differs')
+            checked=precision_source(path,run['sources'][0],run['before']['6']['native'])
+            if checked!=run:raise RuntimeError('readonly rest precision receipt changed during checkpoint validation')
+            runs.append({'path':relative,'record_kind':'readonly_diagnostic','source_schema':REST_PRECISION_SCHEMA,
+                'completed':True,'started_at':run['started_at'],'finished_at':run['finished_at'],
+                'input_sent':False,'mutation_sent':False,'qualification_added':False,'operations_admitted':0,
+                'cases':[],'checks':run['checks'],'sources':run['sources'],
+                'receipt_sha256':lab.sha256(path)})
+        else:
+            # Preserve required ordinary Trial identity and case fields. Unknown
+            # schemas never inherit the diagnostic's missing-field exemption.
+            cases.extend(run['cases']);trials.append(run)
+            runs.append({'path':relative,'completed':run['completed'],'failure':run['failure'],
+                'controller':run['controller'],'model':run['model'],'revision':run['revision']})
+    return cases,runs,trials
+
+
+def tracking_live(**options):
+    # Source classification and its tests do not require the publishing-only
+    # DVCLive dependency; the actual checkpoint still requires it.
+    from dvclive import Live
+    return Live(**options)
 
 SAFE_BODY_NAMES={
     'CMSG_LOADING_SCREEN_NOTIFY','CMSG_GET_ACCOUNT_CHARACTER_LIST',
@@ -153,7 +201,7 @@ def checkpoint(directory,name):
         if not json.loads(path.read_text()).get('finished_at'):raise RuntimeError('open cohort: '+str(path))
     if not episodes:raise RuntimeError('no closed interaction episodes')
     since=min(r['started_at'] for _,r in episodes)
-    cases=[c for _,r in episodes for c in r['cases']]
+    cases,runs,trials=checkpoint_runs(episodes,directory)
     plan=json.loads((lab.REPO/'experiments/configs/client_harness/442_interactions_v1.json').read_text())
     counts=Counter(c['status'] for c in cases)
     native=lab.owned_process('worldserver');before=json.loads((directory/'native_server_before.json').read_text())
@@ -168,10 +216,9 @@ def checkpoint(directory,name):
         'native_binary_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
         'bridge_build':json.loads((lab.ROOT/'build/native_bridge/build_receipt.json').read_text()),
         'input_build':input_build,
-        'runs':[{'path':str(p.relative_to(lab.ROOT)),'completed':r['completed'],'failure':r['failure'],
-            'controller':r['controller'],'model':r['model'],'revision':r['revision']} for p,r in episodes],
+        'runs':runs,
         'limits':['Panel visibility passes do not qualify panel contents or mutations.',
-            'Controller/model/revision identities are recorded per episode. Bounded UI choices do not qualify general learned autonomy.',
+            'Ordinary Trial controller/model/revision identities are recorded per episode. Read-only diagnostics have no assigned Trial identities or admitted operations. Bounded UI choices do not qualify general learned autonomy.',
             'Counts include historical failures and retries; they are not unique qualified feature counts.',
             f"The {len(plan['cases'])}-operation plan and 275-binding catalog remain broader than the completed trials."],
         'interaction_plan_operations':len(plan['cases']),
@@ -214,10 +261,11 @@ def checkpoint(directory,name):
                     if 'body' in row and row.get('name') not in SAFE_BODY_NAMES:continue
                     output.write(json.dumps(row,separators=(',',':'))+'\n')
         (folder/'checkpoint.json').write_text(json.dumps(metadata,indent=2)+'\n')
-        with Live(dir=str(folder/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
+        with tracking_live(dir=str(folder/'live'),save_dvc_exp=False,dvcyaml=False,report=None) as live:
             live.log_param('code_commit',metadata['code_commit']);live.log_param('controller','attributed_interaction_trials')
             live.log_metric('closed_runs',len(episodes))
-            for metric,count in choice_counts([run for _,run in episodes]).items():live.log_metric(metric,count)
+            for metric,count in choice_counts(trials).items():live.log_metric(metric,count)
+            live.log_metric('readonly_diagnostic_runs',len(episodes)-len(trials))
             for status,count in counts.items():live.log_metric('case_status/'+status,count)
             live.log_metric('native_worldserver_restarts',0);live.log_metric('whole_game_qualified',0);live.next_step()
         with tarfile.open(target,'w:gz',compresslevel=3) as archive:

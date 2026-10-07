@@ -20,11 +20,18 @@ from .world import casting
 NAMES = {name: 'hunter_revive_' + suffix + '/episode.json' for name, suffix in (
     ('fixture', 'fixture01'), ('preparation', 'prepare01'), ('entry', 'entry01'),
     ('recon', 'recon03'), ('cast', 'cast01'), ('park', 'park01'),
-    ('finish', 'original_finish01'), ('normalize', 'normalize01'), ('close', 'close01'))}
+    ('finish', 'original_finish01'), ('normalize', 'normalize01'), ('close', 'close02'))}
 PAUSE = 'scout_revive_pause01/episode.json'
 CAST_NAMES = {'CMSG_CAST_SPELL', 'SMSG_SPELL_START', 'SMSG_SPELL_GO',
     'SMSG_CAST_FAILED', 'SMSG_SPELL_FAILURE', 'SMSG_SPELL_FAILED_OTHER'}
 FAILURES = {'SMSG_CAST_FAILED', 'SMSG_SPELL_FAILURE', 'SMSG_SPELL_FAILED_OTHER', 'CMSG_CANCEL_CAST'}
+# Pin the reviewed UI169 FLOAT storage sources without reading mutable source
+# files from this pure archive verifier.
+FLOAT_STORAGE_SOURCES = {
+    'src/server/database/Database/Field.cpp': 'eed8ddfa345c74109afa258db9f72c1d7e828e069c4ca1caf7e4ea0275e7b662',
+    'src/server/database/Database/QueryResult.cpp': '56ac195234501b795956949846de208c8e5ab2fdaeeee29a56291a404ce6bdc1',
+    'src/server/database/Database/MySQLPreparedStatement.cpp': '11dcd2db84b932850149ce4bad4107ba717c07d96c495e58577a91eec5bd4553',
+    'sql/base/characters_database.sql': '880d4c7a92c600dd1cbdb4f3a1f388a4631de0cc08a34e176e078a6d8ea03be9'}
 
 
 def tracking_state():
@@ -376,10 +383,35 @@ def proof(data, digests, tracking):
         cast['baseline_resources'] == entry['resources'], 'named pet/resources or offline normalization delta differs')
     allowed = {'totaltime', 'leveltime', 'logout_time', 'latency'}
     if before['6']['native'].get('rest_bonus') != after['6']['native'].get('rest_bonus'):
-        from .hunter_rest_accrual import accrual
-        require(same(accrual(before['6']['native'], after['6']['native'], entry, 1),
-            {k: v for k, v in closure['native_rest_accrual_preserved'].items() if k not in
-                ('entry_source', 'config_source', 'native_formula_source')}), 'exact native rest accrual differs')
+        from .hunter_rest_accrual import accrual, PRECISION_QUERY
+        rest = closure['native_rest_accrual_preserved']
+        precision_key = 'hunter_rest_precision01/episode.json'; failed_key = 'hunter_revive_close01/episode.json'
+        require(rest.get('precision_source') == ref(precision_key) and rest.get('entry_source') == ref(NAMES['entry']),
+            'exact archived rest precision source differs')
+        precision = linked(rest['precision_source']); failed = linked(ref(failed_key)); whole(precision, 'checks', 5)
+        row = precision['row']
+        require(precision.get('schema') == 'client442_owned_hunter_readonly_rest_precision_v1' and
+            precision.get('phase') == 'owned_hunter_readonly_rest_precision_complete' and
+            precision.get('query') == PRECISION_QUERY and set(precision['checks']) ==
+                {'all_six_offline', 'all_saved_state_unchanged', 'hunter_identity', 'snapshot_rest_matches', 'exact_float32'} and
+            all(v is True for v in precision['checks'].values()) and
+            all(precision.get(k) is False for k in ('input_sent', 'mutation_sent', 'qualification_added')) and
+            precision['sources'] == [ref(NAMES[k]) for k in ('entry', 'park', 'normalize')] + [ref(failed_key)] and
+            precision['before'] == precision['after'] == after and
+            all(row.get(k) == after['6']['native'].get(k) for k in
+                ('guid', 'account', 'name', 'class', 'level', 'xp', 'online', 'rest_bonus', 'logout_time', 'is_logout_resting')) and
+            failed.get('completed') is False and failed.get('failure') ==
+                'RuntimeError: Hunter rest bonus differs from exact source-bound native offline accrual' and
+            failed.get('phase') is None and failed.get('cases') == [] and failed.get('model') is None and
+            failed.get('runtime') == runtime and failed.get('actor') == origin and failed.get('fixture_source') == ref(NAMES['preparation']) and
+            normalize['finished_at'] < failed['started_at'] < failed['finished_at'] < precision['started_at'] <
+                precision['finished_at'] < closure['started_at'], 'whole readonly rest precision and failed-close ancestry differs')
+        require(rest.get('native_float_storage_sources') == [{'path': str(lab.REPO / path), 'sha256': sha}
+            for path, sha in FLOAT_STORAGE_SOURCES.items()], 'exact native FLOAT storage source hashes differ')
+        require(same(accrual(before['6']['native'], after['6']['native'], entry, 1, precise_after=row),
+            {k: v for k, v in rest.items() if k not in
+                ('entry_source', 'config_source', 'native_formula_source', 'precision_source', 'native_float_storage_sources')}),
+            'exact native rest accrual differs')
         allowed.add('rest_bonus')
     require({k for k, v in before['6']['native'].items() if after['6']['native'].get(k) != v} <= allowed,
         'Hunter native columns changed beyond ordinary offline accounting')

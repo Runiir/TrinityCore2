@@ -394,6 +394,101 @@ def test_failed_recons_stay_archived_and_cannot_substitute_the_third_recon(faile
         evidence.proof(data, digests, tracking)
 
 
+@pytest.mark.parametrize('substitution', ['pause_source','canonical_close'])
+def test_failed_close01_stays_archived_and_cannot_substitute_successful_close02(substitution):
+    data, digests, tracking = complete_fixture()
+    failed_key = 'hunter_revive_close01/episode.json'
+    failed = deepcopy(data[evidence.NAMES['close']])
+    failed.update(completed=False, failure='Hunter rest bonus differs from exact source-bound native offline accrual')
+    data[failed_key] = failed; digests[failed_key] = 'f'*64
+    assert evidence.NAMES['close'] == 'hunter_revive_close02/episode.json'
+    assert evidence.proof(data, digests, tracking)['operation'] == 'pets.revive'
+    if substitution == 'pause_source':
+        directory = Path(data[evidence.NAMES['cast']]['fixture_source']['path']).parent.parent
+        data[evidence.PAUSE]['source'] = {'path': str(directory / failed_key), 'sha256': digests[failed_key]}
+    else:
+        data[evidence.NAMES['close']] = failed
+    with pytest.raises(RuntimeError, match='both owned clients stopped|episode is not whole accepted'):
+        evidence.proof(data, digests, tracking)
+
+
+def precision_fixture():
+    """Bind the actual UI169 exact FLOAT measurement into a synthetic full chain."""
+    from tools.client_compatibility.hunter_rest_accrual import accrual, PRECISION_QUERY
+    data, digests, tracking = complete_fixture()
+    fixture = data[evidence.NAMES['fixture']]; entry = data[evidence.NAMES['entry']]
+    close = data[evidence.NAMES['close']]; normalize = data[evidence.NAMES['normalize']]; park = data[evidence.NAMES['park']]
+    directory = Path(data[evidence.NAMES['cast']]['fixture_source']['path']).parent.parent
+    def ref(key): return {'path': str(directory / key), 'sha256': digests[key]}
+    login = entry['started_at'] + .1; logout = int(login) - 1949
+    for native in (fixture['before']['6']['native'], fixture['after']['6']['native'],
+            entry['native_before_entry'], entry['entered_native']):
+        native.update(rest_bonus=162.211, logout_time=logout, is_logout_resting=0)
+    for native in (close['all_offline_snapshot']['6']['native'], normalize['before']['6']['native'], park['retained_class_fixture']):
+        native.update(rest_bonus=168.588, is_logout_resting=0)
+    entry['state'] = dict(xp_max=7600, xp=45, level=10, player='Harnesshunt', xp_exhaustion=336)
+    entry['login_packets'] = [dict(time=login+i*.0001, session=entry['native_session'], name=name, direction=direction)
+        for i, (name, direction) in enumerate((('CMSG_PLAYER_LOGIN','to_native'), ('SMSG_LOGIN_VERIFY_WORLD','from_native')))]
+    failed_key = 'hunter_revive_close01/episode.json'; failed = deepcopy(close)
+    failed.update(completed=False, failure='RuntimeError: Hunter rest bonus differs from exact source-bound native offline accrual',
+        phase=None, cases=[],
+        fixture_source=ref(evidence.NAMES['preparation']), started_at=normalize['finished_at']+.1, finished_at=normalize['finished_at']+.2)
+    data[failed_key] = failed; digests[failed_key] = 'f'*64
+    precision_key = 'hunter_rest_precision01/episode.json'
+    native = close['all_offline_snapshot']['6']['native']
+    row = {k: native[k] for k in ('guid','account','name','class','level','xp','online','rest_bonus','logout_time','is_logout_resting')}
+    row.update(exact_rest_bonus=168.58815002441406, exact_rest_bonus_float32_bits='91962843')
+    precision = dict(schema='client442_owned_hunter_readonly_rest_precision_v1',
+        phase='owned_hunter_readonly_rest_precision_complete', completed=True, failure=None,
+        query=PRECISION_QUERY,
+        input_sent=False, mutation_sent=False, qualification_added=False,
+        started_at=normalize['finished_at']+.3, finished_at=normalize['finished_at']+.4,
+        before=deepcopy(close['all_offline_snapshot']), after=deepcopy(close['all_offline_snapshot']),
+        sources=[ref(evidence.NAMES[k]) for k in ('entry','park','normalize')]+[ref(failed_key)], row=row,
+        checks={k:True for k in ('all_six_offline','all_saved_state_unchanged','hunter_identity','snapshot_rest_matches','exact_float32')})
+    data[precision_key] = precision; digests[precision_key] = 'e'*64
+    close['native_rest_accrual_preserved'] = {**accrual(fixture['before']['6']['native'], native, entry, 1, precise_after=row),
+        'entry_source': ref(evidence.NAMES['entry']), 'precision_source': ref(precision_key),
+        'config_source': {}, 'native_formula_source': {},
+        'native_float_storage_sources': [{'path': str(lab.REPO / path), 'sha256': sha}
+            for path, sha in evidence.FLOAT_STORAGE_SOURCES.items()]}
+    return data, digests, tracking
+
+
+def test_exact_actual_rest_float_source_binds_successful_close02_without_admission():
+    data, digests, tracking = precision_fixture()
+    assert evidence.proof(data, digests, tracking)['qualification_added'] is False
+    rest = data[evidence.NAMES['close']]['native_rest_accrual_preserved']
+    assert rest['expected_native_float32'] == 168.58815002441406
+
+
+@pytest.mark.parametrize('fault', ['source_digest','entry_source','source_role','failed_precision','mutation','changed_snapshot',
+    'foreign_row','late_precision','wrong_bits','forged_inverse','failedclose_success','query','check_name',
+    'failedclose_phase','failedclose_cases','failedclose_model','storage_role','storage_hash'])
+def test_exact_rest_precision_cannot_be_foreign_mutating_lossy_or_substituted(fault):
+    data, digests, tracking = precision_fixture()
+    precision = data['hunter_rest_precision01/episode.json']; rest = data[evidence.NAMES['close']]['native_rest_accrual_preserved']
+    if fault == 'source_digest': rest['precision_source']['sha256'] = '0'*64
+    elif fault == 'entry_source': rest['entry_source']['sha256'] = '0'*64
+    elif fault == 'source_role': precision['sources'][2]['sha256'] = '0'*64
+    elif fault == 'failed_precision': precision['completed'] = False
+    elif fault == 'mutation': precision['mutation_sent'] = True
+    elif fault == 'changed_snapshot': precision['after']['6']['native']['money'] += 1
+    elif fault == 'foreign_row': precision['row']['guid'] = 5
+    elif fault == 'late_precision': precision['finished_at'] = data[evidence.NAMES['close']]['finished_at']+1
+    elif fault == 'wrong_bits': precision['row']['exact_rest_bonus_float32_bits'] = '90962843'
+    elif fault == 'forged_inverse': rest['expected_native_float32'] += .001
+    elif fault == 'failedclose_success': data['hunter_revive_close01/episode.json']['completed'] = True
+    elif fault == 'query': precision['query'] += ' AND 1=1'
+    elif fault == 'check_name': precision['checks']['unrelated'] = precision['checks'].pop('exact_float32')
+    elif fault == 'failedclose_phase': data['hunter_revive_close01/episode.json']['phase'] = 'owned_revive_parked_boundary'
+    elif fault == 'failedclose_cases': data['hunter_revive_close01/episode.json']['cases'] = [{'input':'unexpected'}]
+    elif fault == 'failedclose_model': data['hunter_revive_close01/episode.json']['model'] = 'unexpected'
+    elif fault == 'storage_role': rest['native_float_storage_sources'][0]['path'] = str(lab.REPO / 'other.cpp')
+    elif fault == 'storage_hash': rest['native_float_storage_sources'][0]['sha256'] = '0'*64
+    with pytest.raises((RuntimeError, ValueError, KeyError)): evidence.proof(data, digests, tracking)
+
+
 @pytest.mark.parametrize('fault', ['fixture_digest','missing_frame','wrong_monitor','wrong_runtime','missing_resume',
     'foreign_resume','foreign_prerequisite','unknown_revive','unverified_previous_remote','live_actor','named_pet',
     'pet_creator','backward_savetime','future_savetime','changed_money','changed_rows','normalization_delta',
