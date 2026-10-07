@@ -11,12 +11,15 @@ def require(value,message):
     if not value:raise RuntimeError(message)
 
 
-def review(directory,output):
+def review(directory,output,entry_path=None):
     directory=directory.resolve();output=output.resolve()
     require(directory.parent==lab.ROOT/'evidence' and output.parent==directory and not output.exists(),
         'requires a new review in the owned open batch')
     source=directory/'hunter_tame_cast01/episode.json';cast=json.loads(source.read_text())
-    entry=json.loads((directory/'hunter_tame_entry01/episode.json').read_text())
+    entry_path=(entry_path or directory/'hunter_tame_entry01/episode.json').resolve()
+    require(entry_path.is_relative_to(directory) and not entry_path.is_symlink(),
+        'requires the actual entry in the owned batch')
+    entry=json.loads(entry_path.read_text())
     closure=json.loads((directory/'hunter_tame_success_close01/episode.json').read_text())
     require(cast.get('completed') is True and cast.get('failure') is None and
         len(cast.get('capture_checks',{}))==14 and all(cast['capture_checks'].values()) and
@@ -24,6 +27,11 @@ def review(directory,output):
         len(closure.get('checks',{}))==20 and all(closure['checks'].values()) and
         cast.get('capture_disarmed') is True and cast.get('qualification_added') is False,
         'requires the whole diagnostic and parked closure')
+    require(entry.get('completed') is True and entry.get('failure') is None and
+        len(entry.get('checks',{}))==9 and all(entry['checks'].values()) and
+        entry.get('runtime')==cast.get('runtime') and cast.get('entry_source')==
+        {'path':str(entry_path),'sha256':lab.sha256(entry_path)},
+        'requires the actual successful entry bound to this cast')
     since=cast['capture_config']['created_at'];until=cast['finished_at'];session=cast['native_session']
     journal=lab.ROOT/'logs/modern_world.jsonl'
     instances={r['session'] for r in entries(journal) if r.get('event')=='instance_authenticated' and
@@ -34,8 +42,10 @@ def review(directory,output):
     require(raw==cast.get('capture_packets'),'actual private channel journal differs')
     expected={('from_native','MSG_CHANNEL_START'),('from_native','MSG_CHANNEL_UPDATE'),
         ('to_client','SMSG_SPELL_CHANNEL_START'),('to_client','SMSG_SPELL_CHANNEL_UPDATE')}
-    require(len(raw)==4 and {(r['direction'],r['name']) for r in raw}==expected,
-        'requires exactly four actual owned channel payloads')
+    native_added=[r for r in raw if (r['direction'],r['name'])==('from_native','SMSG_PET_ADDED')]
+    if native_added:expected.add(('from_native','SMSG_PET_ADDED'))
+    require(len(raw)==len(expected) and {(r['direction'],r['name']) for r in raw}==expected,
+        'requires exactly the actual owned channel payloads and optional native Added')
     names={r['name'] for r in raw}|{'SMSG_PET_ADDED'}
     metadata=[r for r in entries(journal) if r.get('session') in {session}|instances and
         since<=r.get('time',0)<=until and r.get('event') in ('native_packet','modern_packet') and
@@ -46,6 +56,12 @@ def review(directory,output):
             0<=packet['time']-r['time']<.1]
         require(len(matches)==1,'actual native/modern channel metadata pair differs')
         reader=Reader(bytes.fromhex(packet['body']));native=packet['direction']=='from_native'
+        if packet['name']=='SMSG_PET_ADDED':
+            require(reader.unpack('iiBii')==(1,0,1,299,cast['native_pet_after']['fields']['69']),
+                'actual native Added identity differs')
+            require(reader.bits(8)==4 and reader.raw(4)==b'Wolf' and reader.unpack('B')==(0,),
+                'actual native Added name differs')
+            reader.end();continue
         require((native_guid(reader)==6 if native else reader.guid()==(6,player_high())),
             'actual channel owner differs')
         if packet['name'].endswith('START'):
@@ -78,13 +94,17 @@ def review(directory,output):
         'channel_packets':raw,'channel_metadata':metadata,'physical_instance':next(iter(instances)),
         'public_channel_samples':8,'public_channel_seconds':events[1]['observed_at']-events[0]['observed_at'],
         'new_pet_number':cast['native_pet_after']['fields']['69'],
-        'missing':['actual native PetAdded body','modern PetAdded translation/delivery'],
+        'native_added_captured':bool(native_added),
+        'missing':([] if native_added else ['actual native PetAdded body'])+
+            ['modern StableInfo projection and public cache validation'],
         'inventory_admitted':False,'qualification_added':False,'input_sent':False},indent=2)+'\n')
-    print(json.dumps({'completed':True,'actual_channel_packets':4,'metadata_records':len(metadata),
+    print(json.dumps({'completed':True,'actual_channel_packets':4,'native_added_captured':bool(native_added),
+        'metadata_records':len(metadata),
         'qualification_added':False}),flush=True)
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--directory',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args();review(a.directory,a.output)
+    p.add_argument('--entry',type=Path)
+    a=p.parse_args();review(a.directory,a.output,a.entry)

@@ -21,7 +21,7 @@ def add(body=BODY):return action('tame_pet_added_response','SMSG_PET_ADDED',body
 def ready():return action('tame_pet_added_ready','',b'')
 def cast():return action('cast_request','CMSG_CAST_SPELL',bytes.fromhex(SOURCE['request']))
 def go():return action('cast_response','SMSG_SPELL_GO',bytes.fromhex(SOURCE['go']))
-def baseline():return reply(catalog(guid=0,slot=5,last=204),[MODEL])
+def baseline():return reply(catalog(guid=0,slot=5,last=20),[MODEL])
 
 
 def owned(codec,actions,pet=None,snapshot=None,character=OWNER):
@@ -43,13 +43,18 @@ def test_actual_added_waits_for_later_native_links_and_delivers_canonical_level1
     actions=[baseline(),cast(),go(),add()]
     for packet in SOURCE['updates']:
         actions.extend([action('object_updates','SMSG_UPDATE_OBJECT',bytes.fromhex(packet['body'])),ready()])
-    rows=owned(codec,actions);assert rows[3] is None
+    rows=owned(codec,actions)
+    assert decode_update(rows[0])==([expected()[0][0]],(0,0))
+    assert rows[1][0]=='CMSG_CAST_SPELL' and rows[2][0]=='SMSG_SPELL_GO'
+    assert rows[3] is None
     releases=[row for command,row in zip(actions,rows) if command['fn']=='tame_pet_added_ready' and row is not None]
     assert len(releases)==1 and decode_update(releases[0])==expected()
 
 
 def test_current_owned_pet_can_release_added_once_without_replaying_a_native_request(codec):
     rows=owned(codec,[baseline(),cast(),go(),add(),add(),ready()],deepcopy(SOURCE['pet_after']))
+    assert decode_update(rows[0])==([expected()[0][0]],(0,0))
+    assert rows[1][0]=='CMSG_CAST_SPELL' and rows[2][0]=='SMSG_SPELL_GO'
     assert decode_update(rows[3])==expected() and rows[4] is rows[5] is None
 
 
@@ -70,7 +75,7 @@ def test_added_requires_current_native_cast_catalog_and_unambiguous_owned_pet(co
     elif fault=='dead':pet['fields'][str(INDEX['UNIT_FIELD_HEALTH'])]=0
     else:
         # A native catalog that already occupies the new slot cannot be replaced.
-        actions[0]=reply(catalog(guid=0,slot=0,last=204),[MODEL])
+        actions[0]=reply(catalog(guid=0,slot=0,last=20),[MODEL])
     row=owned(codec,actions,pet,character=owner)[-1]
     assert row is None or isinstance(row,dict) and 'error' in row
 
