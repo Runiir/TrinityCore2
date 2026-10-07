@@ -50,10 +50,15 @@ def successful_chain(old,runtime,episodes,refs,stop,deployment,primary_ref,relau
         deployment.get('native')!=runtime['worldserver'] or deployment.get('after')!=runtime['modern_world'] or
         deployment.get('scout_lifetime')!=(runtime['client'] if relaunch and 'pause' in relaunch else deployed['client']) or
         (deployment.get('schema')==DEPLOYMENT_SCHEMA and not relaunch and deployment.get('before')!=stop['runtime']['modern_world']) or
-        (deployment.get('native_before') if native else deployment.get('native'))!=stop['runtime']['worldserver'] or
+        (native_primary(deployment) if native else deployment.get('native'))!=stop['runtime']['worldserver'] or
         set(deployment.get('parked_reconnect_attempt',{}))!={'scout'} or
         deployment['parked_reconnect_attempt']['scout'].get('completed') is not True):
         raise RuntimeError('fresh Tame stopped-primary deployment lineage differs')
+
+
+def native_primary(deployment):
+    from .stopped_native_ancestry import primary_native
+    return primary_native(deployment)
 
 
 def saved_pet_preserved(before,after):

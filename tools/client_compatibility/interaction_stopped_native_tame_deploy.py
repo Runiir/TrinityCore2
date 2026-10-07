@@ -8,6 +8,7 @@ from .interaction_hunter_stable_slots import bound
 from .interaction_owned_class_fixture import SCRIPT_BOUNDARY
 from .interaction_parked_client_resource_pause import snapshot
 from .interaction_paused_scout_bridge_deploy import absent,primary_absent,pause_source
+from .stopped_native_ancestry import passed_tests,verified_previous
 
 SCHEMA='client442_stopped_native_tame_deployment_v1'
 SOURCES={
@@ -35,13 +36,19 @@ def verified_build(path):
     return b
 
 
-def stage(out,pause_path,build_path,tests_path):
+def stage(out,pause_path,build_path,tests_path,previous_path=None,previous_review=None):
     out.mkdir(mode=0o700,parents=True,exist_ok=False);started=time.time()
     p=pause_source(pause_path);absent();b=verified_build(build_path);before=snapshot()
-    tests=tests_path.read_text()
-    if tests_path.is_symlink() or not tests_path.resolve().is_relative_to(out.parent) or '101 passed' not in tests:
-        raise RuntimeError('requires the actual 101-check native candidate test log')
-    if (binding() or actors.load()!=p['actor'] or before!=p['after'] or
+    if tests_path.is_symlink() or not tests_path.resolve().is_relative_to(out.parent):
+        raise RuntimeError('requires the actual private native candidate test log')
+    count=passed_tests(tests_path.read_text());previous=None;root=p['runtime']['worldserver'];expected_binding=[]
+    if previous_path:
+        previous,root=verified_previous(previous_path,p,previous_review)
+        expected_binding=[BINDING]
+        if lab.sha256(lab.ROOT/'bin/worldserver')!=previous['binary_sha256']:
+            raise RuntimeError('installed predecessor binary differs')
+    elif previous_review:raise RuntimeError('native predecessor review has no deployment')
+    if (binding()!=expected_binding or actors.load()!=p['actor'] or before!=p['after'] or
         identity('worldserver')!=p['runtime']['worldserver'] or b['native_before']!=p['runtime']['worldserver'] or
         identity('modern_world')!=p['runtime']['modern_world']):
         raise RuntimeError('stopped native stage state, process or binding differs')
@@ -51,9 +58,14 @@ def stage(out,pause_path,build_path,tests_path):
         'previous_scout':p['runtime']['client'],'origin_actor':p['actor'],'offline_baselines':before,
         'native_build_source':bound(build_path),'native_build':b,'tests_source':bound(tests_path),
         'binary_sha256':b['binary_sha256'],'previous_binary_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
-        'config_sha256':lab.sha256(lab.ROOT/'config/worldserver.conf'),'binding_before':[],
+        'config_sha256':lab.sha256(lab.ROOT/'config/worldserver.conf'),'binding_before':expected_binding,
+        'tests_passed':count,'primary_native':root,
+        'rollback_file':('worldserver.before_tame_completion-'+previous['binary_sha256'][:12]
+            if previous else 'worldserver.before_tame_completion'),
         'custom_script_permission':'blocked_by_user','softTargetInteract':SCRIPT_BOUNDARY,
         'primary_stopped':True,'parked_scout':True,'input_sent':False,'qualification_added':False,'completed':False}
+    if previous:
+        d.update(previous_native_deployment=bound(previous_path),previous_native_review=bound(previous_review))
     lab.private_write(out/'deployment.json',json.dumps(d,indent=2)+'\n')
     checks=dict.fromkeys(('all_saved_state','original_primary_state','all_six_offline','primary_stopped',
         'scout_stopped','origin_registration','native_lifetime','bridge_lifetime','candidate_build','native_binding'),True)
@@ -70,7 +82,12 @@ def install(source,batch):
     source=source.resolve();stage_path=source/'deployment.json';d=json.loads(stage_path.read_text())
     cp=json.loads((source.parent/'checkpoint_receipt.json').read_text());p=pause_source(Path(d['source']['path']))
     absent();build_path=Path(d['native_build_source']['path']);b=verified_build(build_path)
-    backup=lab.ROOT/'bin/worldserver.before_tame_completion';target=lab.ROOT/'bin/worldserver'
+    backup=lab.ROOT/'bin'/d.get('rollback_file','worldserver.before_tame_completion');target=lab.ROOT/'bin/worldserver'
+    expected_backup='worldserver.before_tame_completion'+('-'+d['previous_binary_sha256'][:12]
+        if d.get('previous_native_deployment') else '')
+    from .stopped_native_ancestry import verify_ancestry
+    verify_ancestry(d,p)
+    if backup.name!=expected_backup or backup.parent!=lab.ROOT/'bin':raise RuntimeError('native rollback path differs')
     if (batch.exists() or batch.resolve().parent!=lab.ROOT/'evidence' or backup.exists() or
         d.get('schema')!=SCHEMA or d.get('source')!=bound(Path(d['source']['path'])) or
         d.get('native_build_source')!=bound(build_path) or d.get('native_build')!=b or
@@ -127,8 +144,10 @@ def current(directory,require_client=False):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','install'])
-    for name in ('output','source','pause','build','tests'):p.add_argument('--'+name,type=Path)
+    for name in ('output','source','pause','build','tests','previous-deployment','previous-review'):p.add_argument('--'+name,type=Path)
     a=p.parse_args()
     with actor('scout'):
-        if a.action=='stage':stage(a.output,a.pause,a.build,a.tests)
+        if a.action=='stage':
+            if bool(a.previous_deployment)!=bool(a.previous_review):p.error('predecessor requires deployment and actual remote review')
+            stage(a.output,a.pause,a.build,a.tests,a.previous_deployment,a.previous_review)
         else:install(a.source,a.output)

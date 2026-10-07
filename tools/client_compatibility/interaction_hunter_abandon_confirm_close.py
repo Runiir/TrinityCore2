@@ -16,6 +16,7 @@ from .interaction_single_scout_bridge_deploy import SCHEMA as SINGLE_SCHEMA
 from .scout_relaunch_lineage import verified_deployment,deployment_runtime
 from .interaction_parked_client_resource_pause import snapshot
 from .hunter_disposable_tame import disposable_number
+from .hunter_tame_boundary import native_primary
 
 
 def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment,relaunch=None):
@@ -44,7 +45,7 @@ def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment,
         d.get('after')!=t.receipt['runtime']['modern_world'] or
         d.get('scout_lifetime')!=(t.receipt['runtime']['client'] if lineage and 'pause' in lineage else deployed['client']) or
         (not single and not lineage and d.get('before')!=stop['runtime']['modern_world']) or
-        (d.get('native_before') if native else d.get('native'))!=stop['runtime']['worldserver']):
+        (native_primary(d) if native else d.get('native'))!=stop['runtime']['worldserver']):
         raise RuntimeError('fresh Abandon, single-scout deployment or stopped primary lineage differs')
     with actor('primary'):primary_ok=lab.owned_process('client') is None and retained(1,1)==stop['after']
     current=pets(6);checks={**origin_checks(old),**protected(old),

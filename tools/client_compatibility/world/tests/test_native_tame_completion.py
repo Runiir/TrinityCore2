@@ -9,6 +9,7 @@ SPELL=ROOT/'src/server/game/Spells/Spell.cpp'
 
 STUBS=r'''
 #include <cstdint>
+#include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <string>
@@ -34,8 +35,8 @@ namespace ObjectAccessor {Unit* GetUnit(Unit&,ObjectGuid) {return nullptr;}}
 struct Manager {void NotifyNativeSpellCancelled(void*) {}};
 Manager manager;Manager* sBotWorldPopulationMgr=&manager;
 struct Targets {ObjectGuid guid=100;ObjectGuid GetUnitTargetGUID() const {return guid;}};
-struct TargetInfo {int MissCondition=0;ObjectGuid TargetGUID=100;};
 struct Spell {
+    struct TargetInfo {int MissCondition=0;ObjectGuid TargetGUID=100;void DoDamageAndTriggers(Spell*);};
     SpellState m_spellState=SPELL_STATE_CHANNELING;bool m_autoRepeat=false;
     SpellInfo info;SpellInfo const* m_spellInfo=&info;SpellInfo const* aura=nullptr;
     Unit caster;Unit* m_caster=&caster;Unit* m_originalCaster=nullptr;ObjectGuid m_originalCasterGUID=6;
@@ -51,6 +52,7 @@ struct Spell {
     void CancelGlobalCooldown() {}void SetReferencedFromCurrent(bool) {}
     void finish(bool ok=true) {m_spellState=SPELL_STATE_FINISHED;if(ok)++successes;}
     void cancel();
+    void CallScriptAfterHitHandlers();void CallScriptAfterCastHandlers();
 };
 struct Creature {
     ObjectGuid guid=100;uint32 entry=299;
@@ -68,20 +70,36 @@ struct Player:Unit {
     ObjectGuid GetPetGUID() const {return present?200:0;}
     Spell* GetCurrentSpell(int) const {return channel;}Pet* GetPet() {return present?&pet:nullptr;}
 };
-struct Hook {template<class T>void Register(T) {}};
+struct SpellScript;
+struct Hook {
+    std::function<void(SpellScript*)> callback;
+    template<class T>void Register(void(T::*method)()) {
+        callback=[method](SpellScript* script){(static_cast<T*>(script)->*method)();};
+    }
+    int calls=0;
+    void Call(SpellScript* script) {if(callback){++calls;callback(script);}}
+};
 struct SpellScript {
     Player* player=nullptr;Creature* target=nullptr;Spell* trigger=nullptr;bool known=true;
-    Hook BeforeHit,AfterHit;virtual bool Validate(SpellInfo const*) {return true;}
+    Hook BeforeHit,AfterHit,AfterCast;virtual bool Validate(SpellInfo const*) {return true;}
     virtual void Register() {}bool ValidateSpellInfo(std::initializer_list<int>) {return known;}
     Player* GetCaster() const {return player;}Creature* GetHitCreature() const {return target;}
     Spell* GetSpell() const {return trigger;}
 };
+SpellScript* active;
+void Spell::CallScriptAfterHitHandlers() {active->AfterHit.Call(active);}
+void Spell::CallScriptAfterCastHandlers() {active->AfterCast.Call(active);}
 '''
 MAIN=r'''
 int main(int argc,char** argv) {
     std::string fault=argv[1];Spell parent,child,other;child.info.Id=13481;child.aura=&parent.info;
     Player player;Creature target;player.channel=&parent;
     spell_hun_tame_beast_completion script;script.player=&player;script.target=&target;script.trigger=&child;
+    active=&script;script.Register();
+    if(fault=="retired_after_hit") {
+        script.AfterCast.callback=nullptr;
+        script.AfterHit.Register(&spell_hun_tame_beast_completion::AfterTame);
+    }
     if(fault=="non_player")player.player=false;
     if(fault=="non_hunter")player.cls=9;
     if(fault=="no_target")script.target=nullptr;
@@ -91,7 +109,7 @@ int main(int argc,char** argv) {
     if(fault=="not_channeling")parent.m_spellState=SPELL_STATE_PREPARING;
     if(fault=="direct_trigger")child.aura=nullptr;
     if(fault=="wrong_target")parent.m_targets.guid=101;
-    script.BeforeTame();
+    script.BeforeHit.Call(&script);
     // The triggered native effect creates the pet and finishes only itself.
     player.present=true;child.finish();
     if(fault=="no_pet")player.present=false;
@@ -102,8 +120,13 @@ int main(int argc,char** argv) {
     if(fault=="wrong_creator")player.pet.created=883;
     if(fault=="replaced_channel")player.channel=&other;
     if(fault=="already_finished")parent.m_spellState=SPELL_STATE_FINISHED;
-    if(fault!="old_path")script.AfterTame();
-    if(fault=="repeat")script.AfterTame();
+    // Native target lookup fails after EffectTameCreature despawns the wolf.
+    // The actual core guard returns before dispatching any AfterHit hook.
+    Spell::TargetInfo hit;hit.DoDamageAndTriggers(&child);
+    // Spell::cast calls AfterCast after handle_immediate, even if the effect
+    // already finished the child. Use the actual registered callback.
+    if(fault!="old_path")child.CallScriptAfterCastHandlers();
+    if(fault=="repeat")child.CallScriptAfterCastHandlers();
     // The wild target is now gone. Run the real core cancellation function,
     // which Spell::update calls when that explicit target is unavailable.
     parent.cancel();
@@ -114,6 +137,7 @@ int main(int argc,char** argv) {
     good.Id=13481;good.effect=false;bool effect=script.Validate(&good);
     good.effect=true;script.known=false;bool known=script.Validate(&good);
     std::cout<<valid<<' '<<foreign<<' '<<effect<<' '<<known<<'\n';
+    std::cout<<script.AfterHit.calls<<' '<<script.AfterCast.calls<<'\n';
 }
 '''
 
@@ -124,8 +148,11 @@ def compiled(tmp_path_factory):
     script=text[start:text.index('void AddSC_',start)].replace(': public SpellScript\n{',': public SpellScript\n{\npublic:',1)
     core=SPELL.read_text();start=core.index('void Spell::cancel()')
     cancel=core[start:core.index('void Spell::cast(',start)]
+    start=core.index('void Spell::TargetInfo::DoDamageAndTriggers(Spell* spell)')
+    dispatch=core[start:core.index('    // other targets executed',start)]
+    dispatch+='    spell->CallScriptAfterHitHandlers();\n}\n'
     directory=tmp_path_factory.mktemp('native_tame_completion');source=directory/'tame.cpp';binary=directory/'tame'
-    source.write_text(STUBS+script+cancel+MAIN)
+    source.write_text(STUBS+script+cancel+dispatch+MAIN)
     subprocess.run(['g++','-std=c++17','-O0',str(source),'-o',str(binary)],check=True,capture_output=True,text=True)
     return binary
 
@@ -143,6 +170,18 @@ def test_successful_trigger_finishes_exact_parent_before_target_loss(compiled,fa
 
 def test_previous_native_path_reproduces_failure_after_pet_creation(compiled):
     assert result(compiled,'old_path')==[1,1,1,0,0,1]
+
+
+def test_retired_after_hit_candidate_is_skipped_by_native_target_removal(compiled):
+    assert result(compiled,'retired_after_hit')==[1,1,1,0,0,1]
+    assert subprocess.check_output([str(compiled),'retired_after_hit'],text=True).splitlines()[2]=='0 0'
+
+
+def test_success_uses_registered_after_cast_after_native_hit_dispatch_is_skipped(compiled):
+    assert subprocess.check_output([str(compiled),'valid'],text=True).splitlines()[2]=='0 1'
+    core=SPELL.read_text();start=core.index('void Spell::cast(')
+    cast=core[start:core.index('template <class Container>',start)]
+    assert cast.index('handle_immediate();')<cast.index('CallScriptAfterCastHandlers();')
 
 
 @pytest.mark.parametrize('fault',['non_player','non_hunter','no_target','had_pet','no_channel',

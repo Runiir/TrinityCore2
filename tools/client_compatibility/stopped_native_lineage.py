@@ -44,6 +44,8 @@ def verified(d,path,runtime):
     from .interaction_bridge_deploy import identity
     from .interaction_stopped_native_tame_deploy import binding,BINDING,SOURCES
     pause_path=Path(d['source']['path']);pause=pause_source(pause_path)
+    from .stopped_native_ancestry import verify_ancestry,passed_tests
+    verify_ancestry(d,pause)
     restore_path=Path(d['parked_reconnect_attempt']['scout']['episode']);restored=closed(restore_path)
     if not restore_path.resolve().is_relative_to(path.parent.parent):raise RuntimeError('native scout restoration leaves its batch')
     refs={'pause':bound(pause_path),'restoration':bound(restore_path)};transition(d,runtime,pause,restored,refs)
@@ -58,7 +60,7 @@ def verified(d,path,runtime):
         d['native_build'].get('completed') is not True or
         any(d['native_build'].get(k)!=lab.sha256(lab.REPO/v) for k,v in SOURCES.items()) or
         d['tests_source']!=bound(Path(d['tests_source']['path'])) or
-        '101 passed' not in Path(d['tests_source']['path']).read_text() or
+        passed_tests(Path(d['tests_source']['path']).read_text())!=d.get('tests_passed',101) or
         identity('worldserver')!=runtime['worldserver'] or identity('modern_world')!=runtime['modern_world'] or
         lab.sha256(lab.ROOT/'bin/worldserver')!=d['binary_sha256'] or binding()!=[BINDING]):
         raise RuntimeError('remote native stage, installed sources or candidate tests differ')

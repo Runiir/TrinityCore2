@@ -55,6 +55,7 @@ class spell_hun_tame_beast_completion : public SpellScript
         // EffectTameCreature finishes the triggered spell, not its parent channel.
         // Once pet creation succeeds, finish that exact parent before its next
         // update can mistake the despawned wild target for an interrupted tame.
+        // AfterHit is skipped once that target disappears; AfterCast still runs.
         _channel->SendChannelUpdate(0);
         _channel->finish();
     }
@@ -62,7 +63,7 @@ class spell_hun_tame_beast_completion : public SpellScript
     void Register() override
     {
         BeforeHit.Register(&spell_hun_tame_beast_completion::BeforeTame);
-        AfterHit.Register(&spell_hun_tame_beast_completion::AfterTame);
+        AfterCast.Register(&spell_hun_tame_beast_completion::AfterTame);
     }
 
     Spell* _channel = nullptr;
