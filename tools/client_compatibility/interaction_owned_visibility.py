@@ -5,6 +5,43 @@ from Xlib import X,Xutil,Xatom,display,protocol
 from . import lab_runtime as lab,owned_input
 
 
+def recover_hints(t,source,original_user_time):
+    import json
+    from pathlib import Path
+    path=source.resolve();failed=json.loads(path.read_text());old=failed.get('owned_window_visibility',{})
+    if (not path.is_relative_to(lab.ROOT/'evidence') or path.is_symlink() or
+        failed.get('completed') is not False or not failed.get('finished_at') or
+        failed.get('failure')!="AttributeError: 'Window' object has no attribute 'iconify'" or
+        failed.get('actor')!=t.fixture or failed.get('runtime')!=t.receipt['runtime'] or
+        old.get('before_state')!=[Xutil.IconicState,0] or old.get('restored') is not False or
+        original_user_time!=462620438):
+        raise RuntimeError('requires the exact closed visibility failure and observed original hint time')
+    monitor=owned_input.focus();screen=display.Display(':0');root=screen.screen().root
+    window=screen.create_resource_object('window',monitor['window_id'])
+    values=lambda object,name:list(object.get_full_property(screen.intern_atom(name),X.AnyPropertyType).value)
+    try:
+        hints=dict(window.get_wm_hints()._data)
+        before={'flags':hints['flags'],'input':hints['input'],'user_time':values(window,'_NET_WM_USER_TIME'),
+            'state':values(window,'WM_STATE'),'active':values(root,'_NET_ACTIVE_WINDOW')}
+        if (monitor!=old['before_monitor'] or before!={'flags':65,'input':0,'user_time':[0],
+            'state':old['before_state'],'active':old['before_active']}):
+            raise RuntimeError('failed visibility hints changed; refusing recovery')
+        t.receipt.update(source={'path':str(path),'sha256':lab.sha256(path)},before=before,
+            original_hint_authority='Separate read-only host-window inspection before this visibility attempt; input1/flags65/time462620438.',
+            input_sent=False,host_activation_sent=False);t.persist()
+        window.set_wm_hints(**{**hints,'input':1})
+        window.change_property(screen.intern_atom('_NET_WM_USER_TIME'),Xatom.CARDINAL,32,[original_user_time]);screen.sync()
+        current=window.get_wm_hints()
+        checks={'input_hint':current.input==1 and current.flags==65,
+            'user_time':values(window,'_NET_WM_USER_TIME')==[original_user_time],
+            'minimized':values(window,'WM_STATE')==old['before_state'],
+            'host_focus':values(root,'_NET_ACTIVE_WINDOW')==old['before_active'],
+            'monitor_geometry':owned_input.focus()==monitor}
+        t.receipt.update(checks=checks,completed=all(checks.values()),phase='owned_visibility_hints_restored')
+        if not all(checks.values()):raise RuntimeError('original window hints did not restore')
+    finally:screen.close()
+
+
 @contextmanager
 def visible_scout(t):
     if lab.actor_name()!='scout':raise RuntimeError('visibility scope is restricted to the owned scout')
@@ -61,3 +98,19 @@ def visible_scout(t):
             else:window.change_property(screen.intern_atom('_NET_WM_USER_TIME'),Xatom.CARDINAL,32,user)
             screen.sync();screen.close();t.persist()
         if not row['restored']:raise RuntimeError('owned scout visibility or desktop focus did not restore')
+
+
+if __name__=='__main__':
+    import argparse,json
+    from pathlib import Path
+    from .interaction_social import actor
+    from .interaction_trial import Trial
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--source',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--original-user-time',type=int,required=True);a=p.parse_args()
+    with actor('scout'):
+        t=Trial(a.output,controller='code')
+        try:recover_hints(t,a.source,a.original_user_time)
+        except Exception as error:t.receipt.update(completed=False,failure=f'{type(error).__name__}: {error}')
+        finally:t.receipt['finished_at']=time.time();t.persist()
+        print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure','checks')}),flush=True)
