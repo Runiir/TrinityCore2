@@ -26,6 +26,9 @@ class RevivePresence(Presence):
         self.destructions = {}
         self.call_requests = []
         self.lifetime_lower_bounds = {}
+        self.owner_creation = None
+        self.native_vital_packets = []
+        self.pet_max_health_updates = []
 
     def inspect_packet(self, packet):
         if packet.get('name') == 'CMSG_CAST_SPELL' and packet.get('direction') == 'to_native':
@@ -35,12 +38,25 @@ class RevivePresence(Presence):
             guid = struct.unpack_from('<Q', bytes.fromhex(packet['body']))[0]
             self.destructions.setdefault(guid, deepcopy(packet))
         if packet.get('name') != 'SMSG_UPDATE_OBJECT': return
+        retained = False
         for row in records(bytes.fromhex(packet['body'])):
+            fields = row.get('fields', {})
+            if row.get('guid') == self.owner and row.get('kind') == 4 and self.owner_creation is None:
+                self.owner_creation = {'packet': deepcopy(packet), 'object': deepcopy(row)}
             if (row.get('update_type') in (1, 2) and row.get('kind') == 3 and
                 row['guid'] >> 52 == 0xf14 and pair(row.get('fields', {}), 'UNIT_FIELD_SUMMONEDBY') == self.owner):
                 # Seeing an existing object again must not restart its corpse
                 # clock. Sparse fields and pet-name timestamps never set it.
                 self.creations.setdefault(row['guid'], {'packet': deepcopy(packet), 'object': deepcopy(row)})
+            creation = self.creations.get(row.get('guid'))
+            owned_wolf = bool(creation and dead_identity(creation['object'], self.owner))
+            if owned_wolf and INDEX['UNIT_FIELD_MAXHEALTH'] in fields:
+                self.pet_max_health_updates.append({'guid': row['guid'], 'max_health': fields[INDEX['UNIT_FIELD_MAXHEALTH']],
+                    'packet': deepcopy(packet)})
+            if not retained and (owned_wolf or row.get('guid') == self.owner) and any(INDEX[n] in fields for n in
+                ('UNIT_FIELD_HEALTH', 'UNIT_FIELD_MAXHEALTH', 'UNIT_FIELD_POWER1', 'UNIT_FIELD_MAXPOWER1')):
+                self.native_vital_packets.append(deepcopy(packet))
+                retained = True
             for guid in row.get('removed', []):
                 self.destructions.setdefault(guid, deepcopy(packet))
 

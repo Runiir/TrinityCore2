@@ -7,6 +7,7 @@ from pathlib import Path
 from . import actors, lab_runtime as lab
 from .hunter_revive_fixture import restored_pets
 from .hunter_revive_lifecycle import RevivePresence, corpse_budget, dead_identity, dead_pet_rows, native_revive_timing, bind_call_lifetime
+from .hunter_revive_restoration import focus_identity, living_snapshot, restored_maximum
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .interaction_owned_class_fixture import prepared, reviewed, saved, pets, origin_checks, SCRIPT_BOUNDARY
@@ -26,6 +27,7 @@ from .interaction_spellbook_recon import resources
 from .observation.inventory import Inventory
 from .observation.journal import entries
 from .world.objects import INDEX
+from .interaction_archaeology_projects import dbc
 
 
 class ReviveTrial(Trial):
@@ -220,6 +222,32 @@ def capture_outcome(t, oracle, **details):
     t.persist()
 
 
+def rest_living_pet(t, oracle, guid, owner_vitals):
+    t.receipt['quiet_rest_started_at'] = time.time()
+    t.persist()
+    deadline = time.monotonic() + 110
+    while time.monotonic() < deadline:
+        snapshot = living_snapshot(oracle.poll(), guid, owner_vitals)
+        if snapshot['full_health']:
+            maximum, source = restored_maximum(oracle, guid)
+            t.receipt.update(quiet_rest_finished_at=time.time(), quiet_rest_native=snapshot,
+                quiet_rest_max_health_source=source)
+            t.persist()
+            return maximum
+        time.sleep(1)
+    raise RuntimeError('ordinary rest did not reach actual full living pet health; do not replay')
+
+
+def clear_restored_target(t):
+    # Focus also travels in separate native POWER_UPDATE packets whose bodies
+    # are not retained by this bridge. Mandatory ordinary cleanup must run
+    # before asserting the final authoritative owner object-field sample.
+    t.execute({'kind': 'chat', 'value': '/cleartarget'})
+    t.clean_panels()
+    read_page(t, 'revive_restored_core', 'state', '/tcui')
+    return t.observe('revive_restored')
+
+
 def run(t, preparation, entry, fixture_path, action, source, review_path):
     old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path, True)
     t.receipt.update(native_session=session, entry_source=bound(entry), dead_fixture_source=bound(fixture_path),
@@ -258,8 +286,12 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
         return
     pet_guid = oracle.pet['guid']
     pet_max_health = oracle.pet['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]
+    class_powers, _ = dbc('ChrClassesXPowerTypes', 3)
+    power_path = lab.ROOT / 'data/dbc/enUS/ChrClassesXPowerTypes.dbc'
     t.receipt.update(recon_source=bound(source), revive_spell=recon['revive_spell'],
         native_vitals_before=owner_vitals, native_pet_before=deepcopy(oracle.pet),
+        dead_native_pet_max_health=pet_max_health,
+        owner_power_identity=focus_identity(oracle, class_powers, {'path': str(power_path), 'sha256': lab.sha256(power_path)}),
         ordinary_input={'kind': 'chat', 'value': '/cast Revive Pet'}, chat_setup_started_at=time.time())
     t.persist()
     t.revive_before_submit = lambda state: final_submission(
@@ -307,34 +339,36 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
         capture_checks=checks, outcome_state=after, outcome_frame=outcome_frame)
     if not all(checks.values()):
         raise RuntimeError('one ordinary Revive did not pass native and public outcome checks; do not replay')
-    deadline = time.monotonic() + 110
-    while time.monotonic() < deadline:
-        oracle.poll()
-        if oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH']) == pet_max_health and hunter_vitals(oracle) == owner_vitals: break
-        time.sleep(1)
+    rest_living_pet(t, oracle, pet_guid, owner_vitals)
     lab.server_command('saveall')
     time.sleep(.5)
-    t.execute({'kind': 'chat', 'value': '/cleartarget'})
+    state, frame = clear_restored_target(t)
+    public = public_pet(t, 'revive_public_pet')
+    read_page(t, 'revive_final_core', 'state', '/tcui')
     t.clean_panels()
-    read_page(t, 'revive_restored_core', 'state', '/tcui')
-    state, frame = t.observe('revive_restored')
+    oracle.poll()
+    living_snapshot(oracle, pet_guid, owner_vitals)
+    pet_max_health, max_health_source = restored_maximum(oracle, pet_guid)
     restored = pets(6)
     restoration = {**origin_checks(old), **protected(old),
         'stored_named_pet': restored[0] == fixture['before']['6']['pets'][0],
         'living_disposable_pet': len(restored) == 2 and restored[1]['id'] == 16 and
             restored[1]['curhealth'] == pet_max_health and restored[1]['slot'] == 0 and restored[1]['active'] == 1,
-        'owner_vitals': hunter_vitals(oracle.poll()) == owner_vitals,
+        'owner_vitals': hunter_vitals(oracle) == owner_vitals,
         'owner_resources': resources(inventory) == t.receipt['baseline_resources'],
         'saved_rows': saved(6) == t.receipt['baseline_saved'],
         'owner_position': state['world_position'] == before['world_position'],
         'empty_selection': not state['target'].get('exists') and pair(oracle.player, 'UNIT_FIELD_TARGET') == 0,
         'ui_clean': not state.get('lua_errors') and not state.get('blocked_actions')}
-    public = public_pet(t, 'revive_public_pet')
     restoration['public_owned_pet'] = public.get('exists') is True and public.get('guid') == expected_guid(oracle.pet)
-    read_page(t, 'revive_final_core', 'state', '/tcui')
-    t.clean_panels()
+    restored_at = time.time()
     t.receipt.update(restoration_checks=restoration, retained_pet_after=restored, restored_frame=frame,
         restored_state=state, public_pet=public, native_pet_max_health=pet_max_health,
+        native_living_max_health_source=max_health_source, restoration_finished_at=restored_at,
+        native_pet_max_health_updates=[r for r in oracle.pet_max_health_updates if r['guid'] == pet_guid and
+            t.receipt['cast_started_at'] <= r['packet']['time'] <= restored_at],
+        native_restoration_packets=[p for p in oracle.native_vital_packets if
+            t.receipt['cast_started_at'] <= p['time'] <= restored_at],
         restored_native_pet=deepcopy(oracle.pet),
         offline_fixture_normalization_pending=True)
     if not all(restoration.values()): raise RuntimeError('Revive fixture restoration differs')
