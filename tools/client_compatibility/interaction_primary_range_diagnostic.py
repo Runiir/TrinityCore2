@@ -23,6 +23,10 @@ from .interaction_macros import require
 PUBLIC_NAME='Parched Buzzard'
 
 
+def stock_range_error(value):
+    return value.get('code')==265 and value.get('text')=='You are too far away!'
+
+
 class RangePresence(Presence):
     def __init__(self,*args):super().__init__(*args);self.targets={};self.combat=[]
 
@@ -145,6 +149,9 @@ def run(t,path,review_path):
         image=review(t,review_path,d,path,'primary_range_error')
         if position(1)!=base['position'] or not o.target() or o.target()['guid']!=target['guid'] or protected_snapshot()!=base['protected'] or static_position(o.target())!=d['static_position_authority']:
             raise RuntimeError('reviewed range target or primary pose changed')
+        before,_=t.observe('range_fresh_error_baseline')
+        if any(stock_range_error(v) for v in before.get('errors',[])):
+            raise RuntimeError('requires an ordinary reload to clear prior passive range history')
         since=None
         def admit():
             nonlocal since
@@ -156,13 +163,13 @@ def run(t,path,review_path):
                 o.poll();native=[p for p in o.combat if p['time']>=since and p['name']=='SMSG_ATTACKSWING_NOTINRANGE' and p['direction']=='from_native']
                 client=[p for p in o.combat if p['time']>=since and p['name']=='SMSG_ATTACK_SWING_ERROR' and p['direction']=='to_client' and p['body']=='00']
                 delivered=[{'native':n,'client':next((c for c in client if 0<=c['time']-n['time']<2),None)} for n in native]
-                stock=[v for v in a.get('errors',[]) if 'out of range' in v.get('text','').lower() and v not in b.get('errors',[])]
+                stock=[v for v in a.get('errors',[]) if stock_range_error(v) and v not in b.get('errors',[])]
                 t.receipt.update(error_pairs=delivered,public_errors=stock,range_outcome_frame=t.receipt['cases'][-1].get('after_frame'));t.persist()
                 passed=bool(delivered and all(p['client'] for p in delivered) and stock)
                 return {'status':'primary_range_feedback_pass' if passed else 'client_or_protocol_failure','oracle':{'native_client_stock_range_feedback':passed}}
             require(t.step('diagnostic.primary.range','Attempt melee once on the reviewed distant Buzzard to inspect range feedback.',
                 {'attack':{'kind':'chat','value':'/startattack'}},outcome,diagnostic_action='attack',before_input=admit,
-                await_state=lambda a:any('out of range' in v.get('text','').lower() for v in a.get('errors',[]))),'primary_range_feedback_pass')
+                await_state=lambda a:any(stock_range_error(v) for v in a.get('errors',[]))),'primary_range_feedback_pass')
             t.execute({'kind':'chat','value':'/stopattack'});state,frame=t.observe('range_stopped');o.poll()
         packets=[p for p in o.combat if p['time']>=since];requests=[p for p in packets if p['name']=='CMSG_ATTACK_SWING']
         modern=[p for p in requests if p['direction']=='from_client'];native=[p for p in requests if p['direction']=='to_native'];identity=None
