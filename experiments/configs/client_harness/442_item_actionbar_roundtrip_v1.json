@@ -1,0 +1,69 @@
+{
+  "schema": "client442_owned_item_actionbar_roundtrip_contract_v1",
+  "operation": "actionbars.drag_item",
+  "controller": "code",
+  "model": null,
+  "client_policy": {
+    "owned_clients": 1,
+    "actor": "scout",
+    "monitor": "HDMI-1",
+    "primary_stopped": true,
+    "minimum_available_memory_gib": 6,
+    "custom_scripts": "blocked_by_user"
+  },
+  "predecessor": {
+    "source": "Caller-provided actual UI170 closure, stopped scout pause, checkpoint, streamed remote review and original primary stop; exact source bytes and DVC pointer are validated and carried.",
+    "operation": "spellbook.learn_spell",
+    "spell": 1462,
+    "closure_checks": 28,
+    "shutdown_checks": 8,
+    "future_hashes_permitted": false,
+    "live_before_ui170_admission": false
+  },
+  "owner": {"guid": 2, "account": 2, "name": "Harnesstwo", "race": 1, "class": 1, "level": 1},
+  "item": {"id": 6948, "name": "Hearthstone", "saved_guid": 41, "bag": 0, "slot": 1, "sql_slot": 23, "count": 1},
+  "destination": "An actual empty main-bar cell observed on the active native spec with the MainMenuBar shown; a hidden empty button additionally requires a fresh physical cell review bound to the installed stock ShowGrid source. The placed item must be visible. No fixed action slot.",
+  "input_proof": [
+    "fresh original Harnesstwo selection and ordinary login",
+    "source-bound backpack icon review and ordinary open",
+    "fresh observed item icon and destination button review",
+    "one ordinary item drag and one exact modern <IB>/native <BI> type128 request pair",
+    "one reviewed Shift pickup to empty world point and one type0 clear pair",
+    "one right-click cancellation of the exact carried item cursor"
+  ],
+  "preservation": {
+    "saved_rows": "Full original actions across both specs, spells, skills and quests after restoration.",
+    "inventory": "Full character_inventory plus item_instance rows, item GUIDs, charges, enchantments, counts and layout remain exact.",
+    "native": "Every owner creation/update preserves health60/maxhealth60, zero powers, XP0/cap400, no resting flag or summon. No healing, pet or health reset.",
+    "rest": "Read-only before-entry and after-logout exact SQL FLOAT bits, source/config rate1 and native wilderness formula; exactly one uncapped native login second and public exhaustion twice the native integer rest threshold.",
+    "all_six": "Actors1,3,4,5,6 remain exact; actor2 changes only attributable ordinary time/rest accounting.",
+    "ui": "Exact original page, bags, panels, target, position, pose and AFK restored through ordinary inputs before logout.",
+    "shutdown": "One ordinary logout, fresh original selection review, all six offline and one distinct closed pause after both owned client processes are absent."
+  },
+  "forbidden": ["item use", "spell cast", "inventory mutation", "trainer input", "pet input", "gameplay replay", "SQL acquisition or restoration"],
+  "failure": {
+    "raw_intent_and_facts_retained": true,
+    "source_bound_housekeeping_only": true,
+    "first_failed_whole_excluded": true,
+    "drag_replayed": false,
+    "already_observed_clear_replayed": false,
+    "qualification_added": false
+  },
+  "admission": {
+    "whole_success_only": true,
+    "local_and_actual_streamed_remote_proof_required": true,
+    "additional_operations_admitted": false,
+    "qualification_added_by_controller": false
+  },
+  "publication": {
+    "tracking": ["DVC", "DVCLive"],
+    "code_and_config_commit_before_experiment": true,
+    "checkpoint_and_remote_verify_before_offload": true,
+    "post_experiment_commands": ["dvc status", "dvc push"]
+  },
+  "execution_profiles": {
+    "live_and_runtime_tests": "pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python",
+    "pure_core_and_remote_proof": "pixi run python",
+    "dependency_install_required": false
+  }
+}
