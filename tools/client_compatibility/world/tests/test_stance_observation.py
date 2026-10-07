@@ -12,6 +12,12 @@ def test_stance_metadata_uses_public_spell_and_button_without_input():
     script="""
 function Client442HookPerformanceTooltip() end
 function Client442PerformanceTooltipEvent() return nil end
+function CreateFrame(kind)
+    assert(kind=='Frame')
+    return {SetScript=function(_,event,callback)
+        assert(event=='OnUpdate' and type(callback)=='function')
+    end}
+end
 function GetNumShapeshiftForms() return 2 end
 function GetShapeshiftFormInfo(i) return 'icon',i==1,true,i==1 and 2457 or 71 end
 function GetPhysicalScreenSize() return 1920,1080 end
