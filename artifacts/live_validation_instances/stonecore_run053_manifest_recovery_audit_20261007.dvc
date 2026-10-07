@@ -1,0 +1,6 @@
+outs:
+- md5: ab6022582cf2571f40d35bfe2a6550c1.dir
+  size: 187024
+  nfiles: 2
+  hash: md5
+  path: stonecore_run053_manifest_recovery_audit_20261007

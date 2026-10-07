@@ -73,3 +73,9 @@ UI169 is checkpointed and pushed as182381021 bytes, SHA-256 `779300493370b4c7072
 Reading the actual remote object verifies all 37 JSON and91 PNG members and recomputes the whole same-pet Revive proof. The remote review's SHA-256 is `fd0e683acc1a96b41e492437cc86b50c5d1c2bc14095c855e8abe3b96a9e9f32`. Only `pets.revive` is admitted, bringing coverage to451/916. The91 local frames (158705358 bytes) and exact182381021-byte archive/cache copies are offloaded after verification. Both owned clients remain stopped and all six actors offline. The next open slice is stock spellbook learning of Beast Lore1462 through the existing trainer, with complete source-bound fixture restoration.
 
 Global DVC status and push return0. Push still reports the older missing directory manifest `c67ee8935753b8ceccbdddbafdfebe.dir` as absent locally and remotely; its recoverability is being audited separately. UI169's actual remote object and complete semantic proof are verified. Publication does not resolve that historical data limitation.
+
+### Historical DVC pointer recovery
+
+The unrelated July 12 Stonecore run053 warning is resolved. Its tracked MD5 omitted the leading `e7`; exhaustive remote manifest matching found only `e7c67ee8935753b8ceccbdddbafdfebe.dir`. All 66 original remote files were streamed and their MD5 hashes verified, totaling 1,808,433,602 bytes. The repair changes only those two pointer characters. Original semantic-stall and `all_passed=false` labels are preserved.
+
+The immutable audit and reproducible inventory are checkpointed in `artifacts/live_validation_instances/stonecore_run053_manifest_recovery_audit_20261007.dvc`; both actual remote JSON objects match their original bytes. Global DVC status and push return zero, and push reports `Everything is up to date` without the warning. Status still reports deliberately offloaded local outputs/cache entries. No historical dataset was downloaded to the workspace.
