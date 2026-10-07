@@ -23,8 +23,7 @@ NAMES=('TC442HunterTameRestore','TC442HunterTameTarget')
 
 def pose():
     with lab.connection() as c,c.cursor() as q:
-        q.execute('SELECT CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
-            'CAST(orientation AS DOUBLE),map FROM client442_characters.characters '
+        q.execute('SELECT position_x,position_y,position_z,orientation,map FROM client442_characters.characters '
             'WHERE guid=6 AND account=2 AND name="Harnesshunt" AND level=10')
         rows=q.fetchall()
     if len(rows)!=1:raise RuntimeError('owned Hunter pose authority differs')
@@ -58,19 +57,27 @@ def restore(t,fixture,old,baseline):
     with lab.connection() as c,c.cursor() as q:
         if any(teleport_row(q,row[0])!=row for row in fixture['rows']):
             raise RuntimeError('owned tame pose rows changed; refusing restoration/deletion')
-    lab.server_command('tele name Harnesshunt '+NAMES[0]);time.sleep(4)
+        # ObjectMgr::LoadGameTele consumes this ordinary SQL FLOAT projection.
+        # Compare the same saved authority as the established position oracle.
+        q.execute('SELECT position_x,position_y,position_z,orientation,map '
+            'FROM client442_world.game_tele WHERE id=%s',(fixture['rows'][0][0],))
+        expected=list(q.fetchone())
+    replayed=pose()!=expected
+    if replayed:lab.server_command('tele name Harnesshunt '+NAMES[0]);time.sleep(4)
     lab.server_command('saveall');time.sleep(.5)
     current=pose()
-    if current!=fixture['before']:raise RuntimeError('owned Hunter exact original pose did not restore')
+    if current!=expected:raise RuntimeError('owned Hunter native saved pose did not restore')
     with lab.connection() as c,c.cursor() as q:
         for row in fixture['rows']:
             if teleport_row(q,row[0])!=row:raise RuntimeError('owned tame teleport changed before deletion')
             q.execute('DELETE FROM client442_world.game_tele WHERE id=%s AND name=%s',(row[0],row[-1]))
     lab.server_command('reload game_tele')
-    checks={'exact_hunter_pose':current==fixture['before'],'saved_rows':saved(6)==baseline,
+    checks={'native_saved_hunter_pose':current==expected,'saved_rows':saved(6)==baseline,
         'temporary_rows_removed':True,**protected(old)}
     t.receipt.update(pose_restoration={'fixture':fixture,'restored':current,'removed':[r[0] for r in fixture['rows']],
-        'checks':checks,'gameplay_input_sent':False});t.persist()
+        'checks':checks,'gameplay_input_sent':False,'native_teleport_replayed':replayed,
+        'native_restore_projection':expected,'raw_float_difference':[b-a for a,b in zip(fixture['before'],current)],
+        'authority':'Native ordinary SQL FLOAT projection, matching ObjectMgr::LoadGameTele and the saved-position oracle.'});t.persist()
     if not all(checks.values()):raise RuntimeError('owned tame fixture restoration differs')
 
 
@@ -83,9 +90,19 @@ def run(t,preparation,entry,stored,recon,action,source=None):
         len(moved.get('move_checks',{}))!=12 or not all(moved['move_checks'].values())):
         raise RuntimeError('tame staging requires a whole owned pet4 stable move')
     t.receipt.update(native_session=session,entry_source=bound(entry),stored_source=bound(stored),recon_source=bound(recon))
-    if action=='restore':
-        staged=closed(source)
-        if (staged.get('phase')!='owned_existing_wolf_staged' or staged.get('runtime')!=t.receipt['runtime'] or
+    if action in ('restore','recover'):
+        if action=='recover':
+            path=source.resolve()
+            if path.name!='episode.json' or source.is_symlink() or not path.is_relative_to(lab.ROOT/'evidence'):
+                raise RuntimeError('requires a private closed failed wolf staging source')
+            staged=json.loads(path.read_text())
+            if (staged.get('completed') is not False or not staged.get('finished_at') or
+                staged.get('failure')!='RuntimeError: owned Hunter exact original pose did not restore' or
+                not staged.get('pose_fixture') or any(r.get('selected_text')!='/tcui' for r in
+                    staged.get('chat_submission_checks',[]))):
+                raise RuntimeError('failed no-Tame pose recovery identity differs')
+        else:staged=closed(source)
+        if ((action=='restore' and staged.get('phase')!='owned_existing_wolf_staged') or staged.get('runtime')!=t.receipt['runtime'] or
             staged.get('actor')!=t.fixture or staged.get('stored_source')!=bound(stored)):
             raise RuntimeError('exact owned tame staging source differs')
         t.receipt['stage_source']=bound(source)
@@ -142,15 +159,16 @@ def run(t,preparation,entry,stored,recon,action,source=None):
         if not all(checks.values()):raise RuntimeError('existing owned tame target staging differs')
         t.receipt.update(completed=True,phase='owned_existing_wolf_staged',qualification_added=False,
             qualified_scope='Existing tameable wolf and reversible owned Hunter pose only; no Tame Beast input yet.')
-    except Exception:
+    except Exception as error:
+        t.receipt['staging_failure']=f'{type(error).__name__}: {error}';t.persist()
         restore(t,fixture,old,baseline);raise
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','restore'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','restore','recover'])
     for k in ('preparation','entry','stored','recon','output'):p.add_argument('--'+k,type=Path,required=True)
     p.add_argument('--source',type=Path);a=p.parse_args()
-    if a.action=='restore' and not a.source:p.error('requires a closed owned staging source')
+    if a.action in ('restore','recover') and not a.source:p.error('requires a closed owned staging source')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
