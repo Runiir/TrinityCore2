@@ -31,10 +31,15 @@ bool owned_stable_request_probe(std::filesystem::path const &root, std::string c
         if(slot || update || result)
         {
             auto const &scope=get(config,"slot_roundtrip");
-            if(!scope.is_object() || integer(get(scope,"pet_number"))!=4 || get(scope,"slots")!=Array{0,5})return false;
+            auto const &swap_scope=get(config,"slot_swap");
+            bool pair=swap_scope.is_object() && get(swap_scope,"pet_numbers")==Array{4,6} &&
+                get(swap_scope,"slots")==Array{0,5} && !scope.is_object();
+            bool single=scope.is_object() && integer(get(scope,"pet_number"))==4 &&
+                get(scope,"slots")==Array{0,5} && !swap_scope.is_object();
+            if(!pair && !single)return false;
             if(slot)
             {
-                if(r.take<std::uint32_t>()!=4)return false;
+                auto number=r.take<std::uint32_t>();if(number!=4 && !(pair && number==6))return false;
                 auto destination=r.take<std::uint8_t>();if(destination!=0 && destination!=5)return false;
                 if(direction=="from_client") {if(r.guid()!=get(config,"modern_master_guid"))return false;}
                 else
@@ -49,7 +54,8 @@ bool owned_stable_request_probe(std::filesystem::path const &root, std::string c
             {
                 auto number=r.take<std::uint32_t>(),destination=r.take<std::uint32_t>();
                 auto swap=r.take<std::uint32_t>(),source=r.take<std::uint32_t>();
-                if(number!=4 || swap || !((source==0 && destination==5) || (source==5 && destination==0)))return false;
+                if(!((source==0 && destination==5) || (source==5 && destination==0)))return false;
+                if(pair ? !((number==4 && swap==6) || (number==6 && swap==4)) : (number!=4 || swap))return false;
             }
             else
             {
