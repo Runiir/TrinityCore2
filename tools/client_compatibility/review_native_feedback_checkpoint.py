@@ -1,11 +1,13 @@
 """Read the actual remote native-feedback archive and verify every batch JSON/PNG."""
 import argparse,hashlib,json,struct,tarfile,time
 from pathlib import Path
+from types import SimpleNamespace
 from . import lab_runtime as lab
 from .review_hunter_rename_checkpoint import DigestReader
 from .primary_range_feedback_evidence import stock_range_error
 from .world.buffer import Reader
 from .world.gameobjects import modern_guid
+from .world import combat
 
 
 def require(value,message):
@@ -49,6 +51,14 @@ def proof(data,packets,phase):
         require(not any(p['name']=='SMSG_ATTACKER_STATE_UPDATE' or
             p['name']=='CMSG_CAST_SPELL' and p['direction']=='to_native' for p in e['packets']),
             'unexpected damage or native spell during range attempt')
+        for opcode in ('SMSG_ATTACK_START','SMSG_ATTACK_STOP'):
+            matches=[]
+            for p in e['packets']:
+                if p['name']!=opcode or p['direction']!='from_native':continue
+                expected=combat.response(SimpleNamespace(character={'map':0}),opcode,bytes.fromhex(p['body']))[1].hex()
+                matches.extend(c for c in e['packets'] if c['name']==opcode and c['direction']=='to_client' and
+                    c['body']==expected and 0<=c['time']-p['time']<2)
+            require(matches,'native/client attack lifecycle pair absent')
         require(e['actor']==entry['actor'] and e['runtime']==entry['runtime'] and e['session']==entry['session'] and
             e['custom_script_permission']=='blocked_by_user' and e['phase']=='primary_range_feedback_verified',
             'range actor, native epoch or script boundary differs')
