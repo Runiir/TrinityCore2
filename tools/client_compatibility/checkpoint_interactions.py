@@ -181,6 +181,13 @@ def checkpoint(directory,name):
         lab.ROOT/'build/native_bridge/client442_bridge',lab.ROOT/'build/native_bridge/bridge_codec',
         lab.ROOT/'build/native_input/build_receipt.json',input_binary,
         lab.ROOT/'bin/worldserver']
+    for receipt_path in directory.glob('native_*build*.json'):
+        build=json.loads(receipt_path.read_text())
+        if build.get('schema')!='client442_native_core_build_v1':continue
+        candidate=lab.ROOT/'build/src/server/worldserver/worldserver'
+        if not build.get('completed') or build.get('binary_sha256')!=lab.sha256(candidate):
+            raise RuntimeError('closed native build candidate artifact differs')
+        if candidate not in paths:paths.append(candidate)
     manifest=[]
     for path in paths:
         for file in sorted(path.rglob('*')) if path.is_dir() else [path]:
