@@ -19,7 +19,7 @@ from .observation.journal import entries
 from .world.buffer import Reader
 from .world.gameobjects import modern_guid
 from .world.objects import INDEX
-from .interaction_observation import read_current_page
+from .interaction_observation import read_page
 
 
 def native_catalog(body):
@@ -119,7 +119,7 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
             if p['name']!='CMSG_REQUEST_STABLED_PETS' or list(submitted)!=e['modern_master_guid']:
                 raise RuntimeError('captured public stable master identity differs')
             t.receipt.setdefault('decoded_requests',[]).append({'stable_master_guid':list(submitted)})
-        public,pixels=read_current_page(t,'stable_cache','stables',lambda s:s.get('stable_probe',{}).get('visible') is True)
+        public,pixels=read_page(t,'stable_cache','stables','/tcui stables')
         probe=public['stable_probe'];expected=[{'slot':p['slot']+1,'name':p['name'],'level':p['level'],
             'display_id':retained[0]['modelid']} for p in catalog['pets']]
         observed=[{k:p.get(k) for k in ('slot','name','level','display_id')} for p in probe.get('pets',[])]

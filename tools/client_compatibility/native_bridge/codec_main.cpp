@@ -465,6 +465,8 @@ int main(int argc, char **argv)
                                 reply=stable_request(protocol,state,name,body);
                             else if(fn=="stable_response")
                                 reply=stable_response(protocol,state,name,body,get(action,"models").as_array());
+                            else if(fn=="stable_open_response")
+                                reply=stable_open_response(state);
                             else if(fn=="merchant_request")
                                 reply=merchant_request(protocol,state,name,body);
                             else if(fn=="merchant_response")

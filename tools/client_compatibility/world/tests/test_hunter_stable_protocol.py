@@ -116,3 +116,12 @@ def test_glyph_group_preserves_present_stable_without_emitting_a_new_catalog(cod
     assert f.unpack('BBBI')==(1,0,3,128) and f.unpack('I')==(8,)
     assert f.bits(14)==0 and f.bits(32)==((1<<6)|(1<<31))
     assert f.unpack('H')==(511,) and f.bits(1)==1;f.end()
+
+
+def test_native_catalog_opens_stock_interaction_once_and_close_allows_normal_reopen(codec):
+    notify=action('stable_open_response','',b'')
+    close=action('bank_close','CMSG_CLOSE_INTERACTION',Writer().guid(*modern_guid(MASTER,0)).finish())
+    rows=owned(codec,[reply(),notify,reply(),notify,close,reply(),notify])
+    expected=['SMSG_NPC_INTERACTION_OPEN_RESULT',Writer().guid(*modern_guid(MASTER,0)).pack('i',22).bits(1,1).finish().hex()]
+    assert rows[1]==expected and rows[3] is None and rows[6]==expected
+    assert owned(codec,[reply(catalog(guid=0)),notify])[1] is None

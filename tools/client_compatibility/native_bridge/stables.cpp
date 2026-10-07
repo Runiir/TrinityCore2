@@ -92,12 +92,23 @@ Reply stable_response(Protocol const &protocol,State &owner,std::string const &n
         if(display.is_null())throw std::runtime_error("owned native stable pet model is absent");
         pet.as_object()["DisplayID"]=display;
     }
-    Value stable=Object{{"Pets",pets},{"StableMaster",identity}};
+    bool opened=truth(get(owner.pet_stable,"interaction_open")) && get(owner.pet_stable,"StableMaster")==identity;
+    Value stable=Object{{"Pets",pets},{"StableMaster",identity},{"interaction_open",guid!=0},
+        {"needs_open",guid!=0 && !opened}};
     auto slots=integer(get(catalog,"native_last_slot"))-4;
     owner.pet_stable=stable;owner.stable_slots=slots;
     if(!owner.created)return {};
     owner.self_snapshot.as_object()["pet_stable"]=stable;
     owner.self_snapshot.as_object()["stable_slots"]=slots;
     return Packet{"SMSG_UPDATE_OBJECT",stable_block(owner,stable,slots)};
+}
+Reply stable_open_response(State &owner)
+{
+    if(!owner.created || !truth(get(owner.pet_stable,"needs_open")))return {};
+    // Pinned gossip Stablemaster uses PlayerInteractionType22 after binding
+    // StableMaster. Cache updates alone do not open the stock stable panel.
+    owner.pet_stable.as_object()["needs_open"]=false;
+    return Packet{"SMSG_NPC_INTERACTION_OPEN_RESULT",Writer().guid(get(owner.pet_stable,"StableMaster"))
+        .put<std::int32_t>(22).bits(1,1).finish()};
 }
 }

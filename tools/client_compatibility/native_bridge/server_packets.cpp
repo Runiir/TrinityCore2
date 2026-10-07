@@ -164,6 +164,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {
         if(state.guid()!=stable_owner)co_return;
         if(auto stable=stable_response(protocol,state,name,body,stable_models))send(*stable);
+        if(auto open=stable_open_response(state))send(*open);
         co_return;
     }
     if(name=="SMSG_PET_SPELLS" || name=="SMSG_PET_NAME_QUERY_RESPONSE")
