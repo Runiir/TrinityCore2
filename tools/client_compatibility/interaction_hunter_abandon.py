@@ -113,6 +113,7 @@ def run(t,preparation,entry,action,source=None,review_path=None):
     public=public_pet(t,'test_pet_abandon_cancel_public');initial=stage['initial_target']
     if not initial.get('exists'):t.execute({'kind':'chat','value':'/cleartarget'})
     elif initial.get('name')=='Erma':t.execute({'kind':'chat','value':'/targetexact Erma'})
+    elif initial.get('guid')==expected_guid(o.pet):t.execute({'kind':'chat','value':'/target pet'})
     else:raise RuntimeError('Abandon Cancel original target has no ordinary restoration')
     state,frame=t.observe('test_pet_abandon_cancel_restored');o.poll()
     checks={'dialog_closed':not state.get('pet_popups') and not state.get('panels'),
