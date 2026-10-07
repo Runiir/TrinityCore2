@@ -15260,8 +15260,8 @@
       "operations": [
         "combat.range_error"
       ],
-      "scope": "One fresh native-login Harnessone level 85 melee attempt against the exact static native Parched Buzzard 2830, 20.7449 metres from the saved user pose. One exact owned Attack produces native SMSG_ATTACKSWING_NOTINRANGE, matching modern error body00 and fresh stock UI_ERROR_MESSAGE code 265 You are too far away! All 10 range/10 restoration and 7 final normal parking checks pass; 15 entry checks preserve the primary and five other actors. The accompanying primary critter swing separately passes 13 damage/10 restoration checks, with 9847 damage clipped to 15 health and matching native/client SWING_DAMAGE.",
-      "limits": "First fresh native range notification on this installed English client only. Repeated notifications across Stop/reload, moving targets, facing, spell range, hostile combat, class abilities and sustained cadence remain open. Native core deduplicates unchanged swing errors. Three failed selection preparations and three failed range trials remain whole excluded; no retroqualification. Scripts stay blocked, original CVar 0 unrestored at 1; only two existing HDMI-1 clients and no process restarts/models. Actual remote 520751252-byte compressed SHA and all 56 JSON / 227 PNG hashes plus accepted packet bodies are verified.",
+      "scope": "One fresh native-login Harnessone level 85 melee attempt against the exact static native Parched Buzzard 2830, 20.7449 metres from the saved user pose. One exact owned Attack produces native SMSG_ATTACKSWING_NOTINRANGE, matching modern error body00 and fresh stock UI_ERROR_MESSAGE code 265 You are too far away! All 10 range/10 restoration and 7 final normal parking checks pass; 15 entry checks preserve the primary and five other actors. The accompanying primary critter swing separately passes 13 damage/10 restoration checks, with 9847 damage clipped to 15 health and matching native/client SWING_DAMAGE. UI147 additionally verifies the same static target after Stop, ordinary UI reload and a new Attack in one native login, with 10 range/10 restoration checks on both attempts, 13 reload checks and 7 final parking checks.",
+      "limits": "Verified first notification and the static same-target Stop/reload/restart lifecycle on this installed English client. Continuous warning cadence, moving targets, facing, spell range, hostile combat and abilities remain open. Opt-in Client442.RefreshMeleeFeedbackOnStart reevaluates current native geometry; default disabled. One one-job native server deployment preserves complete offline state, both existing HDMI-1 client lifetimes and the bridge. Scripts remain blocked, original CVar0 unrestored at1. All old UI145 failures stay excluded. UI147 actual remote compressed SHA and all43 JSON/76 PNG plus exact accepted Attack/Start/Stop/error packets are verified; nine admission guards pass.",
       "archive_sha256": "69aa47df5e129c6d09bd0bb9b5fd3977200adc08414aadeb6e2269af45ba1189",
       "actual_remote_review_sha256": "a1f1caa53f72618ec09fbf606055517203d0c27760dfdf3003daaab90828a2bd",
       "evidence": [
@@ -15339,8 +15339,60 @@
           "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
           "member": "evidence/client_interactions_20261007_ui145/primary_combat_admission_guards01.json",
           "sha256": "e136cd4d078a3e41cd160e0a28a361e4edfd8056b2405bb0cfb1dfb719d5cfef"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/native_feedback_deploy01/deployment.json",
+          "sha256": "2027c193fd2964d8b5191ab9ed125512b172d9950b166ea6a7a41bcc6cdbc0d1"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/primary_combat_entry01/episode.json",
+          "sha256": "ca407288e53420ec76e05c58076c9c4deea72a3435e5d99c6471da2910478fbc"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/primary_range_stage01/episode.json",
+          "sha256": "fbf707cb8f466dfb7b0d2225d8b40444e276b4b6abdaf262dea1e55f1eff922b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/primary_range_error01/episode.json",
+          "sha256": "b43976450456ca89e1f4096648114ce98f0d91b14ac6184277ad152ca27ddb56"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/primary_observer_reload01/episode.json",
+          "sha256": "81034345cb5d307acda1d4177f0ac2545ba755c07fe9fc3730448e2c171b1046"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/primary_range_stage02/episode.json",
+          "sha256": "dc72dc0e2b6526f303144e6a55c833069c4f08c55fae3a3fdbe2c2d64932f26e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/primary_range_error02/episode.json",
+          "sha256": "569b59f0a6cb220bbb11eb10413aa7d99d2df12f3fb984d5b89c810e063e2b3c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/primary_combat_final_park01/episode.json",
+          "sha256": "f5d71c50cedf6ba7f8df51aeaf46acd9dcc386b7787c27d1c6b0e9f339eba0f6"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/native_feedback_admission_guards01.json",
+          "sha256": "bcef2194246d8a4e80358be0c4d88c3d2ca1e967a76e59b9fdf058b07156ab3c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui147/native_feedback_closed_visual_review01.json",
+          "sha256": "6156126cd1df34588492fd084772bff4d5ebbeb17def95fa7a500233292e2432"
         }
-      ]
+      ],
+      "repeat_archive_sha256": "d9dc0d8325329529fea2089734c0b2fc5c1aea298b998bab0668d7aba0f1f6e0",
+      "repeat_actual_remote_review_sha256": "0677e6b1a06d33745c03dee5aa84e96d959c234e37f7de929ea7548f84baa336"
     }
   ],
   "qualified_operations": 444,
