@@ -76,7 +76,16 @@ def restore(t,o,base):
     if not all(checks.values()):raise RuntimeError('range diagnostic restoration differs')
 
 
-def stage(t,path):
+def capture(t,path):
+    d=source(t,path,'primary_melee_damage_verified');base=d['baseline']
+    state,frame=t.observe('range_selection_scene')
+    if position(1)!=base['position'] or protected_snapshot()!=base['protected'] or state['target'].get('exists') or state['owner_melee']['active']:
+        raise RuntimeError('primary range selection preflight differs')
+    t.receipt.update(baseline=base,session=d['session'],frame=frame,completed=True,
+        phase='await_primary_range_selection',input_sent=False,qualification_added=False)
+
+
+def stage(t,path,selection_review):
     d=source(t,path,'primary_melee_damage_verified')
     if len(d.get('combat_checks',{}))!=13 or not all(d['combat_checks'].values()) or len(d.get('restoration_checks',{}))!=10 or not all(d['restoration_checks'].values()):
         raise RuntimeError('primary melee whole result is incomplete')
@@ -85,13 +94,21 @@ def stage(t,path):
     o=RangePresence(d['session'],1,entry['entry_started_at']).poll()
     t.receipt.update(baseline=base,session=d['session'],entry_started_at=entry['entry_started_at'],qualification_added=False);t.persist()
     try:
-        t.execute({'kind':'chat','value':'/targetexact '+PUBLIC_NAME});state,_=t.observe('range_selected_buzzard');o.poll();target=o.target()
+        r=json.loads(selection_review.read_text());capture_path=Path(r['source']['path']);c=closed(capture_path)
+        if c.get('phase')!='await_primary_range_selection' or c.get('actor')!=t.fixture or c.get('runtime')!=t.receipt['runtime'] or c.get('baseline')!=base or c.get('source',{}).get('sha256')!=lab.sha256(path):
+            raise RuntimeError('range selection capture is not bound to this primary result')
+        review(t,selection_review,c,capture_path,'primary_range_target_selection')
+        point=r.get('point',[])
+        if len(point)!=2 or any(type(v) is not int for v in point) or not (200<=point[0]<1000 and 100<=point[1]<500):
+            raise RuntimeError('reviewed ordinary target point is outside the world viewport')
+        t.io.click(*point,button=1,hold=1.2);time.sleep(1.5)
+        state,_=t.observe('range_selected_buzzard');o.poll();target=o.target()
         distance=math.dist(base['position'][:3],target['movement']['position'][:3]) if target else 0
         fixed=static_position(target)
         # Use the same pinned public native-GUID conversion as the melee oracle.
         from .pet_attack_capture_evidence import target_guid
         checks={'selected_native':bool(target and target['guid'] not in o.removed),'selected_public':bool(target and state['target'].get('guid')==target_guid(target)),
-            'public_name':state['target'].get('name')==PUBLIC_NAME,'native_alive':bool(target and target['fields'][INDEX['UNIT_FIELD_HEALTH']]>0),
+            'public_name':state['target'].get('name') in ('Buzzard',PUBLIC_NAME),'native_alive':bool(target and target['fields'][INDEX['UNIT_FIELD_HEALTH']]>0),
             'public_health':bool(target and state['target'].get('health')==target['fields'][INDEX['UNIT_FIELD_HEALTH']]),
             'outside_melee_reach':12<distance<40,'static_native_position':bool(fixed),
             'unchanged_user_pose':position(1)==base['position'],'protected':protected_snapshot()==base['protected'],
@@ -151,14 +168,15 @@ def run(t,path,review_path):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','run'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['capture','stage','run'])
     p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    if a.action=='run' and not a.review:p.error('run requires separately reviewed target')
+    if a.action in ('stage','run') and not a.review:p.error('requires separately reviewed target or selection')
     with actor('primary'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
-            if a.action=='stage':stage(t,a.source)
+            if a.action=='capture':capture(t,a.source)
+            elif a.action=='stage':stage(t,a.source,a.review)
             else:run(t,a.source,a.review)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
