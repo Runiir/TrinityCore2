@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 446 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 447 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -940,7 +940,7 @@ Fixture: `pet_class_variants`.
 - [x] `pets.rename` (qualified variant; [evidence](#owned_hunter_one_time_rename))
 - [x] `pets.stable_open` (qualified variant; [evidence](#owned_hunter_native_stable_open))
 - [x] `pets.stable_slot` (qualified variant; [evidence](#owned_hunter_native_stable_slot_roundtrip))
-- [ ] `pets.stable_swap`
+- [x] `pets.stable_swap` (qualified variant; [evidence](#owned_hunter_occupied_stable_swap_roundtrip))
 - [ ] `pets.tame`
 - [ ] `pets.abandon_confirm`
 - [ ] `pets.abandon_cancel`
@@ -3339,3 +3339,32 @@ Remaining limits: Only this single pet and empty native destination5 roundtrip i
 - [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_forward_stage02/review.json`, SHA-256 `5c31bc09efa9ee0fbffbaba68001a71583722de1145f50d90926e3c52d2381e9`.
 - [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_back_stage02/review.json`, SHA-256 `39be9aadd4c3139c951bff2db21d6b1c9013d232d35b0d93ca6c47e4b8593307`.
 - [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_local_admission01.json`, SHA-256 `981d533e79f03b3d5bcbc26b2cc12665739f48fce37dfdad0349de0918a34eb0`.
+
+### owned_hunter_occupied_stable_swap_roundtrip
+
+One owned level10 Harnesshunt swaps named Harnesswolf4 from occupied native stable5 to active0, then back to stable5 while test Wolf6 takes the opposite slots. Each ordinary stock drag passes12 checks: exact modern/native request, occupied SlotUpdated, native/delivered result08, public catalog and complete saved identities. Ordinary Call Pet883 restores each active pet with7 checks. Hunter parking4, original selection5 and final preservation23 pass. Actual394285937-byte remote archive verifies compressed SHA, all67 JSON/205 PNG hashes and both exact Call Pet tracking chains.
+
+Remaining limits: Only this two-pet occupied native0/5 roundtrip is qualified. Other cells, installed200-cell/native16-capacity mismatch, tame/channel/PetAdded, abandon and revive remain open. Named Harnesswolf4 is retained at native5; disposable Wolf6 at native0. Earlier UI154 duplicate-slot return, UI155 preparation01, read-only close01 and first remote verifier dependency failure remain excluded. Native1971415 runs facd88428efae044c2ca8e442639b74f9c38399e72c31671d7a336800f59f08e; bridge1903647 and config unchanged. Primary launcher/game were stopped at user request; eight shutdown checks and final offline snapshot preserve Harnessone and all protected actors. Only scout remains on HDMI-1. Scripts blocked, original CVar0 unrestored at1; code controller/model None.
+
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_back_call01/episode.json`, SHA-256 `e98a1d623cbb2418a0910014cae41c65b2a23e5c24f212dfdb0625de48eb8e8d`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_back_call_caption01/episode.json`, SHA-256 `70d457671178c5e4bf79d57db95c48d7d1d28d33fa59d01dd1a40d3449997254`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_back_call_caption01/review.json`, SHA-256 `fd2370b4e85a9c1bda112229d9c244ff9f5a9cc2d335815bcd7a11b8933d7948`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_close02/episode.json`, SHA-256 `6adaa30f0ab398519b918ebf1752c9ea8e8f108aa775365059eebf8d675a44f1`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_entry01/episode.json`, SHA-256 `63e08b441fbbdb943b4b2aaba25ea16cea97a5d3aa96da5a9ce8055ab7a3e308`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_forward_call01/episode.json`, SHA-256 `60d1545ab89692a5066049a5a7baf9a9760b2b0770afd942f8d602bb2adc8fb4`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_forward_call_caption01/episode.json`, SHA-256 `481986d83b254db14752dad42f4cb4b0088773b802061f8584a038cc2e8ff547`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_forward_call_caption01/review.json`, SHA-256 `b71b954f4ae62c57b3df614d5348f26366a5e8eb98093616cab7dc9828fe2267`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_local_admission01.json`, SHA-256 `5aca951c92b129d119dd8db71498047d0834685c649cc5807160cd16ae7b908e`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_open01/episode.json`, SHA-256 `de1b0371341f431321c3f1f39205273de67202c434bb3936a0b16412e3d8864d`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_open01/review.json`, SHA-256 `aa1cc5d7ed081391efb06edd68b3a2dcf5abd6c0c08ecc27d5019ff8ff207b78`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_origin_finish01/episode.json`, SHA-256 `fa9ef88b996b38d72d22b6748098d551212c7d531d444a97cfe01d392c889ad8`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_origin_select01/review.json`, SHA-256 `82d0cbc2fcb0999696d70714ceb020ee19e043e40eb901da4b2a4ac5d9aae0c2`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_park01/episode.json`, SHA-256 `1d39780bd8cc83c8b2c33135507ab04bd24c0a9f786ea90605fa208177da73b7`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_prepare02/episode.json`, SHA-256 `cdbfc17212b2c608758ddef5e35a5858320a788e4f4de057065a3cdbeafea38c`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_return_open01/episode.json`, SHA-256 `40558d226b2587d1474f39c75fad862e5b7faba8e49847a9105c17e226d6f220`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_return_open01/review.json`, SHA-256 `a97df38ad4e0a82a885b735454cc477b578d046c47ea443c9988236afce1bde9`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_select01/review.json`, SHA-256 `d0b79f5917c708e7b74875b3483d09c93b2c7093284e5dc77f6063fe2d9a7c65`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_swap_back01/episode.json`, SHA-256 `3d45bb3e5cb77c3f4ecc23dbe8b3def78f8092e9d11d5e292e4dc72d81ba7c88`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_swap_forward01/episode.json`, SHA-256 `415bed3eaad495e1d6ef927e7f62956634b78449d6d7ee622935f938d3eb0d20`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/native_pet_slot_deploy01/deployment.json`, SHA-256 `2db55b66734bdb7da990709ed2513d5cdde045524cac04756f3f98afbecc7a52`.
+- [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/user_stop_primary01/episode.json`, SHA-256 `72c45f6519bb9e8c4b241b84c74e4da67b5bcbc8ff5418cf54ff02dc491796a5`.
