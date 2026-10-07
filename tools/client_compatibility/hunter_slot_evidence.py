@@ -68,13 +68,16 @@ def proof(data,digests,packets):
     def link(ref,key):
         require(ref.get('path')==str(directory/key) and ref.get('sha256')==digests.get(key),
             'archived source digest differs: '+key)
-    def frame(row,key,name):
+    def frame(row,key,name,actor='scout'):
         f=row[name];link({'path':str(directory/key/f['file']),'sha256':f['sha256']},str(key/f['file']))
         m=f['monitor'];i=m['input_isolation']
         require(m['second_monitor_verified'] is True and m['monitor']['name']=='HDMI-1' and
-            i['actor']=='scout' and i['display']==':3' and i['host_activation_sent'] is False,
+            i['actor']==actor and i['display']==(':'+str(3 if actor=='scout' else 2)) and i['host_activation_sent'] is False,
             'owned scout second-monitor frame differs')
     whole(opened,'await_owned_stable_slot_review',{'outcome_checks':9,'protected_checks':5})
+    link(opened['source'],NAMES['stage']+'/episode.json')
+    link(opened['screen_review'],NAMES['stage']+'/review.json')
+    frame(rows['stage'],Path(NAMES['stage']),'frame')
     whole(e,'owned_stable_slot_roundtrip_restored',{'restoration_checks':13,'protected_checks':5})
     require(not e.get('failed_recovery_source') and e.get('call_pet_input_replayed') is not False,
         'failed recovery cannot qualify a fresh roundtrip')
@@ -159,11 +162,14 @@ def proof(data,digests,packets):
     for key in ('park','close'):
         require(rows[key]['runtime']==e['runtime'],'closure runtime differs')
     frame(closure,Path(NAMES['close']),'scout_frame')
+    frame(closure,Path(NAMES['close']),'primary_frame','primary')
     expected_sources={str(directory/(NAMES[k]+'/episode.json')):digests[NAMES[k]+'/episode.json'] for
         k in ('restore','forward','back','park','finish')}
     actual={s['path']:s['sha256'] for s in closure['sources']}
+    primary_key='stable_slot_bridge_deploy01/primary_after/episode.json'
+    expected_sources[str(directory/primary_key)]=digests[primary_key]
     require(all(actual.get(p)==h for p,h in expected_sources.items()),'whole closure source hashes differ')
-    primary=data['stable_slot_bridge_deploy01/primary_after/episode.json']
+    primary=data[primary_key]
     require(primary['completed'] is True and primary['failure'] is None and primary['actor']['guid']==1 and
         primary['bridge_native_restoration']['offline'] is True and
         len(primary['bridge_native_restoration']['checks'])==9 and all(primary['bridge_native_restoration']['checks'].values()) and
