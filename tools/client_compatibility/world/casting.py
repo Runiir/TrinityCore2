@@ -37,15 +37,19 @@ def request(owner, body):
         from ..observation.archaeology import FINDS
         if native_target >> 32 & 0xFFFFF not in FINDS:
             raise ValueError("gather target is not an archaeology find")
-    elif not glyph and (unit not in {(0, 0), (owner.character["guid"], player_high())} or target_flags & ~2):
-        raise ValueError("unsupported or foreign cast target")
+    elif not glyph:
+        if target_flags & ~2:raise ValueError("unsupported cast target flags")
+        if unit not in {(0,0),(owner.character['guid'],player_high())}:
+            from .gameobjects import modern_guid
+            native_target=next((g for g,record in getattr(owner,'visible_units',{}).items()
+                if modern_guid(g,record['map'])==unit),None) if target_flags==2 else None
+            if native_target is None:raise ValueError('cast unit is not visible to the owned native session')
+    if spell<=0 or cast[1]>>58!=47 or flags&2:raise ValueError('invalid cast identity/flags')
     if moving:
         state = movement.parse(r.raw(len(r.data) - r.pos), owner.character["guid"])
         name, encoded = movement.encode("CMSG_MOVE_HEARTBEAT", owner.character["guid"], state)
         owner.native.send(name, encoded)
     r.end()
-    if spell <= 0 or cast[1] >> 58 != 47 or flags & 10:
-        raise ValueError("invalid cast identity/flags")
     count = getattr(owner, "cast_counter", 0) % 255 + 1
     owner.cast_counter = count
     if not hasattr(owner, "casts"): owner.casts = {}
@@ -54,7 +58,7 @@ def request(owner, body):
     server = (serial, (47 << 58) | (1 << 42) | (owner.character.get("map", 0) << 29) | (spell << 6) | 3)
     owner.casts[count] = {"guid": cast, "server_guid": server, "spell": spell,
                           "visual": visual, "native_target": native_target, "glyph_target": glyph}
-    w = Writer().pack("BiiBI", count, spell, misc0, flags, 0x20000 if glyph else target_flags)
+    w = Writer().pack("BiiBI", count, spell, misc0, flags&~8, 0x20000 if glyph else target_flags)
     if target_flags & (2 | 2048): packed(w, native_target)
     return w.finish(), spell
 
