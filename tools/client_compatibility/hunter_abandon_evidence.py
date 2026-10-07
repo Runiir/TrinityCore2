@@ -92,6 +92,6 @@ def proof(data,digests,packets,events):
     require(display.startswith(':') and deploy['launch_monitor']['input_isolation']['host_activation_sent'] is False,
         'new private scout display is absent')
     for v,ref in ((s,refs[2]),(a,refs[3]),(c,{'path':str(directory/CLOSURE)})):frame(v,ref,display)
-    return {'operation':'pets.abandon','owner':6,'disposable_pet_number':6,'native_disposable_removed':True,
+    return {'operation':'pets.abandon_confirm','owner':6,'disposable_pet_number':6,'native_disposable_removed':True,
         'named_pet_preserved':4,'confirmation_checks':16,'closure_checks':19,'modern_requests':1,'native_requests':1,
         'one_scout_client':True,'primary_stopped_by_user':True,'scripts_blocked':True,'all_protected_actors_preserved':True}

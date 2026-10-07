@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791323957.374754,
+  "reviewed_at": 1791373472.5475476,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -7031,6 +7031,88 @@
       ],
       "archive_sha256": "0133c5b076a708ae23404a765261a17cbcd8e7aedba54be973ca1b7ec1f4177d",
       "actual_remote_review_sha256": "acf14b69b9897bda4f579323c4fe6aec8c81b2c52d71664a243fe1f072d0841a"
+    },
+    {
+      "id": "owned_hunter_disposable_pet_abandon",
+      "operations": [
+        "pets.abandon_confirm"
+      ],
+      "scope": "One freshly entered owned level10 Hunter confirms the stock Abandon dialog with one reviewed Okay click for disposable Wolf6/entry299. Exactly one7-byte modern request and one8-byte native request remove that runtime/public pet and its saved row. All16 confirmation checks, parking4, original selection5 and closure19 pass. Named Harnesswolf4 is preserved in native slot5/inactive, owner resources/saved rows/pose and all five protected actors unchanged. Actual110217309-byte compressed remote SHA and all37 JSON/54 PNG verify; full raw journal and logical/physical instance metadata agree.24 unsafe evidence variants reject.",
+      "limits": "Only this disposable Wolf6 confirmation and resulting removal are qualified. Tame/channel/PetAdded, revive, other pets and slots remain open. The intended disposable-pet removal is retained, with no SQL deletion or confirmation replay. The user-stopped primary stays absent; only scout2232461/game2232710 on HDMI-1/private:2 crosses the bound resource pause and new bridge2232152. Native1971415 is unchanged. Earlier four test-mock failures, premature preparation and first metadata review failure remain excluded and recorded; corrected full3859 and closure47 guards pass. Scripts blocked; original CVar0 unrestored at1; code controller/model None.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_prepare02/episode.json",
+          "sha256": "a9e679051affc93a6d9efb831f177f418eeb91526b8132f70223afefe50b8e27"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_entry01/episode.json",
+          "sha256": "7dacb8dbdd730103d9ba7607a507c752de2c6627a9150f3ac58030be520d1414"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_dialog01/episode.json",
+          "sha256": "72443de81871706586a02859c7b07bc7732f9e8edfe19f9bac6a1fbe1fde1867"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_dialog01/review.json",
+          "sha256": "71c999996f160604e0565d5bc32c2d748052a416522d8c6ac83bca8f18c6fe82"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_confirm01/episode.json",
+          "sha256": "f70d9513e05768b51563f2c099b9234cd486172645c6f580e2fc2809cc2e0018"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_park01/episode.json",
+          "sha256": "baa7b358fdd0f5b5ff4ebb705ca8afa216ff0d254bf04f651baffc162ee47379"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_origin_finish01/episode.json",
+          "sha256": "ea634f7ab34671c6fa37fcdc90c06ffc5e315899531af1f8f4d24ff12e1dd948"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_close01/episode.json",
+          "sha256": "006f4beccc982ab79cd4c5a97ddb007d8bac38839993a1f5ef7baa225f92b0dc"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/single_scout_deploy01/deployment.json",
+          "sha256": "0544b87c9d20c6e7e6fd3e42fcb19b9bb0f1e78d678265160ae72c614e4f1f78"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/scout_origin_finish01/episode.json",
+          "sha256": "bcb0769ae6ac6c2c48ad3fd5d30b5bd763d1717cc11eddccea121bd8cb23f3a0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/primary_user_stop_source01.json",
+          "sha256": "72c45f6519bb9e8c4b241b84c74e4da67b5bcbc8ff5418cf54ff02dc491796a5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/scout_resource_pause_source01.json",
+          "sha256": "80aa9227659202a2572691c414e94ae87d04eec0cb889c7b2052d3ad59607b37"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/abandon_candidate_tests01.json",
+          "sha256": "b71ecc141585e59d8c16d135395665040f71f1d895403c7852d1cb106917271c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_158.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui158/hunter_abandon_local_admission03.json",
+          "sha256": "082995cafdf49cc5419c043d70f478870d01b6e8d3085bb90e88fa063b5b33d3"
+        }
+      ],
+      "archive_sha256": "277066799046e2cf5e6ac6f65f12bd9340da751b34720768aaaa52dc85b252fd",
+      "actual_remote_review_sha256": "bfff0f7ac74ce18908644557714ed34ac64edbc53f58710f0f01ae16678a883d"
     }
   ]
 }
