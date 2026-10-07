@@ -9,6 +9,7 @@ from .interaction_owned_class_fixture import prepared,character,saved,pets,origi
 from .interaction_retained_class_fixture import closed
 from .interaction_hunter_fixture import protected
 from .interaction_hunter_stable_slots import bound
+from .interaction_hunter_tame_stage import NAMES
 
 
 def close(t,preparation,settled,park,finish,primary):
@@ -42,7 +43,7 @@ def close(t,preparation,settled,park,finish,primary):
         'scout_lifetime':identity('client')==old['runtime']['client'],
         'original_registration':actors.load()==old['origin_actor']}
     with lab.connection() as c,c.cursor() as q:
-        q.execute("SELECT id FROM client442_world.game_tele WHERE name LIKE 'CodexTame%'")
+        q.execute('SELECT id FROM client442_world.game_tele WHERE name IN (%s,%s)',NAMES)
         checks['no_temporary_tame_pose_rows']=not q.fetchall()
     t.receipt['scout_frame']=shot(t.out/'scout_offline.png')
     with actor('primary'):
