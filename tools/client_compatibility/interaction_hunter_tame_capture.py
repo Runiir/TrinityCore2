@@ -22,6 +22,31 @@ from .observation.transport import Observer
 from .world.buffer import Reader
 from .world.native_objects import guid as native_guid
 from .world.objects import INDEX
+from .world.native_objects import records
+
+
+class TamePresence(Presence):
+    """EffectTameCreature adds the new pet to the map before SetMinion links it."""
+    def __init__(self,*args):
+        super().__init__(*args);self.tame_candidates={}
+
+    def inspect_packet(self,p):
+        if p.get('direction')!='from_native' or p.get('name')!='SMSG_UPDATE_OBJECT':return
+        for r in records(bytes.fromhex(p['body'])):
+            f=r.get('fields',{});g=r.get('guid')
+            if (r.get('kind')==3 and g>>52==0xf14 and
+                pair(f,'UNIT_FIELD_CREATEDBY')==self.owner and f.get(INDEX['UNIT_FIELD_PETNUMBER'],0)):
+                self.tame_candidates[g]=r
+            elif r.get('update_type')==0 and g in self.tame_candidates:
+                self.tame_candidates[g]['fields'].update(f)
+
+    def poll(self):
+        super().poll();current=pair(self.player,'UNIT_FIELD_SUMMON')
+        pet=self.tame_candidates.get(current)
+        if (pet and current not in self.removed and
+            pair(pet['fields'],'UNIT_FIELD_CREATEDBY')==self.owner and
+            pair(pet['fields'],'UNIT_FIELD_SUMMONEDBY')==self.owner):self.pet=pet
+        return self
 
 
 def tame_caption(t,session):
@@ -52,7 +77,7 @@ def tame_caption(t,session):
 
 def target(t,staged,session,started):
     state,frame=t.observe('tame_target_before');o=Observer(guid=6,session=session);facts=o.poll()
-    selected=facts.get('selected_unit');p=Presence(session,6,started).poll()
+    selected=facts.get('selected_unit');p=TamePresence(session,6,started).poll()
     if (not selected or selected['guid']!=staged['native_target']['guid'] or
         selected['health']!=selected['max_health'] or state.get('target',{}).get('name')!='Young Wolf' or
         state['target'].get('visible') is not True or state['world_position']!=staged['state']['world_position'] or
@@ -137,7 +162,7 @@ def run(t,preparation,entry,staging,action,source=None,review_path=None):
         'native_tamed_pet':o.present() and pair(fields,'UNIT_FIELD_SUMMONEDBY')==6 and
             fields.get(INDEX['OBJECT_FIELD_ENTRY'])==299 and fields.get(INDEX['UNIT_FIELD_LEVEL'])==10,
         'normal_tamed_saved_row':len(new)==1 and tuple(new[0][k] for k in
-            ('owner','entry','CreatedBySpell','PetType','level','slot','active'))==(6,299,1515,1,10,0,1),
+            ('owner','entry','CreatedBySpell','PetType','level','slot','active'))==(6,299,13481,1,10,0,1),
         'retained_Harnesswolf':pet_identity(retained,retained_after,5,0),
         'public_tamed_pet':public.get('exists') is True and public.get('name')=='Wolf' and
             public.get('guid')==f"Pet-0-1-{o.pet['map']}-0-299-{o.pet['guid']&0xffffffff:010X}",
