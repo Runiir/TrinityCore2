@@ -9,6 +9,7 @@
 #include "pet_rename_probe.hpp"
 #include "stable_probe.hpp"
 #include "stables.hpp"
+#include "tame_channels.hpp"
 #include "ready_check.hpp"
 #include "chat.hpp"
 #include "chat_channels.hpp"
@@ -89,8 +90,13 @@ int main(int argc, char **argv)
                 else if(op=="packet_diagnostic")
                 {
                     Events events(str(get(request,"root")));
-                    events.packet("from_client",str(get(request,"name")),data("body"),"fixture");result=true;
+                    auto direction=str(get(request,"direction"));
+                    events.packet(direction.empty() ? "from_client" : direction,
+                        str(get(request,"name")),data("body"),"fixture");result=true;
                 }
+                else if(op=="owned_tame_probe")
+                    result=owned_tame_probe(str(get(request,"root")),str(get(request,"direction")),
+                        str(get(request,"name")),data("body"),str(get(request,"session")),number(get(request,"now")));
                 else if(op=="owned_stable_request_probe")
                     result=owned_stable_request_probe(str(get(request,"root")),str(get(request,"direction")),
                         str(get(request,"name")),data("body"),str(get(request,"session")),number(get(request,"now")));
@@ -391,6 +397,7 @@ int main(int argc, char **argv)
                             }
                             else if(fn=="pet_response")reply=pet_response(protocol,state,name,body);
                             else if(fn=="pet_ready")reply=pet_ready(protocol,state);
+                            else if(fn=="tame_channel_response")reply=tame_channel_response(state,name,body);
                             else if(fn=="combat_request")
                                 reply=Protocol::combat_request(state,name,body);
                             else if(fn=="combat_response")

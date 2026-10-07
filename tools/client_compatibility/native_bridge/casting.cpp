@@ -2,6 +2,7 @@
 #include "cast_packets.hpp"
 #include "spell_failures.hpp"
 #include "archaeology.hpp"
+#include "tame_channels.hpp"
 #include <unordered_set>
 #include <cmath>
 
@@ -236,7 +237,9 @@ Reply Protocol::cast_response(State &owner, std::string const &name, View body) 
     packet.immunity=immunity;packet.hits=std::move(hits);packet.remaining=remaining;
     packet.source=source;packet.dest=dest;packet.target_flags=target_flags;
     packet.target=target;packet.map=owner.map();
-    return Packet{name,cast_packet(packet,name=="SMSG_SPELL_GO")};
+    auto encoded=cast_packet(packet,name=="SMSG_SPELL_GO");
+    if(name=="SMSG_SPELL_GO" && spell==1515)arm_tame_channel(owner,counter);
+    return Packet{name,std::move(encoded)};
 }
 Bytes Protocol::cast_rejected(View body)
 {

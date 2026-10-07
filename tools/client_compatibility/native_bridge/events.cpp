@@ -3,6 +3,7 @@
 #include "chat_probe.hpp"
 #include "pet_rename_probe.hpp"
 #include "stable_probe.hpp"
+#include "tame_channels.hpp"
 #include <chrono>
 #include <fstream>
 #include <sys/stat.h>
@@ -206,6 +207,12 @@ void Events::marker_placed(std::string const &session,Value const &location)
 void Events::packet(std::string const &direction, std::string const &name, View body,
                     std::string const &session)
 {
+    if(owned_tame_probe(root_,direction,name,body,session,now()))
+    {
+        append(root_/"evidence/owned_tame_request_packets.jsonl",Object{{"time",now()},
+            {"session",session},{"direction",direction},{"name",name},{"body",hex(body)}});
+        return;
+    }
     if(owned_stable_request_probe(root_,direction,name,body,session,now()))
     {
         append(root_/"evidence/owned_stable_request_packets.jsonl",Object{{"time",now()},

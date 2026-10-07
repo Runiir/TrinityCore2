@@ -15,6 +15,7 @@
 #include "pet_packets.hpp"
 #include "pet_casts.hpp"
 #include "stables.hpp"
+#include "tame_channels.hpp"
 #include <ctime>
 
 namespace bridge
@@ -161,6 +162,13 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if(name=="MSG_CHANNEL_START" || name=="MSG_CHANNEL_UPDATE")
+    {
+        try {if(auto channel=tame_channel_response(state,name,body))send(*channel);}
+        catch(std::exception const &error)
+        {service.events.event("tame_channel_response_rejected",{{"session",id},{"name",name},{"error",error.what()}});}
+        co_return;
+    }
     if(name=="MSG_LIST_STABLED_PETS")
     {
         if(state.guid()!=stable_owner)co_return;

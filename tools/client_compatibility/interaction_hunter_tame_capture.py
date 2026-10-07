@@ -1,5 +1,6 @@
 """Capture one reviewed ordinary Tame Beast on a staged existing wild wolf."""
 import argparse,json,time
+from contextlib import contextmanager
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_social import actor
@@ -48,6 +49,25 @@ class TamePresence(Presence):
             pair(pet['fields'],'UNIT_FIELD_CREATEDBY')==self.owner and
             pair(pet['fields'],'UNIT_FIELD_SUMMONEDBY')==self.owner):self.pet=pet
         return self
+
+
+@contextmanager
+def capture_channels(t,session):
+    path=lab.ROOT/'run/owned_tame_request_probe.json'
+    if path.exists():raise RuntimeError('another owned Tame capture is armed')
+    started=time.time();config={'schema':'client442_owned_tame_request_probe_v1','owner':6,
+        'session':session,'created_at':started,'expires_at':started+90}
+    lab.private_write(path,json.dumps(config,indent=2)+'\n');digest=lab.sha256(path)
+    t.receipt.update(capture_config=config,capture_config_sha256=digest,capture_disarmed=False);t.persist()
+    try:yield
+    finally:
+        journal=lab.ROOT/'evidence/owned_tame_request_packets.jsonl';until=time.time()
+        t.receipt['capture_packets']=[p for p in entries(journal) if p.get('session')==session and
+            started<=p.get('time',0)<=until] if journal.is_file() else []
+        t.persist()
+        if not path.is_file() or lab.sha256(path)!=digest:
+            raise RuntimeError('owned Tame probe changed; refusing to remove another capture')
+        path.unlink();t.receipt['capture_disarmed']=True;t.persist()
 
 
 def tame_caption(t,session):
@@ -171,7 +191,7 @@ def run(t,preparation,entry,staging,action,source=None,review_path=None,pose_pat
     t.receipt.update(recon_source=bound(source),tame_spell=recon['tame_spell'],native_vitals_before=vitals(o),
         ordinary_input={'kind':'chat','value':'/cast '+recon['tame_spell']['name']},cast_started_at=time.time())
     t.persist()
-    with t.bounded_combat_observation(60):
+    with capture_channels(t,session),t.bounded_combat_observation(60):
         t.receipt['input_sent']=True;t.persist();t.execute(t.receipt['ordinary_input'])
         deadline=time.monotonic()+20
         while time.monotonic()<deadline:
