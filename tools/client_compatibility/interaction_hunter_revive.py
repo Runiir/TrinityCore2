@@ -27,10 +27,8 @@ from .world.objects import INDEX
 
 
 def hunter_vitals(oracle):
-    names = ('UNIT_FIELD_HEALTH', 'UNIT_FIELD_MAXHEALTH', 'UNIT_FIELD_POWER3', 'UNIT_FIELD_MAXPOWER3')
-    if any(INDEX[n] not in oracle.player for n in names):
-        raise RuntimeError('native Hunter health/focus is incomplete')
-    return {n: oracle.player[INDEX[n]] for n in names}
+    # Native class power indexing places this Hunter's primary focus in slot0.
+    return vitals(oracle)
 
 
 def caption(t, session):
@@ -62,7 +60,7 @@ def caption(t, session):
         t.clean_panels()
 
 
-def context(t, preparation, entry, fixture_path):
+def context(t, preparation, entry, fixture_path, allow_expired=False):
     old = prepared(t, preparation)
     session = actors.session_entry(t.fixture)['session']
     entered = entry_source(t, entry, session, preparation)
@@ -74,10 +72,14 @@ def context(t, preparation, entry, fixture_path):
         raise RuntimeError('exact disposable dead-pet preparation or protected actors differ')
     oracle = Presence(session, 6, entered['started_at']).poll()
     fields = oracle.pet['fields'] if oracle.pet else {}
-    if (not oracle.present() or fields.get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
+    current = pets(6)
+    dead = [p for p in current if p['id'] == 16 and p['curhealth'] == 0 and p['slot'] == 0]
+    expired = (allow_expired and oracle.pet and oracle.pet['guid'] in oracle.removed and
+        pair(oracle.player, 'UNIT_FIELD_SUMMON') == 0 and len(dead) == 1 and dead[0]['active'] == 0)
+    if ((not oracle.present() and not expired) or fields.get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
         fields.get(INDEX['OBJECT_FIELD_ENTRY']) != 299 or pair(fields, 'UNIT_FIELD_SUMMONEDBY') != 6 or
-        fields.get(INDEX['UNIT_CREATED_BY_SPELL']) != 13481 or
-        fields.get(INDEX['UNIT_FIELD_HEALTH']) != 0 or fields.get(INDEX['UNIT_FIELD_MAXHEALTH']) != 278 or
+        fields.get(INDEX['UNIT_CREATED_BY_SPELL']) not in (13481, 883) or
+        fields.get(INDEX['UNIT_FIELD_HEALTH'], 0) != 0 or not fields.get(INDEX['UNIT_FIELD_MAXHEALTH'], 0) or
         vitals(oracle)['UNIT_FIELD_HEALTH'] != 209):
         raise RuntimeError('requires the actual dead native owned Wolf16 and healthy owner')
     inventory = Inventory(lab.ROOT, session, 6).poll()
@@ -99,12 +101,33 @@ def ready(t, oracle):
 
 
 def run(t, preparation, entry, fixture_path, action, source, review_path):
-    old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path)
+    old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path, action == 'recon')
     t.receipt.update(native_session=session, entry_source=bound(entry), dead_fixture_source=bound(fixture_path),
         baseline_resources=resources(inventory), baseline_saved=saved(6), native_pet_before=oracle.pet,
         qualification_added=False, input_sent=False)
     if action == 'recon':
         spell = caption(t, session)
+        oracle.poll()
+        if not oracle.present():
+            if 883 not in wire_known(t, session): raise RuntimeError('ordinary Call Pet1 is not native-known')
+            since = time.time()
+            t.receipt.update(call_dead_pet_started_at=since, call_dead_pet_fixture_only=True)
+            t.persist()
+            t.execute({'kind': 'chat', 'value': '/cast Call Pet 1'})
+            deadline = time.monotonic() + 15
+            while time.monotonic() < deadline:
+                oracle.poll()
+                if oracle.present(): break
+                time.sleep(.1)
+            requested = [p for p in entries(lab.ROOT / 'evidence/world_packets.jsonl') if
+                p.get('session') == session and p.get('name') == 'CMSG_CAST_SPELL' and
+                p.get('direction') == 'to_native' and p.get('time', 0) >= since]
+            t.receipt['call_dead_pet_native_requests'] = requested
+            t.persist()
+            if (len(requested) != 1 or cast_identity(requested[0])['spell'] != 883 or
+                not oracle.present() or oracle.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
+                oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH'], 0) != 0):
+                raise RuntimeError('one ordinary fixture Call Pet did not load the same dead Wolf16')
         t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
         state, frame = ready(t, oracle)
         t.receipt.update(revive_spell=spell, state=state, frame=frame, protected_checks=protected(old),
@@ -124,6 +147,7 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
     if checked.get('source') != bound(source) or checked.get('frame') != recon['frame']:
         raise RuntimeError('Revive review differs from the exact current dead-pet frame')
     pet_guid = oracle.pet['guid']
+    pet_max_health = oracle.pet['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]
     owner_vitals = hunter_vitals(oracle)
     t.receipt.update(recon_source=bound(source), revive_spell=recon['revive_spell'],
         native_vitals_before=owner_vitals, ordinary_input={'kind': 'chat', 'value': '/cast Revive Pet'},
@@ -170,7 +194,7 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
     deadline = time.monotonic() + 110
     while time.monotonic() < deadline:
         oracle.poll()
-        if oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH']) == 278 and hunter_vitals(oracle) == owner_vitals: break
+        if oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH']) == pet_max_health and hunter_vitals(oracle) == owner_vitals: break
         time.sleep(1)
     lab.server_command('saveall')
     time.sleep(.5)
@@ -180,7 +204,9 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
     state, frame = t.observe('revive_restored')
     restored = pets(6)
     restoration = {**origin_checks(old), **protected(old),
-        'both_retained_pets': restored_pets(fixture['before']['6']['pets'], restored),
+        'stored_named_pet': restored[0] == fixture['before']['6']['pets'][0],
+        'living_disposable_pet': len(restored) == 2 and restored[1]['id'] == 16 and
+            restored[1]['curhealth'] == pet_max_health and restored[1]['slot'] == 0 and restored[1]['active'] == 1,
         'owner_vitals': hunter_vitals(oracle.poll()) == owner_vitals,
         'owner_resources': resources(inventory) == t.receipt['baseline_resources'],
         'saved_rows': saved(6) == t.receipt['baseline_saved'],
@@ -192,7 +218,8 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
     read_page(t, 'revive_final_core', 'state', '/tcui')
     t.clean_panels()
     t.receipt.update(restoration_checks=restoration, retained_pet_after=restored, restored_frame=frame,
-        restored_state=state, public_pet=public)
+        restored_state=state, public_pet=public, native_pet_max_health=pet_max_health,
+        offline_fixture_normalization_pending=True)
     if not all(restoration.values()): raise RuntimeError('Revive fixture restoration differs')
     t.receipt.update(completed=True, phase='owned_revive_cast_complete', qualified_scope=
         'One ordinary Revive982 on offline-prepared dead disposable Wolf16, native/public outcome and full resources/pet restoration. '
