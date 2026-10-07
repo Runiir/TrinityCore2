@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=144,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=145,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -702,11 +702,15 @@ local function snapshot(viewMode,viewPage)
         data.quest_log_selection={index=selected,id=id,title=trim(title,80),header=header,
             description=trim(text,180),objectives=trim(objectives,120),abandon_name=trim(call(GetAbandonQuestName),80)}
     end
-    data.quest_popups={}
+    data.quest_popups={};data.pet_popups={}
     for i=1,3 do
         local popup=_G['StaticPopup'..i]
         if popup and popup:IsVisible() and tostring(popup.which):find('ABANDON_QUEST',1,true) then
             data.quest_popups[#data.quest_popups+1]={name=popup:GetName(),which=popup.which,
+                text=trim(popup.text and call(popup.text.GetText,popup.text),180)}
+        end
+        if popup and popup:IsVisible() and tostring(popup.which):find('PET',1,true) then
+            data.pet_popups[#data.pet_popups+1]={name=popup:GetName(),which=popup.which,
                 text=trim(popup.text and call(popup.text.GetText,popup.text),180)}
         end
     end
