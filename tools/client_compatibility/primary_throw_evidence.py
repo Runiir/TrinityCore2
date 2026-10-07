@@ -43,8 +43,8 @@ def verify(e,stage,entry):
     require(start_counter==counter and start_spell==spell and duration==0,'native instant start differs')
     r=packet(e,'SMSG_SPELL_GO','from_native')
     require(guid(r)==1 and guid(r)==1 and r.unpack('Bi')==(counter,spell),'native completion differs')
-    r=packet(e,'SMSG_SPELL_GO','to_client');r.guid();unit=r.guid();cast=r.guid()
-    require(unit==(1,player_high()) and r.unpack('iI')==(spell,347658),'client completion differs')
+    r=packet(e,'SMSG_SPELL_GO','to_client');caster=r.guid();unit=r.guid();cast=r.guid()
+    require(caster==unit==(1,player_high()) and r.unpack('iI')==(spell,347658),'client completion differs')
     r=packet(e,'SMSG_SPELLNONMELEEDAMAGELOG','from_native')
     require(guid(r)==native_target and guid(r)==1,'native damage identity differs')
     native_spell,damage,overkill,school,absorbed,resisted,periodic,unused,blocked,hit,debug=r.unpack('IIIBIIBBIIB');r.end()
@@ -65,12 +65,22 @@ def verify(e,stage,entry):
     public_before=e['public_combat_log_before'];public=e['public_combat_log_after']
     events=[v for v in public.get('events',[]) if v.get('event')=='SPELL_DAMAGE' and
         v.get('sequence',0)>public_before['event_sequence']]
-    require(len(events)==1,'requires one fresh public SPELL_DAMAGE')
-    v=events[0]
+    # Installed60895 dispatches the same damage through both registered public
+    # events. Require one identical outcome, including timestamp, rather than
+    # counting these two observations as two hits. Zero mitigation can be nil.
+    keys=('timestamp','source_guid','destination_guid','spell_id','spell_name','amount','overkill','school',
+        'absorbed','resisted','blocked','critical')
+    def value(v,k):return (v.get(k) or 0) if k in ('absorbed','resisted','blocked') else v.get(k)
+    unique={tuple(value(v,k) for k in keys) for v in events}
+    dispatches=[v.get('dispatch') for v in events]
+    require(len(unique)==1 and 1<=len(events)<=2 and len(set(dispatches))==len(dispatches) and
+        'COMBAT_LOG_EVENT_UNFILTERED' in dispatches and
+        set(dispatches)<={'COMBAT_LOG_EVENT','COMBAT_LOG_EVENT_UNFILTERED'},'requires one fresh public damage outcome')
+    v=events[-1]
     require(v.get('source_guid')=='Player-1-00000001' and v.get('destination_guid')==target_guid(target) and
         v.get('spell_id')==spell and v.get('spell_name')=='Heroic Throw' and
         v.get('amount')==damage and v.get('overkill')==overkill and v.get('school')==school and
-        v.get('absorbed')==absorbed and v.get('resisted')==resisted and v.get('blocked')==blocked and
+        value(v,'absorbed')==absorbed and value(v,'resisted')==resisted and value(v,'blocked')==blocked and
         v.get('critical')==bool(hit&2),'public damage fields differ')
     require(public['saved_settings']==public_before['saved_settings'],'combat filters changed')
     return {'spell':spell,'target':native_target,'damage':damage,'overkill':overkill,
