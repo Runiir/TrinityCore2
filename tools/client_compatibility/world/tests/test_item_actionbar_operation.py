@@ -520,6 +520,52 @@ def test_recon_uses_reviewed_backpack_icon_and_observed_empty_button(monkeypatch
     assert t.receipt['baseline']['native_original'] == entry['native_original']
 
 
+@pytest.mark.parametrize('fault', [None, 'old_review', 'consumed_before_click', 'changed_code_without_capture'])
+def test_recon_fresh_screen_review_and_entry_attempt_guards(monkeypatch, tmp_path, fault):
+    from tools.client_compatibility import interaction_item_actionbar_entry_capture as cap
+    t = Trial(tmp_path)
+    base, _, _, _ = common(monkeypatch, t)
+    entry = {'saved': base['saved'], 'resources': base['resources'], 'public': base['public'], 'active_spec': 0,
+        'precision_source': base['precision_source'], 'native_original': base['native_original'],
+        'state': base['state'], 'frame': {'file': 'original_entry.png'}, 'code_commit': 'a' * 40}
+    fresh = {**entry, 'frame': {'file': 'fresh_entry.png'}, 'code_commit': 'b' * 40}
+    fresh_path = tmp_path / 'fresh/episode.json'
+    t.receipt['code_commit'] = fresh['code_commit']
+    monkeypatch.setattr(op, 'context', lambda *args: ({'all_offline_snapshot': base['snapshot']}, 'owned'))
+    monkeypatch.setattr(op, 'entry_source', lambda *args: entry)
+    sources, gates, geometry = [], [], []
+    def source(*args):
+        sources.append(args[-1])
+        return fresh
+    def gate(reference):
+        gates.append(reference)
+        if fault == 'consumed_before_click' and len(gates) == 2:
+            raise RuntimeError('entry consumed before bag click')
+    monkeypatch.setattr(cap, 'screen_source', source)
+    monkeypatch.setattr(cap, 'unconsumed', gate)
+    reviewed_source = ENTRY if fault == 'old_review' else fresh_path
+    reviewed_frame = entry['frame'] if fault == 'old_review' else fresh['frame']
+    monkeypatch.setattr(op, 'reviewed', lambda *args: {'source': ref(reviewed_source), 'frame': reviewed_frame,
+        'point': [800, 650], 'pickup_point_inside_button': True})
+    monkeypatch.setattr(op, 'screen_geometry', lambda trial, path, screen, *args:
+        geometry.append((path, screen['frame'])) or {'exact_pixels': True})
+    def observe(label):
+        shown = state(bags=[] if label == 'item_actionbar_original' else [0])
+        shown['bag_items'] = [{'bag': 0, 'slot': 1, 'id': 6948, 'count': 1, 'locked': False}]
+        return shown, {'file': label + '.png'}
+    t.observe = observe
+    if fault:
+        with pytest.raises(RuntimeError):
+            op.recon(t, PREP, ENTRY, REVIEW, None if fault == 'changed_code_without_capture' else fresh_path)
+        assert t.events == []
+    else:
+        op.recon(t, PREP, ENTRY, REVIEW, fresh_path)
+        assert sources == [fresh_path] and gates == [ref(ENTRY), ref(ENTRY)]
+        assert geometry == [(fresh_path, fresh['frame'])]
+        assert t.events == [('execute', {'kind': 'click', 'value': [800, 650]})]
+        assert t.receipt['baseline']['entry_source'] == ref(ENTRY)
+
+
 def attempt_fixture(monkeypatch, tmp_path, kind='drag'):
     root = tmp_path / 'lab'
     entry_dir = root / 'evidence' / 'entry'

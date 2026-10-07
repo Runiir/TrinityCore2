@@ -20,7 +20,9 @@ ROLES = ('preparation', 'entry', 'operation', 'park', 'before_precision', 'after
 TRACKING_MEMBERS = ('tracking/packets.jsonl', 'tracking/events.jsonl')
 PACKET_NAMES = frozenset(('CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD',
     'CMSG_SET_ACTION_BUTTON', 'SMSG_UPDATE_ACTION_BUTTONS', 'SMSG_UPDATE_OBJECT',
-    'SMSG_DESTROY_OBJECT', 'CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE')) | FORBIDDEN
+    'SMSG_DESTROY_OBJECT', 'CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE',
+    'CMSG_STAND_STATE_CHANGE', 'CMSG_STANDSTATECHANGE', 'SMSG_STAND_STATE_UPDATE',
+    'CMSG_CHAT_MESSAGE_AFK', 'CMSG_MESSAGECHAT_AFK')) | FORBIDDEN
 LAYOUT_CHECKS = frozenset(('public_bar', 'bags', 'panels', 'target', 'pose', 'afk',
     'position', 'cursor_empty', 'ui_clean'))
 SHUTDOWN_CHECKS = frozenset(('scout_launcher_absent', 'owned_game_absent', 'all_retained_saved_state',
@@ -279,6 +281,53 @@ def consumed_attempt(store, value, value_ref, entry_ref, ready_ref, clear=False)
     return marker
 
 
+def fresh_entry_screen(store, ready, entry, recon, ready_ref, entry_ref):
+    """Admit a later screen only through the exact excluded repair chain."""
+    from . import interaction_item_actionbar_entry_capture as capture
+    ref = recon.get('entry_screen_source')
+    value = store.get(ref)
+    refs = {'preparation': ready_ref, 'entry': entry_ref, 'failed': value.get('first_failure_source'),
+        'recovery': value.get('pre_recon_recovery_source'), 'reload': value.get('observer_reload_source')}
+    failed, recovery, reload = [store.get(refs[k], False) for k in ('failed', 'recovery', 'reload')]
+    transition = capture.validate_capture(value, ready, entry, failed, recovery, reload, refs)
+    require(all(store.get(row['source'], False) == row['value'] for row in value['housekeeping_attempts']),
+        'actual archived housekeeping attempt bytes differ from fresh capture')
+    for source_ref, episode, image in ((entry_ref, entry, entry['frame']), (ref, value, value['frame']),
+            (refs['reload'], reload, reload['after_frame'])):
+        frame(store, episode, image, source_ref)
+    original_review = store.get(failed.get('backpack_open_review'), False)
+    point = original_review.get('point')
+    require(original_review.get('reviewed') is True and original_review.get('control') == 'MainMenuBarBackpackButton' and
+        original_review.get('source') == entry_ref and original_review.get('frame') == entry['frame'] and
+        original_review.get('fixture_source_sha256') == ready_ref['sha256'] and
+        original_review.get('pickup_point_inside_button') is True and type(point) is list and len(point) == 2 and
+        all(type(v) is int for v in point) and 0 <= point[0] < 1280 and 0 <= point[1] < 720 and
+        failed.get('backpack_open_input') == {'kind': 'click', 'value': point} and
+        failed.get('backpack_geometry', {}).get('exact_pixels') is True and
+        failed['backpack_geometry'].get('reviewed_frame') == entry['frame'],
+        'original failed recon must retain its exact reviewed entry backpack click')
+    frame(store, failed, failed['raw_stage_failure']['frame'], refs['failed'])
+    frame(store, recovery, recovery['restored_frame'], refs['recovery'])
+    require(recovery.get('bag_close_input_sent') in (True, False) and
+        (recovery.get('bag_close_input') == {'kind': 'key', 'value': 'Escape'} if recovery['bag_close_input_sent']
+            else recovery.get('input_sent') is False) and
+        recovery.get('pre_recon_no_mutation_proof', {}).get('native_action_requests') == 0,
+        'excluded pre-recon housekeeping must retain the sole ordinary bag-close input')
+    review = screen_review(store, recon, ref, 'MainMenuBarBackpackButton', fixture=ready_ref)
+    start = review.get('point')
+    require(review.get('pickup_point_inside_button') is True and type(start) is list and len(start) == 2 and
+        all(type(v) is int for v in start) and 0 <= start[0] < 1280 and 0 <= start[1] < 720 and
+        recon.get('backpack_open_input') == {'kind': 'click', 'value': start} and
+        recon.get('backpack_open_review') == {k: recon['screen_review'][k] for k in ('path', 'sha256')} and
+        recon.get('backpack_geometry', {}).get('reviewed_frame') == value['frame'] and
+        recon['backpack_geometry'].get('exact_pixels') is True and
+        value['finished_at'] <= recon['started_at'] and
+        all(recon.get(k) == value.get(k) for k in ('first_failure_source', 'pre_recon_recovery_source',
+            'observer_reload_source', 'repair_code_transition', 'committed_sources')),
+        'renewed recon must review the distinct fresh captured entry screen')
+    return value, reload, transition
+
+
 def lifecycle(store, refs):
     require(type(refs) is dict and set(refs) == set(ROLES), 'one complete item lifecycle source role set is required')
     rows = {k: store.get(v) for k, v in refs.items()}
@@ -312,19 +361,29 @@ def lifecycle(store, refs):
         base.get('precision_source') == refs['before_precision'] and base.get('active_spec') == entry['active_spec'] and
         same_public(base.get('public', {}), entry['public']) and base.get('native_original') == entry.get('native_original'),
         'complete initial item baseline differs from ordinary entry authority')
-    current = [ready, before, entry, recon, *[v for _, v in drag_views], placed,
+    fresh = None
+    if recon.get('entry_screen_source') is not None:
+        fresh, reload, transition = fresh_entry_screen(store, ready, entry, recon, refs['preparation'], refs['entry'])
+    current = [ready, before, entry, *([fresh] if fresh is not None else []), recon, *[v for _, v in drag_views], placed,
         *[v for _, v in clear_views], restored, park, after]
     for value in current:
+        expected_commit = reload['code_commit'] if fresh is not None and value not in (ready, before, entry) else ready['code_commit']
         require(value.get('actor') == ready['actor'] and value.get('runtime') == ready['runtime'] and
             type(ready.get('code_commit')) is str and re.fullmatch('[0-9a-f]{40}', ready['code_commit']) and
-            value.get('code_commit') == ready['code_commit'] and
+            value.get('code_commit') == expected_commit and
             value.get('controller') == 'code' and value.get('model') is None and value.get('revision') is None and
             value.get('custom_script_permission') == 'blocked_by_user' and value.get('softTargetInteract') == SCRIPT_BOUNDARY and
             value.get('qualification_added') is False, 'same owned actor/runtime, code controller or scripts boundary differs')
-    for value in current[3:-2]:
+    stages = [recon, *[v for _, v in drag_views], placed, *[v for _, v in clear_views], restored]
+    for value in stages:
         require(value.get('baseline') == base and value.get('native_session') == owner_session and
             value.get('preparation_source') == refs['preparation'] and value.get('entry_source') == refs['entry'],
             'item stages do not retain the complete original baseline and login authority')
+        if fresh is not None:
+            require(value.get('entry_screen_source') == recon['entry_screen_source'] and
+                value.get('repair_code_transition') == transition and value.get('committed_sources') == transition['committed_sources'] and
+                all(value.get(k) == fresh.get(k) for k in ('first_failure_source', 'pre_recon_recovery_source', 'observer_reload_source')),
+                'later item stage lost its explicit source-bound repair code transition')
     for left, right in zip(current, current[1:]):
         require(left['finished_at'] <= right['started_at'], 'ordinary item lifecycle chronology differs')
     drag_ref, drag_view = drag_views[-1]
@@ -438,6 +497,24 @@ def actual_packets(store, closure, tracking):
         rest_threshold=entry['native_owner_proof']['rest_threshold'])
     require(actual_owner['health'] == 60 and actual_owner['rest_threshold'] == entry['native_owner_proof']['rest_threshold'],
         'actual native owner interval changed health, power, rest, XP or pets')
+    _, recon, _, _, _, _, _ = stage_chain(store, operation)
+    if recon.get('entry_screen_source') is not None:
+        captured = store.get(recon['entry_screen_source'])
+        captured_actual = [p for p in wire if entry['started_at'] <= p['time'] <= captured['finished_at']]
+        captured_claimed = [p for p in captured['capture_packets'] if p.get('name') in PACKET_NAMES]
+        require([packet_key(p) for p in captured_actual] == [packet_key(p) for p in captured_claimed] and
+            not any(p.get('name') == 'CMSG_SET_ACTION_BUTTON' for p in captured_actual),
+            'actual pre-drag journal differs from fresh capture or contains an earlier action input')
+        recovery = store.get(captured['pre_recon_recovery_source'], False)
+        observed = recovery['pre_recon_idle_observation']
+        retained = [*observed.get('observed_stand_packets', []), *recovery.get('stand_cleanup_packets', [])]
+        if observed.get('observed_owner_flags_packet'):
+            retained.append(observed['observed_owner_flags_packet'])
+        require(all(any(packet_key(p) == packet_key(q) for q in captured_actual) for p in retained),
+            'actual source-retained observed idle and restoration packets are absent from the archive')
+        if observed['mismatch_observed']:
+            require(observed['since'] == store.get(captured['first_failure_source'], False)['finished_at'],
+                'unattributed idle observation must begin after the immutable first failure')
     claimed = [*entry['login_packets'], placed['placement']['modern'], placed['placement']['native'],
         operation['clear_proof']['modern'], operation['clear_proof']['native'], *park['logout_packets']]
     require(all(any(packet_key(p) == packet_key(c) for p in wire) for c in claimed),
@@ -499,6 +576,7 @@ def proof(data, digests, tracking):
         closure.get('all_offline_snapshot') == snapshot and closure.get('actor') == ready['actor'] and
         closure.get('runtime') == ready['runtime'] and closure.get('predecessor') == ready['predecessor'] and
         closure.get('primary_stop_source') == ready['predecessor']['primary_stop'] and
+        closure.get('code_commit') == current[-1]['code_commit'] and
         closure.get('controller') == 'code' and closure.get('model') is None and closure.get('revision') is None and
         closure.get('custom_script_permission') == 'blocked_by_user' and closure.get('softTargetInteract') == SCRIPT_BOUNDARY and
         closure.get('input_sent') is False and closure.get('mutation_sent') is False and closure.get('qualification_added') is False and

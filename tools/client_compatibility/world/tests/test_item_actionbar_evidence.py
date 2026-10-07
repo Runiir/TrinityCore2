@@ -129,6 +129,7 @@ def fixture(tmp_path, monkeypatch):
     before_ref = write('before_precision', before_precision)
     state = {'player': 'Harnesstwo', 'guid': 'Player-1-00000002', 'level': 1, 'xp': 0, 'xp_max': 400,
         'xp_exhaustion': 2 * int(exact_after), 'panels': [], 'bags': [], 'cursor_info': False,
+        'observer_version': 145, 'spell_targeting': False, 'lua_errors': [], 'blocked_actions': [],
         'world_position': [-8914.86, -135.609, 80.4425, 5.83261], 'target': {'exists': False, 'guid': '', 'name': ''}}
     empty = {'guid': 0, 'id': 0, 'count': 0}
     resources = {'money': 0, 'equipment': [deepcopy(empty) for _ in range(19)],
@@ -138,16 +139,19 @@ def fixture(tmp_path, monkeypatch):
         'health': 60, 'max_health': 60, 'power': 0, 'xp': 0, 'next_xp': 400, 'summon': 0}
     creation = native_packet(owner_fields(), time=1100.4)
     owner = c.native_replay([creation], 'scout', 1099, 1101)
+    native_original = {**original, 'selection': {'native_guid': 0}, 'resources': resources,
+        'actions': baseline['2']['saved']['actions']}
     entry = trial('entry', 'item_actionbar_entered', 1099, 1101, preparation_source=ready_ref,
         precision_source=before_ref, all_offline_snapshot=baseline, native_session='scout',
         native_before_entry=baseline['2']['native'], entered_native={**baseline['2']['native'], 'online': 1},
         login_packets=login_packets(), owner_packets=owner['packets'], native_owner_proof=owner,
         saved=baseline['2']['saved'], resources=resources, active_spec=0, public=stock_public(baseline['2']['saved']['actions']),
-        state=state, frame=frame('entry'), native_original=original)
+        state=state, frame=frame('entry'), native_original=native_original)
     entry_ref = write('entry', entry)
     base = {'snapshot': baseline, 'saved': entry['saved'], 'resources': resources, 'public': entry['public'],
         'state': state, 'frame': entry['frame'], 'active_spec': 0, 'entry_source': entry_ref,
-        'precision_source': before_ref, 'native_state': original, 'native_original': original}
+        'precision_source': before_ref, 'native_state': original, 'native_original': native_original,
+        'stock_grid_sources': [c.GRID_SOURCE]}
     common = {'preparation_source': ready_ref, 'fixture_source': ready_ref, 'entry_source': entry_ref,
         'precision_source': before_ref, 'baseline': base, 'native_session': 'scout'}
     button = stock_public(base['saved']['actions'])['actions'][2]
@@ -277,6 +281,105 @@ def test_whole_actual_tarstream_proves_one_nonfixed_item_drag_clear_and_restored
     assert result['native_item_requests'] == result['native_clear_requests'] == 1
     assert result['both_owned_clients_stopped'] and result['actual_packet_journals_verified']
     assert result['rest']['matches'][0]['native_login_second'] == 1100
+
+
+def repaired_fixture(tmp_path, monkeypatch):
+    from tools.client_compatibility.world.tests.test_item_actionbar_entry_capture import repair_fixture
+    batch, paths, values, wire, events, refs = repair_fixture(tmp_path, monkeypatch)
+    fresh = values['entry_screen']
+    fields = {key: deepcopy(fresh[key]) for key in ('first_failure_source', 'pre_recon_recovery_source',
+        'observer_reload_source', 'repair_code_transition', 'committed_sources')}
+    fields['entry_screen_source'] = s.bound(paths['entry_screen'])
+
+    def write(name):
+        paths[name].write_text(json.dumps(values[name], indent=2) + '\n')
+        return s.bound(paths[name])
+
+    recon = values['recon']
+    recon.update(fields, code_commit=fresh['code_commit'])
+    old_review = deepcopy(values['failed_backpack_review'])
+    old_review.update(source=fields['entry_screen_source'], frame=fresh['frame'])
+    path = batch / 'fresh_backpack_review/review.json'
+    path.parent.mkdir()
+    path.write_text(json.dumps(old_review))
+    review_ref = s.bound(path)
+    recon.update(backpack_open_review=review_ref, screen_review={**review_ref, 'frame': fresh['frame']},
+        backpack_open_input={'kind': 'click', 'value': old_review['point']},
+        backpack_geometry={'exact_pixels': True, 'reviewed_frame': fresh['frame']})
+    recon_ref = write('recon')
+    values['drag_ready'].update(fields, code_commit=fresh['code_commit'], source=recon_ref)
+    drag_ref = write('drag_ready')
+    values['drag_review']['source'] = drag_ref
+    drag_review = write('drag_review')
+    placed = values['placed']
+    placed.update(fields, code_commit=fresh['code_commit'], source=drag_ref,
+        screen_review={**drag_review, 'frame': values['drag_ready']['frame']})
+    placed['drag_intent'].update(source=drag_ref, review=drag_review)
+    marker_path = Path(placed['drag_attempt_source']['path'])
+    marker = json.loads(marker_path.read_text())
+    marker['input_intent'] = placed['drag_intent']
+    marker_path.write_text(json.dumps(marker))
+    placed['drag_attempt_source'] = s.bound(marker_path)
+    placed_ref = write('placed')
+    values['clear_ready'].update(fields, code_commit=fresh['code_commit'], source=placed_ref, drag_source=placed_ref)
+    clear_ref = write('clear_ready')
+    values['clear_review']['source'] = clear_ref
+    clear_review = write('clear_review')
+    operation = values['operation']
+    operation.update(fields, code_commit=fresh['code_commit'], source=clear_ref, drag_source=placed_ref,
+        screen_review={**clear_review, 'frame': values['clear_ready']['frame']}, cursor_cancel_source=clear_review)
+    operation['clear_intent'].update(source=clear_ref, review=clear_review)
+    marker_path = Path(operation['clear_attempt_source']['path'])
+    marker = json.loads(marker_path.read_text())
+    marker['input_intent'] = operation['clear_intent']
+    marker_path.write_text(json.dumps(marker))
+    operation['clear_attempt_source'] = s.bound(marker_path)
+    operation_ref = write('operation')
+    values['park'].update(code_commit=fresh['code_commit'], source=operation_ref)
+    park_ref = write('park')
+    values['after_precision'].update(code_commit=fresh['code_commit'], source=park_ref)
+    precision_ref = write('after_precision')
+    final = values['final']
+    final['sources'].update(operation=operation_ref, park=park_ref, after_precision=precision_ref)
+    final['code_commit'] = fresh['code_commit']
+    values['final_review']['source'] = park_ref
+    final_review = write('final_review')
+    final['screen_review'].update(final_review)
+    final['proof'] = e.lifecycle(e.Sources({}, {}, local=True), final['sources'])[0]
+    write('final')
+    return batch, paths, values, wire, events
+
+
+def test_whole_actual_tarstream_admits_fresh_screen_after_excluded_repair_with_sealed_original_entry(tmp_path, monkeypatch):
+    batch, paths, values, wire, events = repaired_fixture(tmp_path, monkeypatch)
+    original = paths['entry'].read_bytes()
+    result = reviewed(batch, wire, events)
+    assert result['native_item_requests'] == result['native_clear_requests'] == 1
+    assert result['ordinary_login_count'] == 1 and result['rest']['matches'][0]['native_login_second'] == 1100
+    assert values['entry']['code_commit'] == 'd' * 40 and values['operation']['code_commit'] == 'b' * 40
+    assert paths['entry'].read_bytes() == original and values['failed_recon']['completed'] is False
+
+
+@pytest.mark.parametrize('fault', ['missing_fresh_png', 'missing_failed_png', 'missing_cleanup_marker',
+    'missing_reload_marker', 'borrow_entry_review', 'late_old_commit', 'marker_bytes', 'source_bytes', 'dropped_chain'])
+def test_portable_fresh_screen_requires_actual_frames_marker_bytes_and_complete_commit_chain(tmp_path, monkeypatch, fault):
+    batch, paths, values, wire, events = repaired_fixture(tmp_path, monkeypatch)
+    if fault == 'missing_fresh_png': (paths['entry_screen'].parent / 'screen.png').unlink()
+    elif fault == 'missing_failed_png': (paths['failed_recon'].parent / 'screen.png').unlink()
+    elif fault == 'missing_cleanup_marker': Path(values['recovery']['escape_attempt_source']['path']).unlink()
+    elif fault == 'missing_reload_marker': Path(values['observer_reload']['reload_attempt_source']['path']).unlink()
+    else:
+        value = values['entry_screen']
+        if fault == 'borrow_entry_review':
+            value['frame'] = values['entry']['frame']
+            value['entry_source'] = values['operation']['source']
+        elif fault == 'late_old_commit': value['code_commit'] = values['entry']['code_commit']
+        elif fault == 'marker_bytes': value['housekeeping_attempts'][0]['value']['input_intent'] = {'kind': 'chat', 'value': '/reload'}
+        elif fault == 'source_bytes': value['code_source_bytes'][0]['raw_hex'] += '00'
+        else: value.pop('observer_reload_source')
+        paths['entry_screen'].write_text(json.dumps(value))
+    with pytest.raises((RuntimeError, KeyError)):
+        reviewed(batch, wire, events)
 
 
 @pytest.mark.parametrize('stage', ['selection', 'drag_ready', 'clear_ready', 'park'])

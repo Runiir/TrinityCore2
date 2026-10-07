@@ -302,11 +302,18 @@ def prior(t, preparation, path, phases):
     require(e['baseline']['snapshot'] == old['all_offline_snapshot'] and e['baseline']['entry_source'] == ref,
         'item action-bar baseline differs from source authority')
     baseline_authority(e['baseline'], entered, old)
+    if e.get('entry_screen_source') is not None:
+        from .interaction_item_actionbar_entry_capture import stage_source
+        stage_source(t, e, old, entered)
+    else:
+        require(e.get('code_commit') == t.receipt.get('code_commit') == entered.get('code_commit'),
+            'changed item-stage code requires its explicit fresh entry-screen transition')
     t.receipt.update(source=bound(path), baseline=deepcopy(e['baseline']),
         recovery_only=e.get('recovery_only', False), failed_whole_excluded=e.get('failed_whole_excluded', False))
     for key in ('placement', 'drag_source', 'drag_started_at', 'drag_finished_at', 'drag_packets',
             'placement_saved', 'placement_resources', 'first_failure_source', 'drag_attempt_source', 'clear_attempt_source',
-            'stock_grid_sources'):
+            'stock_grid_sources', 'entry_screen_source', 'pre_recon_recovery_source', 'observer_reload_source',
+            'repair_code_transition', 'committed_sources'):
         if key in e:
             t.receipt[key] = deepcopy(e[key])
     t.persist()
@@ -390,9 +397,18 @@ def no_forbidden(baseline, session, until, t=None):
     return {**proof, 'native_owner_proof': replay}
 
 
-def recon(t, preparation, entry, review_path=None):
+def recon(t, preparation, entry, review_path=None, entry_screen_path=None):
     old, session = context(t, preparation)
     e = entry_source(t, preparation, entry, old, session)
+    from .interaction_item_actionbar_entry_capture import unconsumed, screen_source
+    unconsumed(bound(entry))
+    screen, screen_path = e, entry
+    if entry_screen_path is not None:
+        screen = screen_source(t, preparation, entry, old, e, entry_screen_path)
+        screen_path = entry_screen_path
+    else:
+        require(t.receipt.get('code_commit') == e.get('code_commit'),
+            'changed recon code requires its exact fresh entry-screen repair authority')
     native = native_state(session)
     state, frame = t.observe('item_actionbar_original')
     require(not state.get('panels') and not state.get('bags') and not state.get('chat_edit_open') and not state.get('cursor_info') and
@@ -420,14 +436,15 @@ def recon(t, preparation, entry, review_path=None):
     require(review_path is not None, 'backpack opening requires a fresh source-bound icon review')
     d = reviewed(t, review_path, 'MainMenuBarBackpackButton')
     start = d.get('point', [])
-    require(d.get('source') == bound(entry) and d.get('frame') == e['frame'] and
+    require(d.get('source') == bound(screen_path) and d.get('frame') == screen['frame'] and
         d.get('pickup_point_inside_button') is True and type(start) is list and len(start) == 2 and
         all(type(v) is int for v in start) and 0 <= start[0] < 1280 and 0 <= start[1] < 720,
         'backpack review must bind the actual closed-entry icon')
-    geometry = screen_geometry(t, entry, e, state, frame, (start,))
+    geometry = screen_geometry(t, screen_path, screen, state, frame, (start,))
     t.receipt.update(backpack_open_input={'kind': 'click', 'value': start},
         backpack_open_review=bound(review_path), backpack_geometry=geometry, input_sent=True)
     t.persist()
+    unconsumed(bound(entry))
     t.execute(t.receipt['backpack_open_input'])
     state, frame = t.observe('item_actionbar_bag_open')
     require(0 in state.get('bags', []) and not state.get('cursor_info'), 'ordinary backpack did not open')
@@ -935,10 +952,11 @@ def recover(t, preparation, failed_source, review_path=None):
             completed=True, phase='item_actionbar_recovery_placed')
 
 
-def run(t, action, preparation, source, review_path=None):
+def run(t, action, preparation, source, review_path=None, entry_screen_path=None):
     try:
         require(action in ('recon', 'capture', 'drag', 'clear', 'recover'), 'unknown item action-bar stage')
-        if action == 'recon': recon(t, preparation, source, review_path)
+        require(entry_screen_path is None or action == 'recon', 'fresh entry-screen source applies only to recon')
+        if action == 'recon': recon(t, preparation, source, review_path, entry_screen_path)
         elif action == 'capture': capture(t, preparation, source)
         elif action == 'drag': drag(t, preparation, source, review_path)
         elif action == 'clear': clear(t, preparation, source, review_path)
@@ -964,12 +982,14 @@ def main():
     for name in ('preparation', 'source', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--review', type=Path)
+    parser.add_argument('--entry-screen-source', type=Path,
+        help='Fresh source-bound passive screen after excluded pre-recon observer recovery')
     args = parser.parse_args()
     with actor('scout'):
         trial = Trial(args.output, controller='code')
         trial.receipt.update(controller='code', custom_script_permission='blocked_by_user', softTargetInteract=SCRIPT_BOUNDARY,
             input_sent=False, mutation_sent=False, qualification_added=False)
-        run(trial, args.action, args.preparation, args.source, args.review)
+        run(trial, args.action, args.preparation, args.source, args.review, args.entry_screen_source)
         print(json.dumps({k: trial.receipt.get(k) for k in ('completed', 'phase', 'failure')}), flush=True)
 
 
