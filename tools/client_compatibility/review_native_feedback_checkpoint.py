@@ -23,6 +23,7 @@ def whole(e,key,count):
 
 
 def proof(data,packets,phase):
+    if phase=='integrity':return {'integrity_only':True,'gameplay_qualified':False}
     if phase=='pre':
         b=data['native_feedback_build01.json'];d=data['native_feedback_stage01/deployment.json']
         require(b['completed'] and b['jobs']==1 and b['available_memory_kib']>=6291456 and
@@ -135,5 +136,5 @@ def review(directory,output,phase):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat'],required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity'],required=True)
     a=p.parse_args();review(a.directory,a.output,a.phase)
