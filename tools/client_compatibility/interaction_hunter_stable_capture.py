@@ -20,6 +20,7 @@ from .world.buffer import Reader
 from .world.gameobjects import modern_guid
 from .world.objects import INDEX
 from .interaction_observation import read_page
+from .interaction_actionbar_pages import detail
 
 
 def native_catalog(body):
@@ -130,8 +131,16 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
     if action=='refresh':
         t.receipt.update(state=state,frame=frame,native_master_guid=guid,modern_master_guid=e['modern_master_guid'],
             completed=True,phase='hunter_stable_request_staged',input_sent=False);return
+    if action=='inspect':
+        probe=detail(t,'stable_mouse_inspection')
+        t.receipt.update(mouse_inspection=probe,completed=True,phase='hunter_stable_mouse_inspected',input_sent=False)
+        return
     d=reviewed(t,review_path,'Erma')
     if d['frame']['sha256']!=e['frame']['sha256']:raise RuntimeError('reviewed Erma source image differs')
+    t.execute({'kind':'hover','value':d['point']})
+    t.receipt['mouse_before']=detail(t,'stable_settled_mouseover',
+        lambda p:p.get('mouse',{}).get('mouseover_guid')==e['state']['target']['guid'])
+    t.persist()
     path=lab.ROOT/'run/owned_stable_request_probe.json'
     if path.exists():raise RuntimeError('another owned stable capture is armed')
     started=time.time();config={'schema':'client442_owned_stable_request_probe_v1','session':session,'owner':6,
@@ -143,6 +152,7 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
         t.execute({'kind':'click','value':d['point'],'button':3,'hold':1.2})
         state,frame=t.observe('stable_request_after')
         t.receipt.update(response_state=state,response_frame=frame);t.persist()
+        t.receipt['mouse_after']=detail(t,'stable_mouse_after_click');t.persist()
         if 'GossipFrame' in state.get('panels',[]):
             require(click_case(t,'diagnostic.hunter.stable_service','Select the observed native stable service.',
                 lambda c:c.get('text','').lower()=="i'd like to stable my pet here.",
@@ -190,7 +200,7 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','refresh','capture','recover'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','refresh','inspect','capture','recover'])
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
     if a.action!='stage' and not a.source:p.error('requires a closed staging source')
