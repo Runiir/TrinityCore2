@@ -11,7 +11,7 @@ NAMES={k:'hunter_tame_'+v+'/episode.json' for k,v in (
     ('preparation','prepare02'),('entry','entry02'),('stored','stored02'),('stage','wolf_stage01'),
     ('refresh','review_refresh01'),('cast','cast01'),('restore','pose_restore01'),
     ('park','park01'),('finish','original_finish01'))}
-CLOSURE='hunter_tame_success_close01/episode.json'
+CLOSURE='hunter_tame_success_close02/episode.json'
 BEFORE='hunter_tame_stable_before02/episode.json'
 AFTER='hunter_tame_stable_after03/episode.json'
 
