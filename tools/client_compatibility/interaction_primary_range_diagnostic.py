@@ -18,6 +18,10 @@ from .world.gameobjects import modern_guid
 from .world.buffer import Reader
 from .interaction_macros import require
 
+# Separately inspected stock caption in UI145/primary_range_stage01/review_ready.png.
+# The native template2830 name remains Buzzard; both identities are checked.
+PUBLIC_NAME='Scorched Buzzard'
+
 
 class RangePresence(Presence):
     def __init__(self,*args):super().__init__(*args);self.targets={};self.combat=[]
@@ -81,13 +85,13 @@ def stage(t,path):
     o=RangePresence(d['session'],1,entry['entry_started_at']).poll()
     t.receipt.update(baseline=base,session=d['session'],entry_started_at=entry['entry_started_at'],qualification_added=False);t.persist()
     try:
-        t.execute({'kind':'chat','value':'/targetexact Buzzard'});state,_=t.observe('range_selected_buzzard');o.poll();target=o.target()
+        t.execute({'kind':'chat','value':'/targetexact '+PUBLIC_NAME});state,_=t.observe('range_selected_buzzard');o.poll();target=o.target()
         distance=math.dist(base['position'][:3],target['movement']['position'][:3]) if target else 0
         fixed=static_position(target)
         # Use the same pinned public native-GUID conversion as the melee oracle.
         from .pet_attack_capture_evidence import target_guid
         checks={'selected_native':bool(target and target['guid'] not in o.removed),'selected_public':bool(target and state['target'].get('guid')==target_guid(target)),
-            'public_name':state['target'].get('name')=='Buzzard','native_alive':bool(target and target['fields'][INDEX['UNIT_FIELD_HEALTH']]>0),
+            'public_name':state['target'].get('name')==PUBLIC_NAME,'native_alive':bool(target and target['fields'][INDEX['UNIT_FIELD_HEALTH']]>0),
             'public_health':bool(target and state['target'].get('health')==target['fields'][INDEX['UNIT_FIELD_HEALTH']]),
             'outside_melee_reach':12<distance<40,'static_native_position':bool(fixed),
             'unchanged_user_pose':position(1)==base['position'],'protected':protected_snapshot()==base['protected'],
