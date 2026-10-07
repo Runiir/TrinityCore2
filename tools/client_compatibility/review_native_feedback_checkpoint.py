@@ -33,6 +33,9 @@ def proof(data,packets,phase,digests=None):
     if phase=='owned-abandon-cancel':
         from .hunter_abandon_cancel_evidence import proof as cancel_proof
         return cancel_proof(data,digests,packets)
+    if phase=='owned-abandon':
+        from .hunter_abandon_evidence import proof as abandon_proof
+        return abandon_proof(data,digests,packets['raw'],packets['events'])
     if phase=='ability':
         from .primary_throw_checkpoint_evidence import proof as ability_proof
         return ability_proof(data,digests,packets)
@@ -111,13 +114,22 @@ def review(directory,output,phase):
     from dvc.repo import Repo
     out=yaml.safe_load((lab.REPO/pointer).read_text())['outs'][0]
     require(out['size']==cp['bytes'],'remote object size differs')
-    data={};seen=set();packets=set()
+    data={};seen=set();packets=set();abandon_events=set()
     with Repo(str(lab.REPO)) as repo:
         odb=repo.cloud.get_remote_odb()
         with odb.fs.open(odb.oid_to_path(out['md5']),'rb',block_size=1024*1024,cache_type='none') as raw:
             reader=DigestReader(raw)
             with tarfile.open(fileobj=reader,mode='r|gz') as archive:
                 for member in archive:
+                    if phase=='owned-abandon' and member.name in ('tracking/owned_pet_abandon_packets.jsonl','tracking/events.jsonl'):
+                        e=data['hunter_abandon_confirm01/episode.json'];session=e['native_session']
+                        since=e['started_at'];until=e['finished_at']
+                        destination=packets if member.name=='tracking/owned_pet_abandon_packets.jsonl' else abandon_events
+                        with archive.extractfile(member) as f:
+                            for line in f:
+                                p=json.loads(line)
+                                if p.get('session')==session and since<=p.get('time',0)<=until and p.get('name')=='CMSG_PET_ABANDON':
+                                    destination.add(packet_key(p));require(len(destination)<=8,'disposable Abandon request bound exceeded')
                     if phase=='owned-abandon-cancel' and member.name=='tracking/events.jsonl':
                         session=data['hunter_abandon_entry01/episode.json']['native_session']
                         since=data['hunter_abandon_dialog03/episode.json']['started_at']
@@ -164,7 +176,8 @@ def review(directory,output,phase):
             while reader.read(1024*1024):pass
     require(seen==set(selected) and reader.bytes==cp['bytes'] and reader.digest.hexdigest()==cp['sha256'],
         'actual remote compressed archive or complete member set differs')
-    outcome=proof(data,packets,phase,{p.removeprefix(prefix):sha for p,sha in selected.items()})
+    packet_proof={'raw':packets,'events':abandon_events} if phase=='owned-abandon' else packets
+    outcome=proof(data,packet_proof,phase,{p.removeprefix(prefix):sha for p,sha in selected.items()})
     d={'schema':'client442_native_feedback_remote_review_v1','reviewed_at':time.time(),
         'pointer':pointer,'archive_sha256':cp['sha256'],'bytes':reader.bytes,'actual_remote_verified':True,
         'complete_json_png_verified':True,'json_members':sum(p.endswith('.json') for p in selected),
@@ -174,5 +187,5 @@ def review(directory,output,phase):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot','owned-pair','owned-abandon-cancel'],required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot','owned-pair','owned-abandon-cancel','owned-abandon'],required=True)
     a=p.parse_args();review(a.directory,a.output,a.phase)

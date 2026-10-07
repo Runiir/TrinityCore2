@@ -1,7 +1,7 @@
 """Abandon acceptance needs one exact request pair and the unchanged named pet."""
 import copy,struct,time
 import pytest
-from tools.client_compatibility.interaction_hunter_abandon_confirm import named_preserved,exact_requests
+from tools.client_compatibility.hunter_abandon_identity import named_preserved,exact_requests
 from tools.client_compatibility.world.buffer import Writer
 from tools.client_compatibility.world.gameobjects import modern_guid
 

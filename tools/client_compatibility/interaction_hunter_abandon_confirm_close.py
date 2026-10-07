@@ -9,7 +9,7 @@ from .interaction_owned_class_fixture import prepared,character,saved,pets,origi
 from .interaction_retained_class_fixture import closed
 from .interaction_hunter_fixture import protected
 from .interaction_hunter_stable_slots import bound
-from .interaction_hunter_abandon_confirm import named_preserved
+from .hunter_abandon_identity import named_preserved
 from .interaction_primary_combat_reentry import retained
 from .interaction_paused_scout_bridge_deploy import SCHEMA
 
