@@ -7,6 +7,7 @@ from .world.buffer import Reader,Writer
 from .world.gameobjects import modern_guid
 from .world.native_objects import guid as native_guid
 from .interaction_hunter_stable_pair import identities,public_rows,expected_rows
+CLOSURE='hunter_pair_close02/episode.json'
 
 
 def whole(e,phase,key,count):
@@ -16,7 +17,7 @@ def whole(e,phase,key,count):
 
 
 def proof(data,digests,packets):
-    closure=data['hunter_pair_close01/episode.json']
+    closure=data[CLOSURE]
     whole(closure,'fresh_occupied_pair_parked_boundary','checks',23)
     directory=Path(closure['sources'][0]['path']).parent.parent
     require(directory.parent==lab.ROOT/'evidence','private occupied pair archive differs')
@@ -127,7 +128,7 @@ def proof(data,digests,packets):
             stop['finished_at']<m1['started_at'] and stop['before']==stop['after'] and
             closure['checks']['primary_intentionally_stopped'],'user-requested primary absence differs')
         frame(stop,closure['primary_stop_source'],actor='primary')
-    frame(closure,{'path':str(directory/'hunter_pair_close01/episode.json')},'scout_frame')
+    frame(closure,{'path':str(directory/CLOSURE)},'scout_frame')
     return {'operation':'pets.stable_swap','owner':6,'pet_numbers':[4,6],
         'native_slot_roundtrips':{'4':[5,0,5],'6':[0,5,0]},'native_success_results':[8,8],
         'move_checks_each':12,'ordinary_call_pet_checks_each':7,'closure_checks':23,

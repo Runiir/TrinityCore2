@@ -122,7 +122,8 @@ def review(directory,output,phase):
                             key=NAMES['restore']+'/episode.json'
                         field='packets' if phase=='ability' else 'call_pet_packets'
                         if phase=='owned-pair':
-                            refs=data['hunter_pair_close01/episode.json']['sources']
+                            from .hunter_pair_evidence import CLOSURE
+                            refs=data[CLOSURE]['sources']
                             keys=[str(Path(refs[i]['path']).relative_to(directory)) for i in (3,5)]
                             wanted={packet_key(p) for k in keys for p in data[k][field]}
                         else:wanted={packet_key(p) for p in data[key][field]}

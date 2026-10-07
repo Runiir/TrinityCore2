@@ -11,7 +11,7 @@ from .interaction_hunter_fixture import protected
 from .interaction_hunter_stable_pair import identities
 from .interaction_hunter_stable_slots import bound
 from .interaction_hunter_tame_stage import NAMES
-from .interaction_primary_combat_reentry import retained
+from .interaction_primary_combat_reentry import retained as primary_retained
 
 
 def close(t,preparation,entry,forward,forward_call,back,back_call,park,finish,deployment,primary_stop=None):
@@ -78,7 +78,7 @@ def close(t,preparation,entry,forward,forward_call,back,back_call,park,finish,de
                 stopped.get('before')!=stopped.get('after') or
                 stopped.get('after')!=d['offline_baselines']['primary']):
                 raise RuntimeError('exact user-requested primary shutdown source differs')
-            checks['primary_intentionally_stopped']=lab.owned_process('client') is None and retained(1,1)==stopped['after']
+            checks['primary_intentionally_stopped']=lab.owned_process('client') is None and primary_retained(1,1)==stopped['after']
             t.receipt['primary_stop_source']=bound(primary_stop)
         else:
             checks['primary_lifetime']=identity('client')==d['client_lifetimes']['primary']
