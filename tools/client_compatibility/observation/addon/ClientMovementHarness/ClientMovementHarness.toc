@@ -30,6 +30,7 @@ ChatObservation.lua
 ChannelObservation.lua
 CombatLogObservation.lua
 MeleeObservation.lua
+SpellChannelObservation.lua
 TradeSkillObservation.lua
 WhoObservation.lua
 ClientInteractions.lua

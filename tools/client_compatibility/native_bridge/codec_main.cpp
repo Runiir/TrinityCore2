@@ -90,8 +90,9 @@ int main(int argc, char **argv)
                 else if(op=="packet_diagnostic")
                 {
                     Events events(str(get(request,"root")));
-                    auto direction=str(get(request,"direction"));
-                    events.packet(direction.empty() ? "from_client" : direction,
+                    auto value=request.as_object().if_contains("direction");
+                    auto direction=value ? str(*value) : "from_client";
+                    events.packet(direction,
                         str(get(request,"name")),data("body"),"fixture");result=true;
                 }
                 else if(op=="owned_tame_probe")
