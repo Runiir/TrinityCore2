@@ -90,13 +90,13 @@ def stage(t,path):
         cleanup(t,o,fixture,base);raise
 
 
-def review(t,path,d,stage_path):
+def review(t,path,d,stage_path,control='primary_ground_melee'):
     if path.is_symlink() or not path.resolve().is_relative_to(lab.ROOT/'evidence'):
         raise ValueError('requires an owned primary review')
     r=json.loads(path.read_text());f=r.get('frame',{});image=path.parent/f.get('file','');m=f.get('monitor',{})
     focus=owned_input.focus()
     if (r.get('reviewed') is not True or r.get('source',{}).get('sha256')!=lab.sha256(stage_path) or
-        r['source'].get('path')!=str(stage_path.resolve()) or f!=d['frame'] or r.get('control')!='primary_ground_melee' or
+        r['source'].get('path')!=str(stage_path.resolve()) or f!=d['frame'] or r.get('control')!=control or
         r.get('target_visible') is not True or not image.resolve().is_relative_to(lab.ROOT/'evidence') or
         not image.is_file() or lab.sha256(image)!=f.get('sha256') or not 0<=time.time()-image.stat().st_mtime<110 or
         not m.get('second_monitor_verified') or m.get('pid')!=t.receipt['runtime']['client']['pid'] or
