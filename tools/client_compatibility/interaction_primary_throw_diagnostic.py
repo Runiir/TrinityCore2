@@ -55,9 +55,10 @@ def run(t,path,review_path):
         if known!=((SPELL,1,0),) or any(row[1]>time.time() for row in cooldown):
             raise RuntimeError('requires native-known Heroic Throw with no saved active cooldown')
         t.receipt.update(native_known_spell=[list(v) for v in known],native_saved_cooldown=[list(v) for v in cooldown]);t.persist()
-        before,_=t.observe('throw_before')
-        if before.get('errors'):raise RuntimeError('requires fresh passive error history')
-        public_before=probe(t,'throw_combat_log_before')
+        with t.bounded_combat_observation(60):
+            before,_=t.observe('throw_before')
+            if before.get('errors'):raise RuntimeError('requires fresh passive error history')
+            public_before=probe(t,'throw_combat_log_before')
         if not 0<=time.time()-image.stat().st_mtime<110:raise RuntimeError('throw review expired')
         since=time.time()
         with t.bounded_combat_observation(60):

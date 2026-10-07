@@ -131,7 +131,8 @@ def stage(t,path,selection_review,name_authority=None,entry_path=None):
             if not native and (a.get('native_template')!=template or template!=[2830,PUBLIC_NAME,0,2048,0,1.0,1105] or a.get('session')!=session):
                 raise RuntimeError('exact current native Buzzard name authority is absent')
             t.receipt['name_authority']={'path':str(name_authority),'sha256':lab.sha256(name_authority)};t.persist()
-            t.execute({'kind':'chat','value':'/targetexact '+PUBLIC_NAME})
+            with t.bounded_combat_observation(60):
+                t.execute({'kind':'chat','value':'/targetexact '+PUBLIC_NAME})
         else:
             r=json.loads(selection_review.read_text());capture_path=Path(r['source']['path']);c=closed(capture_path)
             if c.get('phase')!='await_primary_range_selection' or c.get('actor')!=t.fixture or c.get('runtime')!=t.receipt['runtime'] or c.get('baseline')!=base or c.get('source',{}).get('sha256')!=lab.sha256(path):
@@ -141,7 +142,9 @@ def stage(t,path,selection_review,name_authority=None,entry_path=None):
             if len(point)!=2 or any(type(v) is not int for v in point) or not (200<=point[0]<1000 and 100<=point[1]<500):
                 raise RuntimeError('reviewed ordinary target point is outside the world viewport')
             t.io.click(*point,button=1,hold=1.2);time.sleep(1.5)
-        state,_=t.observe('range_selected_buzzard');o.poll();target=o.target()
+        with t.bounded_combat_observation(60):
+            state,_=t.observe('range_selected_buzzard')
+        o.poll();target=o.target()
         distance=math.dist(base['position'][:3],target['movement']['position'][:3]) if target else 0
         fixed=static_position(target)
         # Use the same pinned public native-GUID conversion as the melee oracle.
