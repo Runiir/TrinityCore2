@@ -22,8 +22,11 @@ def whole(e,key,count):
     require(len(e.get(key,{}))==count and all(e[key].values()),key+' differs')
 
 
-def proof(data,packets,phase):
+def proof(data,packets,phase,digests=None):
     if phase=='integrity':return {'integrity_only':True,'gameplay_qualified':False}
+    if phase=='ability':
+        from .primary_throw_checkpoint_evidence import proof as ability_proof
+        return ability_proof(data,digests,packets)
     if phase=='pre':
         b=data['native_feedback_build01.json'];d=data['native_feedback_stage01/deployment.json']
         require(b['completed'] and b['jobs']==1 and b['available_memory_kib']>=6291456 and
@@ -106,6 +109,13 @@ def review(directory,output,phase):
             reader=DigestReader(raw)
             with tarfile.open(fileobj=reader,mode='r|gz') as archive:
                 for member in archive:
+                    if phase=='ability' and member.name=='tracking/packets.jsonl':
+                        wanted={packet_key(p) for p in data['primary_faced_throw_native01/episode.json']['packets']}
+                        require(0<len(wanted)<=256,'ability outcome packet bound differs')
+                        with archive.extractfile(member) as f:
+                            for line in f:
+                                p=json.loads(line);key=packet_key(p)
+                                if key in wanted:packets.add(key)
                     if phase=='repeat' and member.name=='tracking/packets.jsonl':
                         session=data['primary_combat_entry01/episode.json']['session']
                         with archive.extractfile(member) as f:
@@ -126,7 +136,7 @@ def review(directory,output,phase):
             while reader.read(1024*1024):pass
     require(seen==set(selected) and reader.bytes==cp['bytes'] and reader.digest.hexdigest()==cp['sha256'],
         'actual remote compressed archive or complete member set differs')
-    outcome=proof(data,packets,phase)
+    outcome=proof(data,packets,phase,{p.removeprefix(prefix):sha for p,sha in selected.items()})
     d={'schema':'client442_native_feedback_remote_review_v1','reviewed_at':time.time(),
         'pointer':pointer,'archive_sha256':cp['sha256'],'bytes':reader.bytes,'actual_remote_verified':True,
         'complete_json_png_verified':True,'json_members':sum(p.endswith('.json') for p in selected),
@@ -136,5 +146,5 @@ def review(directory,output,phase):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity'],required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability'],required=True)
     a=p.parse_args();review(a.directory,a.output,a.phase)

@@ -4,6 +4,7 @@ from .world.native_objects import guid
 from .world.gameobjects import modern_guid
 from .world.objects import INDEX
 from .pet_attack_capture_evidence import target_guid
+from .primary_range_feedback_evidence import stock_range_error
 
 
 def require(condition,message):
@@ -32,9 +33,10 @@ def verify(e,stage,entry):
         e['actor']['character_name']=='Harnessone','owned primary identity differs')
     require(e['runtime']==stage['runtime']==entry['runtime'] and
         e['session']==stage['session']==entry['session'],'runtime/login epoch differs')
-    require(e.get('public_errors')==[] and e.get('bridge_rejections')==[] and
+    require(e.get('bridge_rejections')==[] and
         e.get('request_counts')=={'modern':1,'native':1},'ability rejection or repeated request')
     target=stage['target'];native_target=target['guid'];spell=57755
+    expected=tuple(modern_guid(native_target,target['map']))
     r=packet(e,'CMSG_CAST_SPELL','to_native');counter,request,_,flags,mask=r.unpack('BiiBI')
     require(request==spell and flags==0 and mask==2 and guid(r)==native_target,
         'native cast target/spell differs');r.end()
@@ -47,14 +49,42 @@ def verify(e,stage,entry):
     r=packet(e,'SMSG_SPELL_GO','from_native',owned_cast)
     require(guid(r)==1 and guid(r)==1 and r.unpack('Bi')==(counter,spell),'native completion differs')
     r=packet(e,'SMSG_SPELL_GO','to_client');caster=r.guid();unit=r.guid();cast=r.guid()
+    require(r.guid()==(0,0),'client completion original cast differs')
     require(caster==unit==(1,player_high()) and r.unpack('iI')==(spell,347658),'client completion differs')
     r=packet(e,'SMSG_SPELLNONMELEEDAMAGELOG','from_native',owned_damage)
     require(guid(r)==native_target and guid(r)==1,'native damage identity differs')
     native_spell,damage,overkill,school,absorbed,resisted,periodic,unused,blocked,hit,debug=r.unpack('IIIBIIBBIIB');r.end()
     require(native_spell==spell and not(periodic or unused or debug or hit&~2) and damage>0,
         'unsupported native direct damage')
+    errors=e.get('public_errors')
+    require(isinstance(errors,list),'public error observation absent')
+    if errors:
+        # The stock client starts melee after this successful ranged ability.
+        # Admit only its separately attributable out-of-range response.
+        require(all(stock_range_error(v) for v in errors),'unexpected public ability error')
+        r=packet(e,'CMSG_ATTACK_SWING','to_native')
+        require(r.unpack('Q')==(native_target,),'automatic melee target differs');r.end()
+        r=packet(e,'CMSG_ATTACK_SWING','from_client')
+        require(r.guid()==expected,
+            'automatic modern melee target differs');r.end()
+        def owned_start(r):return r.unpack('QQ')==(1,native_target)
+        r=packet(e,'SMSG_ATTACK_START','from_native',owned_start)
+        require(r.unpack('QQ')==(1,native_target),'automatic melee start differs');r.end()
+        r=packet(e,'SMSG_ATTACK_START','to_client')
+        require(r.guid()==(1,player_high()) and r.guid()==expected,
+            'automatic client melee start differs');r.end()
+        r=packet(e,'SMSG_ATTACKSWING_NOTINRANGE','from_native');r.end()
+        r=packet(e,'SMSG_ATTACK_SWING_ERROR','to_client')
+        require(r.unpack('B')==(0,),'automatic melee range error differs');r.end()
+        selected={(p['name'],p['direction']):p for p in e['packets'] if p['name'] in
+            ('CMSG_CAST_SPELL','CMSG_ATTACK_SWING','SMSG_ATTACKSWING_NOTINRANGE','SMSG_ATTACK_SWING_ERROR')}
+        cast_time=selected[('CMSG_CAST_SPELL','to_native')]['time']
+        attack_time=selected[('CMSG_ATTACK_SWING','to_native')]['time']
+        error_time=selected[('SMSG_ATTACKSWING_NOTINRANGE','from_native')]['time']
+        client_error=selected[('SMSG_ATTACK_SWING_ERROR','to_client')]['time']
+        require(0<=attack_time-cast_time<2 and 0<=error_time-attack_time<2 and
+            0<=client_error-error_time<2,'automatic melee range-error timing differs')
     r=packet(e,'SMSG_SPELL_NON_MELEE_DAMAGE_LOG','to_client')
-    expected=tuple(modern_guid(native_target,target['map']))
     require(r.guid()==expected and r.guid()==(1,player_high()) and r.guid()==cast,
         'client damage identity/cast differs')
     require(r.unpack('IIIIIBIII')==(spell,347658,damage,0,overkill,school,absorbed,resisted,blocked),
