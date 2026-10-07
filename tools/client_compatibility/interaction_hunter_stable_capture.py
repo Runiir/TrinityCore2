@@ -154,7 +154,14 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
         t.execute({'kind':'click','value':d['point'],'button':3,'hold':.4})
         state,frame=t.observe('stable_request_after')
         t.receipt.update(response_state=state,response_frame=frame);t.persist()
-        t.receipt['mouse_after']=detail(t,'stable_mouse_after_click');t.persist()
+        if not state.get('panels'):
+            t.receipt['mouse_after']=detail(t,'stable_mouse_after_click')
+        else:
+            # Open panels suppress the automatic action-bar diagnostic page.
+            # The actual gossip response now supplies stronger input evidence.
+            t.receipt['mouse_after_skipped']={'reason':'Stock panel is open; passive action-bar cycle is suspended.',
+                'panels':state['panels'],'extra_input_sent':False}
+        t.persist()
         if 'GossipFrame' in state.get('panels',[]):
             require(click_case(t,'diagnostic.hunter.stable_service','Select the observed native stable service.',
                 lambda c:c.get('text','').lower()=="i'd like to stable my pet here.",
