@@ -24,6 +24,9 @@ def whole(e,key,count):
 
 def proof(data,packets,phase,digests=None):
     if phase=='integrity':return {'integrity_only':True,'gameplay_qualified':False}
+    if phase=='owned-slot':
+        from .hunter_slot_evidence import proof as slot_proof
+        return slot_proof(data,digests,packets)
     if phase=='ability':
         from .primary_throw_checkpoint_evidence import proof as ability_proof
         return ability_proof(data,digests,packets)
@@ -109,8 +112,10 @@ def review(directory,output,phase):
             reader=DigestReader(raw)
             with tarfile.open(fileobj=reader,mode='r|gz') as archive:
                 for member in archive:
-                    if phase=='ability' and member.name=='tracking/packets.jsonl':
-                        wanted={packet_key(p) for p in data['primary_faced_throw_native01/episode.json']['packets']}
+                    if phase in ('ability','owned-slot') and member.name=='tracking/packets.jsonl':
+                        key='primary_faced_throw_native01/episode.json' if phase=='ability' else 'hunter_slot_trial_finish01/episode.json'
+                        field='packets' if phase=='ability' else 'call_pet_packets'
+                        wanted={packet_key(p) for p in data[key][field]}
                         require(0<len(wanted)<=256,'ability outcome packet bound differs')
                         with archive.extractfile(member) as f:
                             for line in f:
@@ -146,5 +151,5 @@ def review(directory,output,phase):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability'],required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot'],required=True)
     a=p.parse_args();review(a.directory,a.output,a.phase)
