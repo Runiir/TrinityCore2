@@ -8,11 +8,11 @@ from .review_native_feedback_checkpoint import require,packet_key,whole
 
 
 NAMES={k:'hunter_tame_'+v+'/episode.json' for k,v in (
-    ('preparation','prepare01'),('entry','entry01'),('stored','stored01'),('stage','wolf_stage01'),
+    ('preparation','prepare02'),('entry','entry02'),('stored','stored02'),('stage','wolf_stage01'),
     ('refresh','review_refresh01'),('cast','cast01'),('restore','pose_restore01'),
     ('park','park01'),('finish','original_finish01'))}
 CLOSURE='hunter_tame_success_close01/episode.json'
-BEFORE='hunter_tame_stable_before01/episode.json'
+BEFORE='hunter_tame_stable_before02/episode.json'
 AFTER='hunter_tame_stable_after01/episode.json'
 
 
