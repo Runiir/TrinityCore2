@@ -21,6 +21,7 @@ def proof(data,digests,tracking):
     require(c.get('phase')=='owned_tame_diagnostic_parked_boundary' and
         c.get('input_sent') is False and c.get('qualification_added') is False,'parked Tame boundary differs')
     rows={k:data[v] for k,v in NAMES.items()};cast=rows['cast'];old=rows['preparation']
+    whole(old,'checks',12)
     directory=Path(cast['staging_source']['path']).parent.parent
     require(directory.parent==lab.ROOT/'evidence','owned Tame batch differs')
     def ref(key):return {'path':str(directory/key),'sha256':digests[key]}
