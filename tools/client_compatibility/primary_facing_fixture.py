@@ -66,6 +66,7 @@ class PrimaryFacingFixture:
 
     @classmethod
     def resume(cls,out,path):
+        if path.is_symlink():raise RuntimeError('facing fixture cannot be a symlink')
         path=path.resolve()
         if path.is_symlink() or path.name!='primary_throw_facing_fixture.json' or not path.is_relative_to(lab.ROOT/'evidence'):
             raise RuntimeError('requires an owned native facing fixture')

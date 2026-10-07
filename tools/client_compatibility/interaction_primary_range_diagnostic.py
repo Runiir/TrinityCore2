@@ -18,6 +18,7 @@ from .world.gameobjects import modern_guid
 from .world.buffer import Reader
 from .interaction_macros import require
 from .primary_range_feedback_evidence import stock_range_error
+from .primary_facing_fixture import PrimaryFacingFixture
 
 # The diagnostic strip obscures the caption prefix. The actual owned native
 # query reply and template2830 both establish this full name.
@@ -97,7 +98,7 @@ def capture(t,path):
         phase='await_primary_range_selection',input_sent=False,qualification_added=False)
 
 
-def stage(t,path,selection_review,name_authority=None,entry_path=None):
+def stage(t,path,selection_review,name_authority=None,entry_path=None,face_target=False):
     raw=closed(path)
     if raw.get('phase')=='owned_primary_combat_preparation':
         d=source(t,path,'owned_primary_combat_preparation')
@@ -118,6 +119,7 @@ def stage(t,path,selection_review,name_authority=None,entry_path=None):
     if protected_snapshot()!=base['protected'] or position(1)!=base['position']:raise RuntimeError('primary source pose changed')
     o=RangePresence(session,1,started).poll()
     t.receipt.update(baseline=base,session=session,entry_started_at=started,qualification_added=False);t.persist()
+    facing=None
     try:
         if name_authority:
             if name_authority.is_symlink() or not name_authority.resolve().is_relative_to(lab.ROOT/'evidence'):
@@ -145,6 +147,16 @@ def stage(t,path,selection_review,name_authority=None,entry_path=None):
         with t.bounded_combat_observation(60):
             state,_=t.observe('range_selected_buzzard')
         o.poll();target=o.target()
+        if face_target:
+            if not target or not static_position(target):raise RuntimeError('facing setup requires the exact static native target')
+            facing=PrimaryFacingFixture(t.out)
+            posed=facing.prepare(base['position'],target['movement']['position'])
+            fixture_path=t.out/'primary_throw_facing_fixture.json'
+            t.receipt.update(combat_position=posed,pose_fixture={'path':str(fixture_path),'sha256':lab.sha256(fixture_path)});t.persist()
+            with t.bounded_combat_observation(60):
+                t.execute({'kind':'chat','value':'/targetexact '+PUBLIC_NAME})
+                state,_=t.observe('facing_selected_buzzard')
+            o.poll();target=o.target()
         distance=math.dist(base['position'][:3],target['movement']['position'][:3]) if target else 0
         fixed=static_position(target)
         # Use the same pinned public native-GUID conversion as the melee oracle.
@@ -156,12 +168,17 @@ def stage(t,path,selection_review,name_authority=None,entry_path=None):
             'unchanged_user_pose':position(1)==base['position'],'protected':protected_snapshot()==base['protected'],
             'saved':saved(1)==base['saved'],'inventory':inventory(1)==base['inventory'],'idle':not state['owner_melee']['active'],
             'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+        if facing:
+            checks.pop('unchanged_user_pose')
+            checks['staged_native_pose']=position(1)==t.receipt['combat_position'] and t.receipt['combat_position'][:3]==base['position'][:3]
         t.receipt.update(checks=checks,target=copy.deepcopy(target),static_position_authority=fixed,
             distance_metres=distance,frame=shot(t.out/'review_ready.png'),
             phase='await_primary_range_review');t.persist()
         if not all(checks.values()):raise RuntimeError('current selected out-of-range Buzzard differs')
         t.receipt['completed']=True
-    except Exception:restore(t,o,base);raise
+    except Exception:
+        if facing:t.receipt['facing_restoration']=facing.restore()
+        restore(t,o,base);raise
 
 
 def run(t,path,review_path):
@@ -215,6 +232,7 @@ def run(t,path,review_path):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['capture','stage','run'])
     p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path);p.add_argument('--name-authority',type=Path);p.add_argument('--entry',type=Path)
+    p.add_argument('--face-target',action='store_true',help='reversible native facing setup, restored by the following ability diagnostic')
     p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     if a.action=='run' and not a.review:p.error('run requires separately reviewed target')
     if a.action=='stage' and not (a.review or a.name_authority):p.error('stage requires reviewed selection or exact native name authority')
@@ -223,7 +241,7 @@ if __name__=='__main__':
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='capture':capture(t,a.source)
-            elif a.action=='stage':stage(t,a.source,a.review,a.name_authority,a.entry)
+            elif a.action=='stage':stage(t,a.source,a.review,a.name_authority,a.entry,a.face_target)
             else:run(t,a.source,a.review)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()

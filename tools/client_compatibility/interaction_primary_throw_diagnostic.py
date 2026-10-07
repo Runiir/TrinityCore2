@@ -12,6 +12,7 @@ from .interaction_owned_class_fixture import SCRIPT_BOUNDARY
 from .interaction_combat_log import probe
 from .world.native_objects import guid
 from .world.objects import INDEX
+from .primary_facing_fixture import PrimaryFacingFixture
 
 SPELL=57755
 CAST_NAMES={'SMSG_SPELL_START','SMSG_SPELL_GO','SMSG_CAST_FAILED','SMSG_SPELL_FAILURE',
@@ -42,10 +43,18 @@ def run(t,path,review_path):
     d=source(t,path,'await_primary_range_review')
     if len(d.get('checks',{}))!=13 or not all(d['checks'].values()):raise RuntimeError('current target staging incomplete')
     o=ThrowPresence(d['session'],1,d['entry_started_at']).poll();base=d['baseline'];target=d['target']
+    facing=None
+    if d.get('pose_fixture'):
+        ref=d['pose_fixture'];fixture_path=Path(ref['path'])
+        if fixture_path.is_symlink() or lab.sha256(fixture_path)!=ref['sha256']:raise RuntimeError('owned facing fixture digest differs')
+        facing=PrimaryFacingFixture.resume(t.out,fixture_path)
+        if facing.before!=base['position'] or facing.landing!=d.get('combat_position'):
+            raise RuntimeError('recorded user/combat facing differs')
+        t.receipt['pose_fixture']=ref
     t.receipt.update(baseline=base,session=d['session'],qualification_added=False,spell=SPELL);t.persist()
     try:
         image=review(t,review_path,d,path,'primary_throw')
-        if (position(1)!=base['position'] or not o.target() or o.target()['guid']!=target['guid'] or
+        if (position(1)!=d.get('combat_position',base['position']) or not o.target() or o.target()['guid']!=target['guid'] or
             protected_snapshot()!=base['protected'] or static_position(o.target())!=d['static_position_authority'] or
             not 10<d['distance_metres']<25):raise RuntimeError('reviewed native target or saved pose changed')
         with lab.connection() as c,c.cursor() as q:
@@ -84,7 +93,10 @@ def run(t,path,review_path):
         if len(requests)!=1 or len(native)!=1 or native_spell(native[0])['spell']!=SPELL or not completed:
             raise RuntimeError('targeted Heroic Throw lacks one exact native request and completion')
         t.receipt['completed']=True
-    finally:restore(t,o,base)
+    finally:
+        if facing:
+            t.receipt['facing_restoration']=facing.restore();t.persist()
+        restore(t,o,base)
 
 
 if __name__=='__main__':
