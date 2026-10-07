@@ -130,9 +130,10 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
         return
     current=pets(6)
     if slot not in (0,5) or not pet_identity(e['baseline_pets'],current,slot):raise RuntimeError('owned stored pet slot or identity differs')
+    rendering,_=read_page(t,'stable_slot_rendering','state','/tcui')
     state,frame,probe=panel(t,'stable_slot_before',slot)
     t.receipt.update(slot=slot,state=state,frame=frame,public_stable=probe,retained_pet_before=current,
-        completed=False,input_sent=False);t.persist()
+        observed_framerate=rendering.get('framerate'),completed=False,input_sent=False);t.persist()
     if action=='refresh':
         t.receipt.update(completed=True,phase='await_owned_stable_slot_review');return
     staged=closed(source)
@@ -149,7 +150,8 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
         b=rows[0];return [round(b['x']/65535*1280),round(b['y']/65535*720)]
     start,end=point(slot+1),point(destination+1)
     if d.get('point')!=start or d.get('end')!=end:raise RuntimeError('reviewed slot button points differ from current public controls')
-    if d.get('framerate',0)<8:raise RuntimeError('slot move requires normally rendering scout')
+    if rendering.get('framerate',0)<8 or rendering.get('cursor_info'):
+        raise RuntimeError('slot move requires normally rendering scout and an empty cursor')
     path=lab.ROOT/'run/owned_stable_request_probe.json'
     if path.exists():raise RuntimeError('another owned capture is armed')
     started=time.time();config={'schema':'client442_owned_stable_request_probe_v1','session':session,'owner':6,
