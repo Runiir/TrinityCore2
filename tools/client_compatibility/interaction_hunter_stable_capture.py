@@ -84,9 +84,10 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
         t.receipt['input_sent']=True;t.persist()
         t.execute({'kind':'click','value':d['point'],'button':3,'hold':.4})
         state,frame=t.observe('stable_request_after')
+        t.receipt.update(response_state=state,response_frame=frame);t.persist()
         if 'GossipFrame' in state.get('panels',[]):
             require(click_case(t,'diagnostic.hunter.stable_service','Select the observed native stable service.',
-                lambda c:c['name'].startswith('GossipTitleButton') and 'stable' in c.get('text','').lower(),
+                lambda c:c.get('text','').lower()=="i'd like to stable my pet here.",
                 lambda b,a,s:{'status':'stable_service_selected' if s and not a.get('lua_errors') and
                     not a.get('blocked_actions') else 'client_or_protocol_failure'}),'stable_service_selected')
         journal=lab.ROOT/'evidence/owned_stable_request_packets.jsonl'
@@ -98,6 +99,9 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
             raise RuntimeError('captured public stable master identity differs')
         t.receipt['decoded_request']={'stable_master_guid':list(submitted)}
     finally:
+        journal=lab.ROOT/'evidence/owned_stable_request_packets.jsonl'
+        t.receipt['capture_packets']=[p for p in entries(journal) if p.get('session')==session and
+            p.get('time',0)>=started] if journal.is_file() else []
         if lab.sha256(path)!=digest:raise RuntimeError('armed stable probe changed; refusing disarm')
         path.unlink();t.receipt['capture_disarmed']=True;t.clean_panels()
         t.execute({'kind':'chat','value':'/targetexact Erma'});state,frame=t.observe('stable_request_restored');o.poll()
