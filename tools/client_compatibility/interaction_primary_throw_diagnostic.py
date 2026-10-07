@@ -9,6 +9,7 @@ from .interaction_primary_melee_diagnostic import review
 from .interaction_primary_combat_reentry import protected_snapshot
 from .interaction_ground_movement import position
 from .interaction_owned_class_fixture import SCRIPT_BOUNDARY
+from .interaction_combat_log import probe
 from .world.native_objects import guid
 
 SPELL=57755
@@ -55,11 +56,13 @@ def run(t,path,review_path):
         t.receipt.update(native_known_spell=[list(v) for v in known],native_saved_cooldown=[list(v) for v in cooldown]);t.persist()
         before,_=t.observe('throw_before')
         if before.get('errors'):raise RuntimeError('requires fresh passive error history')
+        public_before=probe(t,'throw_combat_log_before')
         if not 0<=time.time()-image.stat().st_mtime<110:raise RuntimeError('throw review expired')
         since=time.time()
         with t.bounded_combat_observation(60):
             t.execute({'kind':'chat','value':'/cast Heroic Throw'});time.sleep(1)
             after,frame=t.observe('throw_after');o.poll()
+            public_after=probe(t,'throw_combat_log_after');o.poll()
         packets=[p for p in o.combat if p['time']>=since]
         requests=[p for p in packets if p['name']=='CMSG_CAST_SPELL' and p['direction']=='from_client']
         native=[p for p in packets if p['name']=='CMSG_CAST_SPELL' and p['direction']=='to_native']
@@ -69,6 +72,7 @@ def run(t,path,review_path):
         rejected=[p for p in Cursor(lab.ROOT/'logs/modern_world.jsonl').poll() if p.get('session')==d['session'] and
             p.get('time',0)>=since and p.get('event')=='cast_translation_rejected']
         t.receipt.update(packets=packets,public_errors=errors,bridge_rejections=rejected,frame=frame,
+            public_combat_log_before=public_before,public_combat_log_after=public_after,
             native_completions=completed,request_counts={'modern':len(requests),'native':len(native)},
             health_after=after.get('target'),phase='primary_throw_outcome_captured',
             qualified_scope='One ordinary targeted damage ability diagnosis. No combat interaction is admitted by capture alone.')
