@@ -100,34 +100,38 @@ def ready(t, oracle):
     return state, frame
 
 
+def load_dead(t, oracle, session):
+    if oracle.poll().present(): return
+    if 883 not in wire_known(t, session): raise RuntimeError('ordinary Call Pet1 is not native-known')
+    since = time.time()
+    t.receipt.update(call_dead_pet_started_at=since, call_dead_pet_fixture_only=True)
+    t.persist()
+    t.execute({'kind': 'chat', 'value': '/cast Call Pet 1'})
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        oracle.poll()
+        if oracle.present(): break
+        time.sleep(.1)
+    requested = [p for p in entries(lab.ROOT / 'evidence/world_packets.jsonl') if
+        p.get('session') == session and p.get('name') == 'CMSG_CAST_SPELL' and
+        p.get('direction') == 'to_native' and p.get('time', 0) >= since]
+    t.receipt['call_dead_pet_native_requests'] = requested
+    t.persist()
+    if (len(requested) != 1 or cast_identity(requested[0])['spell'] != 883 or
+        not oracle.present() or oracle.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
+        oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH'], 0) != 0):
+        raise RuntimeError('one ordinary fixture Call Pet did not load the same dead Wolf16')
+    t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
+
+
 def run(t, preparation, entry, fixture_path, action, source, review_path):
-    old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path, action == 'recon')
+    old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path, action in ('recon', 'refresh'))
     t.receipt.update(native_session=session, entry_source=bound(entry), dead_fixture_source=bound(fixture_path),
         baseline_resources=resources(inventory), baseline_saved=saved(6), native_pet_before=oracle.pet,
         qualification_added=False, input_sent=False)
     if action == 'recon':
         spell = caption(t, session)
-        oracle.poll()
-        if not oracle.present():
-            if 883 not in wire_known(t, session): raise RuntimeError('ordinary Call Pet1 is not native-known')
-            since = time.time()
-            t.receipt.update(call_dead_pet_started_at=since, call_dead_pet_fixture_only=True)
-            t.persist()
-            t.execute({'kind': 'chat', 'value': '/cast Call Pet 1'})
-            deadline = time.monotonic() + 15
-            while time.monotonic() < deadline:
-                oracle.poll()
-                if oracle.present(): break
-                time.sleep(.1)
-            requested = [p for p in entries(lab.ROOT / 'evidence/world_packets.jsonl') if
-                p.get('session') == session and p.get('name') == 'CMSG_CAST_SPELL' and
-                p.get('direction') == 'to_native' and p.get('time', 0) >= since]
-            t.receipt['call_dead_pet_native_requests'] = requested
-            t.persist()
-            if (len(requested) != 1 or cast_identity(requested[0])['spell'] != 883 or
-                not oracle.present() or oracle.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
-                oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH'], 0) != 0):
-                raise RuntimeError('one ordinary fixture Call Pet did not load the same dead Wolf16')
+        load_dead(t, oracle, session)
         t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
         state, frame = ready(t, oracle)
         t.receipt.update(revive_spell=spell, state=state, frame=frame, protected_checks=protected(old),
@@ -138,6 +142,7 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
         recon.get('actor') != t.fixture or recon.get('dead_fixture_source') != bound(fixture_path) or
         recon.get('entry_source') != bound(entry) or recon.get('revive_spell', {}).get('id') != 982):
         raise RuntimeError('closed same-entry observed Revive caption differs')
+    if action == 'refresh': load_dead(t, oracle, session)
     before, frame = ready(t, oracle)
     if action == 'refresh':
         t.receipt.update(revive_spell=recon['revive_spell'], recon_source=bound(source), state=before, frame=frame,
