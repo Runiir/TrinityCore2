@@ -1,10 +1,10 @@
 """Stream actual single-Tame packet journals without admitting an interaction."""
-import argparse,hashlib,json,time
+import argparse,json,time
 from pathlib import Path
 from . import lab_runtime as lab
 from .observation.journal import entries
 from .world.buffer import Reader,player_high
-from .world.objects import native_guid
+from .world.native_objects import guid as native_guid
 
 
 def require(value,message):
