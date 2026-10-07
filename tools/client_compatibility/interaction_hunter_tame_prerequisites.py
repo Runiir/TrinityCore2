@@ -20,7 +20,7 @@ def read(output):
         q.execute('SELECT c.guid,c.id,t.name,c.map,c.position_x,c.position_y,c.position_z,c.orientation,'
             't.minlevel,t.maxlevel,t.type,t.type_flags,t.family,t.faction,t.unit_flags,c.MovementType '
             'FROM client442_world.creature c JOIN client442_world.creature_template t ON t.entry=c.id '
-            'WHERE c.map=%s AND c.id=299 ORDER BY POW(c.position_x-%s,2)+POW(c.position_y-%s,2) LIMIT5',
+            'WHERE c.map=%s AND c.id=299 ORDER BY POW(c.position_x-%s,2)+POW(c.position_y-%s,2) LIMIT 5',
             (owner['map'],owner['position_x'],owner['position_y']))
         rows=[dict(zip(keys,row)) for row in q.fetchall()]
     spells=[r[0] for r in known(6)]
