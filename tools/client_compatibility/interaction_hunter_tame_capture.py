@@ -184,6 +184,12 @@ def run(t,preparation,entry,staging,action,source=None,review_path=None,pose_pat
         recon['tame_spell'].get('name')!='Tame Beast' or len(recon.get('protected_checks',{}))!=5 or
         not all(recon['protected_checks'].values())):
         raise RuntimeError('requires the closed observed Tame Beast caption and staged target')
+    if action=='refresh':
+        state,frame,o=target(t,staged,session,entered['started_at'])
+        t.receipt.update(recon_source=bound(source),tame_spell=recon['tame_spell'],state=state,frame=frame,
+            native_vitals_before=vitals(o),protected_checks=protected(old),completed=True,
+            input_sent=False,phase='await_owned_tame_cast_review')
+        return
     d=reviewed(t,review_path,'Tame Beast')
     if d.get('source')!=bound(source) or d.get('frame')!=recon['frame']:
         raise RuntimeError('Tame Beast review differs from the exact current target frame')
@@ -196,6 +202,10 @@ def run(t,preparation,entry,staging,action,source=None,review_path=None,pose_pat
         deadline=time.monotonic()+20
         while time.monotonic()<deadline:
             o.poll()
+            channel_state,channel_frame=t.observe('tame_channel_sample',seconds=8)
+            t.receipt.setdefault('public_channel_samples',[]).append({'time':time.time(),
+                'player_channel':channel_state.get('player_channel'),'frame':channel_frame})
+            t.persist()
             if o.present():break
             time.sleep(.25)
         after,frame=t.observe('tame_outcome');o.poll()
@@ -247,11 +257,12 @@ def run(t,preparation,entry,staging,action,source=None,review_path=None,pose_pat
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','cast','settle'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['recon','refresh','cast','settle'])
     for k in ('preparation','entry','staging','output'):p.add_argument('--'+k,type=Path,required=True)
     p.add_argument('--source',type=Path);p.add_argument('--review',type=Path)
     p.add_argument('--pose-restoration',type=Path);a=p.parse_args()
     if a.action=='cast' and (not a.source or not a.review):p.error('requires a closed caption recon and fresh image review')
+    if a.action=='refresh' and not a.source:p.error('requires the closed observed caption source')
     if a.action=='settle' and (not a.source or not a.pose_restoration):p.error('requires a failed single-Tame and closed pose restoration')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
