@@ -149,6 +149,7 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
         'native_master_guid':guid,'modern_master_guid':e['modern_master_guid'],'created_at':started,'expires_at':started+60}
     lab.private_write(path,json.dumps(config,indent=2)+'\n');digest=lab.sha256(path)
     t.receipt.update(capture_config=config,capture_config_sha256=digest,input_sent=False);t.persist()
+    opened_ok=False
     try:
         t.receipt['input_sent']=True;t.persist()
         t.execute({'kind':'click','value':d['point'],'button':3,'hold':.4})
@@ -192,28 +193,35 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
             'native_actual_capacity':catalog['stable_capacity']==16,'passive_stable_observer':public.get('observer_version') in (140,141,142,143),
             'ui_clean':not public.get('lua_errors') and not public.get('blocked_actions')}
         t.receipt.update(public_stable=probe,public_stable_frame=pixels,outcome_checks=checks);t.persist()
-        t.receipt['cases'].append({'id':'pets.stable_open','time':time.time(),'input_sent':True,
-            'status':'native_owned_stable_open_pass' if all(checks.values()) else 'client_or_protocol_failure',
+        t.receipt['cases'].append({'id':'diagnostic.hunter.stable_slot_open' if action=='slot-open' else 'pets.stable_open',
+            'time':time.time(),'input_sent':True,
+            'status':('owned_stable_slot_staged' if action=='slot-open' else 'native_owned_stable_open_pass')
+                if all(checks.values()) else 'client_or_protocol_failure',
             'after_frame':pixels,'oracle':{'checks':checks}});t.persist()
         if not all(checks.values()):raise RuntimeError('native and public stable opening differ')
+        opened_ok=True
     finally:
         journal=lab.ROOT/'evidence/owned_stable_request_packets.jsonl'
         t.receipt['capture_packets']=[p for p in entries(journal) if p.get('session')==session and
             p.get('time',0)>=started] if journal.is_file() else []
         if lab.sha256(path)!=digest:raise RuntimeError('armed stable probe changed; refusing disarm')
         path.unlink();t.receipt['capture_disarmed']=True
-        restore(t,old,e,o,inv,retained)
+        if action!='slot-open' or not opened_ok:restore(t,old,e,o,inv,retained)
+    if action=='slot-open':
+        t.receipt.update(completed=True,phase='await_owned_stable_slot_review',
+            qualified_scope='Native owned stable opened and retained for a separately reviewed ordinary slot move; no qualification.')
+        return
     t.receipt.update(completed=True,phase='hunter_stable_native_open_verified',
         qualified_scope='Ordinary Erma gossip opens the native owned Hunter stable catalog. Named pet cache, level, model and '
             'selection match native records; resources, saved pet and all protected actors restore. Slot mutation and capacity remain open.')
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','refresh','inspect','capture','recover'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','refresh','inspect','capture','recover','slot-open'])
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
     if a.action!='stage' and not a.source:p.error('requires a closed staging source')
-    if a.action=='capture' and not a.review:p.error('requires a separate fresh Erma image review')
+    if a.action in ('capture','slot-open') and not a.review:p.error('requires a separate fresh Erma image review')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
