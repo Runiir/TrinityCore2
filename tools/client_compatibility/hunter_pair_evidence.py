@@ -6,7 +6,7 @@ from .review_native_feedback_checkpoint import require,packet_key
 from .world.buffer import Reader,Writer
 from .world.gameobjects import modern_guid
 from .world.native_objects import guid as native_guid
-from .interaction_hunter_stable_pair import identities,public_rows,expected_rows
+from .hunter_pair_identity import identities,public_rows,expected_rows
 CLOSURE='hunter_pair_close02/episode.json'
 
 
