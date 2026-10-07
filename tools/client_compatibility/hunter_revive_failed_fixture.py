@@ -28,8 +28,12 @@ def times(e, keys):
         all(a < b for a, b in zip(values, values[1:])))
 
 
-def validate_failed_cast(e):
+def validate_failed_cast(e, raw_packets=None):
     """Admit this fully recorded failure, never a partial receipt or successful cast."""
+    from . import hunter_revive_restoration_failure as restoration
+    if e.get('failure') == restoration.FAILURE:
+        restoration.proof(e, raw_packets) if raw_packets is not None else restoration.from_journal(e)
+        return e
     if (e.get('schema') != 'client442_laya_interactions_v1' or e.get('completed') is not False or
         e.get('failure') != FAILURE or e.get('phase') is not None or
         e.get('controller') != 'code_diagnostic_ordinary_inputs' or e.get('model') is not None or
@@ -76,13 +80,13 @@ def validate_failed_cast(e):
     return e
 
 
-def failed_cast(path):
+def failed_cast(path, raw_packets=None):
     path = Path(path)
     if path.is_symlink(): raise ValueError('requires an owned failed episode, without a symlink')
     path = path.resolve()
     if path.name != 'episode.json' or not path.is_relative_to(lab.ROOT / 'evidence'):
         raise ValueError('requires a private fully closed failed episode')
-    return validate_failed_cast(json.loads(path.read_text()))
+    return validate_failed_cast(json.loads(path.read_text()), raw_packets)
 
 
 def linked_closed(ref):
@@ -94,9 +98,9 @@ def linked_closed(ref):
     return closed(path)
 
 
-def sources(preparation_path, fixture_path, cast_path, park_path):
+def sources(preparation_path, fixture_path, cast_path, park_path, raw_packets=None):
     old, fixture, park = [closed(p) for p in (preparation_path, fixture_path, park_path)]
-    cast = failed_cast(cast_path)
+    cast = failed_cast(cast_path, raw_packets)
     expected = bound(preparation_path)
     entry = linked_closed(cast.get('entry_source'))
     recon = linked_closed(cast.get('recon_source'))
@@ -130,7 +134,7 @@ def sources(preparation_path, fixture_path, cast_path, park_path):
     return old, fixture, cast, park
 
 
-def offline_restore(before, fixture, park, rest_proof=None):
+def offline_restore(before, fixture, park, rest_proof=None, cast=None):
     """Return the sole permitted cleanup state; reject every other offline change."""
     original = fixture['before']
     dead_snapshot(original)
@@ -158,7 +162,22 @@ def offline_restore(before, fixture, park, rest_proof=None):
     baseline = {p['id']: p for p in old}
     pet = current[16]
     ignored = {'curhealth', 'CreatedBySpell', 'active', 'savetime'}
-    if (current[4] != baseline[4] or (pet['curhealth'], pet['CreatedBySpell'], pet['active']) != (0, 883, 0) or
+    required = (0, 883, 0)
+    if cast is not None:
+        from . import hunter_revive_restoration_failure as restoration
+        if cast.get('failure') == restoration.FAILURE:
+            restoration.shape(cast)
+            ignored = {'CreatedBySpell', 'savetime'}
+            required = (278, 883, 1)
+            retained = {p['id']: p for p in cast.get('retained_pet_after', [])}
+            if (set(retained) != {4, 16} or retained[4] != baseline[4] or
+                pet['savetime'] < retained[16]['savetime'] or
+                {k: v for k, v in pet.items() if k != 'savetime'} !=
+                    {k: v for k, v in retained[16].items() if k != 'savetime'}):
+                raise RuntimeError('post-Revive restoration failure saved pet differs from its actual living capture')
+        elif cast.get('failure') != FAILURE:
+            raise RuntimeError('no offline cleanup exists for this failed Revive variant')
+    if (current[4] != baseline[4] or (pet['curhealth'], pet['CreatedBySpell'], pet['active']) != required or
         pet['savetime'] < baseline[16]['savetime'] or
         {k: v for k, v in pet.items() if k not in ignored} != {k: v for k, v in baseline[16].items() if k not in ignored}):
         raise RuntimeError('failed Revive cleanup differs beyond the recorded dead/called fixture')

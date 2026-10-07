@@ -167,7 +167,7 @@ def wire_proof(cast, tracking):
     timing = native_revive_timing(recorded, request, setup)
     require(timing.get('native_ten_second_cast') is True and
         timing.get('completion_within_conservative_corpse_deadline') is True and
-        timing.get('one_matching_start_and_completion') is True and timing.get('actual_cast_seconds', 0) >= 10 and
+        timing.get('one_matching_start_and_completion') is True and timing.get('native_completion_ordered') is True and
         same(timing, cast['native_cast_timing']),
         'actual native Revive START10000/GO timing differs')
     completion = timing['completions'][0]

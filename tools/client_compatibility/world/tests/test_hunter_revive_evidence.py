@@ -52,7 +52,7 @@ def revive_packet(name):
     raise AssertionError('trace lacks native Revive' + name)
 
 
-def fixture(trace=TRACE):
+def fixture(trace=TRACE, elapsed=10.0006):
     """Construct a synthetic Revive outcome after actual dead-creation packets."""
     guid = trace['pet_guid']; source_creation = creation_for(trace['packets'], guid)
     source_call = trace['call_fixture_native_requests'][0]
@@ -67,7 +67,7 @@ def fixture(trace=TRACE):
         'body': '01830482f5bc0000000000000000d6030000069d030000000000000000000000000000000000000000000000000000000000000000000000'}
     native = {**modern, 'time': request_at + .0001, 'direction': 'to_native', 'body': '04d6030000000000000000000000'}
     start = {**revive_packet('SMSG_SPELL_START'), 'session': trace['session'], 'time': request_at + .01}
-    go = {**revive_packet('SMSG_SPELL_GO'), 'session': trace['session'], 'time': request_at + 10.0106}
+    go = {**revive_packet('SMSG_SPELL_GO'), 'session': trace['session'], 'time': start['time'] + elapsed}
     modern_start = {**start, 'direction': 'to_client', 'time': start['time'] + .0001,
         'body': '01a006040801a006040801a30483f504bc0000d6030000069d0300020804000000000010270000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000164000000'}
     modern_go = {**go, 'direction': 'to_client', 'time': go['time'] + .0001,
@@ -118,6 +118,32 @@ def test_native_raw_health_update_is_required_for_one_revive():
     assert result['native_dead_to_alive'] and result['native_requests'] == 1
     assert result['actual_cast_seconds'] == pytest.approx(10.0006)
     assert result['raw_health_update']['body'] == tracking['wire'][-1]['body']
+
+
+def test_actual_ui168_receiver_elapsed_is_diagnostic_for_advertised_ten_second_cast():
+    # Actual cast01 receipts advertise START10000ms at1791398577.6703427,
+    # then GO at1791398587.6608095. Receiver elapsed is not a native clock.
+    actual_elapsed = 1791398587.6608095 - 1791398577.6703427
+    assert actual_elapsed == pytest.approx(9.990466833)
+    cast, tracking = fixture(elapsed=actual_elapsed)
+    result = evidence.wire_proof(cast, tracking)
+    assert result['native_cast_time_ms'] == 10000 and result['native_dead_to_alive']
+    assert result['actual_cast_seconds'] == pytest.approx(actual_elapsed)
+
+
+@pytest.mark.parametrize('fault', ['reversed_order','wrong_duration','deadline'])
+def test_receiver_elapsed_never_relaxes_native_order_duration_or_corpse_deadline(fault):
+    elapsed = -.01 if fault == 'reversed_order' else 39 if fault == 'deadline' else 9.990466833
+    cast, tracking = fixture(elapsed=elapsed)
+    if fault == 'wrong_duration':
+        start = next(p for p in cast['cast_packets'] if p['name'] == 'SMSG_SPELL_START' and p['direction'] == 'from_native')
+        body = bytearray.fromhex(start['body']); old = packet_key(start)
+        struct.pack_into('<I', body, 17, 9999); start['body'] = body.hex()
+        tracking['packets'].remove(old); tracking['packets'].add(packet_key(start))
+        cast['native_cast_timing'] = native_revive_timing(cast['cast_packets'], cast['native_cast_requests'][0],
+            cast['final_submission_corpse_budget']['lifetime_source']['started_at'])
+    with pytest.raises(RuntimeError, match='START10000/GO timing'):
+        evidence.wire_proof(cast, tracking)
 
 
 def test_actual_ui168_retained_tame_creator_passes_only_with_fresh_callpet_ancestry():
