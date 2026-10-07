@@ -12,6 +12,7 @@
 #include "stables.hpp"
 #include "tame_channels.hpp"
 #include "tame_pet_added.hpp"
+#include "entry_probe.hpp"
 #include "ready_check.hpp"
 #include "chat.hpp"
 #include "chat_channels.hpp"
@@ -99,6 +100,9 @@ int main(int argc, char **argv)
                 }
                 else if(op=="owned_pet_abandon_probe")
                     result=owned_pet_abandon_probe(str(get(request,"root")),str(get(request,"direction")),
+                        str(get(request,"name")),data("body"),str(get(request,"session")),number(get(request,"now")));
+                else if(op=="owned_entry_probe")
+                    result=owned_entry_probe(str(get(request,"root")),str(get(request,"direction")),
                         str(get(request,"name")),data("body"),str(get(request,"session")),number(get(request,"now")));
                 else if(op=="owned_tame_probe")
                     result=owned_tame_probe(str(get(request,"root")),str(get(request,"direction")),
