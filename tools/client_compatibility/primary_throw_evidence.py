@@ -3,12 +3,17 @@ from .world.buffer import Reader,player_high
 from .world.native_objects import guid
 from .world.gameobjects import modern_guid
 from .world.objects import INDEX
-from .pet_attack_capture_evidence import target_guid
 from .primary_range_feedback_evidence import stock_range_error
 
 
 def require(condition,message):
     if not condition:raise RuntimeError(message)
+
+
+def target_guid(target):
+    native=target['guid']
+    require(native>>52==0xf13,'ability target is not a native creature')
+    return f"Creature-0-1-{target['map']}-0-{native>>32&0xfffff}-{native&0xffffffff:010X}"
 
 
 def closed(e,field,count):
