@@ -9,7 +9,11 @@ bool owned_stable_request_probe(std::filesystem::path const &root, std::string c
 {
     bool request=name=="CMSG_REQUEST_STABLED_PETS" && direction=="from_client";
     bool catalog=name=="MSG_LIST_STABLED_PETS" && direction=="from_native";
-    if(!request && !catalog)return false;
+    bool slot=name=="CMSG_SET_PET_SLOT" && (direction=="from_client" || direction=="to_native");
+    bool update=name=="SMSG_PET_SLOT_UPDATED" && direction=="from_native";
+    bool result=(name=="SMSG_STABLE_RESULT" && direction=="from_native") ||
+        (name=="SMSG_PET_STABLE_RESULT" && direction=="to_client");
+    if(!request && !catalog && !slot && !update && !result)return false;
     try
     {
         auto path=root/"run/owned_stable_request_probe.json";
@@ -24,6 +28,36 @@ bool owned_stable_request_probe(std::filesystem::path const &root, std::string c
            get(config,"modern_master_guid")!=Protocol::modern_guid(native,0))return false;
         if(catalog)return integer(get(native_stable_list(body),"native_master"))==native;
         Reader r(body);
+        if(slot || update || result)
+        {
+            auto const &scope=get(config,"slot_roundtrip");
+            if(!scope.is_object() || integer(get(scope,"pet_number"))!=4 || get(scope,"slots")!=Array{0,5})return false;
+            if(slot)
+            {
+                if(r.take<std::uint32_t>()!=4)return false;
+                auto destination=r.take<std::uint8_t>();if(destination!=0 && destination!=5)return false;
+                if(direction=="from_client") {if(r.guid()!=get(config,"modern_master_guid"))return false;}
+                else
+                {
+                    std::array<std::uint8_t,8> octets{};
+                    for(auto i:{3,2,0,7,5,6,1,4})octets[i]=r.bits(1);
+                    for(auto i:{5,3,1,7,4,0,6,2})if(octets[i])octets[i]=r.take<std::uint8_t>()^1;
+                    std::uint64_t guid=0;std::memcpy(&guid,octets.data(),8);if(guid!=native)return false;
+                }
+            }
+            else if(update)
+            {
+                auto number=r.take<std::uint32_t>(),destination=r.take<std::uint32_t>();
+                auto swap=r.take<std::uint32_t>(),source=r.take<std::uint32_t>();
+                if(number!=4 || swap || !((source==0 && destination==5) || (source==5 && destination==0)))return false;
+            }
+            else
+            {
+                auto code=r.take<std::uint8_t>();
+                if(code!=1 && code!=3 && code!=8 && code!=9 && code!=11 && code!=12)return false;
+            }
+            r.end();return true;
+        }
         if(r.guid()!=get(config,"modern_master_guid"))return false;
         r.end();return true;
     }

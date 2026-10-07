@@ -469,6 +469,12 @@ int main(int argc, char **argv)
                                 reply=stable_response(protocol,state,name,body,get(action,"models").as_array());
                             else if(fn=="stable_open_response")
                                 reply=stable_open_response(state);
+                            else if(fn=="stable_slot_request")
+                                reply=stable_slot_request(protocol,state,name,body);
+                            else if(fn=="stable_slot_response")
+                                reply=stable_slot_response(protocol,state,name,body);
+                            else if(fn=="stable_slot_cache")
+                                reply=Packet{"SMSG_UPDATE_OBJECT",stable_block(state,state.pet_stable,state.stable_slots)};
                             else if(fn=="merchant_request")
                                 reply=merchant_request(protocol,state,name,body);
                             else if(fn=="merchant_response")

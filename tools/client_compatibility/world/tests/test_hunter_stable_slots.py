@@ -109,3 +109,26 @@ def test_close_during_native_move_keeps_cache_result_and_forbids_more_mutation(c
 def test_same_master_catalog_refresh_preserves_pending_move(codec):
     rows=owned(codec,[reply(),request(),reply(),update(),outcome()])
     assert decode_update(rows[3])[0][0][0]==5 and rows[4]==['SMSG_PET_STABLE_RESULT','08']
+
+
+def test_private_slot_capture_requires_explicit_exact_owner_pet_session_master_and_roundtrip(codec,tmp_path):
+    from tools.client_compatibility.world.tests.test_owned_stable_request_probe import config,probe
+    c=config();c.update(native_master_guid=MASTER,modern_master_guid=list(modern_guid(MASTER,0)))
+    body=bytes.fromhex(request()['body'])
+    assert not probe(codec,tmp_path,c,body,name='CMSG_SET_PET_SLOT')
+    c['slot_roundtrip']={'pet_number':4,'slots':[0,5]}
+    assert probe(codec,tmp_path,c,body,name='CMSG_SET_PET_SLOT')
+    assert probe(codec,tmp_path,c,bytes.fromhex('04000000057f1b14f05c763102'),name='CMSG_SET_PET_SLOT',direction='to_native')
+    assert probe(codec,tmp_path,c,struct.pack('<4I',4,5,0,0),name='SMSG_PET_SLOT_UPDATED',direction='from_native')
+    assert probe(codec,tmp_path,c,b'\x08',name='SMSG_STABLE_RESULT',direction='from_native')
+    assert probe(codec,tmp_path,c,b'\x08',name='SMSG_PET_STABLE_RESULT',direction='to_client')
+    assert not probe(codec,tmp_path,c,body,name='CMSG_SET_PET_SLOT',session='foreign')
+    assert not probe(codec,tmp_path,c,body+b'x',name='CMSG_SET_PET_SLOT')
+    assert not probe(codec,tmp_path,c,bytes.fromhex(request(number=7)['body']),name='CMSG_SET_PET_SLOT')
+    assert not probe(codec,tmp_path,c,bytes.fromhex(request(slot=6)['body']),name='CMSG_SET_PET_SLOT')
+    assert not probe(codec,tmp_path,c,bytes.fromhex(request(master=MASTER+1)['body']),name='CMSG_SET_PET_SLOT')
+    assert not probe(codec,tmp_path,c,struct.pack('<4I',4,5,7,0),name='SMSG_PET_SLOT_UPDATED',direction='from_native')
+    assert not probe(codec,tmp_path,c,b'\x08x',name='SMSG_STABLE_RESULT',direction='from_native')
+    assert not probe(codec,tmp_path,c,b'\x08',name='SMSG_AUTH_RESPONSE',direction='from_native')
+    c['slot_roundtrip']['pet_number']=7
+    assert not probe(codec,tmp_path,c,body,name='CMSG_SET_PET_SLOT')

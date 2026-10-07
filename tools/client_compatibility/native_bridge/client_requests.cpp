@@ -80,6 +80,13 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
     if(Protocol::bank_close(state,name,body))return;
     if(name=="CMSG_REQUEST_STABLED_PETS")
     {require_world();native_send(*stable_request(protocol,state,name,body));return;}
+    if(name=="CMSG_SET_PET_SLOT")
+    {
+        try {require_world();native_send(*stable_slot_request(protocol,state,name,body));}
+        catch(std::exception const &error)
+        {service.events.event("stable_slot_translation_rejected",{{"session",owner.id},{"error",error.what()}});}
+        return;
+    }
     if(name=="CMSG_PET_RENAME")
     {
         if(!state.created || !active_world)throw std::runtime_error("pet Rename without active owned world");

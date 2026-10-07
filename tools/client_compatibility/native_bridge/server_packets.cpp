@@ -168,6 +168,13 @@ Task<> Session::gameplay(std::string name, Bytes body)
         if(auto open=stable_open_response(state))send(*open);
         co_return;
     }
+    if(name=="SMSG_PET_SLOT_UPDATED" || name=="SMSG_STABLE_RESULT")
+    {
+        try {if(auto stable=stable_slot_response(protocol,state,name,body))send(*stable);}
+        catch(std::exception const &error)
+        {service.events.event("stable_slot_response_rejected",{{"session",id},{"name",name},{"error",error.what()}});}
+        co_return;
+    }
     if(name=="SMSG_PET_SPELLS" || name=="SMSG_PET_NAME_QUERY_RESPONSE")
     {
         if(auto pet=pet_response(protocol,state,name,body))send(*pet);

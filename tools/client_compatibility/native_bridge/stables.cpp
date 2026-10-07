@@ -19,6 +19,7 @@ std::uint64_t master(Protocol const &protocol,State const &owner,Array const &id
         throw std::runtime_error("stable read requires a visible native stable master");
     return guid;
 }
+}
 Bytes stable_block(State const &owner,Value const &stable,unsigned slots)
 {
     // ActivePlayer group102, optional129 and scalar130. StableInfo and each
@@ -41,7 +42,6 @@ Bytes stable_block(State const &owner,Value const &stable,unsigned slots)
     auto block=Writer().put<std::uint8_t>(0).guid(owner.guid(),player_high())
         .put<std::uint32_t>(fields.size()).raw(fields).finish();
     return object_packet(owner.map(),{block},{});
-}
 }
 Value native_stable_list(View body)
 {
@@ -108,6 +108,8 @@ Reply stable_response(Protocol const &protocol,State &owner,std::string const &n
     bool opened=truth(get(owner.pet_stable,"interaction_open")) && get(owner.pet_stable,"StableMaster")==identity;
     Value stable=Object{{"Pets",pets},{"StableMaster",identity},{"interaction_open",guid!=0},
         {"needs_open",guid!=0 && !opened}};
+    if(guid && get(owner.pet_stable,"StableMaster")==identity && get(owner.pet_stable,"pending_slot").is_object())
+        stable.as_object()["pending_slot"]=get(owner.pet_stable,"pending_slot");
     auto slots=integer(get(catalog,"native_last_slot"))-4;
     owner.pet_stable=stable;owner.stable_slots=slots;
     if(!owner.created)return {};
