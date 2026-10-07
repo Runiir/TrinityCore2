@@ -38,6 +38,7 @@ def proof(episodes,packets):
     require(r['public_errors'] and all(stock_range_error(v) for v in r['public_errors']) and
         not any(stock_range_error(v) for v in r['cases'][0]['before'].get('errors',[])),
         'fresh stock range feedback differs')
+    require(bool(r['error_pairs']),'native range error pair is absent')
     for p in r['error_pairs']:
         require(p['native']['name']=='SMSG_ATTACKSWING_NOTINRANGE' and p['native']['body']=='' and
             p['client'] and p['client']['name']=='SMSG_ATTACK_SWING_ERROR' and p['client']['body']=='00' and
@@ -75,9 +76,10 @@ def review(directory,output):
                         with archive.extractfile(member) as f:
                             for line in f:
                                 p=json.loads(line)
-                                if p.get('name') in ('CMSG_ATTACK_SWING','CMSG_ATTACK_STOP','SMSG_ATTACK_START',
+                                if p.get('session')==episodes['primary_melee_damage01/episode.json']['session'] and p.get('name') in ('CMSG_ATTACK_SWING','CMSG_ATTACK_STOP','SMSG_ATTACK_START',
                                     'SMSG_ATTACK_STOP','SMSG_ATTACKER_STATE_UPDATE','SMSG_ATTACKSWING_NOTINRANGE','SMSG_ATTACK_SWING_ERROR'):
                                     packets.add(packet_key(p))
+                                    require(len(packets)<=4096,'primary archive combat packet bound exceeded')
                     if member.name not in selected:continue
                     require(member.isfile() and member.name not in seen,'duplicate or invalid selected archive member')
                     with archive.extractfile(member) as f:
