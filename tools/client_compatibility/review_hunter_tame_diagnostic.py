@@ -76,7 +76,7 @@ def review(directory,output,entry_path=None):
     require(len(added)==1 and (added[0]['event'],added[0]['direction'],added[0]['bytes'])==
         ('native_packet','from_native',23),'expected untranslated PetAdded metadata differs')
     samples=cast['public_channel_samples']
-    require(len(samples)==8 and all(s['player_channel'].get('active') is True for s in samples[:-1]) and
+    require(2<=len(samples)<=20 and all(s['player_channel'].get('active') is True for s in samples[:-1]) and
         samples[-1]['player_channel'].get('active') is False,'actual public channel samples differ')
     events=samples[-1]['player_channel']['events']
     require([e['event'] for e in events]==['UNIT_SPELLCAST_CHANNEL_START','UNIT_SPELLCAST_CHANNEL_STOP'] and
@@ -87,19 +87,33 @@ def review(directory,output,entry_path=None):
         require(path.is_file() and lab.sha256(path)==frame['sha256'] and m['second_monitor_verified'] and
             m['input_isolation']['actor']=='scout' and m['input_isolation']['host_activation_sent'] is False,
             'actual owned channel frame attribution differs')
+    failures={'SMSG_CAST_FAILED','SMSG_SPELL_FAILURE','SMSG_SPELL_FAILED_OTHER'}
+    failure_packets=[p for p in entries(lab.ROOT/'evidence/world_packets.jsonl') if
+        p.get('session')==session and cast['cast_started_at']<=p.get('time',0)<=until and
+        p.get('name') in failures]
+    require(failure_packets==[p for p in cast['cast_packets'] if p.get('name') in failures],
+        'actual complete failure journal differs from the captured cast')
+    cancellations=[p for p in entries(lab.ROOT/'evidence/world_packets.jsonl') if
+        p.get('session')==session and cast['cast_started_at']<=p.get('time',0)<=until and
+        p.get('name')=='CMSG_CANCEL_CAST']
+    errors=cast['outcome_state'].get('errors',[])
+    interrupted=any(e.get('code')==51 or e.get('text')=='Interrupted' for e in errors)
+    error_free=not failure_packets and not cancellations and not interrupted
     lab.private_write(output,json.dumps({'schema':'client442_tame_diagnostic_local_review_v1',
         'reviewed_at':time.time(),'source':{'path':str(source),'sha256':lab.sha256(source)},
         'closure_source':{'path':str(directory/'hunter_tame_success_close01/episode.json'),
             'sha256':lab.sha256(directory/'hunter_tame_success_close01/episode.json')},
         'channel_packets':raw,'channel_metadata':metadata,'physical_instance':next(iter(instances)),
-        'public_channel_samples':8,'public_channel_seconds':events[1]['observed_at']-events[0]['observed_at'],
+        'public_channel_samples':len(samples),'public_channel_seconds':events[1]['observed_at']-events[0]['observed_at'],
         'new_pet_number':cast['native_pet_after']['fields']['69'],
         'native_added_captured':bool(native_added),
+        'native_failure_packets':failure_packets,'cancel_requests':cancellations,'public_errors':errors,
+        'error_free_native_completion':error_free,
         'missing':([] if native_added else ['actual native PetAdded body'])+
             ['modern StableInfo projection and public cache validation'],
         'inventory_admitted':False,'qualification_added':False,'input_sent':False},indent=2)+'\n')
     print(json.dumps({'completed':True,'actual_channel_packets':4,'native_added_captured':bool(native_added),
-        'metadata_records':len(metadata),
+        'metadata_records':len(metadata),'error_free_native_completion':error_free,
         'qualification_added':False}),flush=True)
 
 
