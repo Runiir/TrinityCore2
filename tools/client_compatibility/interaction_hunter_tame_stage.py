@@ -18,6 +18,7 @@ from .observation.transport import Observer
 from .world.objects import INDEX
 from .hostile_avoidance import visible_hostiles,clear
 from .ground_navigation import ground_point
+from .interaction_hunter_stored_tame_boundary import stored_boundary
 
 
 NAMES=('TC442HunterTameRestore','TC442HunterTameTarget')
@@ -116,11 +117,8 @@ def restore(t,fixture,old,baseline):
 def run(t,preparation,entry,stored,recon,action,source=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     entered=entry_source(t,entry,session,preparation);moved=closed(stored)
-    if (moved.get('runtime')!=t.receipt['runtime'] or moved.get('actor')!=t.fixture or
-        moved.get('native_session')!=session or moved.get('phase')!='owned_stable_slot_move_verified' or
-        moved.get('destination')!=5 or moved.get('capture_disarmed') is not True or
-        len(moved.get('move_checks',{}))!=12 or not all(moved['move_checks'].values())):
-        raise RuntimeError('tame staging requires a whole owned pet4 stable move')
+    if not stored_boundary(moved,t.fixture,t.receipt['runtime'],session,bound(preparation),bound(entry)):
+        raise RuntimeError('tame staging requires a whole owned pet4 stable move or source-bound already-stored boundary')
     t.receipt.update(native_session=session,entry_source=bound(entry),stored_source=bound(stored),recon_source=bound(recon))
     if action in ('restore','recover'):
         if action=='recover':
