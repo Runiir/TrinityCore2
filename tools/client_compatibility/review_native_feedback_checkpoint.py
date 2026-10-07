@@ -30,6 +30,9 @@ def proof(data,packets,phase,digests=None):
     if phase=='owned-pair':
         from .hunter_pair_evidence import proof as pair_proof
         return pair_proof(data,digests,packets)
+    if phase=='owned-abandon-cancel':
+        from .hunter_abandon_cancel_evidence import proof as cancel_proof
+        return cancel_proof(data,digests,packets)
     if phase=='ability':
         from .primary_throw_checkpoint_evidence import proof as ability_proof
         return ability_proof(data,digests,packets)
@@ -115,6 +118,15 @@ def review(directory,output,phase):
             reader=DigestReader(raw)
             with tarfile.open(fileobj=reader,mode='r|gz') as archive:
                 for member in archive:
+                    if phase=='owned-abandon-cancel' and member.name=='tracking/events.jsonl':
+                        session=data['hunter_abandon_entry01/episode.json']['native_session']
+                        since=data['hunter_abandon_dialog03/episode.json']['started_at']
+                        until=data['hunter_abandon_cancel02/episode.json']['finished_at']
+                        with archive.extractfile(member) as f:
+                            for line in f:
+                                p=json.loads(line)
+                                if p.get('session')==session and since<=p.get('time',0)<=until and p.get('name')=='CMSG_PET_ABANDON':
+                                    packets.add(packet_key(p));require(len(packets)<=8,'Abandon event bound exceeded')
                     if phase in ('ability','owned-slot','owned-pair') and member.name=='tracking/packets.jsonl':
                         if phase=='ability':key='primary_faced_throw_native01/episode.json'
                         elif phase=='owned-slot':
@@ -162,5 +174,5 @@ def review(directory,output,phase):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot','owned-pair'],required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot','owned-pair','owned-abandon-cancel'],required=True)
     a=p.parse_args();review(a.directory,a.output,a.phase)
