@@ -14,9 +14,10 @@ from .interaction_social import actor
 from .interaction_trial import Trial
 
 
-def close(t, preparation, fixture_path, cast_path, park_path, finish_path):
+def close(t, preparation, fixture_path, cast_path, park_path, finish_path, cleanup_path):
     old = prepared(t, preparation, True)
     fixture, cast, park, finish = [closed(p) for p in (fixture_path, cast_path, park_path, finish_path)]
+    cleanup = closed(cleanup_path)
     expected = bound(preparation)
     if (cast.get('phase') != 'owned_revive_cast_complete' or cast.get('dead_fixture_source') != bound(fixture_path) or
         cast.get('fixture_source') != expected or not all(cast.get('capture_checks', {}).values()) or
@@ -26,7 +27,10 @@ def close(t, preparation, fixture_path, cast_path, park_path, finish_path):
         len(park.get('checks', {})) != 4 or not all(park['checks'].values()) or
         finish.get('actor') != old['origin_actor'] or len(finish.get('checks', {})) != 5 or not all(finish['checks'].values()) or
         any(e.get('fixture_source') != expected for e in (park, finish)) or
-        not cast['finished_at'] <= park['started_at'] < park['finished_at'] <= finish['started_at'] < finish['finished_at']):
+        not cast['finished_at'] <= park['started_at'] < park['finished_at'] <= finish['started_at'] < finish['finished_at'] or
+        cleanup.get('phase') != 'owned_revive_fixture_normalized' or
+        cleanup.get('sources') != [bound(p) for p in (fixture_path, cast_path, park_path)] or
+        cleanup.get('before', {}).get('6', {}).get('pets') != park['retained_class_pets']):
         raise RuntimeError('successful Revive and normal parked restoration sources differ')
     before = fixture['before']
     after = snapshot()
@@ -40,7 +44,7 @@ def close(t, preparation, fixture_path, cast_path, park_path, finish_path):
         'hunter_saved_rows': hunter['saved'] == before['6']['saved'] == park['retained_class_saved'],
         'hunter_inventory': hunter['inventory'] == before['6']['inventory'],
         'hunter_native_columns': changed <= allowed and hunter['native'] == park['retained_class_fixture'],
-        'both_pets_restored': restored_pets(before['6']['pets'], hunter['pets']) and hunter['pets'] == park['retained_class_pets'],
+        'both_pets_restored': restored_pets(before['6']['pets'], hunter['pets']) and after == cleanup.get('after'),
         'hunter_home_pose': all(hunter['native'][k] == before['6']['native'][k] for k in
             ('position_x', 'position_y', 'position_z', 'orientation', 'map')),
         'hunter_full_health': hunter['native']['health'] == before['6']['native']['health'] == 209,
@@ -55,7 +59,7 @@ def close(t, preparation, fixture_path, cast_path, park_path, finish_path):
         'no_probe': not any((lab.ROOT / 'run' / name).exists() for name in
             ('owned_pet_abandon_probe.json', 'owned_tame_request_probe.json', 'owned_stable_request_probe.json', 'owned_entry_request_probe.json')),
         'fixture_health_restored': next(p for p in hunter['pets'] if p['id'] == 16)['curhealth'] == 278}
-    t.receipt.update(sources=[bound(p) for p in (preparation, fixture_path, cast_path, park_path, finish_path)],
+    t.receipt.update(sources=[bound(p) for p in (preparation, fixture_path, cast_path, park_path, finish_path, cleanup_path)],
         primary_stop_source=fixture['primary_stop_source'], all_offline_snapshot=after,
         hunter_changed_native_columns=sorted(changed), checks=checks, input_sent=False, qualification_added=False,
         frame=shot(t.out / 'original_offline.png'), completed=all(checks.values()), phase='owned_revive_parked_boundary')
@@ -65,13 +69,13 @@ def close(t, preparation, fixture_path, cast_path, park_path, finish_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    for key in ('preparation', 'fixture', 'cast', 'park', 'finish', 'output'):
+    for key in ('preparation', 'fixture', 'cast', 'park', 'finish', 'cleanup', 'output'):
         parser.add_argument('--' + key, type=Path, required=True)
     args = parser.parse_args()
     with actor('scout'):
         trial = Trial(args.output, controller='code')
         trial.receipt.update(custom_script_permission='blocked_by_user', softTargetInteract=SCRIPT_BOUNDARY)
-        try: close(trial, args.preparation, args.fixture, args.cast, args.park, args.finish)
+        try: close(trial, args.preparation, args.fixture, args.cast, args.park, args.finish, args.cleanup)
         except Exception as error: trial.receipt.update(completed=False, failure=f'{type(error).__name__}: {error}')
         finally:
             trial.receipt['finished_at'] = time.time()
