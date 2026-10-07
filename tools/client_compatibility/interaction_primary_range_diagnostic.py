@@ -98,11 +98,23 @@ def capture(t,path):
 
 
 def stage(t,path,selection_review,name_authority=None,entry_path=None):
-    d=source(t,path,'primary_melee_damage_verified',entry_path)
-    if len(d.get('combat_checks',{}))!=13 or not all(d['combat_checks'].values()) or len(d.get('restoration_checks',{}))!=10 or not all(d['restoration_checks'].values()):
-        raise RuntimeError('primary melee whole result is incomplete')
-    base=d['baseline'];entry=closed(entry_path or Path(d['source']['path']))
-    session=actors.session_entry(t.fixture)['session'];started=entry['started_at'] if entry_path else entry['entry_started_at']
+    raw=closed(path)
+    if raw.get('phase')=='owned_primary_combat_preparation':
+        d=source(t,path,'owned_primary_combat_preparation')
+        if entry_path or len(d.get('reentry_checks',{}))!=15 or not all(d['reentry_checks'].values()):
+            raise RuntimeError('fresh primary entry guards incomplete')
+        offline=d['offline_source'];row=offline['native']
+        base={'saved':offline['saved'],'pets':offline['pets'],'inventory':offline['inventory'],
+            'money':row['money'],'position':[row[k] for k in
+                ('position_x','position_y','position_z','orientation','map')],
+            'protected':d['protected_baseline']}
+        entry=d
+    else:
+        d=source(t,path,'primary_melee_damage_verified',entry_path)
+        if len(d.get('combat_checks',{}))!=13 or not all(d['combat_checks'].values()) or len(d.get('restoration_checks',{}))!=10 or not all(d['restoration_checks'].values()):
+            raise RuntimeError('primary melee whole result is incomplete')
+        base=d['baseline'];entry=closed(entry_path or Path(d['source']['path']))
+    session=actors.session_entry(t.fixture)['session'];started=entry['started_at'] if entry_path or raw.get('phase')=='owned_primary_combat_preparation' else entry['entry_started_at']
     if protected_snapshot()!=base['protected'] or position(1)!=base['position']:raise RuntimeError('primary source pose changed')
     o=RangePresence(session,1,started).poll()
     t.receipt.update(baseline=base,session=session,entry_started_at=started,qualification_added=False);t.persist()

@@ -17,6 +17,7 @@
 
 #include "WorldSession.h"
 #include "Common.h"
+#include "Config.h"
 #include "CreatureAI.h"
 #include "CombatPackets.h"
 #include "DBCStores.h"
@@ -58,7 +59,19 @@ void WorldSession::HandleAttackSwingOpcode(WorldPackets::Combat::AttackSwing& at
         }
     }
 
-    _player->Attack(victim, true);
+    if (_player->Attack(victim, true) &&
+        sConfigMgr->GetBoolDefault("Client442.RefreshMeleeFeedbackOnStart", false) &&
+        !_player->HasUnitState(UNIT_STATE_CASTING))
+    {
+        // The modern client loses its local repeat state after Stop/reload.
+        // Recheck the current native geometry on a newly accepted attack;
+        // never replay the previous range/facing warning from a bridge cache.
+        if (!_player->IsWithinMeleeRange(victim))
+            _player->SendAttackSwingNotInRange();
+        else if (!_player->IsWithinBoundaryRadius(victim) &&
+            !_player->HasInArc(2 * float(M_PI) / 3, victim))
+            _player->SendAttackSwingBadFacingAttack();
+    }
 }
 
 void WorldSession::HandleAttackStopOpcode(WorldPackets::Combat::CAttackStop& /*attackStop*/)
