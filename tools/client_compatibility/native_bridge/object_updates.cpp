@@ -107,13 +107,18 @@ Reply Protocol::object_updates(State &owner, View body,Array const &players) con
                 truth(get(get(record, "flags"), "self")))
             {
                 owner.self_snapshot = record;
+                if(!owner.pet_stable.is_null())
+                {
+                    owner.self_snapshot.as_object()["pet_stable"]=owner.pet_stable;
+                    owner.self_snapshot.as_object()["stable_slots"]=owner.stable_slots;
+                }
                 for (auto const &item : items)
                 {
                     blocks.push_back(item_block(item));
                     owner.inventory_items[integer(get(item,"guid"))]=item;
                 }
                 blocks.push_back(player_block(
-                    record, owner.character, owner.action_buttons.empty() ? nullptr : &owner.action_buttons));
+                    owner.self_snapshot, owner.character, owner.action_buttons.empty() ? nullptr : &owner.action_buttons));
                 owner.created = true;
                 break;
             }

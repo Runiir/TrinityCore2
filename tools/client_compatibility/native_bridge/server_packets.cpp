@@ -14,6 +14,7 @@
 #include "item_text.hpp"
 #include "pet_packets.hpp"
 #include "pet_casts.hpp"
+#include "stables.hpp"
 #include <ctime>
 
 namespace bridge
@@ -133,6 +134,22 @@ Task<> Session::gameplay(std::string name, Bytes body)
             {Database db(root);return db.query("SELECT guid,name,gender FROM client442_characters.characters WHERE guid IN ("+ids+")");});
         }
     }
+    Array stable_models;std::uint64_t stable_owner=0;
+    if(name=="MSG_LIST_STABLED_PETS")
+    {
+        {std::lock_guard lock(state_mutex);if(state.character.is_null())co_return;
+         if(integer(get(state.character,"class"))!=3)co_return;stable_owner=state.guid();}
+        auto catalog=native_stable_list(body);std::string ids;
+        for(auto const &pet:get(catalog,"Pets").as_array())
+        {if(!ids.empty())ids+=',';ids+=std::to_string(integer(get(pet,"PetNumber")));}
+        if(!ids.empty())
+        {
+            auto root=service.root;
+            stable_models=co_await background(service.database_workers,[root,stable_owner,ids]
+            {Database db(root);return db.query("SELECT id,owner,entry,modelid,PetType FROM client442_characters.character_pet WHERE owner="+
+                std::to_string(stable_owner)+" AND id IN ("+ids+")");});
+        }
+    }
     std::lock_guard lock(state_mutex);
     auto instance = world.lock();
     if (!instance || state.character.is_null())
@@ -140,6 +157,12 @@ Task<> Session::gameplay(std::string name, Bytes body)
     auto send = [&](Packet const &p) { instance->send(p); };
     auto &protocol = service.protocol;
     Reply reply;
+    if(name=="MSG_LIST_STABLED_PETS")
+    {
+        if(state.guid()!=stable_owner)co_return;
+        if(auto stable=stable_response(protocol,state,name,body,stable_models))send(*stable);
+        co_return;
+    }
     if(name=="SMSG_PET_SPELLS" || name=="SMSG_PET_NAME_QUERY_RESPONSE")
     {
         if(auto pet=pet_response(protocol,state,name,body))send(*pet);

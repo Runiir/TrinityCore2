@@ -14,6 +14,7 @@
 #include "item_text.hpp"
 #include "who.hpp"
 #include "pet_packets.hpp"
+#include "stables.hpp"
 
 namespace bridge
 {
@@ -77,6 +78,8 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         native_send(*who_request(state,name,body));return;
     }
     if(Protocol::bank_close(state,name,body))return;
+    if(name=="CMSG_REQUEST_STABLED_PETS")
+    {require_world();native_send(*stable_request(protocol,state,name,body));return;}
     if(name=="CMSG_PET_RENAME")
     {
         if(!state.created || !active_world)throw std::runtime_error("pet Rename without active owned world");

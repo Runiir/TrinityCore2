@@ -8,6 +8,7 @@
 #include "events.hpp"
 #include "pet_rename_probe.hpp"
 #include "stable_probe.hpp"
+#include "stables.hpp"
 #include "ready_check.hpp"
 #include "chat.hpp"
 #include "chat_channels.hpp"
@@ -460,6 +461,10 @@ int main(int argc, char **argv)
                                 reply=protocol.bank_response(state,name,body);
                             else if(fn=="bank_close")
                                 Protocol::bank_close(state,name,body);
+                            else if(fn=="stable_request")
+                                reply=stable_request(protocol,state,name,body);
+                            else if(fn=="stable_response")
+                                reply=stable_response(protocol,state,name,body,get(action,"models").as_array());
                             else if(fn=="merchant_request")
                                 reply=merchant_request(protocol,state,name,body);
                             else if(fn=="merchant_response")

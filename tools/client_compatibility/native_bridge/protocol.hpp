@@ -24,6 +24,8 @@ struct State
 {
     Value character;
     Value self_snapshot;
+    Value pet_stable; // Native owner catalog; retained through the initial player-create barrier.
+    unsigned stable_slots=0;
     std::unordered_map<std::uint64_t, Value> visible_gameobjects, visible_units, inventory_items;
     std::unordered_map<unsigned, Value> casts, visible_auras, pending_movement;
     std::unordered_map<unsigned, std::deque<Array>> gameobject_queries;
