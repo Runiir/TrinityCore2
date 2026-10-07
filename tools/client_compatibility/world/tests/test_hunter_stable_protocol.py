@@ -41,7 +41,13 @@ def decode_update(packet):
     length,=outer.unpack('I');f=Reader(outer.raw(length));outer.end()
     assert f.unpack('BBBI')==(1,0,3,128)
     assert f.unpack('I')==(24,) and f.bits(14)==0 and f.bits(32)==64 and f.bits(32)==6
-    assert f.unpack('B')==(16,) and f.bits(1)==1 and f.bits(3)==7
+    assert f.unpack('B')==(16,) and f.bits(1)==1
+    # WPP 28fc3d19 ReadUpdateStableInfo resets the 4.4.2 bit reader at
+    # entry, independently of the preceding ActivePlayer presence bit.
+    # Keeping that bit and the nested mask together decoded the live UI144
+    # packet as mask zero despite the valid native catalog and capacity.
+    f.align()
+    assert f.bits(3)==7
     count=f.bits(32);assert f.bits(count)==(1<<count)-1;f.align();pets=[]
     for _ in range(count):
         assert f.bits(9)==511;f.align()

@@ -24,7 +24,9 @@ Bytes stable_block(State const &owner,Value const &stable,unsigned slots)
     // ActivePlayer group102, optional129 and scalar130. StableInfo and each
     // StablePetInfo use complete nested masks, replacing the native catalog.
     Writer data;data.pack("BBBI",{1,0,3,1u<<7}).put<std::uint32_t>(24).bits(0,14)
-        .bits(1u<<6,32).bits(6,32).flush().put<std::uint8_t>(slots).bits(1,1);
+        .bits(1u<<6,32).bits(6,32).flush().put<std::uint8_t>(slots).bits(1,1).flush();
+    // Pinned 4.4.2 ReadUpdateStableInfo resets its bit reader on entry.
+    // Joining this nested mask to HasPetStable reads mask zero in the client.
     auto const &pets=get(stable,"Pets").as_array();data.bits(7,3).bits(pets.size(),32);
     for(unsigned i=0;i<pets.size();++i)data.bits(1,1);
     data.flush();
