@@ -22,6 +22,7 @@ ADDON = Path('tools/client_compatibility/observation/addon/ClientMovementHarness
 INSTALLER = Path('tools/client_compatibility/interaction_retained_class_reentry.py')
 REPAIR_FILES = (Path('tools/client_compatibility/interaction_item_actionbar_observer_reload.py'),
     Path('tools/client_compatibility/interaction_item_actionbar_pre_recon_recovery.py'),
+    Path('tools/client_compatibility/interaction_item_actionbar_idle_renewal.py'),
     Path('tools/client_compatibility/interaction_item_actionbar_entry_capture.py'),
     Path('tools/client_compatibility/interaction_item_actionbar.py'),
     Path('tools/client_compatibility/item_actionbar_evidence.py'), INSTALLER)
@@ -107,6 +108,12 @@ def authority(t, preparation, source):
         all(value is True for value in restored['protected_checks'].values()),
         'requires exact closed excluded pre-recon restoration and source-backed code transition')
     recovery.unconsumed(base['entry_source'])
+    if restored.get('idle_renewal') is True:
+        from .interaction_item_actionbar_idle_renewal import validate_restored_renewal
+        validate_restored_renewal(restored, source)
+    else:
+        require(not any(key in restored for key in ('idle_renewal', 'prior_restoration_source', 'failed_observer_source')),
+            'ordinary observer source has unrecognized idle renewal ancestry')
     marker = Path(source).parent / 'item_actionbar_observer_reload_attempt.json'
     require(not marker.exists() and not marker.is_symlink(), 'ordinary observer reload is already consumed for this restoration')
     require(not base['state'].get('bags') and not base['state'].get('panels'), 'original bags and panels must be closed')

@@ -520,7 +520,7 @@ def test_recon_uses_reviewed_backpack_icon_and_observed_empty_button(monkeypatch
     assert t.receipt['baseline']['native_original'] == entry['native_original']
 
 
-@pytest.mark.parametrize('fault', [None, 'old_review', 'consumed_before_click', 'changed_code_without_capture'])
+@pytest.mark.parametrize('fault', [None, 'old_review', 'consumed_before_click', 'changed_code_without_capture', 'late_native'])
 def test_recon_fresh_screen_review_and_entry_attempt_guards(monkeypatch, tmp_path, fault):
     from tools.client_compatibility import interaction_item_actionbar_entry_capture as cap
     t = Trial(tmp_path)
@@ -529,6 +529,8 @@ def test_recon_fresh_screen_review_and_entry_attempt_guards(monkeypatch, tmp_pat
         'precision_source': base['precision_source'], 'native_original': base['native_original'],
         'state': base['state'], 'frame': {'file': 'original_entry.png'}, 'code_commit': 'a' * 40}
     fresh = {**entry, 'frame': {'file': 'fresh_entry.png'}, 'code_commit': 'b' * 40}
+    if fault == 'late_native':
+        monkeypatch.setattr(op, 'native_state', lambda *args: {**native(), 'afk': True})
     fresh_path = tmp_path / 'fresh/episode.json'
     t.receipt['code_commit'] = fresh['code_commit']
     monkeypatch.setattr(op, 'context', lambda *args: ({'all_offline_snapshot': base['snapshot']}, 'owned'))
@@ -564,6 +566,22 @@ def test_recon_fresh_screen_review_and_entry_attempt_guards(monkeypatch, tmp_pat
         assert geometry == [(fresh_path, fresh['frame'])]
         assert t.events == [('execute', {'kind': 'click', 'value': [800, 650]})]
         assert t.receipt['baseline']['entry_source'] == ref(ENTRY)
+
+
+@pytest.mark.parametrize('late', [False, True])
+@pytest.mark.parametrize('field', ['pose', 'afk', 'selection'])
+def test_first_drag_rejects_native_layout_drift_before_consuming_input(monkeypatch, tmp_path, late, field):
+    t = Trial(tmp_path)
+    base, _, _, _ = common(monkeypatch, t)
+    stage = drag_stage(base)
+    monkeypatch.setattr(op, 'prior', lambda *args: ({}, 'owned', stage))
+    changed = {**native(), field: {'stand': 1, 'sheath': 0} if field == 'pose' else True if field == 'afk' else 9}
+    values = [native(), changed] if late else [changed]
+    monkeypatch.setattr(op, 'native_state', lambda *args: values.pop(0) if len(values) > 1 else values[0])
+    monkeypatch.setattr(op, 'consume_attempt', lambda *args: pytest.fail('late native drift consumed an input'))
+    with pytest.raises(RuntimeError, match='native layout'):
+        op.drag(t, PREP, SOURCE, REVIEW)
+    assert t.events == [] and not t.receipt.get('drag_input_sent')
 
 
 def attempt_fixture(monkeypatch, tmp_path, kind='drag'):

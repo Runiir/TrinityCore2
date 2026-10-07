@@ -137,7 +137,7 @@ def fixture(tmp_path, monkeypatch):
         'bags': [[deepcopy(empty) for _ in range(36)] for _ in range(4)]}
     original = {'pose': {'stand': 0, 'sheath': 1}, 'afk': False, 'selection': 0,
         'health': 60, 'max_health': 60, 'power': 0, 'xp': 0, 'next_xp': 400, 'summon': 0}
-    creation = native_packet(owner_fields(), time=1100.4)
+    creation = native_packet({**owner_fields(), c.INDEX['UNIT_FIELD_BYTES_2']: 1}, time=1100.4)
     owner = c.native_replay([creation], 'scout', 1099, 1101)
     native_original = {**original, 'selection': {'native_guid': 0}, 'resources': resources,
         'actions': baseline['2']['saved']['actions']}
@@ -283,12 +283,24 @@ def test_whole_actual_tarstream_proves_one_nonfixed_item_drag_clear_and_restored
     assert result['rest']['matches'][0]['native_login_second'] == 1100
 
 
-def repaired_fixture(tmp_path, monkeypatch):
-    from tools.client_compatibility.world.tests.test_item_actionbar_entry_capture import repair_fixture
-    batch, paths, values, wire, events, refs = repair_fixture(tmp_path, monkeypatch)
+def repaired_fixture(tmp_path, monkeypatch, renewed=False):
+    from tools.client_compatibility.world.tests.test_item_actionbar_entry_capture import repair_fixture, renewal_fixture
+    if renewed:
+        batch, paths, values, wire, events, refs, _ = renewal_fixture(tmp_path, monkeypatch)
+        values['entry_screen'], paths['entry_screen'] = values['renewal_screen'], paths['renewal_screen']
+        fresh_base = values['entry_screen']['baseline']
+        for name in ('recon', 'drag_ready', 'placed', 'clear_ready', 'operation'):
+            values[name].update(baseline=deepcopy(fresh_base), entry_source=s.bound(paths['entry']))
+        values['park']['entry_source'] = s.bound(paths['entry'])
+        values['final']['sources']['entry'] = s.bound(paths['entry'])
+    else:
+        batch, paths, values, wire, events, refs = repair_fixture(tmp_path, monkeypatch)
     fresh = values['entry_screen']
     fields = {key: deepcopy(fresh[key]) for key in ('first_failure_source', 'pre_recon_recovery_source',
         'observer_reload_source', 'repair_code_transition', 'committed_sources')}
+    for key in ('prior_restoration_source', 'failed_observer_source'):
+        if key in fresh:
+            fields[key] = deepcopy(fresh[key])
     fields['entry_screen_source'] = s.bound(paths['entry_screen'])
 
     def write(name):
@@ -318,6 +330,7 @@ def repaired_fixture(tmp_path, monkeypatch):
     marker_path = Path(placed['drag_attempt_source']['path'])
     marker = json.loads(marker_path.read_text())
     marker['input_intent'] = placed['drag_intent']
+    marker['entry_source'] = s.bound(paths['entry'])
     marker_path.write_text(json.dumps(marker))
     placed['drag_attempt_source'] = s.bound(marker_path)
     placed_ref = write('placed')
@@ -332,6 +345,7 @@ def repaired_fixture(tmp_path, monkeypatch):
     marker_path = Path(operation['clear_attempt_source']['path'])
     marker = json.loads(marker_path.read_text())
     marker['input_intent'] = operation['clear_intent']
+    marker['entry_source'] = s.bound(paths['entry'])
     marker_path.write_text(json.dumps(marker))
     operation['clear_attempt_source'] = s.bound(marker_path)
     operation_ref = write('operation')
@@ -360,14 +374,58 @@ def test_whole_actual_tarstream_admits_fresh_screen_after_excluded_repair_with_s
     assert paths['entry'].read_bytes() == original and values['failed_recon']['completed'] is False
 
 
+def test_whole_actual_tarstream_admits_one_roundtrip_after_exact_a_failed_b_c_renewal(tmp_path, monkeypatch):
+    batch, paths, values, wire, events = repaired_fixture(tmp_path, monkeypatch, renewed=True)
+    original = paths['entry'].read_bytes()
+    result = reviewed(batch, wire, events)
+    assert result['native_item_requests'] == result['native_clear_requests'] == result['ordinary_login_count'] == 1
+    assert values['entry']['code_commit'] == 'd' * 40 and values['operation']['code_commit'] == 'c' * 40
+    assert values['recovery']['code_commit'] == 'a' * 40 and values['failed_observer']['code_commit'] == 'b' * 40
+    assert len(values['entry_screen']['housekeeping_attempts']) == 6 and paths['entry'].read_bytes() == original
+
+
+@pytest.mark.parametrize('fault', ['missing_prior_marker', 'missing_renewal_marker', 'missing_prior_idle_png',
+    'missing_renewal_png', 'missing_preflight_png', 'missing_failed_b_png', 'source_bytes_b', 'native_lifetime_event', 'native_lifetime_count',
+    'drop_prior_stage_ref', 'wrong_stand_binding'])
+def test_whole_renewal_archive_requires_all_actual_ancestors_frames_bytes_and_lifetime(tmp_path, monkeypatch, fault):
+    batch, paths, values, wire, events = repaired_fixture(tmp_path, monkeypatch, renewed=True)
+    if fault == 'missing_prior_marker': Path(values['recovery']['stand_attempt_source']['path']).unlink()
+    elif fault == 'missing_renewal_marker': Path(values['renewal']['stand_attempt_source']['path']).unlink()
+    elif fault == 'missing_prior_idle_png': (paths['recovery'].parent / 'idle.png').unlink()
+    elif fault == 'missing_renewal_png': (paths['renewal'].parent / 'screen.png').unlink()
+    elif fault == 'missing_preflight_png': (paths['renewal'].parent / 'before_stand.png').unlink()
+    elif fault == 'missing_failed_b_png': (paths['failed_observer'].parent / 'screen.png').unlink()
+    elif fault == 'native_lifetime_event':
+        events.append({'event': 'native_stream_closed', 'session': 'scout', 'time': 1101.39})
+        events.sort(key=lambda row: row['time'])
+    elif fault == 'native_lifetime_count':
+        events.append({'event': 'routine_metadata', 'session': 'scout', 'time': 1101.39})
+        events.sort(key=lambda row: row['time'])
+    elif fault == 'drop_prior_stage_ref':
+        values['operation'].pop('prior_restoration_source')
+        paths['operation'].write_text(json.dumps(values['operation']))
+    else:
+        captured = values['entry_screen']
+        if fault == 'source_bytes_b': captured['failed_observer_code_source_bytes'][0]['raw_hex'] += '00'
+        else: captured['housekeeping_attempts'][3]['value']['input_intent']['value'] = 'z'
+        paths['entry_screen'].write_text(json.dumps(captured))
+    with pytest.raises((RuntimeError, KeyError)):
+        reviewed(batch, wire, events)
+
+
 @pytest.mark.parametrize('fault', ['missing_fresh_png', 'missing_failed_png', 'missing_cleanup_marker',
-    'missing_reload_marker', 'borrow_entry_review', 'late_old_commit', 'marker_bytes', 'source_bytes', 'dropped_chain'])
+    'missing_reload_marker', 'missing_idle_png', 'wrong_idle_png', 'missing_bag_close_png', 'wrong_bag_close_png',
+    'borrow_entry_review', 'late_old_commit', 'marker_bytes', 'source_bytes', 'dropped_chain'])
 def test_portable_fresh_screen_requires_actual_frames_marker_bytes_and_complete_commit_chain(tmp_path, monkeypatch, fault):
     batch, paths, values, wire, events = repaired_fixture(tmp_path, monkeypatch)
     if fault == 'missing_fresh_png': (paths['entry_screen'].parent / 'screen.png').unlink()
     elif fault == 'missing_failed_png': (paths['failed_recon'].parent / 'screen.png').unlink()
     elif fault == 'missing_cleanup_marker': Path(values['recovery']['escape_attempt_source']['path']).unlink()
     elif fault == 'missing_reload_marker': Path(values['observer_reload']['reload_attempt_source']['path']).unlink()
+    elif fault in ('missing_idle_png', 'wrong_idle_png', 'missing_bag_close_png', 'wrong_bag_close_png'):
+        path = paths['recovery'].parent / ('idle.png' if 'idle' in fault else 'bag_close.png')
+        if fault.startswith('missing'): path.unlink()
+        else: path.write_bytes(b'borrowed PNG bytes')
     else:
         value = values['entry_screen']
         if fault == 'borrow_entry_review':

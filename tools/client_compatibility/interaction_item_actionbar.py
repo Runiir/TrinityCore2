@@ -313,7 +313,7 @@ def prior(t, preparation, path, phases):
     for key in ('placement', 'drag_source', 'drag_started_at', 'drag_finished_at', 'drag_packets',
             'placement_saved', 'placement_resources', 'first_failure_source', 'drag_attempt_source', 'clear_attempt_source',
             'stock_grid_sources', 'entry_screen_source', 'pre_recon_recovery_source', 'observer_reload_source',
-            'repair_code_transition', 'committed_sources'):
+            'repair_code_transition', 'committed_sources', 'prior_restoration_source', 'failed_observer_source'):
         if key in e:
             t.receipt[key] = deepcopy(e[key])
     t.persist()
@@ -421,6 +421,10 @@ def recon(t, preparation, entry, review_path=None, entry_screen_path=None):
     original = e['native_original']
     require(type(original) is dict and original.get('resources') == e['resources'] and
         original.get('actions') == e['saved']['actions'], 'entry original native restoration authority differs')
+    if entry_screen_path is not None:
+        require(native.get('pose') == original['pose'] and native.get('afk') is original['afk'] and
+            native.get('selection') == original['selection']['native_guid'],
+            'fresh recon refuses a late native pose, AFK or target transition')
     native = {**native, 'pose': original['pose'], 'afk': original['afk'],
         'selection': original['selection']['native_guid']}
     base = {'snapshot': old['all_offline_snapshot'], 'saved': e['saved'], 'resources': e['resources'],
@@ -581,7 +585,8 @@ def save_guarded(t, baseline, session, slot0, public, packets, since, until, *, 
 def drag(t, preparation, source, review_path):
     old, session, e = prior(t, preparation, source, ('item_actionbar_drag_ready',))
     base, slot0 = e['baseline'], e['slot0']
-    _, _, _, protected, state, frame = assert_live(base, session, base['saved'], t=t, label='item_drag_before')
+    _, _, observed_native, protected, state, frame = assert_live(base, session, base['saved'], t=t, label='item_drag_before')
+    require(observed_native == base['native_state'], 'first item drag requires the actual original native layout')
     public = detail(t, 'item_drag_before_bars')
     require(public_same(public, e['public']), 'reviewed empty public action bar differs')
     require(slot_control(t) == e['source_control'], 'reviewed Hearthstone control moved')
@@ -590,6 +595,7 @@ def drag(t, preparation, source, review_path):
     no_forbidden(base, session, time.time())
     grid_sources = stock_grid_sources()
     require(grid_sources == base['stock_grid_sources'], 'reviewed installed stock grid source differs')
+    require(native_state(session) == base['native_state'], 'native layout changed before consuming the first item drag')
     since = time.time()
     intent = {'source': bound(source), 'review': bound(review_path), 'slot0': slot0, 'item': ITEM,
         'item_guid': ITEM_GUID, 'start': start, 'end': end}

@@ -29,6 +29,8 @@ MODULES = ('interaction_item_actionbar_entry_capture.py', 'interaction_item_acti
     'item_actionbar_evidence.py', 'interaction_item_actionbar_pre_recon_recovery.py',
     'interaction_item_actionbar_observer_reload.py', 'interaction_retained_class_reentry.py')
 ISOLATED_OPERATION_SHA = '8ed9dcd456195f687e61243bb0c6169b6702c956378592b5d970fb6d662a2970'
+RENEWAL_MODULE = 'interaction_item_actionbar_idle_renewal.py'
+RESTORATION_CHECKS = LAYOUT_CHECKS | {'full_saved_baseline', 'full_resources_baseline', 'protected_actors', 'zero_native_mutation'}
 
 
 def complete(value, *, failed=False):
@@ -83,9 +85,49 @@ def code_sources(value):
     return deepcopy(rows)
 
 
-def validate_repair(ready, entry, failed, recovery, reload, refs):
+def restoration(recovery, base, refs):
+    complete(recovery)
+    require(recovery.get('phase') == 'item_actionbar_restored' and recovery.get('pre_recon_recovery') is True and
+        recovery.get('source') == recovery.get('first_failure_source') == refs['failed'] and
+        recovery.get('preparation_source') == recovery.get('fixture_source') == refs['preparation'] and
+        recovery.get('entry_source') == refs['entry'] and strict_equal(recovery.get('baseline'), base) and
+        recovery.get('recovery_only') is True and recovery.get('failed_whole_excluded') is True and
+        recovery.get('gameplay_input_replayed') is False and recovery.get('drag_input_sent') is False and
+        recovery.get('clear_input_sent') is False and recovery.get('actionbar_restored') is True and
+        recovery.get('placement_absent') is True and strict_equal(recovery.get('after_saved'), base['saved']) and
+        strict_equal(recovery.get('after_resources'), base['resources']) and
+        strict_equal(recovery.get('after_native_state'), base['native_state']) and recovery.get('cases') == [],
+        'exact successful excluded pre-recon recovery is required')
+    typed_checks(recovery, 'layout_restoration_checks', LAYOUT_CHECKS)
+    typed_checks(recovery, 'restoration_checks', RESTORATION_CHECKS)
+    typed_checks(recovery, 'protected_checks', PROTECTED_CHECKS)
+
+
+def repair_ancestors(recovery, refs, resolver=None):
+    if recovery.get('idle_renewal') is not True:
+        require(not any(k in recovery for k in ('prior_restoration_source', 'failed_observer_source')),
+            'ordinary first cleanup cannot invent an idle-renewal ancestry')
+        return {}
+    def linked(ref, successful):
+        require(op.bound(Path(ref['path'])) == ref, 'immutable repair ancestor bytes changed')
+        return op.closed(Path(ref['path']), successful=successful)
+    resolver = resolver or linked
+    result = {}
+    for name, successful in (('prior_restoration', True), ('failed_observer', False)):
+        source = recovery.get(name + '_source')
+        reference(source)
+        refs[name] = source
+        result[name] = resolver(source, successful)
+    return result
+
+
+def validate_repair(ready, entry, failed, recovery, reload, refs, ancestors=None):
     """Pure source-bound repair authority; excluded failures remain excluded."""
-    require(type(refs) is dict and set(refs) == {'preparation', 'entry', 'failed', 'recovery', 'reload'},
+    ancestors = {} if ancestors is None else ancestors
+    renewed = recovery.get('idle_renewal') is True
+    extra = {'prior_restoration', 'failed_observer'} if renewed else set()
+    require(type(refs) is dict and set(refs) == {'preparation', 'entry', 'failed', 'recovery', 'reload'} | extra and
+        type(ancestors) is dict and set(ancestors) == extra,
         'complete original-entry repair source roles are required')
     for ref in refs.values():
         reference(ref)
@@ -98,7 +140,7 @@ def validate_repair(ready, entry, failed, recovery, reload, refs):
     require(all(type(v) is str and re.fullmatch('[0-9a-f]{40}', v) for v in (old_commit, new_commit)) and
         ready.get('code_commit') == old_commit and failed.get('code_commit') == old_commit,
         'original entry and first failure code identity must remain unchanged')
-    for value in (ready, failed, recovery, reload):
+    for value in (ready, failed, recovery, reload, *ancestors.values()):
         require(value.get('actor') == actor and value.get('runtime') == runtime and
             value.get('native_session') == session and value.get('qualification_added') is False and
             value.get('mutation_sent') is False and value.get('model') is None and value.get('revision') is None,
@@ -120,19 +162,37 @@ def validate_repair(ready, entry, failed, recovery, reload, refs):
         raw.get('state', {}).get('bags') == [0] and not any(raw.get('state', {}).get(k) for k in
             ('panels', 'cursor_info', 'spell_targeting', 'chat_edit_open', 'lua_errors', 'blocked_actions')),
         'first failed receipt must retain its unchanged inventory, native state and open backpack')
-    require(recovery.get('phase') == 'item_actionbar_restored' and recovery.get('pre_recon_recovery') is True and
-        recovery.get('source') == recovery.get('first_failure_source') == refs['failed'] and
-        recovery.get('preparation_source') == recovery.get('fixture_source') == refs['preparation'] and
-        recovery.get('entry_source') == refs['entry'] and strict_equal(recovery.get('baseline'), base) and
-        recovery.get('recovery_only') is True and recovery.get('failed_whole_excluded') is True and
-        recovery.get('gameplay_input_replayed') is False and recovery.get('drag_input_sent') is False and
-        recovery.get('clear_input_sent') is False and recovery.get('actionbar_restored') is True and
-        recovery.get('placement_absent') is True and strict_equal(recovery.get('after_saved'), base['saved']) and
-        strict_equal(recovery.get('after_resources'), base['resources']) and
-        strict_equal(recovery.get('after_native_state'), base['native_state']),
-        'exact successful excluded pre-recon recovery is required')
-    typed_checks(recovery, 'layout_restoration_checks', LAYOUT_CHECKS)
-    typed_checks(recovery, 'protected_checks', PROTECTED_CHECKS)
+    restoration(recovery, base, refs)
+    if renewed:
+        prior, observer = ancestors['prior_restoration'], ancestors['failed_observer']
+        restoration(prior, base, refs)
+        complete(observer, failed=True)
+        require(prior.get('idle_renewal') is not True and recovery.get('prior_restoration_source') == refs['prior_restoration'] and
+            recovery.get('failed_observer_source') == refs['failed_observer'] and
+            recovery.get('prior_input_sources') == {kind + '_attempt_source': prior.get(kind + '_attempt_source') for kind in ('escape', 'stand', 'afk')} and
+            observer.get('source') == observer.get('restoration_source') == refs['prior_restoration'] and
+            observer.get('first_failure_source') == refs['failed'] and observer.get('entry_source') == refs['entry'] and
+            observer.get('preparation_source') == observer.get('fixture_source') == refs['preparation'] and
+            observer.get('phase') == 'item_actionbar_passive_observer_prepared' and
+            observer.get('failure') == 'RuntimeError: native baseline changed before ordinary reload' and
+            observer.get('input_sent') is False and observer.get('ordinary_inputs') == [] and
+            'reload_attempt_source' not in observer and all(k not in observer for k in ATTEMPT_FIELDS) and
+            observer.get('recovery_only') is True and observer.get('failed_whole_excluded') is True and
+            observer.get('gameplay_input_replayed') is False and observer.get('drag_input_sent') is False and
+            observer.get('clear_input_sent') is False and observer.get('cases') == [] and
+            strict_equal(observer.get('baseline'), base) and observer.get('before_saved') == base['saved'] and
+            observer.get('before_resources') == base['resources'] and observer.get('before_native_state') == base['native_state'] and
+            op.public_same(observer.get('before_public', {}), entry['public']),
+            'idle renewal requires the exact unchanged A restoration and failed B observer before any input')
+        b_sources = deployment_sources(observer)
+        b_transition = {'previous_code_commit': old_commit, 'restoration_code_commit': prior['code_commit'],
+            'code_commit': observer['code_commit'], 'entry_source': refs['entry'], 'first_failure_source': refs['failed'],
+            'restoration_source': refs['prior_restoration'], 'committed_sources': b_sources}
+        require(observer.get('previous_code_commit') == old_commit and
+            observer.get('restoration_code_commit') == prior['code_commit'] and
+            observer.get('repair_code_transition') == b_transition and
+            prior['finished_at'] <= observer['started_at'] < observer['finished_at'] <= recovery['started_at'],
+            'truthful completed A, failed B and fresh C renewal code/times differ')
     require(reload.get('phase') == RELOAD_PHASE and reload.get('source') == reload.get('restoration_source') == refs['recovery'] and
         reload.get('first_failure_source') == refs['failed'] and reload.get('entry_source') == refs['entry'] and
         reload.get('preparation_source') == reload.get('fixture_source') == refs['preparation'] and
@@ -147,6 +207,27 @@ def validate_repair(ready, entry, failed, recovery, reload, refs):
     typed_checks(reload, 'layout_restoration_checks', LAYOUT_CHECKS)
     typed_checks(reload, 'protected_checks', PROTECTED_CHECKS)
     clean_state(reload.get('after_state'), entry, 146)
+    sources = deployment_sources(reload)
+    if renewed:
+        require(str(op.lab.REPO / 'tools/client_compatibility' / RENEWAL_MODULE) in {r['path'] for r in sources},
+            'committed idle-renewal guard identity is required')
+    restoration_commit = recovery.get('code_commit')
+    require(type(restoration_commit) is str and re.fullmatch('[0-9a-f]{40}', restoration_commit) and
+        reload.get('restoration_code_commit') == restoration_commit, 'truthful excluded restoration code identity differs')
+    expected_transition = {'previous_code_commit': old_commit, 'restoration_code_commit': restoration_commit, 'code_commit': new_commit,
+        'entry_source': refs['entry'], 'first_failure_source': refs['failed'],
+        'restoration_source': refs['recovery'], 'committed_sources': sources}
+    require(reload.get('previous_code_commit') == old_commit and
+        strict_equal(reload.get('repair_code_transition'), expected_transition), 'explicit immutable repair code transition differs')
+    sequence = (ready, entry, failed, recovery, reload)
+    require(all(a['finished_at'] <= b['started_at'] for a, b in zip(sequence, sequence[1:])),
+        'original entry, failure, excluded recovery and observer repair chronology differs')
+    return deepcopy(expected_transition)
+
+
+def deployment_sources(reload):
+    new_commit = reload.get('code_commit')
+    require(type(new_commit) is str and re.fullmatch('[0-9a-f]{40}', new_commit), 'truthful observer deployment commit is required')
     deployment = reload.get('observer_deployment', {})
     files = deployment.get('source')
     require(type(files) is dict and files and deployment.get('installed') == files and
@@ -175,18 +256,7 @@ def validate_repair(ready, entry, failed, recovery, reload, refs):
     observer = str(op.lab.REPO / 'tools/client_compatibility/observation/addon/ClientMovementHarness/ClientInteractions.lua')
     require(any(r == {'path': observer, 'sha256': files['ClientInteractions.lua']} for r in sources),
         'installed scheduler digest differs from the committed observer source')
-    restoration_commit = recovery.get('code_commit')
-    require(type(restoration_commit) is str and re.fullmatch('[0-9a-f]{40}', restoration_commit) and
-        reload.get('restoration_code_commit') == restoration_commit, 'truthful excluded restoration code identity differs')
-    expected_transition = {'previous_code_commit': old_commit, 'restoration_code_commit': restoration_commit, 'code_commit': new_commit,
-        'entry_source': refs['entry'], 'first_failure_source': refs['failed'],
-        'restoration_source': refs['recovery'], 'committed_sources': sources}
-    require(reload.get('previous_code_commit') == old_commit and
-        strict_equal(reload.get('repair_code_transition'), expected_transition), 'explicit immutable repair code transition differs')
-    sequence = (ready, entry, failed, recovery, reload)
-    require(all(a['finished_at'] <= b['started_at'] for a, b in zip(sequence, sequence[1:])),
-        'original entry, failure, excluded recovery and observer repair chronology differs')
-    return deepcopy(expected_transition)
+    return sources
 
 
 def validate_code_bytes(value, sources):
@@ -207,15 +277,11 @@ def validate_code_bytes(value, sources):
     return rows
 
 
-def validate_housekeeping(value, failed, recovery, reload, refs):
-    """Retain the exact durable attempts without assigning an idle mismatch cause."""
-    retained = value.get('housekeeping_attempts')
-    require(type(retained) is list and 1 <= len(retained) <= 4 and
-        all(type(r) is dict and set(r) == {'source', 'value'} for r in retained) and
-        len({r['source']['path'] for r in retained}) == len(retained), 'complete distinct housekeeping attempt bytes are required')
+def cleanup_attempts(retained, failed, recovery, refs, entry, ancestors=None, complete_rows=None):
     by_ref = lambda ref: next((r['value'] for r in retained if r['source'] == ref), None)
     expected = []
-    for kind in ('escape', 'stand', 'afk'):
+    renewed = recovery.get('idle_renewal') is True
+    for kind in (('stand', 'afk') if renewed else ('escape', 'stand', 'afk')):
         ref = recovery.get(kind + '_attempt_source')
         require((ref is not None) == (recovery.get('bag_close_input_sent') is True if kind == 'escape'
             else recovery.get(kind + '_cleanup_started_at') is not None), 'cleanup attempt source and actual input flag differ')
@@ -224,8 +290,12 @@ def validate_housekeeping(value, failed, recovery, reload, refs):
         reference(ref); expected.append(ref)
         marker = by_ref(ref)
         intent = recovery['bag_close_input'] if kind == 'escape' else marker.get('input_intent') if type(marker) is dict else None
-        require(Path(ref['path']) == Path(refs['entry']['path']).parent / ('item_actionbar_pre_recon_' + kind + '_attempt.json') and
-            type(marker) is dict and marker.get('schema') == 'client442_item_actionbar_pre_recon_consumed_input_v1' and
+        marker_path = (Path(refs['failed_observer']['path']).parent /
+            ('item_actionbar_idle_renewal_' + refs['failed_observer']['sha256'] + '_' + kind + '_attempt.json') if renewed else
+            Path(refs['entry']['path']).parent / ('item_actionbar_pre_recon_' + kind + '_attempt.json'))
+        schema = 'client442_item_actionbar_idle_renewal_consumed_input_v1' if renewed else 'client442_item_actionbar_pre_recon_consumed_input_v1'
+        require(Path(ref['path']) == marker_path and
+            type(marker) is dict and marker.get('schema') == schema and
             marker.get('kind') == kind and marker.get('entry_source') == refs['entry'] and
             marker.get('preparation_source') == refs['preparation'] and marker.get('first_failure_source') == refs['failed'] and
             marker.get('actor') == recovery['actor'] and marker.get('runtime') == recovery['runtime'] and
@@ -233,6 +303,10 @@ def validate_housekeeping(value, failed, recovery, reload, refs):
             marker.get('input_replay_allowed') is False and finite(marker.get('created_at')) and
             recovery['started_at'] <= marker['created_at'] <= recovery['finished_at'],
             'exact source-bound exclusive pre-recon cleanup attempt differs')
+        if renewed:
+            require(marker.get('prior_restoration_source') == refs['prior_restoration'] and
+                marker.get('failed_observer_source') == refs['failed_observer'] and
+                marker.get('code_commit') == recovery['code_commit'], 'fresh renewal attempt must retain actual A, failed B and current C authority')
         if kind == 'escape':
             require(intent == marker.get('input_intent') == {'kind': 'key', 'value': 'Escape'}, 'only the original bag-close Escape is permitted')
         else:
@@ -241,13 +315,15 @@ def validate_housekeeping(value, failed, recovery, reload, refs):
             if kind == 'afk':
                 require(intent == {'kind': 'chat', 'value': '/afk'}, 'only exact observed AFK cleanup is permitted')
             else:
+                keys = entry.get('public', {}).get('keys', {}).get('SITORSTAND')
                 require(type(intent) is dict and set(intent) == {'kind', 'value', 'hold'} and intent['kind'] == 'key' and
-                    type(intent['value']) is str and intent['hold'] == .4,
-                    'only the observed ordinary standing binding is permitted')
+                    type(keys) is list and bool(keys) and type(keys[0]) is str and
+                    re.fullmatch('[A-Za-z]', keys[0]) and intent['value'] == keys[0].lower() and intent['hold'] == .4,
+                    'only the immutable original entry standing binding is permitted')
     idle = recovery.get('pre_recon_idle_observation', {})
     require(idle.get('original') == recovery['baseline']['native_state'] and idle.get('qualification_added') is False and
         type(idle.get('mismatch_observed')) is bool, 'honest source-retained pre-recon idle observation is required')
-    if idle['mismatch_observed']:
+    if idle['mismatch_observed'] and not renewed:
         from .interaction_item_actionbar_pre_recon_recovery import stand_chain
         from .item_actionbar_contract import records, body, INDEX
         original = recovery['baseline']['native_state']
@@ -272,10 +348,78 @@ def validate_housekeeping(value, failed, recovery, reload, refs):
             require(all(p.get('session') == recovery['native_session'] and
                 recovery['stand_cleanup_started_at'] <= p['time'] <= recovery['finished_at'] for p in restored),
                 'ordinary standing restoration quartet differs')
-    else:
+    elif not renewed:
         require(idle.get('native_before_observation') == idle['original'] and
             recovery.get('stand_attempt_source') is None and recovery.get('afk_attempt_source') is None,
             'exact original idle state permits no pose or AFK cleanup attempt')
+    if renewed:
+        from .interaction_item_actionbar_idle_renewal import idle_packets
+        from .interaction_item_actionbar_pre_recon_recovery import stand_chain
+        prior, observer = ancestors['prior_restoration'], ancestors['failed_observer']
+        original = recovery['baseline']['native_state']
+        movement = idle.get('frame', {}).get('movement', {})
+        require(idle.get('mismatch_observed') is True and original['pose']['stand'] == 0 and original['afk'] is False and
+            idle.get('native_before_observation') == {**original, 'pose': {**original['pose'], 'stand': 1}, 'afk': True} and
+            idle.get('label') == 'unattributed_observed_post_restoration_idle_state_mismatch' and
+            idle.get('prior_restoration_source') == refs['prior_restoration'] and idle.get('failed_observer_source') == refs['failed_observer'] and
+            idle.get('since') == prior['finished_at'] and finite(idle.get('until')) and
+            observer['finished_at'] <= idle['until'] <= recovery['finished_at'] and
+            movement.get('speed') == 0 and all(movement.get(k) is False for k in ('dead', 'in_combat', 'on_taxi')),
+            'only the fresh source-bound post-A seated AFK mismatch is permitted')
+        proof = idle_packets(complete_rows, recovery['native_session'], idle['since'], idle['until'], observer['finished_at'])
+        require(all(idle.get(k) == proof[k] for k in proof) and
+            idle.get('native_lifecycle_events') == [] and type(idle.get('native_metadata_rows_checked')) is int and
+            idle['native_metadata_rows_checked'] >= 4, 'fresh renewal sparse native replay or realm lifetime differs')
+        require(recovery.get('stand_attempt_source') is not None and
+            'escape_attempt_source' not in recovery and recovery.get('bag_close_input_sent', False) is False,
+            'fresh idle renewal permits only distinct ordinary stand and AFK cleanup')
+        restored = stand_chain(recovery.get('stand_cleanup_packets', []), 0)
+        require(all(row.get('session') == recovery['native_session'] and
+            recovery['stand_cleanup_started_at'] <= row['time'] <= recovery['finished_at'] for row in restored),
+            'fresh renewal standing restoration quartet differs')
+        inputs = recovery.get('ordinary_inputs')
+        require(type(inputs) is list and len(inputs) in (1, 2) and [r.get('kind') for r in inputs] == ['stand', 'afk'][:len(inputs)] and
+            (recovery.get('afk_attempt_source') is not None) == (len(inputs) == 2) and
+            all(r.get('input') == by_ref(recovery[r['kind'] + '_attempt_source']).get('input_intent') and
+                r.get('started_at') == recovery[r['kind'] + '_cleanup_started_at'] and finite(r.get('finished_at')) and
+                r['started_at'] <= r['finished_at'] <= recovery['finished_at'] and r.get('input_replayed') is False for r in inputs) and
+            (len(inputs) == 1 or inputs[0]['finished_at'] <= inputs[1]['started_at']),
+            'renewal retains the exact once-only stand then necessary AFK inputs')
+        preflights = recovery.get('renewal_input_preflights')
+        require(type(preflights) is list and len(preflights) == len(inputs), 'every renewal input needs its fresh full preflight')
+        for preflight, action in zip(preflights, inputs):
+            kind = action['kind']
+            current = preflight.get('native_state', {})
+            require(set(preflight) == {'kind', 'state', 'frame', 'native_state', 'saved', 'resources', 'protected_checks', 'observed_at'} and
+                preflight.get('kind') == kind and preflight.get('saved') == recovery['baseline']['saved'] and
+                preflight.get('resources') == recovery['baseline']['resources'] and finite(preflight.get('observed_at')) and
+                recovery['started_at'] <= preflight['observed_at'] <= by_ref(recovery[kind + '_attempt_source'])['created_at'] and
+                {k: v for k, v in current.items() if k not in ('pose', 'afk')} ==
+                {k: v for k, v in original.items() if k not in ('pose', 'afk')} and
+                current.get('pose') == {**original['pose'], 'stand': 1 if kind == 'stand' else 0} and
+                type(current.get('afk')) is bool and (kind == 'stand' or current['afk'] is True),
+                'fresh renewal command changed resources, target, native state or marker chronology')
+            typed_checks(preflight, 'protected_checks', PROTECTED_CHECKS)
+            clean_state(preflight.get('state'), entry)
+            movement = preflight.get('frame', {}).get('movement', {})
+            require(movement.get('speed') == 0 and all(movement.get(k) is False for k in ('dead', 'in_combat', 'on_taxi')),
+                'fresh renewal input needs its observed idle owned frame')
+    return expected
+
+
+def validate_housekeeping(value, failed, recovery, reload, refs, entry, ancestors=None):
+    """Retain every actual A/C attempt and the sole latest ordinary reload."""
+    ancestors = {} if ancestors is None else ancestors
+    retained = value.get('housekeeping_attempts')
+    require(type(retained) is list and 1 <= len(retained) <= 6 and
+        all(type(r) is dict and set(r) == {'source', 'value'} for r in retained) and
+        len({r['source']['path'] for r in retained}) == len(retained), 'complete distinct housekeeping attempt bytes are required')
+    by_ref = lambda ref: next((r['value'] for r in retained if r['source'] == ref), None)
+    expected = []
+    if ancestors:
+        prior_refs = {**refs, 'recovery': refs['prior_restoration']}
+        expected += cleanup_attempts(retained, failed, ancestors['prior_restoration'], prior_refs, entry)
+    expected += cleanup_attempts(retained, failed, recovery, refs, entry, ancestors, value.get('capture_packets'))
     ref = reload.get('reload_attempt_source')
     reference(ref); expected.append(ref)
     marker = by_ref(ref)
@@ -320,9 +464,29 @@ def restoration_runtime_source(recovery, retained=None):
     return {**source, 'raw_hex': raw.hex()}
 
 
-def validate_capture(value, ready, entry, failed, recovery, reload, refs):
+def ending_native(rows, expected):
+    from .item_actionbar_contract import records, body, INDEX
+    fields = {}
+    for packet in rows:
+        if packet.get('direction') == 'from_native' and packet.get('name') == 'SMSG_UPDATE_OBJECT':
+            for record in records(body(packet)):
+                if record.get('guid') == 2:
+                    fields.update(record.get('fields', {}))
+    get = lambda name: fields.get(INDEX[name], 0)
+    pair = lambda name: get(name) | fields.get(INDEX[name] + 1, 0) << 32
+    actual = {'pose': {'stand': get('UNIT_FIELD_BYTES_1') & 255, 'sheath': get('UNIT_FIELD_BYTES_2') & 255},
+        'afk': bool(get('PLAYER_FLAGS') & 2), 'selection': pair('UNIT_FIELD_TARGET'),
+        'health': get('UNIT_FIELD_HEALTH'), 'max_health': get('UNIT_FIELD_MAXHEALTH'),
+        'power': get('UNIT_FIELD_POWER1'), 'xp': get('PLAYER_XP'), 'next_xp': get('PLAYER_NEXT_LEVEL_XP'),
+        'summon': pair('UNIT_FIELD_SUMMON')}
+    require(actual == expected, 'sealed capture ending native pose, AFK, target or resources differ from its actual snapshot')
+    return actual
+
+
+def validate_capture(value, ready, entry, failed, recovery, reload, refs, ancestors=None):
     complete(value)
-    transition = validate_repair(ready, entry, failed, recovery, reload, refs)
+    ancestors = {} if ancestors is None else ancestors
+    transition = validate_repair(ready, entry, failed, recovery, reload, refs, ancestors)
     require(value.get('phase') == PHASE and value.get('entry_source') == refs['entry'] and
         value.get('preparation_source') == value.get('fixture_source') == refs['preparation'] and
         value.get('first_failure_source') == refs['failed'] and value.get('pre_recon_recovery_source') == refs['recovery'] and
@@ -341,10 +505,27 @@ def validate_capture(value, ready, entry, failed, recovery, reload, refs):
         value.get('active_spec') == entry['active_spec'], 'fresh entry screen changed original saved, native or public baseline')
     clean_state(value.get('state'), entry, 146)
     validate_code_bytes(value, transition['committed_sources'])
-    validate_housekeeping(value, failed, recovery, reload, refs)
-    if recovery.get('runtime_source_isolation') is not None:
+    validate_housekeeping(value, failed, recovery, reload, refs, entry, ancestors)
+    isolated = ancestors.get('prior_restoration', recovery)
+    if ancestors:
+        require(value.get('prior_restoration_source') == refs['prior_restoration'] and
+            value.get('failed_observer_source') == refs['failed_observer'], 'fresh capture must retain the original A and failed B sources')
+        validate_code_bytes({'code_source_bytes': value.get('failed_observer_code_source_bytes')},
+            deployment_sources(ancestors['failed_observer']))
+        sources = transition['committed_sources']
+        expected = [next(r for r in sources if Path(r['path']).name == name) for name in
+            (RENEWAL_MODULE, 'interaction_item_actionbar_pre_recon_recovery.py', 'interaction_item_actionbar.py')]
+        require(recovery.get('renewal_code_sources') == expected and
+            recovery.get('renewal_runtime_source') == {'code_commit': recovery['code_commit'], 'operation_source': expected[2],
+                'loaded_from': 'committed_working_bytes', 'working_candidate_inputs_used': False} and
+            recovery['code_commit'] == reload['code_commit'] and 'runtime_source_isolation' not in recovery,
+            'fresh renewal must use the actual current committed C operation and guards')
+    else:
+        require(not any(k in value for k in ('prior_restoration_source', 'failed_observer_source', 'failed_observer_code_source_bytes')),
+            'ordinary first repair cannot invent a prior restoration or failed observer')
+    if isolated.get('runtime_source_isolation') is not None:
         require(value.get('restoration_runtime_source_bytes') is not None, 'portable original isolated operation bytes are required')
-        restoration_runtime_source(recovery, value['restoration_runtime_source_bytes'])
+        restoration_runtime_source(isolated, value['restoration_runtime_source_bytes'])
     else:
         require(value.get('restoration_runtime_source_bytes') is None, 'cleanup cannot invent runtime isolation authority')
     public_assignments(value['public'], entry['saved']['actions'], entry['active_spec'])
@@ -360,6 +541,7 @@ def validate_capture(value, ready, entry, failed, recovery, reload, refs):
         len([r for r in rows if r.get('name') in ('CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD')]) == 4,
         'fresh screen must retain the one original sealed ordinary login')
     replay = native_replay(rows, session, since, until, rest_threshold=entry['native_owner_proof']['rest_threshold'])
+    ending_native(replay['packets'], value['native_state'])
     require(value.get('native_owner_proof') == replay and value.get('owner_packets') == replay['packets'],
         'fresh screen must prove every native owner state from original creation')
     return transition
@@ -392,6 +574,16 @@ def verify_current_sources(reload):
     return contents
 
 
+def previous_code_bytes(observer):
+    rows = []
+    for source in deployment_sources(observer):
+        raw = subprocess.check_output(['git', 'show', observer['code_commit'] + ':' +
+            str(Path(source['path']).relative_to(op.lab.REPO))], cwd=op.lab.REPO)
+        rows.append({**source, 'raw_hex': raw.hex()})
+    validate_code_bytes({'code_source_bytes': rows}, deployment_sources(observer))
+    return rows
+
+
 def stage_source(t, stage, ready, entry):
     """Keep the explicit code transition bound through later captures and input."""
     value = op.closed(Path(stage['entry_screen_source']['path']))
@@ -405,10 +597,12 @@ def stage_source(t, stage, ready, entry):
         ref = refs[role]
         require(op.bound(Path(ref['path'])) == ref, 'explicit repair predecessor bytes changed')
         objects[role] = op.closed(Path(ref['path']), successful=role != 'failed')
-    validate_capture(value, ready, entry, objects['failed'], objects['recovery'], objects['reload'], refs)
+    ancestors = repair_ancestors(objects['recovery'], refs)
+    validate_capture(value, ready, entry, objects['failed'], objects['recovery'], objects['reload'], refs, ancestors)
     require(stage.get('code_commit') == t.receipt.get('code_commit') == value['code_commit'] and
         all(stage.get(key) == value.get(key) for key in ('repair_code_transition', 'committed_sources',
-            'first_failure_source', 'pre_recon_recovery_source', 'observer_reload_source')),
+            'first_failure_source', 'pre_recon_recovery_source', 'observer_reload_source',
+            'prior_restoration_source', 'failed_observer_source')),
         'later item stage lost its exact explicit repair code transition')
     verify_current_sources(objects['reload'])
 
@@ -425,7 +619,8 @@ def screen_source(t, preparation, entry_path, ready, entry, path):
         ref = refs[role]
         require(op.bound(Path(ref['path'])) == ref, 'fresh-screen predecessor digest changed')
         sources[role] = op.closed(Path(ref['path']), successful=role != 'failed')
-    validate_capture(value, ready, entry, sources['failed'], sources['recovery'], sources['reload'], refs)
+    ancestors = repair_ancestors(sources['recovery'], refs)
+    validate_capture(value, ready, entry, sources['failed'], sources['recovery'], sources['reload'], refs, ancestors)
     require(value['finished_at'] <= t.receipt['started_at'] and
         t.receipt.get('code_commit') == value['code_commit'], 'fresh screen must precede the actual current committed recon')
     verify_current_sources(sources['reload'])
@@ -435,6 +630,8 @@ def screen_source(t, preparation, entry_path, ready, entry, path):
     t.receipt.update(entry_screen_source=op.bound(path), first_failure_source=refs['failed'],
         pre_recon_recovery_source=refs['recovery'], observer_reload_source=refs['reload'],
         repair_code_transition=deepcopy(value['repair_code_transition']), committed_sources=deepcopy(value['committed_sources']))
+    if ancestors:
+        t.receipt.update(prior_restoration_source=refs['prior_restoration'], failed_observer_source=refs['failed_observer'])
     t.persist()
     return value
 
@@ -447,15 +644,18 @@ def capture(t, preparation, entry_path, recovery_path, reload_path):
     failed = op.closed(Path(failed_ref['path']), successful=False)
     refs = {'preparation': op.bound(preparation), 'entry': op.bound(entry_path), 'failed': failed_ref,
         'recovery': op.bound(recovery_path), 'reload': op.bound(reload_path)}
+    ancestors = repair_ancestors(recovery, refs)
     require(op.bound(Path(failed_ref['path'])) == failed_ref, 'immutable first failed recon changed')
-    transition = validate_repair(ready, entry, failed, recovery, reload, refs)
+    transition = validate_repair(ready, entry, failed, recovery, reload, refs, ancestors)
     require(t.receipt.get('code_commit') == reload['code_commit'] and reload['finished_at'] <= t.receipt['started_at'],
         'fresh capture requires the actual committed repair and later honest interval')
     unconsumed(refs['entry'])
     code_bytes = verify_current_sources(reload)
-    isolated_bytes = restoration_runtime_source(recovery)
+    isolated_bytes = restoration_runtime_source(ancestors.get('prior_restoration', recovery))
     attempts = []
-    for source in [recovery.get(k + '_attempt_source') for k in ('escape', 'stand', 'afk')] + [reload.get('reload_attempt_source')]:
+    restorations = [ancestors['prior_restoration'], recovery] if ancestors else [recovery]
+    attempt_refs = [restored.get(k + '_attempt_source') for restored in restorations for k in ('escape', 'stand', 'afk')]
+    for source in attempt_refs + [reload.get('reload_attempt_source')]:
         if source is not None:
             reference(source)
             require(op.bound(Path(source['path'])) == source, 'durable housekeeping attempt bytes changed')
@@ -471,6 +671,9 @@ def capture(t, preparation, entry_path, recovery_path, reload_path):
         restoration_runtime_source_bytes=isolated_bytes,
         baseline=deepcopy(failed['baseline']), phase='item_actionbar_entry_screen_capture_started',
         input_sent=False, mutation_sent=False, qualification_added=False)
+    if ancestors:
+        t.receipt.update(prior_restoration_source=refs['prior_restoration'], failed_observer_source=refs['failed_observer'],
+            failed_observer_code_source_bytes=previous_code_bytes(ancestors['failed_observer']))
     t.persist()
     saved, resources, native, protected, state, frame = op.assert_live(failed['baseline'], session, entry['saved'],
         t=t, label='item_actionbar_fresh_entry_screen')
@@ -489,7 +692,7 @@ def capture(t, preparation, entry_path, recovery_path, reload_path):
             ('recovery', recovery_path), ('reload', reload_path)):
         require(op.bound(path) == refs[key], 'immutable capture predecessor changed while observing')
     t.receipt.update(completed=True, phase=PHASE)
-    return ready, entry, failed, recovery, reload, refs
+    return ready, entry, failed, recovery, reload, refs, ancestors
 
 
 def run(t, preparation, entry_path, recovery_path, reload_path):
@@ -504,13 +707,13 @@ def run(t, preparation, entry_path, recovery_path, reload_path):
         until = time.time()
         t.receipt['finished_at'] = until
         if chain is not None and t.receipt.get('completed') is True:
-            ready, entry, failed, recovery, reload, refs = chain
+            ready, entry, failed, recovery, reload, refs, ancestors = chain
             try:
                 rows = op.packet_rows(entry['native_session'], entry['started_at'], until)
                 replay = native_replay(rows, entry['native_session'], entry['started_at'], until,
                     rest_threshold=entry['native_owner_proof']['rest_threshold'])
                 t.receipt.update(capture_packets=rows, native_owner_proof=replay, owner_packets=replay['packets'])
-                validate_capture(t.receipt, ready, entry, failed, recovery, reload, refs)
+                validate_capture(t.receipt, ready, entry, failed, recovery, reload, refs, ancestors)
             except BaseException as error:
                 t.receipt.update(completed=False, failure=type(error).__name__ + ': ' + str(error))
                 if not isinstance(error, Exception):

@@ -289,7 +289,8 @@ def fresh_entry_screen(store, ready, entry, recon, ready_ref, entry_ref):
     refs = {'preparation': ready_ref, 'entry': entry_ref, 'failed': value.get('first_failure_source'),
         'recovery': value.get('pre_recon_recovery_source'), 'reload': value.get('observer_reload_source')}
     failed, recovery, reload = [store.get(refs[k], False) for k in ('failed', 'recovery', 'reload')]
-    transition = capture.validate_capture(value, ready, entry, failed, recovery, reload, refs)
+    ancestors = capture.repair_ancestors(recovery, refs, lambda ref, success: store.get(ref, False))
+    transition = capture.validate_capture(value, ready, entry, failed, recovery, reload, refs, ancestors)
     require(all(store.get(row['source'], False) == row['value'] for row in value['housekeeping_attempts']),
         'actual archived housekeeping attempt bytes differ from fresh capture')
     for source_ref, episode, image in ((entry_ref, entry, entry['frame']), (ref, value, value['frame']),
@@ -307,12 +308,26 @@ def fresh_entry_screen(store, ready, entry, recon, ready_ref, entry_ref):
         failed['backpack_geometry'].get('reviewed_frame') == entry['frame'],
         'original failed recon must retain its exact reviewed entry backpack click')
     frame(store, failed, failed['raw_stage_failure']['frame'], refs['failed'])
-    frame(store, recovery, recovery['restored_frame'], refs['recovery'])
-    require(recovery.get('bag_close_input_sent') in (True, False) and
-        (recovery.get('bag_close_input') == {'kind': 'key', 'value': 'Escape'} if recovery['bag_close_input_sent']
-            else recovery.get('input_sent') is False) and
-        recovery.get('pre_recon_no_mutation_proof', {}).get('native_action_requests') == 0,
-        'excluded pre-recon housekeeping must retain the sole ordinary bag-close input')
+    restorations = [(refs['prior_restoration'], ancestors['prior_restoration']), (refs['recovery'], recovery)] if ancestors else [(refs['recovery'], recovery)]
+    for restored_ref, restored_episode in restorations:
+        frame(store, restored_episode, restored_episode['restored_frame'], restored_ref)
+        idle_frame = restored_episode.get('pre_recon_idle_observation', {}).get('frame')
+        frame(store, restored_episode, idle_frame, restored_ref)
+        if restored_episode.get('idle_renewal') is True:
+            for preflight in restored_episode['renewal_input_preflights']:
+                frame(store, restored_episode, preflight['frame'], restored_ref)
+        if restored_episode.get('idle_renewal') is not True:
+            require(idle_frame == restored_episode.get('bag_close_before_frame'),
+                'source-retained idle observation must own the actual bag-close-before frame')
+            if restored_episode.get('bag_close_input_sent') is True:
+                frame(store, restored_episode, restored_episode.get('bag_close_frame'), restored_ref)
+            require(type(restored_episode.get('bag_close_input_sent')) is bool and
+                (restored_episode.get('bag_close_input') == {'kind': 'key', 'value': 'Escape'} if restored_episode['bag_close_input_sent']
+                    else restored_episode.get('input_sent') is False) and
+                restored_episode.get('pre_recon_no_mutation_proof', {}).get('native_action_requests') == 0,
+                'excluded pre-recon housekeeping must retain the sole ordinary bag-close input')
+    if ancestors:
+        frame(store, ancestors['failed_observer'], ancestors['failed_observer']['before_frame'], refs['failed_observer'])
     review = screen_review(store, recon, ref, 'MainMenuBarBackpackButton', fixture=ready_ref)
     start = review.get('point')
     require(review.get('pickup_point_inside_button') is True and type(start) is list and len(start) == 2 and
@@ -323,7 +338,7 @@ def fresh_entry_screen(store, ready, entry, recon, ready_ref, entry_ref):
         recon['backpack_geometry'].get('exact_pixels') is True and
         value['finished_at'] <= recon['started_at'] and
         all(recon.get(k) == value.get(k) for k in ('first_failure_source', 'pre_recon_recovery_source',
-            'observer_reload_source', 'repair_code_transition', 'committed_sources')),
+            'observer_reload_source', 'repair_code_transition', 'committed_sources', 'prior_restoration_source', 'failed_observer_source')),
         'renewed recon must review the distinct fresh captured entry screen')
     return value, reload, transition
 
@@ -382,7 +397,8 @@ def lifecycle(store, refs):
         if fresh is not None:
             require(value.get('entry_screen_source') == recon['entry_screen_source'] and
                 value.get('repair_code_transition') == transition and value.get('committed_sources') == transition['committed_sources'] and
-                all(value.get(k) == fresh.get(k) for k in ('first_failure_source', 'pre_recon_recovery_source', 'observer_reload_source')),
+                all(value.get(k) == fresh.get(k) for k in ('first_failure_source', 'pre_recon_recovery_source', 'observer_reload_source',
+                    'prior_restoration_source', 'failed_observer_source')),
                 'later item stage lost its explicit source-bound repair code transition')
     for left, right in zip(current, current[1:]):
         require(left['finished_at'] <= right['started_at'], 'ordinary item lifecycle chronology differs')
@@ -506,15 +522,31 @@ def actual_packets(store, closure, tracking):
             not any(p.get('name') == 'CMSG_SET_ACTION_BUTTON' for p in captured_actual),
             'actual pre-drag journal differs from fresh capture or contains an earlier action input')
         recovery = store.get(captured['pre_recon_recovery_source'], False)
-        observed = recovery['pre_recon_idle_observation']
-        retained = [*observed.get('observed_stand_packets', []), *recovery.get('stand_cleanup_packets', [])]
-        if observed.get('observed_owner_flags_packet'):
-            retained.append(observed['observed_owner_flags_packet'])
-        require(all(any(packet_key(p) == packet_key(q) for q in captured_actual) for p in retained),
-            'actual source-retained observed idle and restoration packets are absent from the archive')
-        if observed['mismatch_observed']:
-            require(observed['since'] == store.get(captured['first_failure_source'], False)['finished_at'],
-                'unattributed idle observation must begin after the immutable first failure')
+        restorations = [store.get(captured['prior_restoration_source'], False), recovery] if recovery.get('idle_renewal') is True else [recovery]
+        for restored_episode in restorations:
+            observed = restored_episode['pre_recon_idle_observation']
+            retained = [*observed.get('observed_stand_packets', []), *restored_episode.get('stand_cleanup_packets', []),
+                *observed.get('observed_owner_flags_packets', [])]
+            if observed.get('observed_owner_flags_packet'):
+                retained.append(observed['observed_owner_flags_packet'])
+            require(all(any(packet_key(p) == packet_key(q) for q in captured_actual) for p in retained),
+                'actual source-retained observed idle and restoration packets are absent from the archive')
+            if restored_episode.get('idle_renewal') is True:
+                from .interaction_item_actionbar_idle_renewal import idle_packets
+                prior = restorations[0]
+                observer = store.get(captured['failed_observer_source'], False)
+                proof = idle_packets(captured_actual, owner, prior['finished_at'], observed['until'], observer['finished_at'])
+                require(all(observed.get(k) == proof[k] for k in proof), 'actual fresh renewal sparse idle journal differs')
+                metadata = [row for row in events if row.get('session') == owner and
+                    prior['finished_at'] < row.get('time', 0) <= observed['until']]
+                forbidden_events = [row for row in metadata if row.get('event') in
+                    ('native_player_created', 'world_connection_closed', 'native_stream_closed')]
+                require(not forbidden_events and observed.get('native_lifecycle_events') == forbidden_events and
+                    observed.get('native_metadata_rows_checked') == len(metadata),
+                    'actual post-A native lifetime must exclude every recreation or disconnect event')
+            elif observed['mismatch_observed']:
+                require(observed['since'] == store.get(captured['first_failure_source'], False)['finished_at'],
+                    'unattributed idle observation must begin after the immutable first failure')
     claimed = [*entry['login_packets'], placed['placement']['modern'], placed['placement']['native'],
         operation['clear_proof']['modern'], operation['clear_proof']['native'], *park['logout_packets']]
     require(all(any(packet_key(p) == packet_key(c) for p in wire) for c in claimed),
