@@ -80,17 +80,20 @@ def prepare(t,preparation,parked,origin_finish,deployment_path,observer_version=
         len(deployed.get('restoration_checks',{}))!=5 or not all(deployed['restoration_checks'].values()) or
         deployed.get('parked_native')!=old['origin_native']):
         raise RuntimeError('new deployment has no exact parked original restoration')
-    primary=closed(deployment_path.parent/'primary_after/episode.json')
+    attempt=deployment.get('parked_reconnect_attempt',{}).get('primary',{})
+    primary_path=Path(attempt.get('episode','')).resolve() if deployment.get('parked_primary') else deployment_path.parent/'primary_after/episode.json'
+    if not primary_path.is_relative_to(deployment_path.parent):
+        raise RuntimeError('primary restoration reference escapes its owned deployment')
+    primary=closed(primary_path)
     checks=primary.get('bridge_native_restoration',{}).get('checks',{})
     if len(checks)!=9 or not all(checks.values()):
         raise RuntimeError('deployment has no complete primary native restoration')
     if deployment.get('parked_primary'):
-        attempt=deployment.get('parked_reconnect_attempt',{}).get('primary',{})
         if (primary.get('bridge_native_restoration',{}).get('offline') is not True or
             primary.get('input_sent') is not False or primary.get('actor',{}).get('guid')!=1 or
             primary.get('runtime',{}).get('worldserver')!=t.receipt['runtime']['worldserver'] or
             primary.get('runtime',{}).get('modern_world')!=t.receipt['runtime']['modern_world'] or
-            attempt.get('sha256')!=lab.sha256(deployment_path.parent/'primary_after/episode.json')):
+            attempt.get('sha256')!=lab.sha256(primary_path)):
             raise RuntimeError('offline primary restoration is not bound to this completed deployment')
     checks=origin_checks(old)
     fixture=old['class_actor'];guid=fixture['guid'];account=fixture['account_id']

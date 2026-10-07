@@ -117,15 +117,6 @@ def lobby(t,directory,review_path,stage):
 
 
 def finish(t,directory,review_path):
-    # Different owned clients share this deployment's joined completion record.
-    # Hold the lock across the read, validation and update, not just the write.
-    with (directory/'deployment_finish.lock').open('a') as handle:
-        fcntl.flock(handle,fcntl.LOCK_EX)
-        try:return finish_locked(t,directory,review_path)
-        finally:fcntl.flock(handle,fcntl.LOCK_UN)
-
-
-def finish_locked(t,directory,review_path):
     report=current(t,directory);name=t.fixture['actor'];d,_=review(t,review_path,t.fixture['character_name'])
     if (d.get('selected_character'),d.get('selected_level'))!=(t.fixture['character_name'],t.fixture['level']):
         raise RuntimeError('restored offline selected identity differs')
@@ -153,6 +144,29 @@ def finish_locked(t,directory,review_path):
     return report,name,session
 
 
+def join_completion(t,directory,result):
+    expected,name,session=result;episode=t.out/'episode.json'
+    e=json.loads(episode.read_text())
+    if (e.get('completed') is not True or e.get('failure') is not None or not e.get('finished_at') or
+        e.get('actor',{}).get('actor')!=name or e.get('session')!=session):
+        raise RuntimeError('deployment join requires its final closed owned episode')
+    with (directory/'deployment_finish.lock').open('a') as handle:
+        fcntl.flock(handle,fcntl.LOCK_EX)
+        try:
+            # Final episode persistence happens before this shared mutation.
+            # Re-read under the lock so a peer's closed record cannot be lost.
+            report=current(t,directory)
+            mutable={'reconnected','parked_reconnect_attempt','completed','finished_at'}
+            if {k:v for k,v in report.items() if k not in mutable}!={k:v for k,v in expected.items() if k not in mutable}:
+                raise RuntimeError('deployment identity changed before joining the closed episode')
+            report['reconnected'][name]={'completed':True,'parked':True,'session':session}
+            report.setdefault('parked_reconnect_attempt',{})[name]={'completed':True,'failure':None,
+                'episode':str(episode),'sha256':lab.sha256(episode)}
+            if set(report['reconnected'])=={'primary','scout'}:report.update(completed=True,finished_at=time.time())
+            lab.private_write(directory/'deployment.json',json.dumps(report,indent=2)+'\n')
+        finally:fcntl.flock(handle,fcntl.LOCK_UN)
+
+
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['capture','restart','lobby','finish'])
     p.add_argument('--actor',choices=['primary','scout']);p.add_argument('--output',type=Path,required=True)
@@ -177,9 +191,5 @@ if __name__=='__main__':
             except Exception as error:t.receipt['failure']=f'{type(error).__name__}: {error}'
             finally:t.receipt['finished_at']=time.time();t.persist()
             if result and t.receipt['completed']:
-                report,name,session=result;report['reconnected'][name]={'completed':True,'parked':True,'session':session}
-                report.setdefault('parked_reconnect_attempt',{})[name]={'completed':True,'failure':None,
-                    'episode':str(t.out/'episode.json'),'sha256':lab.sha256(t.out/'episode.json')}
-                if set(report['reconnected'])=={'primary','scout'}:report.update(completed=True,finished_at=time.time())
-                lab.private_write(a.deployment/'deployment.json',json.dumps(report,indent=2)+'\n')
+                join_completion(t,a.deployment,result)
             print(json.dumps({k:t.receipt.get(k) for k in ('completed','failure')}),flush=True)
