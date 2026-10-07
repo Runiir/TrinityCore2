@@ -127,6 +127,8 @@ def collect(member,lines,data,tracking):
     """Keep only the exact bounded cast window while streaming a remote archive."""
     cast=data[NAMES['cast']];entry=data[NAMES['entry']];session=cast['native_session']
     since=cast['capture_config']['created_at'];until=cast['finished_at']
+    wanted={packet_key(p) for p in cast['cast_packets']}
+    require(0<len(wanted)<=256,'recorded Tame packet bound exceeded')
     for p in lines:
         if member=='tracking/events.jsonl':
             if (p.get('event')=='instance_authenticated' and p.get('account_id')==2 and
@@ -138,6 +140,7 @@ def collect(member,lines,data,tracking):
                 tracking['events'].append(p)
         elif p.get('session')==session and since<=p.get('time',0)<=until:
             destination='raw' if member=='tracking/owned_tame_request_packets.jsonl' else 'packets'
-            tracking[destination].add(packet_key(p))
+            key=packet_key(p)
+            if destination=='raw' or key in wanted:tracking[destination].add(key)
         require(len(tracking['raw'])<=8 and len(tracking['packets'])<=256 and
             len(tracking['events'])<=16 and len(tracking['instances'])<=1,'Tame journal bound exceeded')
