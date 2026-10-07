@@ -125,3 +125,25 @@ def test_native_catalog_opens_stock_interaction_once_and_close_allows_normal_reo
     expected=['SMSG_NPC_INTERACTION_OPEN_RESULT',Writer().guid(*modern_guid(MASTER,0)).pack('i',22).bits(1,1).finish().hex()]
     assert rows[1]==expected and rows[3] is None and rows[6]==expected
     assert owned(codec,[reply(catalog(guid=0)),notify])[1] is None
+
+
+def gossip(guid=MASTER):
+    body=Writer().pack('QIIIiBBI',guid,9821,13557,1,0,12,0,0).raw(b'Stable here\0\0').pack('I',0).finish()
+    return action('gossip_response','SMSG_GOSSIP_MESSAGE',body)
+
+
+@pytest.mark.parametrize('lookup_pending',[False,True])
+def test_native_stable_transition_does_not_close_new_stock_interaction(codec,lookup_pending):
+    started=action('stable_catalog_started','MSG_LIST_STABLED_PETS',catalog()) if lookup_pending else reply()
+    complete=action('gossip_response','SMSG_GOSSIP_COMPLETE',b'')
+    rows=owned(codec,[gossip(),started,complete,complete])
+    assert rows[2] is None and rows[3]==['SMSG_GOSSIP_COMPLETE','00']
+
+
+def test_normal_gossip_choice_reopens_and_zero_master_does_not_suppress_gossip_close(codec):
+    notify=action('stable_open_response','',b'')
+    request=Writer().guid(*modern_guid(MASTER,0)).pack('Ii',9821,0).bits(0,8).finish()
+    rows=owned(codec,[gossip(),reply(),notify,action('gossip_request','CMSG_GOSSIP_SELECT_OPTION',request),reply(),notify])
+    assert rows[5]==rows[2] and rows[5][0]=='SMSG_NPC_INTERACTION_OPEN_RESULT'
+    rows=owned(codec,[gossip(),reply(catalog(guid=0)),action('gossip_response','SMSG_GOSSIP_COMPLETE',b'')])
+    assert rows[2]==['SMSG_GOSSIP_COMPLETE','00']

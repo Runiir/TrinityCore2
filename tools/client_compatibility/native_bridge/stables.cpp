@@ -65,10 +65,21 @@ Reply stable_request(Protocol const &protocol,State const &owner,std::string con
     Reader r(body);auto guid=master(protocol,owner,r.guid());r.end();
     return Packet{"MSG_LIST_STABLED_PETS",Writer().put(guid).finish()};
 }
+void stable_catalog_started(Protocol const &protocol,State &owner,View body)
+{
+    auto catalog=native_stable_list(body);auto guid=integer(get(catalog,"native_master"));
+    if(!guid || !hunter(protocol,owner))return;
+    // Validate before any asynchronous model lookup: legacy Erma's close
+    // arrives while the catalog lookup can still be pending. Modern stable
+    // interaction handles the gossip transition without that later close.
+    master(protocol,owner,Protocol::modern_guid(guid,owner.map()));
+    if(integer(get(owner.gossip_menu,"guid"))==guid)owner.pending_stable_gossip=guid;
+}
 Reply stable_response(Protocol const &protocol,State &owner,std::string const &name,View body,Array const &models)
 {
     if(name!="MSG_LIST_STABLED_PETS")return {};
     if(!hunter(protocol,owner))return {};
+    stable_catalog_started(protocol,owner,body);
     auto catalog=native_stable_list(body);auto guid=integer(get(catalog,"native_master"));
     auto identity=Array{0,0};
     if(guid)

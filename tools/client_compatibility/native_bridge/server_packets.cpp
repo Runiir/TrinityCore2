@@ -143,6 +143,7 @@ Task<> Session::gameplay(std::string name, Bytes body)
             stable_owner=state.guid();
         }
         auto catalog=native_stable_list(body);std::string ids;
+        {std::lock_guard lock(state_mutex);stable_catalog_started(service.protocol,state,body);}
         for(auto const &pet:get(catalog,"Pets").as_array())
         {if(!ids.empty())ids+=',';ids+=std::to_string(integer(get(pet,"PetNumber")));}
         if(!ids.empty())
@@ -310,9 +311,10 @@ Task<> Session::gameplay(std::string name, Bytes body)
     {send(*reply);co_return;}
     if ((reply = mail_response(protocol,state,name,body)))
     {send(*reply);co_return;}
-    if ((reply = Protocol::gossip_response(state, name, body)))
+    reply=Protocol::gossip_response(state,name,body);
+    if(reply || name=="SMSG_GOSSIP_COMPLETE")
     {
-        send(*reply);
+        if(reply)send(*reply);
         co_return;
     }
     if ((reply = Protocol::taxi_response(state, name, body)))

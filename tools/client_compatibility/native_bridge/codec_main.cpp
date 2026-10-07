@@ -463,6 +463,8 @@ int main(int argc, char **argv)
                                 Protocol::bank_close(state,name,body);
                             else if(fn=="stable_request")
                                 reply=stable_request(protocol,state,name,body);
+                            else if(fn=="stable_catalog_started")
+                                stable_catalog_started(protocol,state,body);
                             else if(fn=="stable_response")
                                 reply=stable_response(protocol,state,name,body,get(action,"models").as_array());
                             else if(fn=="stable_open_response")

@@ -38,6 +38,10 @@ Packet Protocol::gossip_request(State &owner, std::string const &name, View body
         found |= signed_integer(option) == index;
     if (!found)
         throw std::runtime_error("gossip choice does not belong to native menu");
+    // A newly validated ordinary choice starts a new native interaction.
+    // Catalog duplicates within that interaction remain deduplicated.
+    if(owner.pet_stable.is_object() && get(owner.pet_stable,"StableMaster")==Protocol::modern_guid(guid,owner.map()))
+        owner.pet_stable.as_object()["interaction_open"]=false;
     return {"CMSG_GOSSIP_SELECT_OPTION",
             Writer().pack("QII", {guid, menu, index}).raw(promo).put<std::uint8_t>(0).finish()};
 }
@@ -47,11 +51,16 @@ Reply Protocol::gossip_response(State &owner, std::string const &name, View body
     if (name == "SMSG_GOSSIP_COMPLETE")
     {
         r.end();
+        bool stable_transition=owner.pending_stable_gossip &&
+            integer(get(owner.gossip_menu,"guid"))==owner.pending_stable_gossip;
+        owner.pending_stable_gossip=0;
         owner.gossip_menu = nullptr;
+        if(stable_transition)return {};
         return Packet{name, Writer().bits(0, 1).finish()};
     }
     if (name != "SMSG_GOSSIP_MESSAGE")
         return {};
+    owner.pending_stable_gossip=0;
     auto guid = r.take<std::uint64_t>();
     auto menu = r.take<std::uint32_t>(), text_id = r.take<std::uint32_t>(), count = r.take<std::uint32_t>();
     auto record = owner.visible_units.find(guid);
