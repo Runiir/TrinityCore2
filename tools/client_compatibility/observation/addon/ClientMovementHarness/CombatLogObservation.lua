@@ -12,10 +12,16 @@ reader:SetScript('OnEvent',function(_,event,...)
         table.remove(values,1);source=C_CombatLog and fn==C_CombatLog.GetCurrentEventInfo and
             'C_CombatLog.GetCurrentEventInfo' or 'CombatLogGetCurrentEventInfo'
     end
-    if values[12]~=6673 or values[4]~=UnitGUID('player') then return end
+    if (values[12]~=6673 and values[12]~=57755) or values[4]~=UnitGUID('player') then return end
     sequence=sequence+1
     events[#events+1]={sequence=sequence,timestamp=values[1],event=values[2],source_guid=values[4],
         destination_guid=values[8],spell_id=values[12],spell_name=values[13],reader=source,dispatch=event}
+    if values[2]=='SPELL_DAMAGE' then
+        local row=events[#events]
+        row.amount=values[15];row.overkill=values[16];row.school=values[17]
+        row.resisted=values[18];row.blocked=values[19];row.absorbed=values[20]
+        row.critical=not not values[21]
+    end
     if #events>4 then table.remove(events,1) end
 end)
 local function read(fn,...)

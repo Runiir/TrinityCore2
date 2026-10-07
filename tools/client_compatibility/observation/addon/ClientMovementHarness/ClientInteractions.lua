@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=141,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=142,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
