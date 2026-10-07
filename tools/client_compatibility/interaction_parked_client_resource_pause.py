@@ -36,7 +36,8 @@ def pause(t,source,primary_stop):
     with actor('primary'):
         if lab.owned_process('client'):raise RuntimeError('primary client must remain stopped')
     if any((lab.ROOT/'run'/name).exists() for name in
-        ('owned_pet_abandon_probe.json','owned_tame_request_probe.json','owned_stable_request_probe.json')):
+        ('owned_pet_abandon_probe.json','owned_tame_request_probe.json','owned_stable_request_probe.json',
+            'owned_entry_request_probe.json')):
         raise RuntimeError('cannot pause a client with an armed gameplay probe')
     monitor=owned_input.focus();game=monitor['input_isolation']['game_pid'];game_ticks=lab.proc_start(game)
     t.receipt.update(source=bound(source),primary_stop_source=bound(primary_stop),before=before,

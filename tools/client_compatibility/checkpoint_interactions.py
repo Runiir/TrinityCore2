@@ -18,6 +18,7 @@ from .native_input.control import verified as verified_input
 from .archive_integrity import archive_digest,unchanged_archive
 
 SAFE_BODY_NAMES={
+    'CMSG_LOADING_SCREEN_NOTIFY','CMSG_GET_ACCOUNT_CHARACTER_LIST',
     'SMSG_ON_MONSTER_MOVE',
     'SMSG_AURA_UPDATE','SMSG_AURA_UPDATE_ALL',
     'CMSG_CANCEL_AURA','CMSG_PET_CANCEL_AURA',
@@ -201,8 +202,10 @@ def checkpoint(directory,name):
         folder=Path(folder)
         for source,label in [(lab.ROOT/'logs/modern_world.jsonl','events.jsonl'),(lab.ROOT/'evidence/world_packets.jsonl','packets.jsonl'),
                 (lab.ROOT/'evidence/owned_pet_abandon_packets.jsonl','owned_pet_abandon_packets.jsonl'),
-                (lab.ROOT/'evidence/owned_tame_request_packets.jsonl','owned_tame_request_packets.jsonl')]:
-            if not source.exists() and label in ('owned_pet_abandon_packets.jsonl','owned_tame_request_packets.jsonl'):continue
+                (lab.ROOT/'evidence/owned_tame_request_packets.jsonl','owned_tame_request_packets.jsonl'),
+                (lab.ROOT/'evidence/owned_entry_request_packets.jsonl','owned_entry_request_packets.jsonl')]:
+            if not source.exists() and label in ('owned_pet_abandon_packets.jsonl','owned_tame_request_packets.jsonl',
+                    'owned_entry_request_packets.jsonl'):continue
             with (folder/label).open('w') as output:
                 for row in entries(source):
                     if row.get('time',0)<since:continue
