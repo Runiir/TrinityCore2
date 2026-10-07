@@ -28,6 +28,9 @@ def build(output):
         'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=lab.REPO,text=True).strip(),
         'combat_source_sha256':lab.sha256(lab.REPO/'src/server/game/Handlers/CombatHandler.cpp'),
         'pet_slot_source_sha256':lab.sha256(lab.REPO/'src/server/game/Handlers/PetHandler.cpp'),
+        'tame_completion_source_sha256':lab.sha256(lab.REPO/'src/server/scripts/Spells/spell_hunter_tame_completion.cpp'),
+        'spell_loader_source_sha256':lab.sha256(lab.REPO/'src/server/scripts/Spells/spell_script_loader.cpp'),
+        'tame_binding_source_sha256':lab.sha256(lab.REPO/'sql/updates/world/4.3.4/2026_10_07_00_world.sql'),
         'completed':False}
     lab.private_write(output, json.dumps(report,indent=2)+'\n')
     with output.with_suffix('.log').open('w') as log:
