@@ -229,7 +229,8 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
     staged=closed(source)
     if (staged.get('phase')!='await_owned_stable_slot_review' or staged.get('opening_source')!=bound(opening) or
         staged.get('actor')!=t.fixture or staged.get('runtime')!=t.receipt['runtime'] or staged.get('slot')!=slot or
-        staged.get('retained_pet_before')!=current or destination!=5-slot):
+        not pet_identity(staged.get('retained_pet_before',[]),current,slot,current[0]['active']) or
+        staged['retained_pet_before'][0]['active']!=current[0]['active'] or destination!=5-slot):
         raise RuntimeError('reviewed native slot staging differs')
     d=reviewed(t,review_path,'Move Harnesswolf')
     if d.get('frame')!=staged.get('frame') or d.get('source')!=bound(source) or d.get('destination')!=destination:
