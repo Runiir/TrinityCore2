@@ -114,7 +114,7 @@ def review(directory,output,phase):
     from dvc.repo import Repo
     out=yaml.safe_load((lab.REPO/pointer).read_text())['outs'][0]
     require(out['size']==cp['bytes'],'remote object size differs')
-    data={};seen=set();packets=set();abandon_events=set()
+    data={};seen=set();packets=set();abandon_events=set();abandon_instances=set()
     with Repo(str(lab.REPO)) as repo:
         odb=repo.cloud.get_remote_odb()
         with odb.fs.open(odb.oid_to_path(out['md5']),'rb',block_size=1024*1024,cache_type='none') as raw:
@@ -123,12 +123,18 @@ def review(directory,output,phase):
                 for member in archive:
                     if phase=='owned-abandon' and member.name in ('tracking/owned_pet_abandon_packets.jsonl','tracking/events.jsonl'):
                         e=data['hunter_abandon_confirm01/episode.json'];session=e['native_session']
+                        entry=data['hunter_abandon_entry01/episode.json']
                         since=e['started_at'];until=e['finished_at']
                         destination=packets if member.name=='tracking/owned_pet_abandon_packets.jsonl' else abandon_events
                         with archive.extractfile(member) as f:
                             for line in f:
                                 p=json.loads(line)
-                                if p.get('session')==session and since<=p.get('time',0)<=until and p.get('name')=='CMSG_PET_ABANDON':
+                                if (member.name=='tracking/events.jsonl' and p.get('event')=='instance_authenticated' and
+                                    p.get('account_id')==entry['actor']['account_id'] and
+                                    entry['started_at']<=p.get('time',0)<=entry['finished_at']):
+                                    abandon_instances.add(p['session']);require(len(abandon_instances)<=1,'ambiguous owned Abandon instance')
+                                sessions={session}|abandon_instances if member.name=='tracking/events.jsonl' else {session}
+                                if p.get('session') in sessions and since<=p.get('time',0)<=until and p.get('name')=='CMSG_PET_ABANDON':
                                     destination.add(packet_key(p));require(len(destination)<=8,'disposable Abandon request bound exceeded')
                     if phase=='owned-abandon-cancel' and member.name=='tracking/events.jsonl':
                         session=data['hunter_abandon_entry01/episode.json']['native_session']
@@ -176,6 +182,7 @@ def review(directory,output,phase):
             while reader.read(1024*1024):pass
     require(seen==set(selected) and reader.bytes==cp['bytes'] and reader.digest.hexdigest()==cp['sha256'],
         'actual remote compressed archive or complete member set differs')
+    if phase=='owned-abandon':require(len(abandon_instances)==1,'fresh owned Abandon instance attribution absent')
     packet_proof={'raw':packets,'events':abandon_events} if phase=='owned-abandon' else packets
     outcome=proof(data,packet_proof,phase,{p.removeprefix(prefix):sha for p,sha in selected.items()})
     d={'schema':'client442_native_feedback_remote_review_v1','reviewed_at':time.time(),
