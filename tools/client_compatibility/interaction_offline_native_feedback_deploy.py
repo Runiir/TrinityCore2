@@ -10,18 +10,22 @@ from .interaction_offline_bridge_deploy import snapshot,review,lobby,current,joi
 from .observation.journal import latest
 
 KEY='Client442.RefreshMeleeFeedbackOnStart'
+PROFILES={
+    'melee_feedback':('CombatHandler.cpp','combat_source_sha256','repeat_melee_feedback','native_feedback_deploy01'),
+    'pet_slot':('PetHandler.cpp','pet_slot_source_sha256','occupied_pet_slot','native_pet_slot_deploy01')}
 
 
-def stage(out,build_receipt):
+def stage(out,build_receipt,kind='melee_feedback'):
     out.mkdir(parents=True,exist_ok=False,mode=0o700)
     build=json.loads(build_receipt.read_text())
+    source,key,_,_=PROFILES[kind]
     binary=lab.ROOT/'build/src/server/worldserver/worldserver'
     if (build.get('completed') is not True or build.get('jobs')!=1 or
         build.get('binary_sha256')!=lab.sha256(binary) or
-        build.get('combat_source_sha256')!=lab.sha256(lab.REPO/'src/server/game/Handlers/CombatHandler.cpp') or
+        build.get(key)!=lab.sha256(lab.REPO/'src/server/game/Handlers'/source) or
         f'CMAKE_HOME_DIRECTORY:INTERNAL={lab.REPO}\n' not in (lab.ROOT/'build/CMakeCache.txt').read_text()):
         raise RuntimeError('native build is not the verified current one-job compatibility build')
-    d={'schema':'client442_offline_native_feedback_deployment_v1','started_at':time.time(),
+    d={'schema':'client442_offline_native_feedback_deployment_v1','kind':kind,'started_at':time.time(),
         'native_before':identity('worldserver'),'before':identity('modern_world'),
         'binary_sha256':lab.sha256(binary),'previous_binary_sha256':lab.sha256(lab.ROOT/'bin/worldserver'),
         'build_receipt':{'path':str(build_receipt),'sha256':lab.sha256(build_receipt)},
@@ -48,12 +52,16 @@ def install(source,batch):
     d=json.loads((source/'deployment.json').read_text());batch=batch.resolve()
     receipt=json.loads((source.parent/'checkpoint_receipt.json').read_text())
     binary=lab.ROOT/'build/src/server/worldserver/worldserver';target=lab.ROOT/'bin/worldserver'
-    config=lab.ROOT/'config/worldserver.conf';backup=lab.ROOT/'bin/worldserver.before_repeat_melee_feedback'
+    kind=d.get('kind','melee_feedback');source_name,key,backup_name,directory=PROFILES[kind]
+    config=lab.ROOT/'config/worldserver.conf';backup=lab.ROOT/('bin/worldserver.before_'+backup_name)
+    build_path=Path(d['build_receipt']['path'])
     if (batch.exists() or batch.parent!=lab.ROOT/'evidence' or not re.fullmatch(r'[A-Za-z0-9_]+',batch.name) or
         not d.get('staged') or not receipt.get('cloud_verified') or backup.exists() or
         not any(f['path']==str((source/'deployment.json').relative_to(lab.ROOT)) and
             f['sha256']==lab.sha256(source/'deployment.json') for f in receipt['file_manifest']) or
         identity('worldserver')!=d['native_before'] or identity('modern_world')!=d['before'] or
+        lab.sha256(build_path)!=d['build_receipt']['sha256'] or
+        json.loads(build_path.read_text()).get(key)!=lab.sha256(lab.REPO/'src/server/game/Handlers'/source_name) or
         lab.sha256(binary)!=d['binary_sha256'] or lab.sha256(target)!=d['previous_binary_sha256'] or
         lab.sha256(config)!=d['config_before_sha256'] or protected_snapshot()!=d['protected']):
         raise RuntimeError('staged closed build, checkpoint, process or saved-state authority differs')
@@ -66,9 +74,10 @@ def install(source,batch):
                 t.receipt.update(frame=shot(t.out/'screen.png'),completed=True,input_sent=False)
             finally:t.receipt['finished_at']=time.time();t.persist()
     text=config.read_text()
-    if re.search(r'(?m)^'+re.escape(KEY)+r'\s*=.*$',text):
-        text=re.sub(r'(?m)^'+re.escape(KEY)+r'\s*=.*$',KEY+' = 1',text)
-    else:text+='\n'+KEY+' = 1\n'
+    if kind=='melee_feedback':
+        if re.search(r'(?m)^'+re.escape(KEY)+r'\s*=.*$',text):
+            text=re.sub(r'(?m)^'+re.escape(KEY)+r'\s*=.*$',KEY+' = 1',text)
+        else:text+='\n'+KEY+' = 1\n'
     lab.server_command('saveall');lab.server_command('server shutdown 1')
     deadline=time.monotonic()+45
     while lab.owned_process('worldserver'):
@@ -84,11 +93,13 @@ def install(source,batch):
             time.sleep(.2)
     subprocess.run(['pixi','run','python','-m','tools.client_compatibility.checkpoint_interactions',
         '--initialize','--directory',str(batch)],cwd=lab.REPO,check=True)
-    out=batch/'native_feedback_deploy01';out.mkdir(mode=0o700)
+    out=batch/directory;out.mkdir(mode=0o700)
     d.update(started_at=time.time(),native=identity('worldserver'),after=identity('modern_world'),
         source_stage={'path':str(source),'sha256':lab.sha256(source/'deployment.json')},
         native_unchanged=False,native_restarted=True,bridge_unchanged=True,
-        config_enabled=KEY,config_sha256=lab.sha256(config),rollback_binary_sha256=lab.sha256(backup),completed=False)
+        config_enabled=KEY if kind=='melee_feedback' else None,config_sha256=lab.sha256(config),
+        config_unchanged=lab.sha256(config)==d['config_before_sha256'],
+        rollback_binary_sha256=lab.sha256(backup),completed=False)
     d.pop('finished_at',None)
     if d['after']!=d['before']:raise RuntimeError('bridge unexpectedly restarted')
     time.sleep(8)
@@ -129,9 +140,10 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','install','lobby','finish'])
     p.add_argument('--output',type=Path,required=True);p.add_argument('--source',type=Path)
     p.add_argument('--build-receipt',type=Path);p.add_argument('--actor',choices=['primary','scout'])
+    p.add_argument('--kind',choices=list(PROFILES),default='melee_feedback')
     p.add_argument('--deployment',type=Path);p.add_argument('--review',type=Path)
     p.add_argument('--stage',choices=['dismiss','reconnect','realm','character']);a=p.parse_args()
-    if a.action=='stage':stage(a.output,a.build_receipt)
+    if a.action=='stage':stage(a.output,a.build_receipt,a.kind)
     elif a.action=='install':install(a.source,a.output)
     else:
         if not (a.actor and a.deployment and a.review):p.error('requires actor, deployment and fresh review')
