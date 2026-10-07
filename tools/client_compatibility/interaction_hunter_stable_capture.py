@@ -10,7 +10,8 @@ from .interaction_hunter_fixture import protected
 from .interaction_hunter_stable_recon import master
 from .interaction_spellbook_pet_recon import entry_source
 from .interaction_hunter_pet_recon import saved_pet_unchanged
-from .interaction_pet_target import PetOracle
+from .interaction_pet_target import pair
+from .interaction_pet_dismiss import Presence
 from .interaction_spellbook_recon import resources
 from .interaction_operations import click_case
 from .interaction_macros import require
@@ -21,6 +22,12 @@ from .world.gameobjects import modern_guid
 from .world.objects import INDEX
 from .interaction_observation import read_page
 from .interaction_actionbar_pages import detail
+
+
+class StablePetOracle(Presence):
+    # Ordinary slot dismissal/Call Pet changes runtime GUID, while pet4 stays
+    # retained. Use the established destruction-aware current-summon oracle.
+    def selected(self):return pair(self.player,'UNIT_FIELD_TARGET')
 
 
 def native_catalog(body):
@@ -45,7 +52,7 @@ def restore(t,old,e,o,inv,retained):
     t.clean_panels();t.execute({'kind':'chat','value':'/targetexact Erma'})
     state,frame=t.observe('stable_request_restored');o.poll()
     checks={'resources':resources(inv.poll())==e['baseline_resources'],'saved_rows':saved(6)==e['baseline_saved'],
-        'retained_named_pet':saved_pet_unchanged(retained,pets(6),time.time()),'owned_pet_present':o.pet is not None,
+        'retained_named_pet':saved_pet_unchanged(retained,pets(6),time.time()),'owned_pet_present':o.present(),
         'position':state['world_position']==e['state']['world_position'],
         'selection':state.get('target',{}).get('guid')==e['state']['target']['guid'],
         'panels_closed':not state.get('panels'),'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions'),
@@ -85,9 +92,9 @@ def eligibility(t,preparation,entry):
     entered=entry_source(t,entry,session,preparation);npc=master();retained=pets(6)
     if len(retained)!=1 or tuple(retained[0].get(k) for k in ('id','entry','owner','name','renamed'))!=(4,42717,6,'Harnesswolf',1):
         raise RuntimeError('retained one-time named Hunter pet differs')
-    since=min(p['time'] for p in entered['login_packets']);o=PetOracle(session,6,since).poll()
+    since=min(p['time'] for p in entered['login_packets']);o=StablePetOracle(session,6,since).poll()
     inv=Inventory(lab.ROOT,session,6).poll()
-    if (o.pet is None or o.pet['fields'].get(INDEX['OBJECT_FIELD_ENTRY'])!=42717 or
+    if (not o.present() or o.pet['fields'].get(INDEX['OBJECT_FIELD_ENTRY'])!=42717 or
         o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])!=4 or
         o.pet['fields'].get(INDEX['UNIT_FIELD_BYTES_2'],0)>>16&255!=2 or
         resources(inv)!=entered['resources'] or saved(6)!=entered['entered_saved']):
