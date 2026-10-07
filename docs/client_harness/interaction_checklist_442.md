@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 445 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 446 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -939,7 +939,7 @@ Fixture: `pet_class_variants`.
 - [ ] `pets.happiness_if_available`
 - [x] `pets.rename` (qualified variant; [evidence](#owned_hunter_one_time_rename))
 - [x] `pets.stable_open` (qualified variant; [evidence](#owned_hunter_native_stable_open))
-- [ ] `pets.stable_slot`
+- [x] `pets.stable_slot` (qualified variant; [evidence](#owned_hunter_native_stable_slot_roundtrip))
 - [ ] `pets.stable_swap`
 - [ ] `pets.tame`
 - [ ] `pets.abandon_confirm`
@@ -3312,3 +3312,30 @@ Remaining limits: Only this native-known stationary instant damage ability is ne
 - [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_stock_damage_log_restore01/episode.json`, SHA-256 `9f11452c26456cbdeefcfe2d184c98687dbc5a742c6021f1f43a464fc5c3fbc8`.
 - [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_combat_final_park01/episode.json`, SHA-256 `352d67c17fbc4735753e85693c259481ecda0cb1513bdbbf9623a8753464a77f`.
 - [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_throw_admission_guards02.json`, SHA-256 `ef06576d5ad45a1d29053c76f7200f194f1f3d234865c1dab7b23bf92b48d01d`.
+
+### owned_hunter_native_stable_slot_roundtrip
+
+One owned level10 Harnesshunt drags retained named pet4 Harnesswolf from native active0 to stable5 and back to active0 through stock API slots1/6/1 at the exact visible Erma6749. Both modern/native requests, exact native SlotUpdated and unchanged native/delivered result8 agree. Each move passes12 checks; ordinary known Call Pet1/883, normal native persistence save and public presence pass13 restoration checks. Normal logout4, original selection5 and final preservation22 pass. All22 broken admission variants reject. The actual905772980-byte remote archive verifies its compressed SHA and all86 JSON/475 PNG hashes plus exact ordinary recovery tracking.
+
+Remaining limits: Only this single pet and empty native destination5 roundtrip is qualified. Occupied-slot swaps, other slots, the installed200-cell/native16-capacity mismatch, tame/revive/abandon and other combat variants remain open. Fresh accepted trial starts and ends with native summon metadata883; earlier79597-to883 recovery, missing persistence flush and every earlier whole failure remain excluded. Harnesswolf identity/name/health/commands, owner resources/saved rows, all prior actors, primary accepted user pose and both existing HDMI-1 client lifetimes are preserved. Native1181245 unchanged; scripts blocked, accepted original CVar0 unrestored at1; code controller/model None.
+
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/stable_slot_bridge_deploy01/deployment.json`, SHA-256 `418ad0e3e706983e5447f8a72ae2fb9f5142656bd7bc6c2961229d14267a2528`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/stable_slot_bridge_deploy01/primary_after/episode.json`, SHA-256 `414dc27bd6679aab741a838b638fad43a298418c9d05767b38e580fb7bbb50de`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_prepare01/episode.json`, SHA-256 `695d38a5053e4fae4b6ff1467593a53920408acdc39fa6d937399591bf4f2bbc`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_entry01/episode.json`, SHA-256 `853ab0849dd78cc351b719bee9c5186955a520723961628fa5c790427ddd4262`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_stage02/episode.json`, SHA-256 `47242f0a60b95470f4758d494e39214ff6e8cd2ec6c5f5282b20981c147b77ae`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_open02/episode.json`, SHA-256 `9f9ee95de5530f0aa0614faeffb059a333ef1abaa0866edc99279abc3db9eb1c`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_forward_stage02/episode.json`, SHA-256 `647d3f39da258a4088d27dc692c826cf8e6d93cf76a533c24aa5627c499eb06d`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_forward02/episode.json`, SHA-256 `665bacc92129c9c40c3c8e4e6ffe384306b6c9ab1092383cf8e7becdf3feeeb7`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_back_stage02/episode.json`, SHA-256 `66143b4a566845b062ddcca99c36fe85abf9ff6915133ddb6d5ee0b129ed6c0e`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_back02/episode.json`, SHA-256 `3933b5dbabe42ad9749f92563ef1e6a296b8e19d25c5532df9d262b323afa1aa`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_call_pet_recon02/episode.json`, SHA-256 `a270eab6fba501b956c06726d6d168aa783e6d98c73b0d4b0432721e648d488d`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_finish02/episode.json`, SHA-256 `98138e750612a641e1ad8ad0617d99bafc7753fc5a1aaf9166bdd62fd36964df`.
+  Checked cases: `pets.stable_slot` (native_owned_stable_slot_roundtrip_pass).
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_final_park01/episode.json`, SHA-256 `4c55d9c7cb264c0cb254fcbce30f0bd1ce08d25937bf62d494b8bc9c08e67eaf`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_origin_finish01/episode.json`, SHA-256 `23d3fa0f2b5c394819e7c7d43fd0be51367eb2199c6ffe4182d5230dbad8d92d`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_final_close01/episode.json`, SHA-256 `4056fff75bb20d64825e602221335cbf7306af4bf3edecf6633ec85806dae446`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_stage02/review.json`, SHA-256 `338ba2702706dba269176b4030b85dbd218a1f64493db399750039ce7a703db7`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_forward_stage02/review.json`, SHA-256 `5c31bc09efa9ee0fbffbaba68001a71583722de1145f50d90926e3c52d2381e9`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_trial_back_stage02/review.json`, SHA-256 `39be9aadd4c3139c951bff2db21d6b1c9013d232d35b0d93ca6c47e4b8593307`.
+- [442_interactions_20261007_152.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc), member `evidence/client_interactions_20261007_ui152/hunter_slot_local_admission01.json`, SHA-256 `981d533e79f03b3d5bcbc26b2cc12665739f48fce37dfdad0349de0918a34eb0`.

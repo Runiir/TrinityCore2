@@ -6737,6 +6737,116 @@
       ],
       "archive_sha256": "5b9d74d432cf0a8f121dd4531058a479f7982a3bdd94b1e755535a6f311bac9f",
       "actual_remote_review_sha256": "99bf2746d13193630545513d9888199c3c3a69ae784b49ff773ea42c16a1e2ed"
+    },
+    {
+      "id": "owned_hunter_native_stable_slot_roundtrip",
+      "operations": [
+        "pets.stable_slot"
+      ],
+      "scope": "One owned level10 Harnesshunt drags retained named pet4 Harnesswolf from native active0 to stable5 and back to active0 through stock API slots1/6/1 at the exact visible Erma6749. Both modern/native requests, exact native SlotUpdated and unchanged native/delivered result8 agree. Each move passes12 checks; ordinary known Call Pet1/883, normal native persistence save and public presence pass13 restoration checks. Normal logout4, original selection5 and final preservation22 pass. All22 broken admission variants reject. The actual905772980-byte remote archive verifies its compressed SHA and all86 JSON/475 PNG hashes plus exact ordinary recovery tracking.",
+      "limits": "Only this single pet and empty native destination5 roundtrip is qualified. Occupied-slot swaps, other slots, the installed200-cell/native16-capacity mismatch, tame/revive/abandon and other combat variants remain open. Fresh accepted trial starts and ends with native summon metadata883; earlier79597-to883 recovery, missing persistence flush and every earlier whole failure remain excluded. Harnesswolf identity/name/health/commands, owner resources/saved rows, all prior actors, primary accepted user pose and both existing HDMI-1 client lifetimes are preserved. Native1181245 unchanged; scripts blocked, accepted original CVar0 unrestored at1; code controller/model None.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/stable_slot_bridge_deploy01/deployment.json",
+          "sha256": "418ad0e3e706983e5447f8a72ae2fb9f5142656bd7bc6c2961229d14267a2528"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/stable_slot_bridge_deploy01/primary_after/episode.json",
+          "sha256": "414dc27bd6679aab741a838b638fad43a298418c9d05767b38e580fb7bbb50de"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_prepare01/episode.json",
+          "sha256": "695d38a5053e4fae4b6ff1467593a53920408acdc39fa6d937399591bf4f2bbc"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_entry01/episode.json",
+          "sha256": "853ab0849dd78cc351b719bee9c5186955a520723961628fa5c790427ddd4262"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_stage02/episode.json",
+          "sha256": "47242f0a60b95470f4758d494e39214ff6e8cd2ec6c5f5282b20981c147b77ae"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_open02/episode.json",
+          "sha256": "9f9ee95de5530f0aa0614faeffb059a333ef1abaa0866edc99279abc3db9eb1c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_forward_stage02/episode.json",
+          "sha256": "647d3f39da258a4088d27dc692c826cf8e6d93cf76a533c24aa5627c499eb06d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_forward02/episode.json",
+          "sha256": "665bacc92129c9c40c3c8e4e6ffe384306b6c9ab1092383cf8e7becdf3feeeb7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_back_stage02/episode.json",
+          "sha256": "66143b4a566845b062ddcca99c36fe85abf9ff6915133ddb6d5ee0b129ed6c0e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_back02/episode.json",
+          "sha256": "3933b5dbabe42ad9749f92563ef1e6a296b8e19d25c5532df9d262b323afa1aa"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_call_pet_recon02/episode.json",
+          "sha256": "a270eab6fba501b956c06726d6d168aa783e6d98c73b0d4b0432721e648d488d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_finish02/episode.json",
+          "sha256": "98138e750612a641e1ad8ad0617d99bafc7753fc5a1aaf9166bdd62fd36964df",
+          "cases": {
+            "pets.stable_slot": "native_owned_stable_slot_roundtrip_pass"
+          }
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_final_park01/episode.json",
+          "sha256": "4c55d9c7cb264c0cb254fcbce30f0bd1ce08d25937bf62d494b8bc9c08e67eaf"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_origin_finish01/episode.json",
+          "sha256": "23d3fa0f2b5c394819e7c7d43fd0be51367eb2199c6ffe4182d5230dbad8d92d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_final_close01/episode.json",
+          "sha256": "4056fff75bb20d64825e602221335cbf7306af4bf3edecf6633ec85806dae446"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_stage02/review.json",
+          "sha256": "338ba2702706dba269176b4030b85dbd218a1f64493db399750039ce7a703db7"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_forward_stage02/review.json",
+          "sha256": "5c31bc09efa9ee0fbffbaba68001a71583722de1145f50d90926e3c52d2381e9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_trial_back_stage02/review.json",
+          "sha256": "39be9aadd4c3139c951bff2db21d6b1c9013d232d35b0d93ca6c47e4b8593307"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_152.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui152/hunter_slot_local_admission01.json",
+          "sha256": "981d533e79f03b3d5bcbc26b2cc12665739f48fce37dfdad0349de0918a34eb0"
+        }
+      ],
+      "archive_sha256": "c9bc5dc36f69a99a3a610c4e31c61209aff807d6ce8b4dd6ea94f62c3eb3d2fb",
+      "actual_remote_review_sha256": "19a6629b333cd8683a86dd0b7756fb840eb009c842cc03d69725da6de6ae9c7c"
     }
   ]
 }
