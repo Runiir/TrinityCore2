@@ -117,7 +117,10 @@ def proof(data,digests,tracking):
         'native_requests':1,'captured_channel_packets':4,'captured_native_added':True,
         'modern_stable_deliveries':1,'public_stable_projection':True,'closure_checks':20,
         'all_six_offline':True,'primary_stopped':True,'named_pet_preserved':True,
-        'scope':'One ordinary native Tame1515, stock channel, owned new pet and stable-cache persistence; other pets/slots and revive remain open.'}
+        'public_errors':cast['outcome_state'].get('errors',[]),
+        'scope':'One ordinary native Tame1515, stock channel, owned new pet and stable-cache persistence. '
+            'The native server emits an end-of-channel interruption after pet creation; error-free termination, '
+            'other pets/slots and revive remain open.'}
 
 
 def collect(member,lines,data,tracking):
