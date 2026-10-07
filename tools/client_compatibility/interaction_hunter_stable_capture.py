@@ -140,7 +140,7 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
     t.receipt.update(capture_config=config,capture_config_sha256=digest,input_sent=False);t.persist()
     try:
         t.receipt['input_sent']=True;t.persist()
-        t.execute({'kind':'click','value':d['point'],'button':3,'hold':.4})
+        t.execute({'kind':'click','value':d['point'],'button':3,'hold':1.2})
         state,frame=t.observe('stable_request_after')
         t.receipt.update(response_state=state,response_frame=frame);t.persist()
         if 'GossipFrame' in state.get('panels',[]):
