@@ -21,7 +21,7 @@ def run(t,path):
     if position(1)!=base['position'] or protected_snapshot()!=base['protected'] or before['owner_melee']['active'] or before['target'].get('exists'):
         raise RuntimeError('reload preflight differs')
     t.execute({'kind':'chat','value':'/reload'});state,frame=t.observe('after_reload',seconds=60)
-    checks={'owned_guid':state['guid']==t.guid,'observer141':state.get('observer_version')==141,
+    checks={'owned_guid':state['guid']==t.guid,'observer142':state.get('observer_version')==142,
         'history_clear':not state.get('errors'),'saved_user_pose':position(1)==base['position'],
         'public_pose':math.dist(state['world_position'][:2],base['position'][:2])<.2,
         'saved_rows':saved(1)==base['saved'],'inventory':inventory(1)==base['inventory'],
