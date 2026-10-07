@@ -264,6 +264,21 @@ Task<> Session::gameplay(std::string name, Bytes body)
         }
         co_return;
     }
+    if(name=="SMSG_SPELLNONMELEEDAMAGELOG")
+    {
+        // Retain unsupported native variants for diagnosis without losing the
+        // owned gameplay connection, as for melee-result observations above.
+        try
+        {
+            if(auto damage=Protocol::combat_response(state,name,body))send(*damage);
+        }
+        catch(std::exception const &error)
+        {
+            service.events.event("native_spell_damage_rejected",{{"session",id},
+                {"name",name},{"error",std::string(error.what()).substr(0,512)}});
+        }
+        co_return;
+    }
     if ((reply = Protocol::combat_response(state, name, body)))
     {
         if(reply->first=="SMSG_ATTACK_SWING_ERROR")this->send(*reply);
