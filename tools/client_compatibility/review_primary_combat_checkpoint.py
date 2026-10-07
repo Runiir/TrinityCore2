@@ -29,7 +29,7 @@ def proof(episodes,packets):
     fresh=episodes['primary_combat_entry02/episode.json'];checks(fresh,'reentry_checks',15)
     require(e.get('completed') is True and e.get('failure') is None and fresh.get('completed') is True and
         fresh.get('failure') is None and m['session']==e['session'] and r['session']==fresh['session'] and
-        r['session']!=m['session'] and m['runtime']==r['runtime']==fresh['runtime'],
+        fresh['started_at']>m['finished_at'] and m['runtime']==r['runtime']==fresh['runtime'],
         'normal fresh primary login lineage differs')
     target=m['first_health']['native'];hits,orphans=pairs(m['packets'],1,target['guid'],0)
     require(hits and not orphans and all(p['client'] for p in hits),'primary native/client swing proof differs')

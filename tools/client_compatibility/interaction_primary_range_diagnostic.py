@@ -67,7 +67,7 @@ def source(t,path,phase,entry_path=None):
     if entry_path:
         e=closed(entry_path);base=d['baseline']
         if (e.get('actor')!=t.fixture or e.get('runtime')!=t.receipt['runtime'] or
-            e.get('phase')!='owned_primary_combat_preparation' or e.get('session')!=current or current==d['session'] or
+            e.get('phase')!='owned_primary_combat_preparation' or e.get('session')!=current or e['started_at']<=d['finished_at'] or
             len(e.get('reentry_checks',{}))!=15 or not all(e['reentry_checks'].values()) or
             e['offline_source']['saved']!=base['saved'] or e['offline_source']['inventory']!=base['inventory'] or
             e['offline_source']['pets']!=base['pets'] or e['protected_baseline']!=base['protected'] or
