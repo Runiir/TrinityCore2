@@ -11,6 +11,7 @@ from .interaction_ground_movement import position
 from .interaction_owned_class_fixture import SCRIPT_BOUNDARY
 from .interaction_combat_log import probe
 from .world.native_objects import guid
+from .world.objects import INDEX
 
 SPELL=57755
 CAST_NAMES={'SMSG_SPELL_START','SMSG_SPELL_GO','SMSG_CAST_FAILED','SMSG_SPELL_FAILURE',
@@ -73,6 +74,8 @@ def run(t,path,review_path):
             p.get('time',0)>=since and p.get('event')=='cast_translation_rejected']
         t.receipt.update(packets=packets,public_errors=errors,bridge_rejections=rejected,frame=frame,
             public_combat_log_before=public_before,public_combat_log_after=public_after,
+            native_target_after={'guid':target['guid'],'removed':target['guid'] in o.removed,
+                'health':o.targets.get(target['guid'],{}).get('fields',{}).get(INDEX['UNIT_FIELD_HEALTH'])},
             native_completions=completed,request_counts={'modern':len(requests),'native':len(native)},
             health_after=after.get('target'),phase='primary_throw_outcome_captured',
             qualified_scope='One ordinary targeted damage ability diagnosis. No combat interaction is admitted by capture alone.')
