@@ -1,0 +1,142 @@
+"""Stage only the owned Hunter beside an existing tameable wolf, with exact pose restoration."""
+import argparse,json,math,time
+from pathlib import Path
+from . import actors,lab_runtime as lab
+from .interaction_social import actor
+from .interaction_trial import Trial
+from .interaction_owned_class_fixture import prepared,saved,pets,SCRIPT_BOUNDARY
+from .interaction_retained_class_fixture import closed
+from .interaction_spellbook_pet_recon import entry_source,wire_known
+from .interaction_hunter_fixture import protected
+from .interaction_hunter_stable_slots import bound,pet_identity
+from .interaction_pet_dismiss import Presence
+from .interaction_pet_target import pair
+from .interaction_spellbook_recon import resources
+from .interaction_observation import read_page
+from .observation.inventory import Inventory
+from .observation.transport import Observer
+from .world.objects import INDEX
+
+
+NAMES=('TC442HunterTameRestore','TC442HunterTameTarget')
+
+
+def pose():
+    with lab.connection() as c,c.cursor() as q:
+        q.execute('SELECT CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
+            'CAST(orientation AS DOUBLE),map FROM client442_characters.characters '
+            'WHERE guid=6 AND account=2 AND name="Harnesshunt" AND level=10')
+        rows=q.fetchall()
+    if len(rows)!=1:raise RuntimeError('owned Hunter pose authority differs')
+    return list(rows[0])
+
+
+def teleport_row(q,number):
+    q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
+        'CAST(orientation AS DOUBLE),map,name FROM client442_world.game_tele WHERE id=%s',(number,))
+    return list(q.fetchone())
+
+
+def restore(t,fixture,old,baseline):
+    if fixture['owner']!=6 or fixture['native']!=t.receipt['runtime']['worldserver']:
+        raise RuntimeError('owned tame pose fixture belongs to another actor/lifetime')
+    with lab.connection() as c,c.cursor() as q:
+        if any(teleport_row(q,row[0])!=row for row in fixture['rows']):
+            raise RuntimeError('owned tame pose rows changed; refusing restoration/deletion')
+    lab.server_command('tele name Harnesshunt '+NAMES[0]);time.sleep(4)
+    lab.server_command('saveall');time.sleep(.5)
+    current=pose()
+    if current!=fixture['before']:raise RuntimeError('owned Hunter exact original pose did not restore')
+    with lab.connection() as c,c.cursor() as q:
+        for row in fixture['rows']:
+            if teleport_row(q,row[0])!=row:raise RuntimeError('owned tame teleport changed before deletion')
+            q.execute('DELETE FROM client442_world.game_tele WHERE id=%s AND name=%s',(row[0],row[-1]))
+    lab.server_command('reload game_tele')
+    checks={'exact_hunter_pose':current==fixture['before'],'saved_rows':saved(6)==baseline,
+        'temporary_rows_removed':True,**protected(old)}
+    t.receipt.update(pose_restoration={'fixture':fixture,'restored':current,'removed':[r[0] for r in fixture['rows']],
+        'checks':checks,'gameplay_input_sent':False});t.persist()
+    if not all(checks.values()):raise RuntimeError('owned tame fixture restoration differs')
+
+
+def run(t,preparation,entry,stored,recon,action,source=None):
+    old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
+    entered=entry_source(t,entry,session,preparation);moved=closed(stored)
+    if (moved.get('runtime')!=t.receipt['runtime'] or moved.get('actor')!=t.fixture or
+        moved.get('native_session')!=session or moved.get('phase')!='owned_stable_slot_move_verified' or
+        moved.get('destination')!=5 or moved.get('capture_disarmed') is not True or
+        len(moved.get('move_checks',{}))!=12 or not all(moved['move_checks'].values())):
+        raise RuntimeError('tame staging requires a whole owned pet4 stable move')
+    t.receipt.update(native_session=session,entry_source=bound(entry),stored_source=bound(stored),recon_source=bound(recon))
+    if action=='restore':
+        staged=closed(source)
+        if (staged.get('phase')!='owned_existing_wolf_staged' or staged.get('runtime')!=t.receipt['runtime'] or
+            staged.get('actor')!=t.fixture or staged.get('stored_source')!=bound(stored)):
+            raise RuntimeError('exact owned tame staging source differs')
+        t.receipt['stage_source']=bound(source)
+        restore(t,staged['pose_fixture'],old,staged['baseline_saved'])
+        t.receipt.update(completed=True,phase='owned_tame_pose_restored',qualification_added=False);return
+    if not pet_identity(moved['baseline_pets'],pets(6),5,0):
+        raise RuntimeError('retained named pet4 is not safely stored in native stable5')
+    known=wire_known(t,session)
+    if 1515 not in known:raise RuntimeError('ordinary native Tame Beast1515 is not known')
+    o=Presence(session,6,min(p['time'] for p in entered['login_packets'])).poll()
+    inv=Inventory(lab.ROOT,session,6).poll();before=resources(inv);baseline=saved(6)
+    if o.present() or pair(o.player,'UNIT_FIELD_SUMMON') or before!=entered['resources'] or baseline!=entered['entered_saved']:
+        raise RuntimeError('tame staging requires no summoned pet and preserved owner resources/saved rows')
+    r=json.loads(recon.read_text());wolf=r['nearest_existing_wolves'][0]
+    if (r.get('schema')!='client442_owned_tame_prerequisite_recon_v1' or r.get('native')!=t.receipt['runtime']['worldserver'] or
+        r.get('owner')!=6 or tuple(wolf[k] for k in ('guid','id','map','minlevel','maxlevel','type','type_flags','family'))!=
+        (280666,299,0,1,1,1,1,1)):
+        raise RuntimeError('existing level1 tameable wolf prerequisite differs')
+    read_page(t,'tame_stage_core','state','/tcui');t.clean_panels();state,frame=t.observe('tame_stage_before')
+    if frame['movement']['in_combat'] or frame['movement']['dead'] or frame['movement']['speed']:
+        raise RuntimeError('tame staging requires an idle living Hunter')
+    lab.server_command('saveall');time.sleep(.5);original=pose()
+    landing=[wolf['position_x'],wolf['position_y']+12,wolf['position_z'],3*math.pi/2,0]
+    with lab.connection() as c,c.cursor() as q:
+        q.execute('SELECT id FROM client442_world.game_tele WHERE name IN (%s,%s)',NAMES)
+        if q.fetchone():raise RuntimeError('prior owned tame pose fixture needs restoration')
+        q.execute('SELECT MAX(id) FROM client442_world.game_tele');number=q.fetchone()[0]+1;rows=[]
+        for i,(name,where) in enumerate(zip(NAMES,(original,landing))):
+            q.execute('INSERT INTO client442_world.game_tele '
+                '(id,position_x,position_y,position_z,orientation,map,name) VALUES (%s,%s,%s,%s,%s,%s,%s)',
+                (number+i,*where,name));rows.append(teleport_row(q,number+i))
+    fixture={'owner':6,'native':t.receipt['runtime']['worldserver'],'before':original,'landing':rows[1][1:6],
+        'rows':rows,'source':'Reversible native Hunter-only pose staging; no tame/spell/pet/health grant.'}
+    t.receipt.update(pose_fixture=fixture,baseline_resources=before,baseline_saved=baseline,
+        retained_pet_before=pets(6),native_wolf_spawn=wolf);t.persist()
+    try:
+        lab.server_command('reload game_tele');lab.server_command('tele name Harnesshunt '+NAMES[1]);time.sleep(4)
+        t.execute({'kind':'chat','value':'/targetexact Young Wolf'})
+        state,frame=t.observe('existing_wolf_staged');native=Observer(guid=6,session=session).poll();facts=native.facts()
+        target=facts.get('selected_unit');fields=(target or {}).get('fields',{})
+        checks={'existing_native_wolf':bool(target) and target['guid']>>52==0xf13 and
+            fields.get(INDEX['OBJECT_FIELD_ENTRY'])==299 and fields.get(INDEX['UNIT_FIELD_LEVEL'])==1 and
+            fields.get(INDEX['UNIT_FIELD_HEALTH'],0)>0,
+            'visible_wolf':state.get('target',{}).get('name')=='Young Wolf' and state['target'].get('visible') is True,
+            'in_tame_range':math.dist(state['world_position'][:2],[wolf['position_x'],wolf['position_y']])<15,
+            'stored_retained_pet':pet_identity(moved['baseline_pets'],pets(6),5,0),
+            'no_runtime_pet':not o.poll().present() and pair(o.player,'UNIT_FIELD_SUMMON')==0,
+            'resources':resources(inv.poll())==before,'saved_rows':saved(6)==baseline,
+            'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions'),**protected(old)}
+        t.receipt.update(stage_checks=checks,state=state,frame=frame,native_target=target);t.persist()
+        if not all(checks.values()):raise RuntimeError('existing owned tame target staging differs')
+        t.receipt.update(completed=True,phase='owned_existing_wolf_staged',qualification_added=False,
+            qualified_scope='Existing tameable wolf and reversible owned Hunter pose only; no Tame Beast input yet.')
+    except Exception:
+        restore(t,fixture,old,baseline);raise
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','restore'])
+    for k in ('preparation','entry','stored','recon','output'):p.add_argument('--'+k,type=Path,required=True)
+    p.add_argument('--source',type=Path);a=p.parse_args()
+    if a.action=='restore' and not a.source:p.error('requires a closed owned staging source')
+    with actor('scout'):
+        t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
+        t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
+        try:run(t,a.preparation,a.entry,a.stored,a.recon,a.action,a.source)
+        except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
+        finally:t.receipt['finished_at']=time.time();t.persist()
+        print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure')}),flush=True)
