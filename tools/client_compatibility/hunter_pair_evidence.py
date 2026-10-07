@@ -39,7 +39,13 @@ def proof(data,digests,packets):
         entry['runtime']['worldserver']==deployment['native'], 'fresh native pet-slot deployment differs')
     session=entry['native_session'];baseline=m1['retained_pet_before']
     require(set(r['id'] for r in baseline)=={4,6} and
-        all(r['owner']==6 and r['CreatedBySpell']==883 for r in baseline),'fresh two-pet Call Pet baseline differs')
+        all(r['owner']==6 and r['CreatedBySpell']==883 for r in baseline) and
+        identities(prep['retained_class_pets'],baseline) and
+        [(r['id'],r['entry'],r['name'],r['renamed'],r['slot'],r['active']) for r in baseline]==
+        [(4,42717,'Harnesswolf',1,5,0),(6,299,'Wolf',0,0,1)] and
+        m1['finished_at']<c1['started_at']<c1['finished_at']<m2['started_at']<m2['finished_at']<c2['started_at'] and
+        identities(c1['retained_pet_after'],m2['retained_pet_before']),
+        'fresh two-pet Call Pet baseline/ordering differs')
     for index,(m,c,source,dest,active) in enumerate(((m1,c1,5,0,4),(m2,c2,0,5,6))):
         mref,cref=refs[2+index*2],refs[3+index*2]
         whole(m,'owned_pair_slot_swap_verified','move_checks',12)
