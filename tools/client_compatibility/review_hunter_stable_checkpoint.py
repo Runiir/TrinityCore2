@@ -69,7 +69,10 @@ def review(directory,output,accepted=None,remote=False):
             for member in archive:
                 if member.name=='tracking/packets.jsonl':
                     with archive.extractfile(member) as f:
-                        packets.extend(json.loads(line) for line in f)
+                        for line in f:
+                            row=json.loads(line)
+                            if (row.get('direction'),row.get('name'))==('to_client','SMSG_NPC_INTERACTION_OPEN_RESULT'):
+                                packets.append(row)
                 if member.name not in selected:continue
                 require(member.isfile() and member.name not in seen,'duplicate or invalid archive member')
                 with archive.extractfile(member) as f:
