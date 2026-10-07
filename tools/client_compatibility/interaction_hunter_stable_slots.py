@@ -210,6 +210,9 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
         t.receipt.update(restoration_checks=checks,restored_frame=frame,restored_public_pet=public,
             retained_pet_after=current,native_pet_after=o.pet);t.persist()
         if len(checks)!=13 or not all(checks.values()):raise RuntimeError('owned slot roundtrip whole restoration differs')
+        if not failed_source:
+            t.receipt['cases'].append({'id':'pets.stable_slot','status':'native_owned_stable_slot_roundtrip_pass',
+                'time':time.time(),'input_sent':True,'oracle':{'restoration_checks':checks}})
         t.receipt.update(completed=True,phase='owned_stable_slot_roundtrip_restored',
             qualified_scope='Native pet4 moved to stable5, returned to active0 and recovered by ordinary known Call Pet; separate remote closure required.')
         return
