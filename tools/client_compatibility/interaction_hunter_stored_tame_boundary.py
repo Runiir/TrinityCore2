@@ -15,13 +15,31 @@ from .interaction_pet_dismiss import Presence,public_pet
 from .interaction_pet_target import pair
 from .interaction_spellbook_recon import resources
 from .observation.inventory import Inventory
+from .scout_relaunch_lineage import verified_deployment
 
 
-def run(t,preparation,entry,abandon):
+def ancestor(previous,old,runtime,deployment,ref):
+    before=previous.get('runtime',{});base=deployment.get('offline_baselines',{})
+    if (deployment.get('schema')!='client442_resource_paused_scout_deployment_v1' or
+        deployment.get('completed') is not True or deployment.get('native')!=before.get('worldserver') or
+        before.get('worldserver')!=runtime.get('worldserver') or deployment.get('before')!=before.get('modern_world') or
+        deployment.get('previous_scout')!=before.get('client') or deployment.get('after')!=runtime.get('modern_world') or
+        deployment.get('scout_lifetime')!=runtime.get('client') or previous.get('all_offline_snapshot')!=base or
+        ref not in old.get('sources',[]) or old.get('natural_native')!=base.get('6',{}).get('native') or
+        old.get('natural_saved')!=base.get('6',{}).get('saved') or
+        old.get('retained_class_pets')!=base.get('6',{}).get('pets')):
+        raise RuntimeError('stored named-pet ancestor is not bound to the exact paused deployment')
+
+
+def run(t,preparation,entry,abandon,deployment=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     entered=entry_source(t,entry,session,preparation);previous=closed(abandon);rows=pets(6)
+    if deployment:
+        d,_=verified_deployment(deployment,t.receipt['runtime'])
+        ancestor(previous,old,t.receipt['runtime'],d,bound(deployment))
+        t.receipt['deployment_source']=bound(deployment)
     if ((t.fixture['guid'],t.fixture['class'],t.fixture['level'])!=(6,3,10) or
-        previous.get('phase')!='owned_abandon_parked_boundary' or previous.get('runtime')!=t.receipt['runtime'] or
+        previous.get('phase')!='owned_abandon_parked_boundary' or (not deployment and previous.get('runtime')!=t.receipt['runtime']) or
         previous.get('actor')!=old['origin_actor'] or len(previous.get('checks',{}))!=19 or
         not all(previous['checks'].values()) or rows!=previous.get('retained_pets') or rows!=old['retained_class_pets']):
         raise RuntimeError('requires the source-bound Abandon closure with the unchanged sole named pet')
@@ -62,11 +80,12 @@ def stored_boundary(moved,fixture,runtime,session,preparation_ref,entry_ref):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('preparation','entry','abandon','output'):p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--deployment',type=Path)
     a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:run(t,a.preparation,a.entry,a.abandon)
+        try:run(t,a.preparation,a.entry,a.abandon,a.deployment)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure','checks')}),flush=True)
