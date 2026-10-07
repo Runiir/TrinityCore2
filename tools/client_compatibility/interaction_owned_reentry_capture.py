@@ -4,7 +4,7 @@ from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_social import actor
 from .interaction_trial import Trial
-from .interaction_owned_class_fixture import prepared,origin_checks,enter,SCRIPT_BOUNDARY
+from .interaction_owned_class_fixture import prepared,origin_checks,enter,reviewed,SCRIPT_BOUNDARY
 from .interaction_retained_class_fixture import closed
 from .interaction_hunter_fixture import protected
 from .interaction_hunter_stable_slots import bound
@@ -51,6 +51,9 @@ def capture(t,source,stage,review):
         raise RuntimeError('requires the exact closed offline reentry preparation')
     e=closed(Path(p['sources'][1]['path']))
     if p['sources'][1]!=bound(Path(p['sources'][1]['path'])):raise RuntimeError('earlier entry digest differs')
+    d=reviewed(t,review,'Enter World')
+    if d.get('source')!=bound(stage) or d.get('frame')!=p['frame']:
+        raise RuntimeError('reentry review differs from the exact prepared selection frame')
     path=lab.ROOT/'run/owned_entry_request_probe.json'
     if path.exists():raise RuntimeError('another owned entry probe is armed')
     started=time.time();config={'schema':'client442_owned_entry_request_probe_v1','owner':6,'account_id':2,
