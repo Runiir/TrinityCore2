@@ -27,6 +27,8 @@ Reply research_history(State const &owner,std::string const &name,View body)
     // Pinned ActivePlayerData bits 102/122 contain owner-only ResearchHistory.
     // The pinned 4.4.2 reader aligns on entering ResearchHistory after the
     // mandatory PetStable presence bit. Sharing that byte hides its mask.
+    // Login can deliver the Hunter catalog first. Presence0 in this later
+    // group102 update clears that cache, so preserve its current authority.
     Writer data;data.pack("BBBI",{1,0,3,1u<<7}).pack("I",{1u<<3})
         .bits(0,14).bits((1u<<6)|(1u<<26),32).flush().bits(owner.pet_stable.is_object(),1).flush();
     data.bits(3,2).bits(count,32);
