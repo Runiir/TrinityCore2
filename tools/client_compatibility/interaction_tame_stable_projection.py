@@ -26,9 +26,23 @@ def run(t,preparation,entry,action,before_path=None,cast_path=None):
         raise RuntimeError('Hunter resource or saved baseline differs')
     t.receipt.update(entry_source=bound(entry),native_session=session,retained_pet_before=retained,
         input_sent=True,gameplay_input_sent=False,qualification_added=False);t.persist()
+    if action=='restore':
+        bad=json.loads(before_path.read_text())
+        if (bad.get('completed') is not False or not bad.get('finished_at') or
+            bad.get('failure')!='RuntimeError: requires the exact stored Harnesswolf cache and no active pet' or
+            bad.get('runtime')!=t.receipt['runtime'] or bad.get('fixture_source')!=bound(preparation) or
+            bad.get('entry_source')!=bound(entry) or bad.get('gameplay_input_sent') is not False):
+            raise RuntimeError('requires the actual same-entry failed cache baseline')
+        state,frame=read_page(t,'tame_stable_core_restore','state','/tcui')
+        checks={**protected(old),'resources':resources(inv.poll())==e['resources'],
+            'saved_rows':saved(6)==e['entered_saved'],'pets':pets(6)==retained,
+            'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
+        t.receipt.update(source=bound(before_path),state=state,frame=frame,checks=checks,
+            completed=all(checks.values()),phase='owned_tame_observation_restored');return
     page,frame=read_page(t,'tame_stable_cache','stables','/tcui stables')
     probe=page['stable_probe'];wire=None
     t.receipt.update(public_stable=probe,frame=frame);t.persist()
+    read_page(t,'tame_stable_core','state','/tcui')
     if action=='before':
         if (len(retained)!=1 or retained[0]['id']!=4 or retained[0]['slot']!=5 or retained[0]['active']!=0 or
                 public_rows(probe)!=[(6,'Harnesswolf',10,903)] or probe.get('stable_slots')!=16):
@@ -59,10 +73,11 @@ def run(t,preparation,entry,action,before_path=None,cast_path=None):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['before','after'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['before','after','restore'])
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--before',type=Path);p.add_argument('--cast',type=Path);a=p.parse_args()
     if a.action=='after' and (not a.before or not a.cast):p.error('after requires baseline and captured Tame')
+    if a.action=='restore' and not a.before:p.error('restore requires the actual failed cache baseline')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)

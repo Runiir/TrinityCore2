@@ -23,7 +23,7 @@ def gone(pid,ticks):
 def pause(t,source,primary_stop):
     e=closed(source);stop=closed(primary_stop)
     count={'owned_abandon_cancel_parked_boundary':18,'owned_abandon_parked_boundary':19,
-        'owned_tame_diagnostic_parked_boundary':20}.get(e.get('phase'))
+        'owned_tame_diagnostic_parked_boundary':20,'owned_tame_precast_parked_boundary':20}.get(e.get('phase'))
     if (t.fixture.get('guid')!=2 or e.get('actor')!=t.fixture or e.get('runtime')!=t.receipt['runtime'] or
         count is None or len(e.get('checks',{}))!=count or not all(e['checks'].values()) or
         e.get('primary_stop_source')!=bound(primary_stop) or stop.get('phase')!='user_requested_primary_client_stopped' or

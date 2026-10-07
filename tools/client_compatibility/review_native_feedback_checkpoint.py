@@ -36,6 +36,9 @@ def proof(data,packets,phase,digests=None):
     if phase=='owned-abandon':
         from .hunter_abandon_evidence import proof as abandon_proof
         return abandon_proof(data,digests,packets['raw'],packets['events'])
+    if phase=='owned-tame':
+        from .hunter_tame_evidence import proof as tame_proof
+        return tame_proof(data,digests,packets)
     if phase=='ability':
         from .primary_throw_checkpoint_evidence import proof as ability_proof
         return ability_proof(data,digests,packets)
@@ -115,12 +118,18 @@ def review(directory,output,phase):
     out=yaml.safe_load((lab.REPO/pointer).read_text())['outs'][0]
     require(out['size']==cp['bytes'],'remote object size differs')
     data={};seen=set();packets=set();abandon_events=set();abandon_instances=set()
+    tame_tracking={'raw':set(),'packets':set(),'events':[],'instances':set()}
     with Repo(str(lab.REPO)) as repo:
         odb=repo.cloud.get_remote_odb()
         with odb.fs.open(odb.oid_to_path(out['md5']),'rb',block_size=1024*1024,cache_type='none') as raw:
             reader=DigestReader(raw)
             with tarfile.open(fileobj=reader,mode='r|gz') as archive:
                 for member in archive:
+                    if phase=='owned-tame' and member.name in ('tracking/events.jsonl','tracking/packets.jsonl',
+                            'tracking/owned_tame_request_packets.jsonl'):
+                        from .hunter_tame_evidence import collect
+                        with archive.extractfile(member) as f:
+                            collect(member.name,(json.loads(line) for line in f),data,tame_tracking)
                     if phase=='owned-abandon' and member.name in ('tracking/owned_pet_abandon_packets.jsonl','tracking/events.jsonl'):
                         e=data['hunter_abandon_confirm01/episode.json'];session=e['native_session']
                         entry=data['hunter_abandon_entry01/episode.json']
@@ -183,7 +192,8 @@ def review(directory,output,phase):
     require(seen==set(selected) and reader.bytes==cp['bytes'] and reader.digest.hexdigest()==cp['sha256'],
         'actual remote compressed archive or complete member set differs')
     if phase=='owned-abandon':require(len(abandon_instances)==1,'fresh owned Abandon instance attribution absent')
-    packet_proof={'raw':packets,'events':abandon_events} if phase=='owned-abandon' else packets
+    packet_proof=tame_tracking if phase=='owned-tame' else (
+        {'raw':packets,'events':abandon_events} if phase=='owned-abandon' else packets)
     outcome=proof(data,packet_proof,phase,{p.removeprefix(prefix):sha for p,sha in selected.items()})
     d={'schema':'client442_native_feedback_remote_review_v1','reviewed_at':time.time(),
         'pointer':pointer,'archive_sha256':cp['sha256'],'bytes':reader.bytes,'actual_remote_verified':True,
@@ -194,5 +204,5 @@ def review(directory,output,phase):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot','owned-pair','owned-abandon-cancel','owned-abandon'],required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot','owned-pair','owned-abandon-cancel','owned-abandon','owned-tame'],required=True)
     a=p.parse_args();review(a.directory,a.output,a.phase)

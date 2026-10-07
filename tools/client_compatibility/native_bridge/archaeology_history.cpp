@@ -28,7 +28,7 @@ Reply research_history(State const &owner,std::string const &name,View body)
     // The pinned 4.4.2 reader aligns on entering ResearchHistory after the
     // mandatory PetStable presence bit. Sharing that byte hides its mask.
     Writer data;data.pack("BBBI",{1,0,3,1u<<7}).pack("I",{1u<<3})
-        .bits(0,14).bits((1u<<6)|(1u<<26),32).flush().bits(0,1).flush();
+        .bits(0,14).bits((1u<<6)|(1u<<26),32).flush().bits(owner.pet_stable.is_object(),1).flush();
     data.bits(3,2).bits(count,32);
     for(unsigned i=0;i<count;++i)data.bits(1,1);
     data.flush();
