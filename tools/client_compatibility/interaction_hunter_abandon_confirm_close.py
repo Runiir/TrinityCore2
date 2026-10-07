@@ -13,7 +13,7 @@ from .hunter_abandon_identity import named_preserved
 from .interaction_primary_combat_reentry import retained
 from .interaction_paused_scout_bridge_deploy import SCHEMA
 from .interaction_single_scout_bridge_deploy import SCHEMA as SINGLE_SCHEMA
-from .scout_relaunch_lineage import verified_deployment,transition
+from .scout_relaunch_lineage import verified_deployment,deployment_runtime
 from .interaction_parked_client_resource_pause import snapshot
 from .hunter_disposable_tame import disposable_number
 
@@ -22,7 +22,7 @@ def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment,
     old=prepared(t,preparation,True);paths=(entry,stage,confirm,park,finish,primary_stop)
     e,s,a,p,f,stop=[closed(v) for v in paths];d,lineage=verified_deployment(deployment,t.receipt['runtime'],relaunch)
     single=d.get('schema')==SINGLE_SCHEMA
-    deployment_runtime=transition(runtime=t.receipt['runtime'],deployment=d,**lineage) if lineage else t.receipt['runtime']
+    deployed=deployment_runtime(lineage,t.receipt['runtime'],d)
     number=6
     if a.get('disposable_tame_source'):
         tame=Path(a['disposable_tame_source']['path'])
@@ -40,8 +40,9 @@ def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment,
         stop.get('phase')!='user_requested_primary_client_stopped' or stop.get('before')!=stop.get('after') or
         d.get('schema') not in (SCHEMA,SINGLE_SCHEMA) or not d.get('completed') or not d.get('finished_at') or
         d.get('primary_stop_source')!=bound(primary_stop) or d.get('native')!=t.receipt['runtime']['worldserver'] or
-        d.get('after')!=t.receipt['runtime']['modern_world'] or d.get('scout_lifetime')!=deployment_runtime['client'] or
-        (not single and d.get('before')!=stop['runtime']['modern_world']) or d.get('native')!=stop['runtime']['worldserver']):
+        d.get('after')!=t.receipt['runtime']['modern_world'] or
+        d.get('scout_lifetime')!=(t.receipt['runtime']['client'] if lineage and 'pause' in lineage else deployed['client']) or
+        (not single and not lineage and d.get('before')!=stop['runtime']['modern_world']) or d.get('native')!=stop['runtime']['worldserver']):
         raise RuntimeError('fresh Abandon, single-scout deployment or stopped primary lineage differs')
     with actor('primary'):primary_ok=lab.owned_process('client') is None and retained(1,1)==stop['after']
     current=pets(6);checks={**origin_checks(old),**protected(old),

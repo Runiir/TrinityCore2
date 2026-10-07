@@ -70,4 +70,15 @@ def verified_deployment(path,runtime,relaunch=None):
         lineage={'report':r,'restored':restored,'refs':refs}
     if d.get('schema')==SINGLE_SCHEMA:verified_report(path.parent,expected)
     elif relaunch:raise RuntimeError('scout relaunch requires a verified single-scout deployment')
+    else:
+        from .scout_pause_lineage import verified,SCHEMA
+        if d.get('schema')==SCHEMA:lineage=verified(d,path,runtime)
     return d,lineage
+
+
+def deployment_runtime(lineage,runtime,deployment):
+    if not lineage:return runtime
+    if 'pause' in lineage:
+        from .scout_pause_lineage import transition as paused_transition
+        return paused_transition(deployment,runtime,**lineage)
+    return transition(runtime=runtime,deployment=deployment,**lineage)
