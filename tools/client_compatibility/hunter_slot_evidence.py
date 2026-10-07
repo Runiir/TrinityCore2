@@ -130,7 +130,7 @@ def proof(data,digests,packets):
         elif (p['direction'],p['name'])==('from_native','SMSG_SPELL_GO'):
             caster=native_guid(r);native_guid(r);_,spell=r.unpack('Bi');completed.append((caster,spell))
         else:raise RuntimeError('foreign recovery packet')
-    require(request and set(request)=={883} and completed and set(completed)=={(6,883)},
+    require(request==[883] and completed==[(6,883)] and call[0]['time']<=call[-1]['time'],
         'native owned Call Pet883 request/completion differs')
     same_pet(baseline,e['retained_pet_after'],0,1,e['finished_at'])
     require(e['restored_public_pet']['exists'] is True and e['restored_public_pet']['name']=='Harnesswolf' and
