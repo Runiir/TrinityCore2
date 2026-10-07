@@ -7,6 +7,7 @@
 #include "reputation_fields.hpp"
 #include "events.hpp"
 #include "pet_rename_probe.hpp"
+#include "pet_abandon_probe.hpp"
 #include "stable_probe.hpp"
 #include "stables.hpp"
 #include "tame_channels.hpp"
@@ -95,6 +96,9 @@ int main(int argc, char **argv)
                     events.packet(direction,
                         str(get(request,"name")),data("body"),"fixture");result=true;
                 }
+                else if(op=="owned_pet_abandon_probe")
+                    result=owned_pet_abandon_probe(str(get(request,"root")),str(get(request,"direction")),
+                        str(get(request,"name")),data("body"),str(get(request,"session")),number(get(request,"now")));
                 else if(op=="owned_tame_probe")
                     result=owned_tame_probe(str(get(request,"root")),str(get(request,"direction")),
                         str(get(request,"name")),data("body"),str(get(request,"session")),number(get(request,"now")));

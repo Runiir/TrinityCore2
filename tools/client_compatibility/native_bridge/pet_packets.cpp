@@ -328,7 +328,7 @@ bool pet_abandon_authority(Protocol const &p,State const &owner,std::uint64_t gu
     auto found=owner.visible_units.find(guid);
     if(found==owner.visible_units.end())return false;
     auto const &unit=found->second;
-    // Native UNIT_CAN_BE_ABANDONED is bit2 of the pet flag byte. The native
+    // Native UNIT_CAN_BE_ABANDONED is0x02 in the pet flag byte. The native
     // handler accepts a visible Pet GUID, so ownership must be checked here.
     return integer(get(unit,"kind"))==3 && integer(get(unit,"map"))==owner.map() &&
         p.field(unit,"UNIT_FIELD_PETNUMBER") &&

@@ -14,7 +14,7 @@ target_sources(bridge_protocol PRIVATE chat_probe.cpp chat_channels.cpp chat_ign
 target_sources(bridge_protocol PRIVATE stable_probe.cpp stables.cpp stable_slots.cpp)
 target_sources(bridge_protocol PRIVATE spell_damage.cpp)
 target_sources(bridge_protocol PRIVATE tame_channels.cpp)
-target_sources(bridge_protocol PRIVATE pet_abandon.cpp)
+target_sources(bridge_protocol PRIVATE pet_abandon.cpp pet_abandon_probe.cpp)
 target_link_libraries(bridge_protocol PUBLIC OpenSSL::Crypto Threads::Threads ZLIB::ZLIB ${MYSQLCLIENT_LIBRARY})
 target_compile_options(bridge_protocol PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(bridge_codec codec_main.cpp)

@@ -198,7 +198,9 @@ def checkpoint(directory,name):
     metadata['files']=manifest
     with tempfile.TemporaryDirectory(dir=lab.ROOT/'run') as folder:
         folder=Path(folder)
-        for source,label in [(lab.ROOT/'logs/modern_world.jsonl','events.jsonl'),(lab.ROOT/'evidence/world_packets.jsonl','packets.jsonl')]:
+        for source,label in [(lab.ROOT/'logs/modern_world.jsonl','events.jsonl'),(lab.ROOT/'evidence/world_packets.jsonl','packets.jsonl'),
+                (lab.ROOT/'evidence/owned_pet_abandon_packets.jsonl','owned_pet_abandon_packets.jsonl')]:
+            if not source.exists() and label=='owned_pet_abandon_packets.jsonl':continue
             with (folder/label).open('w') as output:
                 for row in entries(source):
                     if row.get('time',0)<since:continue
