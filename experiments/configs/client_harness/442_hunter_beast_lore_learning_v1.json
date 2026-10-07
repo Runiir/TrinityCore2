@@ -1,0 +1,122 @@
+{
+  "schema": "client442_owned_hunter_beast_lore_learning_contract_v1",
+  "operation": "spellbook.learn_spell",
+  "controller": "code",
+  "model": null,
+  "client_policy": {
+    "owned_clients": 1,
+    "actor": "scout",
+    "monitor": "HDMI-1",
+    "primary_stopped": true,
+    "minimum_available_memory_gib": 6,
+    "custom_scripts": "blocked_by_user"
+  },
+  "accepted_sources": {
+    "preparation": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui169/hunter_revive_prepare01/episode.json",
+      "sha256": "baf6651c8b29c84a529910872d789845d3299bab709eb1451536f87e6c3a6703"
+    },
+    "normalization": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui169/hunter_revive_normalize01/episode.json",
+      "sha256": "0837a74509e9f2757dc7e7004cb6f07189f9bcea1e1372a3d5a1236d2d989da9"
+    },
+    "closure": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui169/hunter_revive_close02/episode.json",
+      "sha256": "608c42a6f7b923bbd82d040000f77211c3b6a13bc57660e4490d656648abf825"
+    },
+    "pause": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui169/scout_revive_pause01/episode.json",
+      "sha256": "95dad085417fd4d805a8cc2f8790f4438e830d7c51263a41eb07783e7bb7fd96"
+    },
+    "checkpoint": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui169/checkpoint_receipt.json",
+      "sha256": "dc8ba2683419e5a51599157dfaecce997d3e49f10a11e6237811370b596afe55"
+    },
+    "remote_review": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui169_revive_remote_review01.json",
+      "sha256": "fd0e683acc1a96b41e492437cc86b50c5d1c2bc14095c855e8abe3b96a9e9f32"
+    }
+  },
+  "owner": {
+    "guid": 6,
+    "name": "Harnesshunt",
+    "class": 3,
+    "level": 10
+  },
+  "lesson": {
+    "spell_id": 1462,
+    "name": "Beast Lore",
+    "trainer_id": 40,
+    "creature_entry": 46983,
+    "creature_spawn": 280678,
+    "price": 646,
+    "money_before": 8708,
+    "money_after": 8062,
+    "baseline_saved_spells": [
+      [
+        1515,
+        1,
+        0
+      ],
+      [
+        79682,
+        1,
+        0
+      ]
+    ]
+  },
+  "pets": {
+    "stored_named_number": 4,
+    "disposable_number": 16,
+    "saved_creator": 13481,
+    "saved_health": 278,
+    "ordinary_login_initial_base_health": 198,
+    "same_guid_final_health": 278,
+    "pet_casts_permitted": false
+  },
+  "input_proof": [
+    "fresh trainer interaction review",
+    "fresh Beast Lore selection review",
+    "fresh Train button review",
+    "exact one modern request and one native trainer1462 purchase",
+    "exact native and modern1462 learned events",
+    "stock FUTURESPELL to SPELL known row transition"
+  ],
+  "conditional_action_restoration": {
+    "allowed_only_if": "exact1462 automatic addition to a previously empty observed main-bar slot",
+    "method": "fresh reviewed Shift-drag then right-click cancel",
+    "proof": "exact slot clear request, empty cursor and full original saved actions"
+  },
+  "restoration": {
+    "pose": "exact source-bound original home pose and temporary teleport rows removed",
+    "logout": "one ordinary Hunter logout with ordered native and delivered completion",
+    "offline_transaction": "delete only newly learned1462 active1 disabled0 row and refund exactly646 after locking and comparing all six saved projections",
+    "accounting": "source-bound native monotonic time and exact SQL FLOAT rest bits; no rest writes or tolerance",
+    "reentry": "ordinary Hunter login,1462 absent and FUTURESPELL restored, then original Harnesstwo selection and distinct learning closure",
+    "shutdown": "all six offline and unchanged except attributable native time/rest; both owned clients absent"
+  },
+  "admission": {
+    "whole_success_only": true,
+    "failed_receipts_retained_and_excluded": true,
+    "local_and_actual_streamed_remote_proof_required": true,
+    "additional_operations_admitted": false,
+    "qualification_added_by_controller": false
+  },
+  "publication": {
+    "tracking": [
+      "DVC",
+      "DVCLive"
+    ],
+    "code_and_config_commit_before_experiment": true,
+    "checkpoint_and_remote_verify_before_offload": true,
+    "post_experiment_commands": [
+      "dvc status",
+      "dvc push"
+    ]
+  },
+  "execution_profiles": {
+    "live_and_full_tests": "pixi run --manifest-path tools/client_compatibility/auth/pixi.toml python",
+    "pure_publication_and_remote_proof": "pixi run python",
+    "dependency_install_required": false
+  }
+}
