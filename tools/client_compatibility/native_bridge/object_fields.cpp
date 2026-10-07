@@ -119,7 +119,7 @@ Value Protocol::field_values(Value const &s, Value const &c) const
     active["RestInfo"] = Array{Object{{"Threshold", val("PLAYER_REST_STATE_EXPERIENCE")},
                                      {"StateID", val("PLAYER_BYTES_2") >> 24}},
                                Object{{"Threshold", 0}, {"StateID", 2}}};
-    if(!get(s,"pet_stable").is_null())
+    if(get(s,"pet_stable").is_object())
     {
         active["PetStable"]=get(s,"pet_stable");
         active["NumStableSlots"]=get(s,"stable_slots");

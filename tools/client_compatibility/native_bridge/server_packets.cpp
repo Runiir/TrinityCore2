@@ -137,8 +137,11 @@ Task<> Session::gameplay(std::string name, Bytes body)
     Array stable_models;std::uint64_t stable_owner=0;
     if(name=="MSG_LIST_STABLED_PETS")
     {
-        {std::lock_guard lock(state_mutex);if(state.character.is_null())co_return;
-         if(integer(get(state.character,"class"))!=3)co_return;stable_owner=state.guid();}
+        {
+            std::lock_guard lock(state_mutex);
+            if(state.character.is_null() || integer(get(state.character,"class"))!=3)co_return;
+            stable_owner=state.guid();
+        }
         auto catalog=native_stable_list(body);std::string ids;
         for(auto const &pet:get(catalog,"Pets").as_array())
         {if(!ids.empty())ids+=',';ids+=std::to_string(integer(get(pet,"PetNumber")));}

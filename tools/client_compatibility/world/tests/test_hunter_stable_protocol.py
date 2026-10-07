@@ -105,3 +105,14 @@ def test_expiring_private_probe_can_capture_exact_native_catalog_only(codec,tmp_
     assert not probe(codec,tmp_path,c,catalog(guid=MASTER+1),direction='from_native',name='MSG_LIST_STABLED_PETS')
     assert not probe(codec,tmp_path,c,catalog(),direction='from_native',name='SMSG_AUTH_RESPONSE')
     assert not probe(codec,tmp_path,c,catalog()+b'x',direction='from_native',name='MSG_LIST_STABLED_PETS')
+
+
+def test_glyph_group_preserves_present_stable_without_emitting_a_new_catalog(codec):
+    fields={INDEX['PLAYER_GLYPHS_ENABLED']:511}
+    snapshot={'guid':6,'fields':fields,'pet_stable':{'Pets':[],'StableMaster':[0,0]}}
+    body=result(codec,op='glyph_update',snapshot=snapshot,changed=fields)
+    r=Reader(bytes.fromhex(body));assert r.unpack('B')==(0,) and r.guid()==(6,player_high())
+    length,=r.unpack('I');f=Reader(r.raw(length));r.end()
+    assert f.unpack('BBBI')==(1,0,3,128) and f.unpack('I')==(8,)
+    assert f.bits(14)==0 and f.bits(32)==((1<<6)|(1<<31))
+    assert f.unpack('H')==(511,) and f.bits(1)==1;f.end()

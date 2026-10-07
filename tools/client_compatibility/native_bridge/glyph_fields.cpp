@@ -29,7 +29,7 @@ Bytes Protocol::glyph_block(Value const &snapshot,Value const &changed) const
         data.put<std::uint16_t>(value);
         // Group 102 writes optional presence even without member129. Preserve
         // the native stable catalog while glyph enablement changes.
-        data.bits(!get(snapshot,"pet_stable").is_null(),1).flush();
+        data.bits(get(snapshot,"pet_stable").is_object(),1).flush();
     }
     for(unsigned i=0;i<9;++i)
     {
