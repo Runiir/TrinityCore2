@@ -15,7 +15,7 @@ from .interaction_social import actor
 from .interaction_trial import Trial
 
 
-def close(t, preparation, fixture_path, cast_path, park_path, finish_path, cleanup_path):
+def close(t, preparation, fixture_path, cast_path, park_path, finish_path, cleanup_path, rest_precision=None):
     old = prepared(t, preparation, True)
     fixture, cast, park, finish = [closed(p) for p in (fixture_path, cast_path, park_path, finish_path)]
     cleanup = closed(cleanup_path)
@@ -39,8 +39,13 @@ def close(t, preparation, fixture_path, cast_path, park_path, finish_path, clean
     allowed = {'totaltime', 'leveltime', 'logout_time', 'latency'}
     rest = None
     if hunter['native'].get('rest_bonus') != before['6']['native'].get('rest_bonus'):
-        rest = rest_preservation(before['6']['native'], hunter['native'], cast['entry_source'])
+        if rest_precision is None:
+            rest = rest_preservation(before['6']['native'], hunter['native'], cast['entry_source'])
+        else:
+            rest = rest_preservation(before['6']['native'], hunter['native'], cast['entry_source'], rest_precision)
         allowed.add('rest_bonus')
+    elif rest_precision is not None:
+        raise RuntimeError('rest precision source requires an observed offline rest change')
     changed = {k for k, v in before['6']['native'].items() if hunter['native'].get(k) != v}
     primary_path = Path(fixture['primary_stop_source']['path'])
     stop = closed(primary_path)
@@ -77,11 +82,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ('preparation', 'fixture', 'cast', 'park', 'finish', 'cleanup', 'output'):
         parser.add_argument('--' + key, type=Path, required=True)
+    parser.add_argument('--rest-precision', type=Path)
     args = parser.parse_args()
     with actor('scout'):
         trial = Trial(args.output, controller='code')
         trial.receipt.update(custom_script_permission='blocked_by_user', softTargetInteract=SCRIPT_BOUNDARY)
-        try: close(trial, args.preparation, args.fixture, args.cast, args.park, args.finish, args.cleanup)
+        try: close(trial, args.preparation, args.fixture, args.cast, args.park, args.finish, args.cleanup, args.rest_precision)
         except Exception as error: trial.receipt.update(completed=False, failure=f'{type(error).__name__}: {error}')
         finally:
             trial.receipt['finished_at'] = time.time()
