@@ -186,8 +186,10 @@ def checkpoint(directory,name):
     for receipt_path in directory.glob('native_*build*.json'):
         build=json.loads(receipt_path.read_text())
         if build.get('schema')!='client442_native_core_build_v1':continue
+        if not build.get('finished_at'):raise RuntimeError('native build is still open')
+        if build.get('completed') is not True:continue  # Retain failed receipts; never admit their candidate.
         candidate=lab.ROOT/'build/src/server/worldserver/worldserver'
-        if not build.get('completed') or build.get('binary_sha256')!=lab.sha256(candidate):
+        if build.get('binary_sha256')!=lab.sha256(candidate):
             raise RuntimeError('closed native build candidate artifact differs')
         if candidate not in paths:paths.append(candidate)
     manifest=[]

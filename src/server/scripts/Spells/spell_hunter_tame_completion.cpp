@@ -3,9 +3,9 @@
  * Licensed under the GNU General Public License, version 2 or later.
  */
 
-#include "Pet.h"
-#include "Player.h"
 #include "ScriptMgr.h"
+#include "Player.h"
+#include "Pet.h"
 #include "Spell.h"
 #include "SpellInfo.h"
 #include "SpellScript.h"
