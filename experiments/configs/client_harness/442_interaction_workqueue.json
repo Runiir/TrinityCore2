@@ -3,9 +3,9 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "450/916 qualified, 466 open. UI161 remote review verifies the entire 427972914-byte archive, SHA977a61f9689d8a25264879c000115bee069842ec7cae128118810dd03fe4b2eb, all96 JSON/236 PNG and full Tame proof. Scoped pets.tame is admitted: one native request, Wolf12, four channel payloads plus native Added, one modern StableInfo and stock cache preserving Harnesswolf4. All restoration/closure20 and publication pause8 checks pass; both owned clients stopped, all six full offline snapshots preserved. Native end-of-channel Interrupted remains explicit/open. Failed baseline/parking/autosave/closure/verifier receipts remain excluded. Deployed b6c286a5/9782429e passes140 focused/4152 full tests;56 stored lineage,59 post-save/projection and6 journal tests pass, local23 guards rejected. Native1971415/51951236 unchanged; scripts blocked/CVar0 unrestored at1. UI161 local offload and git/global DVC sync next. UI161 offload completed:236 frames409427930 bytes plus archive/cache427972914 bytes each evicted after actual remote proof. UI162 carries immutable proof and cleanup receipts; final read-only verification confirms both owned clients absent and all six full offline snapshots unchanged. Global dvc status/push exit0 with the pre-existing unrelated missing053 directory warning retained. Git sync pending before further diagnosis.",
+  "current": "450/916 qualified, 466 open. UI161 scoped Tame creation/channel/cache proof is remotely verified, admitted, offloaded and git-synchronized. Native Tame post-creation Interrupted remains open. UI162 observation-only entry probe passes104 focused/4220 full bridge tests; its one-job build preserves native1971415/51951236. One fresh Hunter login and two consecutive captured same-client reentries pass9 each, with one actual native PlayerLogin per captured reentry. Both successful reentries send unmapped account-list body0000000000; historical stalls remain unresolved. Three normal parks pass4 each, original selection5, full no-input closure20 and scout resource pause8 preserve all six offline snapshots, Harnesswolf4/Wolf12 and user-stopped primary. Both owned clients stopped. Capture leases removed, scripts blocked and original CVar0 unrestored at1. New closure/retirement/paused-lineage guards pass76; no-login retirement helper not exercised live. UI162 checkpoint/remote integrity/offload and global DVC/git sync next.",
   "queued": [
-    "Continue same-client reentry stall diagnosis and the native post-creation Tame Interrupted error. UI161 is remotely verified, admitted and offloaded. Stable capacity200, revive and the other466 operations remain open. Preserve Harnesswolf4/Wolf12 and user-stopped primary; one scout only for a required live test.",
+    "Checkpoint and offload UI162, then investigate native post-creation Tame Interrupted from exact source/trace before another live Tame. Historical same-client reentry stall remains open; two successful captured reentries disprove missing account-list translation as a sufficient explanation. Stable capacity200, revive and other466 operations remain open. Preserve Harnesswolf4/Wolf12 and user-stopped primary; one scout only when a live test needs it.",
     "remaining spellbook learn/unlearn and rank-resolution class variants; generic casting and general/class/professions tabs already have scoped qualification and must not be counted again; native-account fixture setup does not qualify modern character creation",
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
@@ -374,20 +374,22 @@
     "reason": "user requested lower concurrent client resource use",
     "requested_stop_source": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui155/user_stop_primary01/episode.json",
     "scout_resource_pause": {
-      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui161/scout_research_build_pause01/episode.json",
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui162/scout_reentry_publication_pause01/episode.json",
       "checks": 8,
       "all_six_saved_snapshots_preserved": true
     },
-    "scout": "single scout relaunched for the corrected bridge live validation; primary remains stopped",
+    "scout": "stopped after two captured successful reentries and complete normal restoration",
     "scout_closed_boundary": {
-      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui161/hunter_tame_precast_close01/episode.json",
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui162/hunter_reentry_close01/episode.json",
       "checks": 20,
       "all_six_offline": true,
       "original_selected": "Harnesstwo",
       "retained_pet_numbers": [
-        4
+        4,
+        12
       ],
-      "tame_input_sent": false
+      "tame_input_sent": false,
+      "captured_reentries": 2
     }
   }
 }

@@ -42,13 +42,25 @@ def preparation(t,source,entry,park,primary_stop):
     if actors.register(6)!=old['class_actor']:raise RuntimeError('retained Hunter registration differs')
 
 
-def capture(t,source,stage,review):
+def checked_stage(t,source,stage):
     old=prepared(t,source);p=closed(stage)
     if (p.get('phase')!='await_owned_reentry_review' or p.get('runtime')!=t.receipt['runtime'] or
         p.get('actor')!=old['origin_actor'] or p.get('fixture_source')!=bound(source) or
         len(p.get('checks',{}))!=14 or not all(v is True for v in p['checks'].values()) or
         p.get('all_offline_snapshot')!=snapshot()):
         raise RuntimeError('requires the exact closed offline reentry preparation')
+    return old,p
+
+
+def refresh(t,source,stage):
+    old,p=checked_stage(t,source,stage)
+    t.receipt.update(**{k:p[k] for k in ('sources','checks','all_offline_snapshot','primary_stop_source')},
+        actor=old['origin_actor'],refreshed_source=bound(stage),phase='await_owned_reentry_review',
+        input_sent=False,qualification_added=False,frame=shot(t.out/'reentry_selection.png'),completed=True)
+
+
+def capture(t,source,stage,review):
+    old,p=checked_stage(t,source,stage)
     e=closed(Path(p['sources'][1]['path']))
     if p['sources'][1]!=bound(Path(p['sources'][1]['path'])):raise RuntimeError('earlier entry digest differs')
     d=reviewed(t,review,'Enter World')
@@ -80,17 +92,19 @@ def capture(t,source,stage,review):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','capture'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['prepare','refresh','capture'])
     for name in ('preparation','output'):p.add_argument('--'+name,type=Path,required=True)
     for name in ('entry','park','primary-stop','stage','review'):p.add_argument('--'+name,type=Path)
     a=p.parse_args()
     if a.action=='prepare' and not all((a.entry,a.park,a.primary_stop)):p.error('requires normal entry/parking and original primary stop')
     if a.action=='capture' and not all((a.stage,a.review)):p.error('requires closed preparation and fresh selected-character review')
+    if a.action=='refresh' and not a.stage:p.error('requires closed offline reentry preparation')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='prepare':preparation(t,a.preparation,a.entry,a.park,a.primary_stop)
+            elif a.action=='refresh':refresh(t,a.preparation,a.stage)
             else:capture(t,a.preparation,a.stage,a.review)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
