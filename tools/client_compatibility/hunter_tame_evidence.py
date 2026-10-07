@@ -77,6 +77,16 @@ def proof(data,digests,tracking):
     require({packet_key(p) for p in cast['capture_packets']}==tracking['raw'] and
         all(packet_key(p) in tracking['packets'] for p in cast['cast_packets']),
         'actual archived Tame packet journal differs')
+    requests=[p for p in cast['cast_packets'] if (p.get('direction'),p.get('name'))==
+        ('to_native','CMSG_CAST_SPELL')]
+    require(len(requests)==1 and requests[0]['session']==cast['native_session'] and
+        cast['cast_started_at']<=requests[0]['time']<=cast['finished_at'],
+        'single attributable native Tame request differs')
+    body=bytes.fromhex(requests[0]['body'])
+    require(len(body)>=5 and int.from_bytes(body[1:5],'little',signed=True)==1515 and
+        cast['native_cast_requests']==[{'counter':body[0],'spell':1515}] and
+        cast.get('ordinary_input')=={'kind':'chat','value':'/cast Tame Beast'},
+        'actual ordinary Tame request payload differs')
     from .world.buffer import Reader,player_high
     from .world.native_objects import guid as native_guid
     channels=[p for p in cast['capture_packets'] if p['name']!='SMSG_PET_ADDED']

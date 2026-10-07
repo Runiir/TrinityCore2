@@ -29,8 +29,13 @@ def review(directory,output):
     reject('missing_actual_channel',lambda d,h,t:t['raw'].pop())
     reject('missing_actual_modern_delivery',lambda d,h,t:t['packets'].clear())
     reject('foreign_physical_instance',lambda d,h,t:t['instances'].clear())
-    reject('lost_Harnesswolf',lambda d,h,t:d[AFTER]['public_stable']['pets'].pop(0))
-    reject('stale_new_pet_level',lambda d,h,t:d[AFTER]['public_stable']['pets'][-1].update(level=9))
+    reject('lost_Harnesswolf',lambda d,h,t:d[AFTER]['public_stable'].update(
+        pets=[p for p in d[AFTER]['public_stable']['pets'] if p['name']!='Harnesswolf']))
+    reject('stale_new_pet_level',lambda d,h,t:next(p for p in
+        d[AFTER]['public_stable']['pets'] if p['name']=='Wolf').update(level=9))
+    reject('repeated_native_tame',lambda d,h,t:d[NAMES['cast']]['cast_packets'].append(next(p for p in
+        d[NAMES['cast']]['cast_packets'] if (p['direction'],p['name'])==('to_native','CMSG_CAST_SPELL'))))
+    reject('different_ordinary_spell',lambda d,h,t:d[NAMES['cast']]['ordinary_input'].update(value='/cast Other'))
     reject('script_permission_changed',lambda d,h,t:d[NAMES['cast']].update(custom_script_permission='enabled'))
     reject('wrong_closure_source',lambda d,h,t:d[CLOSURE]['sources'][5].update(sha256='0'*64))
     reject('protected_actor_changed',lambda d,h,t:d[CLOSURE]['all_offline_snapshot']['1']['native'].update(money=0))
