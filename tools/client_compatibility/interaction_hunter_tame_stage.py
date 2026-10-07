@@ -34,7 +34,22 @@ def pose():
 def teleport_row(q,number):
     q.execute('SELECT id,CAST(position_x AS DOUBLE),CAST(position_y AS DOUBLE),CAST(position_z AS DOUBLE),'
         'CAST(orientation AS DOUBLE),map,name FROM client442_world.game_tele WHERE id=%s',(number,))
-    return list(q.fetchone())
+    row=q.fetchone()
+    if row is None:raise RuntimeError('owned tame teleport row is absent')
+    return list(row)
+
+
+def existing_wolf(wolf):
+    keys=('guid','id','name','map','position_x','position_y','position_z','orientation',
+        'minlevel','maxlevel','type','type_flags','family','faction','unit_flags','MovementType')
+    with lab.connection() as c,c.cursor() as q:
+        q.execute('SELECT c.guid,c.id,t.name,c.map,c.position_x,c.position_y,c.position_z,c.orientation,'
+            't.minlevel,t.maxlevel,t.type,t.type_flags,t.family,t.faction,t.unit_flags,c.MovementType '
+            'FROM client442_world.creature c JOIN client442_world.creature_template t ON t.entry=c.id '
+            'WHERE c.guid=%s',(wolf['guid'],))
+        rows=q.fetchall()
+    if len(rows)!=1 or dict(zip(keys,rows[0]))!=wolf:
+        raise RuntimeError('existing tameable wolf database prerequisite changed')
 
 
 def restore(t,fixture,old,baseline):
@@ -89,6 +104,7 @@ def run(t,preparation,entry,stored,recon,action,source=None):
         r.get('owner')!=6 or tuple(wolf[k] for k in ('guid','id','map','minlevel','maxlevel','type','type_flags','family'))!=
         (280666,299,0,1,1,1,1,1)):
         raise RuntimeError('existing level1 tameable wolf prerequisite differs')
+    existing_wolf(wolf)
     read_page(t,'tame_stage_core','state','/tcui');t.clean_panels();state,frame=t.observe('tame_stage_before')
     if frame['movement']['in_combat'] or frame['movement']['dead'] or frame['movement']['speed']:
         raise RuntimeError('tame staging requires an idle living Hunter')
@@ -109,18 +125,20 @@ def run(t,preparation,entry,stored,recon,action,source=None):
     try:
         lab.server_command('reload game_tele');lab.server_command('tele name Harnesshunt '+NAMES[1]);time.sleep(4)
         t.execute({'kind':'chat','value':'/targetexact Young Wolf'})
-        state,frame=t.observe('existing_wolf_staged');native=Observer(guid=6,session=session).poll();facts=native.facts()
-        target=facts.get('selected_unit');fields=(target or {}).get('fields',{})
+        state,frame=t.observe('existing_wolf_staged');native=Observer(guid=6,session=session);facts=native.poll()
+        target=facts.get('selected_unit');unit=native.units.get((target or {}).get('guid'),{})
+        fields=unit.get('fields',{})
         checks={'existing_native_wolf':bool(target) and target['guid']>>52==0xf13 and
             fields.get(INDEX['OBJECT_FIELD_ENTRY'])==299 and fields.get(INDEX['UNIT_FIELD_LEVEL'])==1 and
-            fields.get(INDEX['UNIT_FIELD_HEALTH'],0)>0,
+            fields.get(INDEX['UNIT_FIELD_HEALTH'],0)>0 and
+            math.dist(target['position'][:2],[wolf['position_x'],wolf['position_y']])<1,
             'visible_wolf':state.get('target',{}).get('name')=='Young Wolf' and state['target'].get('visible') is True,
             'in_tame_range':math.dist(state['world_position'][:2],[wolf['position_x'],wolf['position_y']])<15,
             'stored_retained_pet':pet_identity(moved['baseline_pets'],pets(6),5,0),
             'no_runtime_pet':not o.poll().present() and pair(o.player,'UNIT_FIELD_SUMMON')==0,
             'resources':resources(inv.poll())==before,'saved_rows':saved(6)==baseline,
             'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions'),**protected(old)}
-        t.receipt.update(stage_checks=checks,state=state,frame=frame,native_target=target);t.persist()
+        t.receipt.update(stage_checks=checks,state=state,frame=frame,native_target=target,native_target_unit=unit);t.persist()
         if not all(checks.values()):raise RuntimeError('existing owned tame target staging differs')
         t.receipt.update(completed=True,phase='owned_existing_wolf_staged',qualification_added=False,
             qualified_scope='Existing tameable wolf and reversible owned Hunter pose only; no Tame Beast input yet.')
