@@ -85,7 +85,16 @@ def run(t,preparation,entry,action,source=None,review_path=None,number=4,destina
     t.receipt.update(entry_source=bound(entry),native_session=session,baseline_resources=resources(inv),
         baseline_saved=saved(6),retained_pet_before=current,input_sent=False,qualification_added=False);t.persist()
     if action=='stage':
-        if not identities(old['retained_class_pets'],current) or not o.present():raise RuntimeError('parked retained pair differs')
+        expected=old['retained_class_pets']
+        if source:
+            prior=closed(source)
+            if (prior.get('phase')!='owned_pair_active_pet_restored' or prior.get('actor')!=t.fixture or
+                prior.get('runtime')!=t.receipt['runtime'] or prior.get('native_session')!=session or
+                prior.get('fixture_source')!=bound(preparation) or prior.get('entry_source')!=bound(entry) or
+                len(prior.get('call_checks',{}))!=7 or not all(prior['call_checks'].values())):
+                raise RuntimeError('pair restaging requires exact completed ordinary active-pet recovery')
+            expected=prior['retained_pet_after'];t.receipt['restaging_source']=bound(source)
+        if not identities(expected,current) or not o.present():raise RuntimeError('retained pair differs before staging')
         t.clean_panels();read_page(t,'pair_core','state','/tcui')
         t.execute({'kind':'chat','value':'/targetexact Erma'})
         state,frame,guid=staged(t,master(),o,'pair_erma_staged')
