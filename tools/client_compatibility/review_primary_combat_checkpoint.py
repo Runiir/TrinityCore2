@@ -5,7 +5,7 @@ from . import lab_runtime as lab
 from .review_hunter_rename_checkpoint import DigestReader
 from .review_hunter_stable_checkpoint import require
 from .melee_result_evidence import pairs,public_events
-from .interaction_primary_range_diagnostic import stock_range_error
+from .primary_range_feedback_evidence import stock_range_error
 from .world.objects import INDEX
 
 
@@ -97,6 +97,7 @@ def review(directory,output):
                 'complete remote archive identity differs')
     result=proof(episodes,packets)
     report={'schema':'client442_primary_combat_archive_review_v1','reviewed_at':time.time(),'verified':True,
+        'review_tool_sha256':lab.sha256(Path(__file__)),
         'pointer':pointer,'archive_sha256':checkpoint['sha256'],'archive_bytes':checkpoint['bytes'],
         'direct_remote_object':True,'local_archive_created':False,'qualification_added':False,'packet_proof':result,
         'receipts':[{'member':p,'sha256':h,'verified':True} for p,h in selected.items() if p.endswith('.json')],

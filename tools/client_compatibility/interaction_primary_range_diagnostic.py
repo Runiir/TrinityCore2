@@ -17,14 +17,11 @@ from .world.objects import INDEX
 from .world.gameobjects import modern_guid
 from .world.buffer import Reader
 from .interaction_macros import require
+from .primary_range_feedback_evidence import stock_range_error
 
 # The diagnostic strip obscures the caption prefix. The actual owned native
 # query reply and template2830 both establish this full name.
 PUBLIC_NAME='Parched Buzzard'
-
-
-def stock_range_error(value):
-    return value.get('code')==265 and value.get('text')=='You are too far away!'
 
 
 class RangePresence(Presence):
