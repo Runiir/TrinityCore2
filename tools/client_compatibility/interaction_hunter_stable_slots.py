@@ -1,5 +1,5 @@
 """Reviewed ordinary owned pet4 slot round trip; native server owns all mutations."""
-import argparse,json,time
+import argparse,copy,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab
 from .interaction_social import actor
@@ -20,6 +20,31 @@ from .world.objects import INDEX
 from .interaction_spellbook_navigation import detail,navigate
 from .interaction_operations import click_case
 from .interaction_macros import require
+from .world.native_objects import guid as native_guid
+
+
+def call_pet_packets(session,since,until):
+    rows=[]
+    for p in entries(lab.ROOT/'evidence/world_packets.jsonl'):
+        if p.get('session')!=session or not since<=p.get('time',0)<=until:continue
+        if p.get('name')=='CMSG_CAST_SPELL' and p.get('direction')=='to_native':
+            r=Reader(bytes.fromhex(p['body']));_,spell=r.unpack('BI')
+            if spell==883:rows.append(p)
+        elif p.get('name')=='SMSG_SPELL_GO' and p.get('direction')=='from_native':
+            r=Reader(bytes.fromhex(p['body']));caster=native_guid(r);native_guid(r);_,spell=r.unpack('Bi')
+            if caster==6 and spell==883:rows.append(p)
+    if not any(p['direction']=='to_native' for p in rows) or not any(p['direction']=='from_native' for p in rows):
+        raise RuntimeError('ordinary Call Pet883 lacks attributable native request/completion')
+    return rows
+
+
+def summoned_identity(before,after):
+    expected=copy.deepcopy(before)
+    if len(expected)!=1 or expected[0].get('CreatedBySpell') not in (79597,883):return False
+    # Native EffectSummonPet sets the summon spell, then PetPersistence saves it.
+    # Preserve all other identity/state fields, including active1 and slot0.
+    expected[0]['CreatedBySpell']=883
+    return saved_pet_unchanged(expected,after,time.time())
 
 
 def call_pet_recon(t,session):
@@ -124,7 +149,7 @@ def verify_packets(rows,source,destination,master):
         'ordered_native_outcome':len(native)==len(updates)==len(results)==1 and native[0]['time']<=updates[0]['time']<=results[0]['time']}
 
 
-def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,destination=None,call_pet_source=None):
+def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,destination=None,call_pet_source=None,failed_source=None):
     old,e,session,o=baseline(t,preparation,entry,opening)
     if action=='call-pet-recon':
         call_pet_recon(t,session);return
@@ -132,7 +157,7 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
         moved=closed(source)
         if (moved.get('phase')!='owned_stable_slot_move_verified' or moved.get('opening_source')!=bound(opening) or
             moved.get('runtime')!=t.receipt['runtime'] or moved.get('destination')!=0 or
-            not all(moved.get('move_checks',{}).values()) or not pet_identity(e['baseline_pets'],pets(6),0,0)):
+            not all(moved.get('move_checks',{}).values())):
             raise RuntimeError('normal recovery requires an exact successful return to native active slot0')
         recon=closed(call_pet_source)
         spell=recon.get('call_pet_spell',{})
@@ -142,22 +167,39 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
             raise RuntimeError('normal recovery requires a source-bound observed native Call Pet883 caption')
         t.receipt.update(return_source=bound(source),call_pet_source=bound(call_pet_source),call_pet_spell=spell)
         read_page(t,'slot_recovery_state','state','/tcui');t.clean_panels()
-        if o.present():raise RuntimeError('expected native slot roundtrip to dismiss the runtime pet')
-        t.receipt['call_pet_started_at']=time.time();t.persist()
-        t.execute({'kind':'chat','value':'/cast '+spell['name']})
+        if failed_source:
+            if not failed_source.resolve().is_relative_to(lab.ROOT/'evidence') or failed_source.is_symlink():
+                raise RuntimeError('requires a private closed failed ordinary recovery')
+            failed=json.loads(failed_source.read_text());checks=failed.get('restoration_checks',{})
+            if (failed.get('completed') is not False or not failed.get('finished_at') or
+                failed.get('failure')!='RuntimeError: owned slot roundtrip whole restoration differs' or
+                failed.get('runtime')!=t.receipt['runtime'] or failed.get('actor')!=t.fixture or
+                failed.get('return_source')!=bound(source) or failed.get('call_pet_source')!=bound(call_pet_source) or
+                len(checks)!=13 or checks.get('retained_named_pet') is not False or
+                not all(v for k,v in checks.items() if k!='retained_named_pet') or
+                not o.present() or not summoned_identity(e['baseline_pets'],pets(6))):
+                raise RuntimeError('read-only recovery settling differs from the closed metadata-only failure')
+            t.receipt.update(failed_recovery_source=bound(failed_source),call_pet_started_at=failed['call_pet_started_at'],
+                call_pet_input_replayed=False,qualification_added=False)
+        else:
+            if o.present() or not pet_identity(e['baseline_pets'],pets(6),0,0):
+                raise RuntimeError('expected exact native slot return to dismiss the runtime pet')
+            t.receipt['call_pet_started_at']=time.time();t.persist()
+            t.execute({'kind':'chat','value':'/cast '+spell['name']})
         inv=Inventory(lab.ROOT,session,6);deadline=time.monotonic()+30
         while time.monotonic()<deadline:
             o.poll();inv.poll()
             if o.present() and resources(inv)==e['baseline_resources']:break
             time.sleep(.5)
         if not o.present():raise RuntimeError('normal Call Pet did not restore native owned pet')
+        t.receipt['call_pet_packets']=call_pet_packets(session,t.receipt['call_pet_started_at'],time.time());t.persist()
         public=public_pet(t,'slot_roundtrip_restored_pet')
         read_page(t,'slot_restore_state','state','/tcui');t.clean_panels();t.execute({'kind':'chat','value':'/targetexact Erma'})
         state,frame=t.observe('slot_roundtrip_restored');o.poll();current=pets(6)
         fields=o.pet['fields'];guid=o.pet['guid']
         public_guid=f"Pet-0-1-{o.pet['map']}-0-{guid>>32&0xfffff}-{guid&0xffffffff:010X}"
         checks={'resources':resources(inv.poll())==e['baseline_resources'],'saved_rows':saved(6)==e['baseline_saved'],
-            'retained_named_pet':saved_pet_unchanged(e['baseline_pets'],current,time.time()),
+            'retained_named_pet':summoned_identity(e['baseline_pets'],current),
             'owned_pet_present':o.present() and pair(fields,'UNIT_FIELD_SUMMONEDBY')==6 and
                 fields.get(INDEX['UNIT_FIELD_PETNUMBER'])==4 and public.get('exists') is True and
                 public.get('guid')==public_guid and public.get('name')=='Harnesswolf',
@@ -233,6 +275,7 @@ if __name__=='__main__':
     for k in ('preparation','entry','opening','output'):p.add_argument('--'+k,type=Path,required=True)
     p.add_argument('--source',type=Path);p.add_argument('--review',type=Path)
     p.add_argument('--call-pet-source',type=Path)
+    p.add_argument('--failed-source',type=Path,help='Read-only settling of an exact closed metadata-only recovery failure')
     p.add_argument('--slot',type=int,choices=[0,5],default=0);p.add_argument('--destination',type=int,choices=[0,5]);a=p.parse_args()
     if a.action in ('move','finish') and not a.source:p.error('requires a closed source')
     if a.action=='move' and (not a.review or a.destination is None):p.error('requires a separately reviewed destination')
@@ -240,7 +283,7 @@ if __name__=='__main__':
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:run(t,a.preparation,a.entry,a.opening,a.action,a.source,a.review,a.slot,a.destination,a.call_pet_source)
+        try:run(t,a.preparation,a.entry,a.opening,a.action,a.source,a.review,a.slot,a.destination,a.call_pet_source,a.failed_source)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure')}),flush=True)
