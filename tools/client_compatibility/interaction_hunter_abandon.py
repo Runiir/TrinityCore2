@@ -84,7 +84,7 @@ def run(t,preparation,entry,action,source=None,review_path=None):
         buttons=[c for c in rows if c.get('name') in (popup+'Button1',popup+'Button2') and c.get('enabled')]
         checks={'exact_disposable_pair':disposable_pair(pets(6)) and identities(retained,pets(6)),
             'native_test_pet_present':o.present(),'dialog':dialog(state),
-            'stock_yes_cancel':sorted(c['text'] for c in buttons)==['Cancel','Yes'],
+            'stock_okay_cancel':sorted(c['text'] for c in buttons)==['Cancel','Okay'],
             'no_abandon_request':not events(session,t.receipt['started_at'],time.time()),
             'resources':resources(inv.poll())==e['resources'],'saved_rows':saved(6)==e['entered_saved'],
             'position':state['world_position']==initial['world_position'],
