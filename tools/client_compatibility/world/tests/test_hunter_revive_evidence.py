@@ -367,7 +367,8 @@ def complete_fixture(trace=TRACE):
                 'input_isolation': {'actor': 'scout', 'host_activation_sent': False, 'display': ':3'}}}
     review = {'reviewed': True, 'control': 'Revive Pet', 'source': recon_ref, 'frame': recon['frame'],
         'fixture_source_sha256': prep_ref['sha256']}
-    cast['screen_review'] = put(str(Path(evidence.NAMES['recon']).with_name('review.json')), review)
+    cast['screen_review'] = {**put(str(Path(evidence.NAMES['recon']).with_name('review.json')), review),
+        'frame': deepcopy(recon['frame'])}
     return data, digests, tracking
 
 
@@ -376,6 +377,26 @@ def test_complete_synthetic_archived_source_chain_passes_without_ledger_admissio
     proof = evidence.proof(data, digests, tracking)
     assert proof['operation'] == 'pets.revive' and not proof['qualification_added']
     assert proof['closure_checks'] == 21 and proof['both_owned_clients_stopped']
+
+
+def test_actual_augmented_screen_review_shape_binds_its_exact_source_and_frame():
+    data, digests, tracking = complete_fixture()
+    screen = data[evidence.NAMES['cast']]['screen_review']
+    assert set(screen) == {'path','sha256','frame'}
+    assert screen['frame'] == data[evidence.NAMES['recon']]['frame']
+    assert evidence.proof(data, digests, tracking)['operation'] == 'pets.revive'
+
+
+@pytest.mark.parametrize('fault', ['frame','digest','unknown_key','missing_frame'])
+def test_augmented_screen_review_rejects_substitution_or_unknown_metadata(fault):
+    data, digests, tracking = complete_fixture()
+    screen = data[evidence.NAMES['cast']]['screen_review']
+    if fault == 'frame': screen['frame']['monitor']['pid'] += 1
+    elif fault == 'digest': digests[str(Path(evidence.NAMES['recon']).parent / screen['frame']['file'])] = '0'*64
+    elif fault == 'unknown_key': screen['unexpected'] = 'unreviewed'
+    elif fault == 'missing_frame': screen.pop('frame')
+    with pytest.raises(RuntimeError, match='screen review reference|reviewed Revive caption/frame'):
+        evidence.proof(data, digests, tracking)
 
 
 @pytest.mark.parametrize('failed_suffix', ['recon01','recon02'])

@@ -312,9 +312,13 @@ def proof(data, digests, tracking):
         cast['recon_source'] == ref(NAMES['recon']) and cast['native_session'] == recon['native_session'] == entry['native_session'] and
         closure['sources'] == [ref(NAMES[k]) for k in ('preparation', 'fixture', 'cast', 'park', 'finish', 'normalize')] and
         normalize['sources'] == [ref(NAMES[k]) for k in ('fixture', 'cast', 'park')], 'complete Revive source chain differs')
-    review = linked(cast['screen_review'])
+    screen = cast['screen_review']
+    require(set(screen) == {'path', 'sha256', 'frame'}, 'exact augmented Revive screen review reference differs')
+    review = linked({k: screen[k] for k in ('path', 'sha256')})
+    review_frame = screen['frame']
     require(review.get('reviewed') is True and review.get('control') == 'Revive Pet' and
-        review.get('source') == ref(NAMES['recon']) and review.get('frame') == recon['frame'] and
+        review.get('source') == ref(NAMES['recon']) and review.get('frame') == recon['frame'] == review_frame and
+        digests.get(str(Path(NAMES['recon']).parent / review_frame['file'])) == review_frame['sha256'] and
         review.get('fixture_source_sha256') == digests[NAMES['preparation']], 'exact reviewed Revive caption/frame differs')
     require(cast.get('input_sent') is True and cast.get('cast_input_sent') is True and cast.get('qualification_added') is False and
         closure.get('input_sent') is False and closure.get('qualification_added') is False and

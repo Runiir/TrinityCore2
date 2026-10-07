@@ -3,10 +3,10 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "450/916 qualified, 466 open. UI169 one actual whole Revive982 passes18 capture+17 restoration; normalpark4/originalfinish5/successnormalize pass. All6 offline, Wolf16health278/creator13481/active1 and namedHarnesswolf4 exact. Read-onlyclose01 failed rounded SQL FLOAT rest reconstruction; failedreceipt retained, no gameplay replay. Exact source-bound readonly precision5 captures saved168.58815002441406 from text168.588 after native1949s login accrual. Exact helper correction/independent review, close02/pause8, local+actualremote semantic proof and admission remain. Scout parked on HDMI-1; primary stopped. Final prior full4805/50.05sec passes; new pure corrections will be checked before publication. UI168 archive247106782bytes remoteintegrity verified/offloaded; failedwhole remains excluded. Native/bridge unchanged; scriptsblocked, originalCVar0 unrestored atstock1. Earlier gameplay/test failures retained in dossier; known unrelated missing053 DVC warning persists.",
+  "current": "450/916 qualified, 466 open pending actualremote UI169 proof. One whole ordinary Revive982 passes18 capture+17 restoration; normalpark4/originalfinish5/normalize/close02(21)/pause8 ALLPASS. BothownedclientsSTOPPED, all6offline, disposableWolf16health278/creator13481/active1 and namedHarnesswolf4 exact. ExactFLOAT65candidate/1inverse proves rest168.58815002441406 preserved withouttolerance/mutation. Failedclose01 and localproof01 retained; source/augmentedreview-schema corrections separatelyreviewed. Full4899pass/1archive-onlyskip51.10sec atpriorcodepin; finalpure174/auth and archive27/publishingpass. Actual localwholeproof02 passes one native/modern982 and rawsamepet dead-to-alive; noadmissionbefore streamedremote. Native/bridge unchanged, scriptsblocked/originalCVar0unrestored1. Known053 DVC warning persists; oldfailedUI167/UI168 archivesremoteverified/offloaded.",
   "queued": [
-    "Finish UI169 exact native binary-FLOAT rest proof, new read-onlyclose02 and parked scout pause; then local/actualremote whole Revive proof, scoped admission and exact DVC offload/sync. Do not replay Revive or alter failedclose01/UI167/UI168 failures.",
-    "remaining spellbook learn/unlearn and rank-resolution class variants; generic casting and general/class/professions tabs already have scoped qualification and must not be counted again; native-account fixture setup does not qualify modern character creation",
+    "Checkpoint/push UI169, verify actual streamedremote wholeRevive proof, then scoped pets.revive admission and exactdataoffload/DVC/git sync. No gameplay replay; failedclose01/localproof01 retained and excluded.",
+    "Next concrete open spellbook.learn_spell: ownedHunter6 BeastLore1462 FUTURESPELL\u2192known via one ordinary trainer40/Benjamin46983 spawn280678 purchase646 (money8708\u21928062), actualnative/modern learned plus stockbook transition, guarded offline exactnewrow/refund cleanup and restorednormalreentry. Needs source-bound UI169normalized/closed/pause continuation; oldpark creator883 differs from restored13481. No rank/unlearn or duplicate trainer/tab admission. Other learn/unlearn/rank classvariants remain open.",
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
     "macro action-bar drag cast edit and character-specific persistence",
@@ -376,13 +376,13 @@
     "reason": "user requested lower concurrent client resource use",
     "requested_stop_source": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui155/user_stop_primary01/episode.json",
     "scout_resource_pause": {
-      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui167/scout_revive_failed_pause01/episode.json",
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui169/scout_revive_pause01/episode.json",
       "checks": 8,
       "all_six_saved_snapshots_preserved": true
     },
-    "scout": "one owned scout parked on verified HDMI-1 while UI169 read-only closure is repaired; stop after passing closure",
+    "scout": "stopped after UI169 successful wholeRevive closure and resourcepause; relaunch one on HDMI-1 only for next approved live slice",
     "scout_closed_boundary": {
-      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui167/hunter_revive_failed_close01/episode.json",
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui169/hunter_revive_close02/episode.json",
       "checks": 21,
       "all_six_offline": true,
       "original_selected": "Harnesstwo",
@@ -391,7 +391,7 @@
         16
       ],
       "revive_input_sent": true,
-      "revive_failed_and_excluded": true,
+      "revive_whole_passed": true,
       "qualification_added": false
     }
   }
