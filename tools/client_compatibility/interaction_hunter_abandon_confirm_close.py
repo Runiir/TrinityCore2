@@ -22,12 +22,13 @@ def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment,
     old=prepared(t,preparation,True);paths=(entry,stage,confirm,park,finish,primary_stop)
     e,s,a,p,f,stop=[closed(v) for v in paths];d,lineage=verified_deployment(deployment,t.receipt['runtime'],relaunch)
     single=d.get('schema')==SINGLE_SCHEMA
+    native=d.get('schema')=='client442_stopped_native_tame_deployment_v1'
     deployed=deployment_runtime(lineage,t.receipt['runtime'],d)
     number=6
     if a.get('disposable_tame_source'):
         tame=Path(a['disposable_tame_source']['path'])
         if a['disposable_tame_source']!=bound(tame):raise RuntimeError('disposable Tame source changed')
-        number=disposable_number(closed(tame),a['retained_pet_before'],t.receipt['runtime']['worldserver'])
+        number=disposable_number(closed(tame),a['retained_pet_before'],t.receipt['runtime']['worldserver'],d if native else None)
         if a.get('disposable_pet_number')!=number:raise RuntimeError('disposable Abandon number differs')
     for v,n in ((e,9),(s,11),(a,16),(p,4),(f,5),(stop,8)):
         if len(v.get('checks',{}))!=n or not all(v['checks'].values()):raise RuntimeError('whole Abandon source checks differ')
@@ -38,11 +39,12 @@ def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment,
         any(v.get('actor')!=old['class_actor'] for v in (e,s,a,p)) or f.get('actor')!=old['origin_actor'] or
         not e['finished_at']<s['started_at']<s['finished_at']<a['started_at']<a['finished_at']<p['started_at']<p['finished_at']<f['started_at'] or
         stop.get('phase')!='user_requested_primary_client_stopped' or stop.get('before')!=stop.get('after') or
-        d.get('schema') not in (SCHEMA,SINGLE_SCHEMA) or not d.get('completed') or not d.get('finished_at') or
+        d.get('schema') not in (SCHEMA,SINGLE_SCHEMA,'client442_stopped_native_tame_deployment_v1') or not d.get('completed') or not d.get('finished_at') or
         d.get('primary_stop_source')!=bound(primary_stop) or d.get('native')!=t.receipt['runtime']['worldserver'] or
         d.get('after')!=t.receipt['runtime']['modern_world'] or
         d.get('scout_lifetime')!=(t.receipt['runtime']['client'] if lineage and 'pause' in lineage else deployed['client']) or
-        (not single and not lineage and d.get('before')!=stop['runtime']['modern_world']) or d.get('native')!=stop['runtime']['worldserver']):
+        (not single and not lineage and d.get('before')!=stop['runtime']['modern_world']) or
+        (d.get('native_before') if native else d.get('native'))!=stop['runtime']['worldserver']):
         raise RuntimeError('fresh Abandon, single-scout deployment or stopped primary lineage differs')
     with actor('primary'):primary_ok=lab.owned_process('client') is None and retained(1,1)==stop['after']
     current=pets(6);checks={**origin_checks(old),**protected(old),

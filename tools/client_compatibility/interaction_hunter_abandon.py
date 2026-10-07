@@ -20,7 +20,7 @@ from .interaction_macros import require
 from .observation.inventory import Inventory
 from .observation.journal import entries
 from .world.objects import INDEX
-from .hunter_disposable_tame import disposable_number,pair_preserved
+from .hunter_disposable_tame import deployed_number,pair_preserved
 
 
 def disposable_pair(rows):
@@ -44,12 +44,12 @@ def events(session,since,until):
         since<=p.get('time',0)<=until and p.get('name')=='CMSG_PET_ABANDON']
 
 
-def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None):
+def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None,deployment=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     e=entry_source(t,entry,session,preparation);retained=pets(6)
-    number=disposable_number(closed(tame_source),retained,t.receipt['runtime']['worldserver']) if tame_source else 6
+    number=deployed_number(t,tame_source,retained,deployment) if tame_source else 6
     frozen=pair_preserved if tame_source else identities
-    valid_pair=lambda rows: disposable_number(closed(tame_source),rows,t.receipt['runtime']['worldserver'])==number if tame_source else disposable_pair(rows)
+    valid_pair=lambda rows: deployed_number(t,tame_source,rows,deployment)==number if tame_source else disposable_pair(rows)
     if (t.fixture['guid'],t.fixture['class'],t.fixture['level'])!=(6,3,10) or not valid_pair(retained):
         raise RuntimeError(f'requires disposable Wolf{number} active and named Harnesswolf4 stored5')
     if not frozen(old['retained_class_pets'],retained) or not primary_absent():
@@ -140,12 +140,13 @@ def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','cancel'])
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);p.add_argument('--tame-source',type=Path);a=p.parse_args()
+    p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);p.add_argument('--tame-source',type=Path)
+    p.add_argument('--deployment',type=Path);a=p.parse_args()
     if a.action=='cancel' and (not a.source or not a.review):p.error('cancel requires whole dialog and fresh review')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:run(t,a.preparation,a.entry,a.action,a.source,a.review,a.tame_source)
+        try:run(t,a.preparation,a.entry,a.action,a.source,a.review,a.tame_source,a.deployment)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure','checks')}),flush=True)

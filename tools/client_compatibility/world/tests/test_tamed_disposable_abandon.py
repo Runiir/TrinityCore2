@@ -20,6 +20,33 @@ def test_disposable_number_is_bound_to_the_actual_tame_and_complete_named_pet():
     assert pair_preserved(source['retained_pet_after'],rows)
 
 
+def native_data():
+    source,rows,previous=data();native={'pid':2}
+    d={'schema':'client442_stopped_native_tame_deployment_v1','completed':True,'installed':True,
+        'finished_at':110,'native_restarted':True,'bridge_unchanged':True,'native_before':previous,'native':native,
+        'installation_checks':dict.fromkeys(range(9),True),'offline_baselines':{'6':{'pets':deepcopy(rows)}}}
+    return source,rows,native,d
+
+
+def test_stopped_native_restart_keeps_the_exact_tame_owned_disposable_identity():
+    assert disposable_number(*native_data())==8
+
+
+@pytest.mark.parametrize('fault',['unverified','unfinished','not_installed','restart','bridge','old_native','native','check','pets'])
+def test_native_restart_does_not_relax_pet_provenance(fault):
+    s,rows,n,d=native_data()
+    if fault=='unverified':d['schema']='other'
+    elif fault=='unfinished':d['completed']=False
+    elif fault=='not_installed':d['installed']=False
+    elif fault=='restart':d['native_restarted']=False
+    elif fault=='bridge':d['bridge_unchanged']=False
+    elif fault=='old_native':d['native_before']={}
+    elif fault=='native':d['native']={}
+    elif fault=='check':d['installation_checks'][0]=False
+    else:d['offline_baselines']['6']['pets']=[]
+    with pytest.raises(RuntimeError):disposable_number(s,rows,n,d)
+
+
 @pytest.mark.parametrize('fault',['failed','unfinished','changed_native','wrong_actor','wrong_class','check',
     'missing_check','replayed','armed','qualification','number','named_active','named_name','named_health',
     'new_owner','new_entry','new_creation_spell','new_slot','extra_pet','missing_pet'])

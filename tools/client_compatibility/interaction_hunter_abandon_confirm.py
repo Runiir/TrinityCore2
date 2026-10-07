@@ -22,7 +22,7 @@ from .observation.inventory import Inventory
 from .observation.journal import entries
 from .world.gameobjects import modern_guid
 from .world.objects import INDEX
-from .hunter_disposable_tame import disposable_number,pair_preserved
+from .hunter_disposable_tame import deployed_number,pair_preserved
 
 
 @contextmanager
@@ -48,10 +48,10 @@ def capture(t,session,guid,number=6,tame_source=None):
         path.unlink();t.receipt['capture_disarmed']=True;t.persist()
 
 
-def run(t,preparation,entry,source,review_path,tame_source=None):
+def run(t,preparation,entry,source,review_path,tame_source=None,deployment=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     e=entry_source(t,entry,session,preparation);s=closed(source);before=pets(6)
-    number=disposable_number(closed(tame_source),before,t.receipt['runtime']['worldserver']) if tame_source else 6
+    number=deployed_number(t,tame_source,before,deployment) if tame_source else 6
     frozen=pair_preserved if tame_source else identities
     if ((t.fixture['guid'],t.fixture['class'],t.fixture['level'])!=(6,3,10) or (not tame_source and not disposable_pair(before)) or
         not frozen(old['retained_class_pets'],before) or not primary_absent() or
@@ -114,11 +114,11 @@ def run(t,preparation,entry,source,review_path,tame_source=None):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('preparation','entry','source','review','output'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--tame-source',type=Path);a=p.parse_args()
+    p.add_argument('--tame-source',type=Path);p.add_argument('--deployment',type=Path);a=p.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:run(t,a.preparation,a.entry,a.source,a.review,a.tame_source)
+        try:run(t,a.preparation,a.entry,a.source,a.review,a.tame_source,a.deployment)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure','checks')}),flush=True)

@@ -73,11 +73,18 @@ def verified_deployment(path,runtime,relaunch=None):
     else:
         from .scout_pause_lineage import verified,SCHEMA
         if d.get('schema')==SCHEMA:lineage=verified(d,path,runtime)
+        elif d.get('schema')=='client442_stopped_native_tame_deployment_v1':
+            from .stopped_native_lineage import verified as native_verified
+            lineage=native_verified(d,path,runtime)
     return d,lineage
 
 
 def deployment_runtime(lineage,runtime,deployment):
     if not lineage:return runtime
+    if 'native_pause' in lineage:
+        from .stopped_native_lineage import transition as native_transition
+        native_transition(deployment,runtime,lineage['native_pause'],lineage['restored'],lineage['refs'])
+        return runtime
     if 'pause' in lineage:
         from .scout_pause_lineage import transition as paused_transition
         return paused_transition(deployment,runtime,**lineage)

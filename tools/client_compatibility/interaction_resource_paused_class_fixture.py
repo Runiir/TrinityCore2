@@ -14,6 +14,7 @@ from .interaction_paused_scout_bridge_deploy import current,SCHEMA
 
 def continuity(t,old,park,finish,pause,deployment,preparation_sha):
     previous=old.get('runtime',{});now=t.receipt['runtime'];fixture=old.get('class_actor',{})
+    native=deployment.get('schema')=='client442_stopped_native_tame_deployment_v1'
     if (tuple(fixture.get(k) for k in ('guid','character_name','race','class','level','account_id'))!=
         (6,'Harnesshunt',1,3,10,2) or old.get('phase')!='await_owned_class_lobby_review' or
         old.get('actor')!=t.fixture or old.get('origin_actor')!=t.fixture or t.fixture.get('guid')!=2 or
@@ -26,12 +27,16 @@ def continuity(t,old,park,finish,pause,deployment,preparation_sha):
         pause.get('phase')!='parked_scout_resource_paused' or len(pause.get('checks',{}))!=8 or
         not all(pause['checks'].values()) or pause.get('before')!=pause.get('after')):
         raise RuntimeError('retained Hunter pause and original restoration chain differs')
-    if (deployment.get('schema')!=SCHEMA or deployment.get('completed') is not True or
-        not deployment.get('finished_at') or deployment.get('native_unchanged') is not True or
+    lifetime=(deployment.get('native_before')==previous.get('worldserver') and
+        now.get('worldserver')!=previous.get('worldserver') and deployment.get('native_restarted') is True and
+        deployment.get('bridge_unchanged') is True and now.get('modern_world')==previous.get('modern_world')) if native else (
+        deployment.get('schema')==SCHEMA and deployment.get('native_unchanged') is True and
+        now.get('worldserver')==previous.get('worldserver') and now.get('modern_world')!=previous.get('modern_world'))
+    if (not lifetime or deployment.get('completed') is not True or
+        not deployment.get('finished_at') or
         deployment.get('primary_stopped') is not True or deployment.get('parked_scout') is not True or
-        deployment.get('native')!=previous.get('worldserver') or now.get('worldserver')!=previous.get('worldserver') or
+        deployment.get('native')!=now.get('worldserver') or
         deployment.get('before')!=previous.get('modern_world') or deployment.get('after')!=now.get('modern_world') or
-        now.get('modern_world')==previous.get('modern_world') or
         deployment.get('previous_scout')!=previous.get('client') or deployment.get('scout_lifetime')!=now.get('client') or
         now.get('client')==previous.get('client') or deployment.get('offline_baselines')!=pause.get('after') or
         deployment.get('primary_stop_source')!=pause.get('primary_stop_source') or
@@ -48,7 +53,12 @@ def continuity(t,old,park,finish,pause,deployment,preparation_sha):
 def prepare(t,preparation,parked,origin_finish,pause_path,directory):
     sources=[preparation,parked,origin_finish,pause_path]
     old,park,finish,pause=[closed(p) for p in sources]
-    deployment=current(directory,True);continuity(t,old,park,finish,pause,deployment,lab.sha256(preparation))
+    deployment=current(directory,True)
+    native=deployment.get('schema')=='client442_stopped_native_tame_deployment_v1'
+    if native:
+        from .scout_relaunch_lineage import verified_deployment
+        verified_deployment(directory/'deployment.json',t.receipt['runtime'])
+    continuity(t,old,park,finish,pause,deployment,lab.sha256(preparation))
     if deployment['source']!=bound(pause_path):raise RuntimeError('single-scout deployment is bound to another pause')
     attempt=deployment['parked_reconnect_attempt']['scout'];path=Path(attempt.get('episode','')).resolve()
     if not path.is_relative_to(directory.parent) or lab.sha256(path)!=attempt.get('sha256'):
@@ -59,7 +69,7 @@ def prepare(t,preparation,parked,origin_finish,pause_path,directory):
         not all(restored['restoration_checks'].values()) or restored.get('all_offline_snapshot')!=pause['after'] or
         restored.get('session')!=attempt.get('session')):
         raise RuntimeError('new scout has no complete bound offline restoration')
-    checks=origin_checks(old);checks.update(protected(old));checks.update(
+    checks=origin_checks({**old,'runtime':t.receipt['runtime']} if native else old);checks.update(protected(old));checks.update(
         retained_hunter=True,complete_six_actor_snapshot=True,primary_stopped=True,new_scout_restored=True)
     if not all(checks.values()):raise RuntimeError('original or protected saved state changed')
     sources+=[directory/'deployment.json',path]

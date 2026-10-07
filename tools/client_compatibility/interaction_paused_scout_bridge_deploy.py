@@ -88,6 +88,9 @@ def install(directory,pause_path,tests_path):
 
 def current(directory,require_client=False):
     report=json.loads((directory/'deployment.json').read_text());e=pause_source(Path(report['source']['path']))
+    if report.get('schema')=='client442_stopped_native_tame_deployment_v1':
+        from .interaction_stopped_native_tame_deploy import current as native_current
+        return native_current(directory,require_client)
     primary_absent()
     if (report.get('schema')!=SCHEMA or report.get('source')!=bound(Path(report['source']['path'])) or
         report.get('primary_stop_source')!=e['primary_stop_source'] or report.get('installed') is not True or

@@ -41,15 +41,16 @@ def successful_chain(old,runtime,episodes,refs,stop,deployment,primary_ref,relau
         episodes['stored'].get('pet_command_sent') is not False):
         raise RuntimeError('fresh Tame input/capture boundary differs')
     deployed=deployment_runtime(relaunch,runtime,deployment)
+    native=deployment.get('schema')=='client442_stopped_native_tame_deployment_v1'
     if (stop.get('phase')!='user_requested_primary_client_stopped' or
         len(stop.get('checks',{}))!=8 or not all(v is True for v in stop['checks'].values()) or
-        stop.get('before')!=stop.get('after') or deployment.get('schema') not in (DEPLOYMENT_SCHEMA,SINGLE_SCHEMA) or
+        stop.get('before')!=stop.get('after') or deployment.get('schema') not in (DEPLOYMENT_SCHEMA,SINGLE_SCHEMA,'client442_stopped_native_tame_deployment_v1') or
         deployment.get('completed') is not True or not deployment.get('finished_at') or
         deployment.get('primary_stop_source')!=primary_ref or
         deployment.get('native')!=runtime['worldserver'] or deployment.get('after')!=runtime['modern_world'] or
         deployment.get('scout_lifetime')!=(runtime['client'] if relaunch and 'pause' in relaunch else deployed['client']) or
         (deployment.get('schema')==DEPLOYMENT_SCHEMA and not relaunch and deployment.get('before')!=stop['runtime']['modern_world']) or
-        deployment.get('native')!=stop['runtime']['worldserver'] or
+        (deployment.get('native_before') if native else deployment.get('native'))!=stop['runtime']['worldserver'] or
         set(deployment.get('parked_reconnect_attempt',{}))!={'scout'} or
         deployment['parked_reconnect_attempt']['scout'].get('completed') is not True):
         raise RuntimeError('fresh Tame stopped-primary deployment lineage differs')
