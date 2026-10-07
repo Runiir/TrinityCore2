@@ -63,11 +63,13 @@ def run(t,preparation,entry,action,before_path=None,cast_path=None):
             raise RuntimeError('requires the whole same-entry baseline and single captured Tame')
         wire=prove(cast,before['public_stable'],probe)
         t.receipt.update(before_source=bound(before_path),cast_source=bound(cast_path))
-    checks={'native_saved_pets':pets(6)==retained,'resources':resources(inv.poll())==e['resources'],
+    current=pets(6)
+    checks={'native_saved_pets':current==retained if action=='before' else retained_tame_pets(cast,current),
+        'resources':resources(inv.poll())==e['resources'],
         'saved_rows':saved(6)==e['entered_saved'],'passive_observer':page.get('observer_version')==145,
         'ui_clean':not page.get('lua_errors') and not page.get('blocked_actions'),
         'stable_cache':True,**protected(old)}
-    t.receipt.update(checks=checks,public_stable=probe,frame=frame,wire_projection=wire,
+    t.receipt.update(checks=checks,public_stable=probe,frame=frame,wire_projection=wire,retained_pet_after=current,
         completed=all(checks.values()),phase='owned_tame_stable_'+('baseline' if action=='before' else 'projection'),
         qualified_scope='Passive public stable-cache and actual modern Tame projection proof only; admission requires full closure and remote evidence.')
     if not all(checks.values()):raise RuntimeError('stable projection preservation differs')

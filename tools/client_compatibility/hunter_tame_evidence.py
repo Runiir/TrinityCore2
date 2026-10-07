@@ -13,7 +13,7 @@ NAMES={k:'hunter_tame_'+v+'/episode.json' for k,v in (
     ('park','park01'),('finish','original_finish01'))}
 CLOSURE='hunter_tame_success_close01/episode.json'
 BEFORE='hunter_tame_stable_before02/episode.json'
-AFTER='hunter_tame_stable_after02/episode.json'
+AFTER='hunter_tame_stable_after03/episode.json'
 
 
 def proof(data,digests,tracking):
@@ -65,6 +65,8 @@ def proof(data,digests,tracking):
         'stable projection chronology differs')
     wire=prove(cast,before['public_stable'],after['public_stable'])
     require(wire==after['wire_projection'],'actual recorded stable projection differs')
+    require(retained_tame_pets(cast,after['retained_pet_before']) and
+        retained_tame_pets(cast,after['retained_pet_after']),'passive read pet preservation differs')
     for key,row in [*[(NAMES[k],v) for k,v in rows.items()],(BEFORE,before),(AFTER,after),(CLOSURE,c)]:
         require(row.get('custom_script_permission')=='blocked_by_user' and row.get('model') is None,
             'code controller or script boundary differs')
