@@ -147,7 +147,7 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
             require(click_case(t,'diagnostic.hunter.stable_service','Select the observed native stable service.',
                 lambda c:c.get('text','').lower()=="i'd like to stable my pet here.",
                 lambda b,a,s:{'status':'stable_service_selected' if s and not a.get('lua_errors') and
-                    not a.get('blocked_actions') else 'client_or_protocol_failure'}),'stable_service_selected')
+                    not a.get('blocked_actions') else 'client_or_protocol_failure'},hold=1.2),'stable_service_selected')
         journal=lab.ROOT/'evidence/owned_stable_request_packets.jsonl'
         packets=[p for p in entries(journal) if p.get('session')==session and p.get('time',0)>=started] if journal.is_file() else []
         t.receipt.update(capture_packets=packets,response_frame=frame);t.persist()

@@ -109,7 +109,7 @@ def controls(trial):
     raise RuntimeError('automatic control observation page deadline exceeded')
 
 
-def click_case(trial,case_id,goal,target,oracle,additional=None,await_state=None):
+def click_case(trial,case_id,goal,target,oracle,additional=None,await_state=None,hold=.15):
     rows=controls(trial)
     candidates=[c for c in rows if c['enabled'] and c['kind'] in ['Button','CheckButton','MenuItem','ClickFrame'] and
         (target(c) or c['text'] in ['Cancel','Okay','New','Save','General Macros','Character-Specific Macros','Spellbook','Professions','Alchemy','Tailoring','Cooking','First Aid','Archaeology'])]
@@ -122,7 +122,7 @@ def click_case(trial,case_id,goal,target,oracle,additional=None,await_state=None
     for i,c in enumerate(offered):
         key='button_'+str(i)
         if c is selected:target_key=key
-        actions[key]={'kind':'click','value':point(c),
+        actions[key]={'kind':'click','value':point(c),'hold':hold,
             'description':f"Click visible {c['kind']} {c['text'] or c['name']}."+(' Row: '+c['context']+'.' if c.get('context') else '')}
     actions['escape']={'kind':'key','value':'Escape','description':'Press Escape to close the current dialog.'}
     if len(actions)<3:actions['spellbook']={'kind':'key','value':'p','description':'Press P to toggle the spellbook.'}
