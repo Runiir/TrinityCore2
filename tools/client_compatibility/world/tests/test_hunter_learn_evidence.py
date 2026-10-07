@@ -24,7 +24,7 @@ from tools.client_compatibility.world.buffer import Writer
 from tools.client_compatibility.world.objects import INDEX
 from tools.client_compatibility.world.tests.test_hunter_learn_trainer import trainer_fixture, SPAWN_BYTES
 from tools.client_compatibility.world.tests.test_hunter_learn_trainer import (object_body as trainer_object_body,
-    packed_guid as trainer_packed_guid, teleport_body as trainer_teleport_body)
+    packed_guid as trainer_packed_guid, teleport_body as trainer_teleport_body, facing_body as trainer_facing_body)
 from tools.client_compatibility import hunter_learn_trainer as trainer_evidence
 from tools.client_compatibility import hunter_learn_reconciliation as reconciliation
 from tools.client_compatibility.world.tests.test_hunter_learn_reconciliation import failed_case, navigation_case
@@ -441,6 +441,10 @@ def actual_fixture(same_owner=False):
         known_body = struct.pack("<BH", 1, 2) + struct.pack("<IhIhH", 1515, 0, 79682, 0, 0)
         known_packet = {**packet("from_native", "SMSG_SEND_KNOWN_SPELLS", known_body, start + .25), "session": session}
         tracking["packets"].extend([*login, known_packet, *pet_packets])
+        tracking["events"].extend({"event": "native_packet", "session": session,
+            "direction": row["direction"], "name": row["name"],
+            "bytes": len(bytes.fromhex(row["body"])), "time": row["time"] - .00002}
+            for row in pet_packets)
         tracking["events"].append({"event": "instance_authenticated", "session": "physical" + str(index),
                                     "account_id": 2, "time": start + .05})
         known.append({"login_known_spell_ids": [1515, 79682], "native_known_spell_packet": {
@@ -465,12 +469,48 @@ def actual_fixture(same_owner=False):
     tracking['events'].extend({'event': 'native_packet', 'session': SESSION, 'direction': row['direction'],
         'name': row['name'], 'bytes': len(bytes.fromhex(row['body'])), 'time': row['time'] - .00002}
         for row in trainer_packets)
+    # Fixture assembly spans two logins; real journal lanes arrive in order.
+    tracking['packets'].sort(key=lambda row: row['time'])
+    tracking['events'].sort(key=lambda row: row['time'])
     return purchase, entries, tracking, known
 
 
 def test_actual_journals_bind_direct_delivery_to_two_fresh_owned_logins_and_modern_train():
     purchase, entries, tracking, known = actual_fixture()
     assert evidence.actual_packets(purchase, entries, tracking, known) == learn_packets()
+
+
+def crowded_actual_fixture():
+    purchase, entries, tracking, known = actual_fixture()
+    facing = next(p for p in purchase['trainer_identity']['wire_packets']
+        if p['name'] == 'SMSG_ON_MONSTER_MOVE')
+    # Another creature's same-size packet has already consumed the earlier
+    # metadata row, even though both are inside the old 0.1-second search.
+    other = packet('from_native', facing['name'],
+        trainer_facing_body(guid=contract.TRAINER_GUID + 1), facing['time'] - .0006)
+    tracking['packets'].append(other)
+    tracking['events'].append({'event': 'native_packet', 'session': SESSION,
+        'direction': other['direction'], 'name': other['name'],
+        'bytes': len(bytes.fromhex(other['body'])), 'time': other['time'] - .00002})
+    tracking['packets'].sort(key=lambda row: row['time'])
+    tracking['events'].sort(key=lambda row: row['time'])
+    return purchase, entries, tracking, known
+
+
+def test_busy_environmental_metadata_binds_complete_lane_without_borrowing_prior_creature():
+    purchase, entries, tracking, known = crowded_actual_fixture()
+    assert evidence.actual_packets(purchase, entries, tracking, known) == learn_packets()
+
+
+@pytest.mark.parametrize('direction,name', [('from_client', 'CMSG_TRAINER_BUY_SPELL'),
+    ('to_native', 'CMSG_TRAINER_BUY_SPELL'), ('from_native', 'SMSG_LEARNED_SPELL'),
+    ('to_client', 'SMSG_LEARNED_SPELLS')])
+def test_busy_environmental_binding_keeps_transaction_metadata_strictly_unique(direction, name):
+    purchase, entries, tracking, known = crowded_actual_fixture()
+    metadata = next(row for row in tracking['events'] if row.get('name') == name and row.get('direction') == direction)
+    tracking['events'].append({**metadata, 'time': metadata['time'] - .00001})
+    with pytest.raises(RuntimeError, match='purchase/learn metadata attribution'):
+        evidence.actual_packets(purchase, entries, tracking, known)
 
 
 def retarget_purchase_session(purchase, tracking, new_session):
@@ -548,17 +588,18 @@ def test_archive_claims_cannot_replace_owned_raw_packets_fresh_instances_and_met
     elif fault == "no_instance":
         tracking["events"] = [row for row in tracking["events"] if row["event"] != "instance_authenticated"]
     elif fault == "shared_instance":
-        tracking["events"][1]["session"] = tracking["events"][0]["session"]
+        instances = [row for row in tracking["events"] if row["event"] == "instance_authenticated"]
+        instances[1]["session"] = instances[0]["session"]
     elif fault == "wrong_account":
-        tracking["events"][0]["account_id"] = 1
+        next(row for row in tracking["events"] if row["event"] == "instance_authenticated")["account_id"] = 1
     elif fault == "missing_metadata":
-        tracking["events"].pop()
+        tracking["events"].remove(next(row for row in tracking["events"] if row.get("name") == "SMSG_TRAINER_LIST"))
     elif fault == "wrong_metadata_bytes":
-        tracking["events"][-1]["bytes"] += 1
+        next(row for row in tracking["events"] if row.get("name") == "SMSG_TRAINER_LIST")["bytes"] += 1
     elif fault == "foreign_metadata":
-        tracking["events"][-1]["session"] = "foreign"
+        next(row for row in tracking["events"] if row.get("name") == "SMSG_TRAINER_LIST")["session"] = "foreign"
     else:
-        tracking["events"].append(deepcopy(tracking["events"][-1]))
+        tracking["events"].append(deepcopy(next(row for row in tracking["events"] if row.get("name") == "SMSG_TRAINER_LIST")))
     with pytest.raises((RuntimeError, ValueError)):
         evidence.actual_packets(purchase, entries, tracking, known)
 

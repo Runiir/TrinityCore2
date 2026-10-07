@@ -28,6 +28,7 @@ from .world.buffer import Reader
 from .hunter_learn_pet import reload_proof
 from .hunter_learn_trainer import validate_trainer_identity, SPAWN_SOURCE
 from .hunter_learn_reconciliation import validate_observation_reconciliation
+from .hunter_learn_metadata import NATIVE_AUTHORITY_NAMES, native_authority_metadata
 
 
 SCHEMA = 'client442_owned_hunter_learn_closure_v1'
@@ -67,8 +68,6 @@ PACKET_NAMES = frozenset(('CMSG_TRAINER_BUY_SPELL', 'SMSG_TRAINER_BUY_FAILED',
     'SMSG_ON_MONSTER_MOVE', 'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT',
     'MSG_MOVE_TELEPORT', 'SMSG_MOVE_TELEPORT', 'CMSG_MOVE_TELEPORT_ACK', 'MSG_MOVE_TELEPORT_ACK',
     'SMSG_TRANSFER_PENDING', 'SMSG_NEW_WORLD', 'CMSG_WORLD_PORT_RESPONSE', 'MSG_MOVE_WORLDPORT_ACK'))
-NATIVE_AUTHORITY_NAMES = frozenset(('SMSG_UPDATE_OBJECT', 'SMSG_DESTROY_OBJECT', 'SMSG_TRAINER_LIST',
-    'SMSG_ON_MONSTER_MOVE', 'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT'))
 TRACKING_MEMBERS = ('tracking/packets.jsonl', 'tracking/events.jsonl')
 # The inspected storage implementation is unchanged from accepted UI169.
 FLOAT_SOURCES = {
@@ -716,7 +715,10 @@ def actual_packets(purchase, entries, tracking, known_receipts=()):
                 observation.get('session') == session and observation.get('time') == known[0]['time'] and
                 observation.get('initial_login') == initial, 'receipt login authority differs from exact actual native-known packet')
     require(len(set(instances)) == 2, 'restored reentry did not establish a fresh physical instance')
-    for packet in [modern[0], *learns, *identity['wire_packets']]:
+    # Direct requests and learned delivery keep their unique metadata witness.
+    # Busy environmental traffic instead follows the logger's complete ordered
+    # native lane, including preceding packets for other nearby creatures.
+    for packet in [modern[0], *learns]:
         event_session = packet['session'] if packet['direction'] in ('from_native', 'to_native') else instances[0]
         metadata = [e for e in events if e.get('session') == event_session and e.get('name') == packet['name'] and
             e.get('direction') == packet['direction'] and e.get('bytes') == len(bytes.fromhex(packet['body'])) and
@@ -724,6 +726,7 @@ def actual_packets(purchase, entries, tracking, known_receipts=()):
         require(len(metadata) == 1 and metadata[0].get('event') ==
             ('native_packet' if packet['direction'] in ('from_native', 'to_native') else 'modern_packet'),
             'actual purchase/learn metadata attribution differs')
+    native_authority_metadata(wire, events, identity['wire_packets'], session=purchase['native_session'])
     return learns
 
 
