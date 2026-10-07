@@ -11,9 +11,10 @@ from .interaction_hunter_fixture import protected
 from .interaction_hunter_stable_pair import identities
 from .interaction_hunter_stable_slots import bound
 from .interaction_hunter_tame_stage import NAMES
+from .interaction_primary_combat_reentry import retained
 
 
-def close(t,preparation,entry,forward,forward_call,back,back_call,park,finish,deployment):
+def close(t,preparation,entry,forward,forward_call,back,back_call,park,finish,deployment,primary_stop=None):
     old=prepared(t,preparation,True)
     paths=(entry,forward,forward_call,back,back_call,park,finish)
     entered,m1,c1,m2,c2,p,f=[closed(path) for path in paths]
@@ -63,9 +64,27 @@ def close(t,preparation,entry,forward,forward_call,back,back_call,park,finish,de
         checks['no_temporary_tame_pose_rows']=not q.fetchall()
     t.receipt['scout_frame']=shot(t.out/'scout_offline.png')
     with actor('primary'):
-        checks['primary_lifetime']=identity('client')==d['client_lifetimes']['primary']
-        t.receipt['primary_frame']=shot(t.out/'primary_offline.png')
-    t.receipt.update(sources=[bound(path) for path in (preparation,*paths,deployment)],checks=checks,
+        if primary_stop:
+            stopped=closed(primary_stop)
+            if (stopped.get('phase')!='user_requested_primary_client_stopped' or
+                stopped.get('action')!='stop_owned_primary_client' or stopped.get('input_sent') is not False or
+                stopped.get('actor',{}).get('guid')!=1 or
+                stopped.get('deployment_source')!=bound(deployment) or
+                stopped.get('runtime',{}).get('worldserver')!=d['native'] or
+                stopped.get('runtime',{}).get('modern_world')!=d['after'] or
+                stopped.get('runtime',{}).get('client')!=d['client_lifetimes']['primary'] or
+                len(stopped.get('checks',{}))!=8 or not all(stopped['checks'].values()) or
+                not stopped['finished_at']<m1['started_at'] or
+                stopped.get('before')!=stopped.get('after') or
+                stopped.get('after')!=d['offline_baselines']['primary']):
+                raise RuntimeError('exact user-requested primary shutdown source differs')
+            checks['primary_intentionally_stopped']=lab.owned_process('client') is None and retained(1,1)==stopped['after']
+            t.receipt['primary_stop_source']=bound(primary_stop)
+        else:
+            checks['primary_lifetime']=identity('client')==d['client_lifetimes']['primary']
+            t.receipt['primary_frame']=shot(t.out/'primary_offline.png')
+    sources=(preparation,*paths,deployment)+((primary_stop,) if primary_stop else ())
+    t.receipt.update(sources=[bound(path) for path in sources],checks=checks,
         input_sent=False,qualification_added=False,retained_pets=retained,
         phase='fresh_occupied_pair_parked_boundary',completed=all(checks.values()),
         qualified_scope='Fresh occupied swap closed preservation only; inventory admission requires actual remote proof.')
@@ -76,11 +95,12 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     for key in ('preparation','entry','forward','forward-call','back','back-call','park','finish','deployment','output'):
         parser.add_argument('--'+key,type=Path,required=True)
+    parser.add_argument('--primary-stop',type=Path,help='Exact closed user-requested offline primary shutdown')
     a=parser.parse_args()
     with actor('scout'):
         t=Trial(a.output,controller='code');t.receipt.update(custom_script_permission='blocked_by_user',
                                                           softTargetInteract=SCRIPT_BOUNDARY)
-        try:close(t,a.preparation,a.entry,a.forward,a.forward_call,a.back,a.back_call,a.park,a.finish,a.deployment)
+        try:close(t,a.preparation,a.entry,a.forward,a.forward_call,a.back,a.back_call,a.park,a.finish,a.deployment,a.primary_stop)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure','checks')}),flush=True)
