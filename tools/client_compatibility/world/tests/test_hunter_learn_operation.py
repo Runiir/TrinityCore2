@@ -83,6 +83,97 @@ def test_staging_rolls_back_world_rows_before_host_teleport_on_any_precommit_fai
     assert not any(c.startswith('tele ') or c.startswith('reload ') for c in calls)
 
 
+@pytest.mark.parametrize('fault', ['none', 'public_xy', 'native_height', 'native_translation',
+    'native_nan', 'native_infinite', 'missing_ack', 'map'])
+def test_staging_uses_native_landing_and_retains_public_zero_height_diagnostics(monkeypatch, fault):
+    import math
+    from tools.client_compatibility.world.buffer import Writer, player_high
+    from tools.client_compatibility.world import transfers
+    original = [-9465.12, 50.9323, 56.8473, 4.58812, 1 if fault == 'map' else 0]
+    baseline = {'saved': {'spells': deepcopy(operation.BASE_SPELLS)}, 'resources': {'money': 8708}}
+    x, y, z, facing = pose.TRAINER_ROW[4:8]
+    landing = [x + 3 * math.cos(facing), y + 3 * math.sin(facing), z, (facing + math.pi) % math.tau, 0]
+    state = {'target': {'name': pose.TRAINER_NAME, 'visible': True},
+        'world_position': [landing[0] + (2 if fault == 'public_xy' else 0), landing[1], 0, 0],
+        'lua_errors': {}, 'blocked_actions': {}}
+    frame = {'file': 'hunter_learn_trainer_staged.png', 'movement': {'dead': False, 'in_combat': False, 'speed': 0}}
+    commands, persisted, inserted, reads = [], [], {}, []
+    class Cursor:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def execute(self, query, args=None):
+            self.query = query
+            if query.startswith('INSERT'): inserted[args[0]] = list(args)
+        def fetchone(self):
+            if 'name IN' in self.query: return None
+            if 'MAX(id)' in self.query: return [100]
+            if 'position_x,position_y' in self.query: return original
+            raise AssertionError(self.query)
+    class Connection:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def cursor(self): return Cursor()
+        def begin(self): pass
+        def commit(self): pass
+        def rollback(self): raise AssertionError('fixture preparation must commit before the captured teleport')
+    class Trial:
+        def __init__(self):
+            self.receipt = {'runtime': {'worldserver': {'pid': 1}}, 'native_session': 'hunter'}
+        def observe(self, label): return deepcopy(state), deepcopy(frame)
+        def execute(self, action):
+            assert action == {'kind': 'chat', 'value': '/targetexact ' + pose.TRAINER_NAME}
+        def persist(self): persisted.append(deepcopy(self.receipt))
+    def native_teleport(height):
+        # Native near-teleport GUID6, no vehicle/transport, sequence11.
+        w = Writer()
+        for i in (6, 0, 3, 2): w.bits(i == 0, 1)
+        for _ in range(6): w.bits(0, 1)
+        return w.pack('Iff', 11, landing[0], landing[3]).pack('f', height).raw(b'\x07').pack('f', landing[1]).finish()
+    height = float('nan') if fault == 'native_nan' else float('inf') if fault == 'native_infinite' else (
+        z + (2 if fault in ('native_height', 'native_translation') else 0))
+    native = native_teleport(height)
+    owner = SimpleNamespace(character={'guid': 6})
+    modern_source = native_teleport(z) if fault == 'native_translation' else native
+    modern_name, modern = transfers.response(owner, 'MSG_MOVE_TELEPORT', modern_source)
+    client_ack = Writer().guid(6, player_high()).pack('II', 11, 123).finish()
+    native_ack_name, native_ack = transfers.request(owner, 'CMSG_MOVE_TELEPORT_ACK', client_ack)
+    packets = [{'session': 'hunter', 'time': stamp, 'direction': direction, 'name': name, 'body': body.hex()}
+        for stamp, direction, name, body in (
+            (101, 'from_native', 'MSG_MOVE_TELEPORT', native), (101.01, 'to_client', modern_name, modern),
+            (101.02, 'from_client', 'CMSG_MOVE_TELEPORT_ACK', client_ack), (101.03, 'to_native', native_ack_name, native_ack))]
+    if fault == 'missing_ack': packets.pop()
+    trial = Trial()
+    monkeypatch.setattr(pose.lab, 'connection', Connection)
+    monkeypatch.setattr(pose.lab, 'server_command', commands.append)
+    monkeypatch.setattr(pose, 'native_prerequisites', lambda: {'sha256': 'pinned'})
+    monkeypatch.setattr(pose, 'saved', lambda _: reads.append('saved') or deepcopy(baseline['saved']))
+    monkeypatch.setattr(pose, 'resources', lambda _: reads.append('resources') or deepcopy(baseline['resources']))
+    monkeypatch.setattr(pose, 'protected', lambda _: reads.append('protected') or {'protected': True})
+    monkeypatch.setattr(pose, 'pose', lambda: original)
+    monkeypatch.setattr(pose, 'teleport_row', lambda q, number: inserted[number])
+    monkeypatch.setattr(pose, 'entries', lambda _: deepcopy(packets))
+    stamps = iter((100, 102))
+    monkeypatch.setattr(pose.time, 'time', lambda: next(stamps))
+    monkeypatch.setattr(pose.time, 'sleep', lambda _: None)
+    if fault == 'none':
+        fixture, actual, actual_frame = pose.stage(trial, {}, object(), baseline)
+        assert actual == state and actual_frame == frame and fixture['landing'] == landing
+        assert all(trial.receipt['staging_checks'].values())
+        assert trial.receipt['staging_teleport']['native_teleport'] == packets[0]
+        assert trial.receipt['staging_teleport']['map'] == 0
+        assert abs(trial.receipt['staging_teleport']['native_position'][2] - z) < .001
+    else:
+        with pytest.raises(RuntimeError, match='public_xy' if fault == 'public_xy' else 'native_xyz_map_ack'):
+            pose.stage(trial, {}, object(), baseline)
+        assert trial.receipt['staging_checks']['public_xy'] is (fault != 'public_xy')
+        assert trial.receipt['staging_checks']['native_xyz_map_ack'] is (fault == 'public_xy')
+        assert all(trial.receipt['staging_checks'][k] for k in ('saved_rows', 'resources', 'protected_actors', 'ui_clean'))
+    assert persisted[-1]['state'] == state and persisted[-1]['frame'] == frame
+    assert persisted[-1]['staging_checks'] == trial.receipt['staging_checks']
+    assert persisted[-1]['staging_packets'] == packets and reads.count('saved') == 2
+    assert commands == ['saveall', 'reload game_tele', 'tele name Harnesshunt ' + pose.NAMES[1]]
+
+
 @pytest.mark.parametrize('packet', [None, 'CMSG_TRAINER_BUY_SPELL', 'SMSG_LEARNED_SPELL',
     'SMSG_LEARNED_SPELLS', 'CMSG_SET_ACTION_BUTTON'])
 def test_zero_request_train_failure_settles_from_native_facts_without_replaying_intent(monkeypatch, packet):
