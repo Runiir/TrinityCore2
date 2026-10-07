@@ -16,6 +16,8 @@ from .interaction_observation import read_page
 from .observation.inventory import Inventory
 from .observation.transport import Observer
 from .world.objects import INDEX
+from .hostile_avoidance import visible_hostiles,clear
+from .ground_navigation import ground_point
 
 
 NAMES=('TC442HunterTameRestore','TC442HunterTameTarget')
@@ -49,6 +51,33 @@ def existing_wolf(wolf):
         rows=q.fetchall()
     if len(rows)!=1 or dict(zip(keys,rows[0]))!=wolf:
         raise RuntimeError('existing tameable wolf database prerequisite changed')
+
+
+def safe_landing(wolf):
+    with lab.connection() as c,c.cursor() as q:
+        q.execute('SELECT c.guid,c.id,c.position_x,c.position_y,c.position_z,c.wander_distance,'
+            't.maxlevel,t.faction,c.MovementType FROM client442_world.creature c '
+            'JOIN client442_world.creature_template t ON t.entry=c.id WHERE c.map=0 AND '
+            'POW(c.position_x-%s,2)+POW(c.position_y-%s,2)<10000',
+            (wolf['position_x'],wolf['position_y']))
+        rows=q.fetchall()
+    units={r[0]:{'map':0,'movement':{'position':list(r[2:5])},'fields':{
+        INDEX['UNIT_FIELD_FACTIONTEMPLATE']:r[7],INDEX['UNIT_FIELD_HEALTH']:1,
+        INDEX['UNIT_FIELD_LEVEL']:r[6]}} for r in rows}
+    hostiles=visible_hostiles(units,0,1,10);wandering={r[0]:r[5] if r[8] else 0 for r in rows}
+    for h in hostiles:h['clearance_radius']+=wandering[h['guid']]
+    candidates=[]
+    for i in range(64):
+        a=math.tau*i/64;xy=[wolf['position_x']+28*math.cos(a),wolf['position_y']+28*math.sin(a)]
+        try:p=ground_point(0,xy)
+        except RuntimeError:continue
+        if not clear(p,hostiles):continue
+        margin=min((math.dist(p[:2],h['position'][:2])-h['clearance_radius'] for h in hostiles),default=100)
+        candidates.append((margin,[*p,math.atan2(wolf['position_y']-p[1],wolf['position_x']-p[0])%math.tau,0]))
+    if not candidates:raise RuntimeError('no terrain-verified tame-range landing clears nearby hostile patrol envelopes')
+    margin,where=max(candidates,key=lambda r:r[0])
+    return where,{'native_nearby_spawns':[list(r) for r in rows],'hostile_patrol_envelopes':hostiles,
+        'minimum_clearance_margin':margin,'target_range_metres':28,'source':'Native spawn, faction, level and wander envelope plus extracted terrain.'}
 
 
 def restore(t,fixture,old,baseline):
@@ -130,7 +159,7 @@ def run(t,preparation,entry,stored,recon,action,source=None):
     if frame['movement']['in_combat'] or frame['movement']['dead'] or frame['movement']['speed']:
         raise RuntimeError('tame staging requires an idle living Hunter')
     lab.server_command('saveall');time.sleep(.5);original=pose()
-    landing=[wolf['position_x'],wolf['position_y']+12,wolf['position_z'],3*math.pi/2,0]
+    landing,safety=safe_landing(wolf)
     with lab.connection() as c,c.cursor() as q:
         q.execute('SELECT id FROM client442_world.game_tele WHERE name IN (%s,%s)',NAMES)
         if q.fetchone():raise RuntimeError('prior owned tame pose fixture needs restoration')
@@ -142,9 +171,10 @@ def run(t,preparation,entry,stored,recon,action,source=None):
     fixture={'owner':6,'native':t.receipt['runtime']['worldserver'],'before':original,'landing':rows[1][1:6],
         'rows':rows,'source':'Reversible native Hunter-only pose staging; no tame/spell/pet/health grant.'}
     t.receipt.update(pose_fixture=fixture,baseline_resources=before,baseline_saved=baseline,
-        retained_pet_before=pets(6),native_wolf_spawn=wolf);t.persist()
+        retained_pet_before=pets(6),native_wolf_spawn=wolf,landing_safety=safety);t.persist()
     try:
         lab.server_command('reload game_tele');lab.server_command('tele name Harnesshunt '+NAMES[1]);time.sleep(4)
+        t.observe('safe_wolf_landing')
         t.execute({'kind':'chat','value':'/targetexact Young Wolf'})
         state,frame=t.observe('existing_wolf_staged');native=Observer(guid=6,session=session);facts=native.poll()
         target=facts.get('selected_unit');unit=native.units.get((target or {}).get('guid'),{})
@@ -154,7 +184,7 @@ def run(t,preparation,entry,stored,recon,action,source=None):
             fields.get(INDEX['UNIT_FIELD_HEALTH'],0)>0 and
             math.dist(target['position'][:2],[wolf['position_x'],wolf['position_y']])<1,
             'visible_wolf':state.get('target',{}).get('name')=='Young Wolf' and state['target'].get('visible') is True,
-            'in_tame_range':math.dist(state['world_position'][:2],[wolf['position_x'],wolf['position_y']])<15,
+            'in_tame_range':20<math.dist(state['world_position'][:2],[wolf['position_x'],wolf['position_y']])<30,
             'stored_retained_pet':pet_identity(moved['baseline_pets'],pets(6),5,0),
             'no_runtime_pet':not o.poll().present() and pair(o.player,'UNIT_FIELD_SUMMON')==0,
             'resources':resources(inv.poll())==before,'saved_rows':saved(6)==baseline,
