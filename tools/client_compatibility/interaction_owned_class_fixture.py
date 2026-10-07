@@ -152,14 +152,14 @@ def enter(t,path,review_path):
     old=prepared(t,path);d=reviewed(t,review_path,'Enter World')
     name,level=t.fixture['character_name'],t.fixture['level']
     if (not entry_identity(t.fixture) or
-        (d.get('selected_character'),d.get('selected_level'))!=(name,level)):
+        (d.get('selected_character'),d.get('selected_level'))!=(name,level) or d.get('point')!=[640,660]):
         raise RuntimeError('class entry requires its reviewed selected character')
     before=character(t.fixture['guid'],t.fixture['account_id'])
     if before['online']!=0:raise RuntimeError('class fixture is already online')
     cursor=Cursor(lab.ROOT/'evidence/world_packets.jsonl')
     for _ in cursor.poll():pass
     started=time.time();t.receipt.update(native_before_entry=before,phase='owned_class_entry_started');t.persist()
-    t.io.key('Return',hold=1.2);time.sleep(8)
+    t.io.click(*d['point'],hold=1.2);time.sleep(8)
     state,frame=t.observe('owned_class_entered',seconds=120)
     session=actors.session_entry(t.fixture)['session']
     login=[{k:r[k] for k in ['time','session','name','direction']} for r in cursor.poll()
