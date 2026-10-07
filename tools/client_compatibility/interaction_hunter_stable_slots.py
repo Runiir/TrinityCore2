@@ -22,13 +22,14 @@ from .world.objects import INDEX
 def bound(path):return {'path':str(path.resolve()),'sha256':lab.sha256(path)}
 
 
-def pet_identity(before,after,slot):
+def pet_identity(before,after,slot,active=None):
     if len(before)!=1 or len(after)!=1 or set(before[0])!=set(after[0]):return False
     b,a=before[0],after[0]
-    return (a['slot']==slot and b['id']==a['id']==4 and b['owner']==a['owner']==6 and
+    return (a['slot']==slot and a['active'] in (0,1) and (active is None or a['active']==active) and
+        b['id']==a['id']==4 and b['owner']==a['owner']==6 and
         0<b['savetime']<=a['savetime']<=time.time() and
-        {k:v for k,v in b.items() if k not in ('slot','savetime')}==
-        {k:v for k,v in a.items() if k not in ('slot','savetime')})
+        {k:v for k,v in b.items() if k not in ('slot','active','savetime')}==
+        {k:v for k,v in a.items() if k not in ('slot','active','savetime')})
 
 
 def baseline(t,preparation,entry,opening):
@@ -97,7 +98,7 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
         moved=closed(source)
         if (moved.get('phase')!='owned_stable_slot_move_verified' or moved.get('opening_source')!=bound(opening) or
             moved.get('runtime')!=t.receipt['runtime'] or moved.get('destination')!=0 or
-            not all(moved.get('move_checks',{}).values()) or not pet_identity(e['baseline_pets'],pets(6),0)):
+            not all(moved.get('move_checks',{}).values()) or not pet_identity(e['baseline_pets'],pets(6),0,0)):
             raise RuntimeError('normal recovery requires an exact successful return to native active slot0')
         t.receipt['return_source']=bound(source);t.clean_panels()
         if o.present():raise RuntimeError('expected native slot roundtrip to dismiss the runtime pet')
@@ -166,11 +167,11 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
             lambda s:len(s.get('stable_probe',{}).get('pets',[]))==1 and
                 s['stable_probe']['pets'][0].get('slot')==destination+1)
         deadline=time.monotonic()+10
-        while time.monotonic()<deadline and not pet_identity(e['baseline_pets'],pets(6),destination):time.sleep(.2)
+        while time.monotonic()<deadline and not pet_identity(e['baseline_pets'],pets(6),destination,0):time.sleep(.2)
         rows=[p for p in entries(lab.ROOT/'evidence/owned_stable_request_packets.jsonl') if
             p.get('session')==session and p.get('time',0)>=started]
         o.poll();checks=verify_packets(rows,slot,destination,config['native_master_guid'])
-        checks.update(native_persisted_slot=pet_identity(e['baseline_pets'],pets(6),destination),
+        checks.update(native_persisted_slot=pet_identity(e['baseline_pets'],pets(6),destination,0),
             native_runtime_pet_removed=not o.present(),stock_stable_open=after['stable_probe'].get('visible') is True,
             public_slot=after['stable_probe']['pets'][0].get('slot')==destination+1,
             ui_clean=not after.get('lua_errors') and not after.get('blocked_actions'),protected_actors=all(protected(old).values()))
