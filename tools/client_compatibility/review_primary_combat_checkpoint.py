@@ -17,7 +17,7 @@ def checks(e,name,count):
 
 
 def proof(episodes,packets):
-    m=episodes['primary_melee_damage01/episode.json'];r=episodes['primary_range_error03/episode.json']
+    m=episodes['primary_melee_damage01/episode.json'];r=episodes['primary_range_error04/episode.json']
     for e,phase in ((m,'primary_melee_damage_verified'),(r,'primary_range_feedback_verified')):
         require(e.get('completed') is True and e.get('failure') is None and e.get('phase')==phase and
             e['actor']['guid']==1 and e['actor']['actor']=='primary' and e['actor']['level']==85 and
@@ -26,7 +26,7 @@ def proof(episodes,packets):
         require(all(packet_key(p) in packets for p in e['packets']),'accepted primary packet absent from actual archive')
     checks(m,'combat_checks',13);checks(r,'range_checks',10)
     e=episodes['primary_combat_entry01/episode.json'];checks(e,'reentry_checks',15)
-    fresh=episodes['primary_combat_entry02/episode.json'];checks(fresh,'reentry_checks',15)
+    fresh=episodes['primary_combat_entry03/episode.json'];checks(fresh,'reentry_checks',15)
     require(e.get('completed') is True and e.get('failure') is None and fresh.get('completed') is True and
         fresh.get('failure') is None and m['session']==e['session'] and r['session']==fresh['session'] and
         fresh['started_at']>m['finished_at'] and m['runtime']==r['runtime']==fresh['runtime'],
@@ -79,7 +79,7 @@ def review(directory,output):
                         with archive.extractfile(member) as f:
                             for line in f:
                                 p=json.loads(line)
-                                if p.get('session') in {episodes['primary_melee_damage01/episode.json']['session'],episodes['primary_range_error03/episode.json']['session']} and p.get('name') in ('CMSG_ATTACK_SWING','CMSG_ATTACK_STOP','SMSG_ATTACK_START',
+                                if p.get('session') in {episodes['primary_melee_damage01/episode.json']['session'],episodes['primary_range_error04/episode.json']['session']} and p.get('name') in ('CMSG_ATTACK_SWING','CMSG_ATTACK_STOP','SMSG_ATTACK_START',
                                     'SMSG_ATTACK_STOP','SMSG_ATTACKER_STATE_UPDATE','SMSG_ATTACKSWING_NOTINRANGE','SMSG_ATTACK_SWING_ERROR'):
                                     packets.add(packet_key(p))
                                     require(len(packets)<=4096,'primary archive combat packet bound exceeded')
