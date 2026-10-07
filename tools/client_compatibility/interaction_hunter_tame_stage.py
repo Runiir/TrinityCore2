@@ -62,6 +62,9 @@ def restore(t,fixture,old,baseline):
         q.execute('SELECT position_x,position_y,position_z,orientation,map '
             'FROM client442_world.game_tele WHERE id=%s',(fixture['rows'][0][0],))
         expected=list(q.fetchone())
+    # The saved database pose may still predate the live setup teleport.
+    # Flush it before deciding whether the runtime is already restored.
+    lab.server_command('saveall');time.sleep(.5)
     replayed=pose()!=expected
     if replayed:lab.server_command('tele name Harnesshunt '+NAMES[0]);time.sleep(4)
     lab.server_command('saveall');time.sleep(.5)
@@ -97,7 +100,8 @@ def run(t,preparation,entry,stored,recon,action,source=None):
                 raise RuntimeError('requires a private closed failed wolf staging source')
             staged=json.loads(path.read_text())
             if (staged.get('completed') is not False or not staged.get('finished_at') or
-                staged.get('failure')!='RuntimeError: owned Hunter exact original pose did not restore' or
+                staged.get('failure') not in ('RuntimeError: owned Hunter exact original pose did not restore',
+                    'RuntimeError: owned Hunter native saved pose did not restore') or
                 not staged.get('pose_fixture') or any(r.get('selected_text')!='/tcui' for r in
                     staged.get('chat_submission_checks',[]))):
                 raise RuntimeError('failed no-Tame pose recovery identity differs')
