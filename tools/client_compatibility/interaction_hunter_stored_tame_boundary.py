@@ -31,6 +31,39 @@ def ancestor(previous,old,runtime,deployment,ref):
         raise RuntimeError('stored named-pet ancestor is not bound to the exact paused deployment')
 
 
+def prior_named_pet(previous,load=closed,binding=bound):
+    """Follow a no-Tame closure back to its exact successful Abandon evidence."""
+    phase=previous.get('phase');checks=previous.get('checks',{})
+    expected={'owned_abandon_parked_boundary':19,'owned_tame_precast_parked_boundary':20}
+    if phase not in expected or len(checks)!=expected[phase] or not all(checks.values()):
+        raise RuntimeError('requires a whole Abandon or no-Tame parked closure')
+    sources=previous.get('sources',[])
+    if phase=='owned_tame_precast_parked_boundary':
+        if len(sources)!=7:raise RuntimeError('no-Tame closure source chain differs')
+        ref=sources[2];stored=load(Path(ref['path']))
+        if (ref!=binding(Path(ref['path'])) or stored.get('phase')!='owned_existing_stored_pet_boundary' or
+            len(stored.get('checks',{}))!=15 or not all(stored['checks'].values()) or
+            stored.get('runtime')!=previous.get('runtime') or stored.get('pet_command_sent') is not False or
+            stored.get('fixture_source')!=sources[0] or stored.get('entry_source')!=sources[1]):
+            raise RuntimeError('no-Tame closure has no exact earlier stored-pet proof')
+        rows=previous.get('all_offline_snapshot',{}).get('6',{}).get('pets')
+        ref=stored.get('abandon_source',{});abandoned=load(Path(ref.get('path','')))
+        if (ref!=binding(Path(ref['path'])) or stored.get('baseline_pets')!=rows or
+            abandoned.get('phase')!='owned_abandon_parked_boundary' or
+            len(abandoned.get('checks',{}))!=19 or not all(abandoned['checks'].values()) or
+            abandoned.get('retained_pets')!=rows or stored.get('confirmation_source')!=abandoned['sources'][3]):
+            raise RuntimeError('no-Tame named pet is not bound to its original removal proof')
+        confirmation=stored['confirmation_source']
+    else:
+        rows=previous.get('retained_pets');confirmation=sources[3]
+    confirmed=load(Path(confirmation['path']))
+    if (confirmation!=binding(Path(confirmation['path'])) or
+        confirmed.get('phase')!='owned_disposable_pet_abandoned' or len(confirmed.get('checks',{}))!=16 or
+        not all(confirmed['checks'].values()) or not named_preserved(confirmed['retained_pet_before'],rows)):
+        raise RuntimeError('named pet continuity is not bound to successful disposable removal')
+    return rows,confirmed,confirmation
+
+
 def run(t,preparation,entry,abandon,deployment=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     entered=entry_source(t,entry,session,preparation);previous=closed(abandon);rows=pets(6)
@@ -38,19 +71,14 @@ def run(t,preparation,entry,abandon,deployment=None):
         d,_=verified_deployment(deployment,t.receipt['runtime'])
         ancestor(previous,old,t.receipt['runtime'],d,bound(deployment))
         t.receipt['deployment_source']=bound(deployment)
+    retained,confirmed,confirmation=prior_named_pet(previous)
     if ((t.fixture['guid'],t.fixture['class'],t.fixture['level'])!=(6,3,10) or
-        previous.get('phase')!='owned_abandon_parked_boundary' or (not deployment and previous.get('runtime')!=t.receipt['runtime']) or
-        previous.get('actor')!=old['origin_actor'] or len(previous.get('checks',{}))!=19 or
-        not all(previous['checks'].values()) or rows!=previous.get('retained_pets') or rows!=old['retained_class_pets']):
+        (not deployment and previous.get('runtime')!=t.receipt['runtime']) or
+        previous.get('actor')!=old['origin_actor'] or rows!=retained or rows!=old['retained_class_pets']):
         raise RuntimeError('requires the source-bound Abandon closure with the unchanged sole named pet')
-    confirmed=closed(Path(previous['sources'][3]['path']))
-    if (previous['sources'][3]!=bound(Path(previous['sources'][3]['path'])) or
-        confirmed.get('phase')!='owned_disposable_pet_abandoned' or len(confirmed.get('checks',{}))!=16 or
-        not all(confirmed['checks'].values()) or not named_preserved(confirmed['retained_pet_before'],rows)):
-        raise RuntimeError('named pet continuity is not bound to successful disposable removal')
     o=Presence(session,6,entered['started_at']).poll();inv=Inventory(lab.ROOT,session,6).poll()
     t.receipt.update(native_session=session,entry_source=bound(entry),abandon_source=bound(abandon),
-        confirmation_source=previous['sources'][3],baseline_pets=rows,qualification_added=False)
+        confirmation_source=confirmation,baseline_pets=rows,qualification_added=False)
     t.persist();public=public_pet(t,'already_stored_tame_pet');state,frame=t.observe('already_stored_tame_boundary')
     checks={'native_no_pet':not o.poll().present(),'native_owner_summon_clear':bool(o.player) and pair(o.player,'UNIT_FIELD_SUMMON')==0,
         'public_no_pet':public.get('exists') is False,'sole_named_pet_stored':len(rows)==1 and
