@@ -100,7 +100,8 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
             moved.get('runtime')!=t.receipt['runtime'] or moved.get('destination')!=0 or
             not all(moved.get('move_checks',{}).values()) or not pet_identity(e['baseline_pets'],pets(6),0,0)):
             raise RuntimeError('normal recovery requires an exact successful return to native active slot0')
-        t.receipt['return_source']=bound(source);t.clean_panels()
+        t.receipt['return_source']=bound(source)
+        read_page(t,'slot_recovery_state','state','/tcui');t.clean_panels()
         if o.present():raise RuntimeError('expected native slot roundtrip to dismiss the runtime pet')
         t.receipt['call_pet_started_at']=time.time();t.persist();t.execute({'kind':'chat','value':'/cast Call Pet'})
         inv=Inventory(lab.ROOT,session,6);deadline=time.monotonic()+30
