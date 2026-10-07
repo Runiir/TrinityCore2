@@ -320,4 +320,20 @@ bool pet_rename_authority(Protocol const &p,State const &owner,std::uint64_t gui
         field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")==owner.guid() &&
         field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")==guid;
 }
+bool pet_abandon_authority(Protocol const &p,State const &owner,std::uint64_t guid)
+{
+    if(!owner.created || owner.character.is_null() || owner.self_snapshot.is_null() ||
+       !owner.pet_state || owner.pet_state->controlled_guid!=guid || guid>>52!=0xf14 ||
+       ((p.field(owner.self_snapshot,"UNIT_FIELD_BYTES_0")>>8)&255)!=3)return false;
+    auto found=owner.visible_units.find(guid);
+    if(found==owner.visible_units.end())return false;
+    auto const &unit=found->second;
+    // Native UNIT_CAN_BE_ABANDONED is bit2 of the pet flag byte. The native
+    // handler accepts a visible Pet GUID, so ownership must be checked here.
+    return integer(get(unit,"kind"))==3 && integer(get(unit,"map"))==owner.map() &&
+        p.field(unit,"UNIT_FIELD_PETNUMBER") &&
+        ((p.field(unit,"UNIT_FIELD_BYTES_2")>>16)&2) &&
+        field_guid(p,unit,"UNIT_FIELD_SUMMONEDBY")==owner.guid() &&
+        field_guid(p,owner.self_snapshot,"UNIT_FIELD_SUMMON")==guid;
+}
 }

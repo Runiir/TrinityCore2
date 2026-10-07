@@ -96,6 +96,15 @@ void Session::gameplay_request(std::string const &name, View body, Session &owne
         else if(translation.packet)native_send(*translation.packet);
         return;
     }
+    if(name=="CMSG_PET_ABANDON")
+    {
+        if(!state.created || !active_world)throw std::runtime_error("pet Abandon without active owned world");
+        auto translation=translate_pet_abandon(protocol,state,body);
+        if(!translation.rejection.empty())
+            service.events.event("pet_abandon_translation_rejected",{{"session",owner.id},{"error",translation.rejection}});
+        else if(translation.packet)native_send(*translation.packet);
+        return;
+    }
     if(name=="CMSG_PET_ACTION" || name=="CMSG_PET_SET_ACTION")
     {
         if(!state.created || !active_world)throw std::runtime_error("pet action without active owned world");
