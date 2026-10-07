@@ -57,12 +57,23 @@ def static_position(target):
     return list(rows[0]) if len(rows)==1 and rows[0][1:6]==(2830,PUBLIC_NAME,0,1,0) else None
 
 
-def source(t,path,phase):
+def source(t,path,phase,entry_path=None):
     d=closed(path)
     if (t.fixture['actor'],t.fixture['guid'],t.fixture['character_name'],t.fixture['level'])!=('primary',1,'Harnessone',85):
         raise RuntimeError('requires original owned primary')
-    if d.get('actor')!=t.fixture or d.get('runtime')!=t.receipt['runtime'] or d.get('phase')!=phase or d.get('session')!=actors.session_entry(t.fixture)['session']:
+    if d.get('actor')!=t.fixture or d.get('runtime')!=t.receipt['runtime'] or d.get('phase')!=phase:
         raise RuntimeError('closed primary source or login epoch differs')
+    current=actors.session_entry(t.fixture)['session']
+    if entry_path:
+        e=closed(entry_path);base=d['baseline']
+        if (e.get('actor')!=t.fixture or e.get('runtime')!=t.receipt['runtime'] or
+            e.get('phase')!='owned_primary_combat_preparation' or e.get('session')!=current or current==d['session'] or
+            len(e.get('reentry_checks',{}))!=15 or not all(e['reentry_checks'].values()) or
+            e['offline_source']['saved']!=base['saved'] or e['offline_source']['inventory']!=base['inventory'] or
+            e['offline_source']['pets']!=base['pets'] or e['protected_baseline']!=base['protected'] or
+            position(1)!=base['position']):raise RuntimeError('fresh preserved primary reentry differs')
+        t.receipt['reentry_source']={'path':str(entry_path.resolve()),'sha256':lab.sha256(entry_path)}
+    elif d.get('session')!=current:raise RuntimeError('closed primary login epoch differs')
     t.receipt['source']={'path':str(path.resolve()),'sha256':lab.sha256(path)};t.persist();return d
 
 
@@ -89,25 +100,26 @@ def capture(t,path):
         phase='await_primary_range_selection',input_sent=False,qualification_added=False)
 
 
-def stage(t,path,selection_review,name_authority=None):
-    d=source(t,path,'primary_melee_damage_verified')
+def stage(t,path,selection_review,name_authority=None,entry_path=None):
+    d=source(t,path,'primary_melee_damage_verified',entry_path)
     if len(d.get('combat_checks',{}))!=13 or not all(d['combat_checks'].values()) or len(d.get('restoration_checks',{}))!=10 or not all(d['restoration_checks'].values()):
         raise RuntimeError('primary melee whole result is incomplete')
-    base=d['baseline'];entry=closed(Path(d['source']['path']))
+    base=d['baseline'];entry=closed(entry_path or Path(d['source']['path']))
+    session=actors.session_entry(t.fixture)['session'];started=entry['started_at'] if entry_path else entry['entry_started_at']
     if protected_snapshot()!=base['protected'] or position(1)!=base['position']:raise RuntimeError('primary source pose changed')
-    o=RangePresence(d['session'],1,entry['entry_started_at']).poll()
-    t.receipt.update(baseline=base,session=d['session'],entry_started_at=entry['entry_started_at'],qualification_added=False);t.persist()
+    o=RangePresence(session,1,started).poll()
+    t.receipt.update(baseline=base,session=session,entry_started_at=started,qualification_added=False);t.persist()
     try:
         if name_authority:
             if name_authority.is_symlink() or not name_authority.resolve().is_relative_to(lab.ROOT/'evidence'):
                 raise RuntimeError('name authority is outside the owned evidence')
             a=json.loads(name_authority.read_text())
-            native=[p for p in a.get('packets',[]) if p.get('session')==d['session'] and p.get('direction')=='from_native' and
+            native=[p for p in a.get('packets',[]) if p.get('session')==session and p.get('direction')=='from_native' and
                 p.get('name')=='SMSG_CREATURE_QUERY_RESPONSE' and bytes.fromhex(p['body']).startswith(struct.pack('<I',2830)+PUBLIC_NAME.encode()+b'\0')]
             with lab.connection() as con,con.cursor() as q:
                 q.execute('SELECT entry,name,unit_flags,unit_flags2,flags_extra,scale,modelid1 '
                     'FROM client442_world.creature_template WHERE entry=2830');template=list(q.fetchone() or ())
-            if not native and (a.get('native_template')!=template or template!=[2830,PUBLIC_NAME,0,2048,0,1.0,1105] or a.get('session')!=d['session']):
+            if not native and (a.get('native_template')!=template or template!=[2830,PUBLIC_NAME,0,2048,0,1.0,1105] or a.get('session')!=session):
                 raise RuntimeError('exact current native Buzzard name authority is absent')
             t.receipt['name_authority']={'path':str(name_authority),'sha256':lab.sha256(name_authority)};t.persist()
             t.execute({'kind':'chat','value':'/targetexact '+PUBLIC_NAME})
@@ -190,7 +202,7 @@ def run(t,path,review_path):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['capture','stage','run'])
-    p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path);p.add_argument('--name-authority',type=Path)
+    p.add_argument('--source',type=Path,required=True);p.add_argument('--review',type=Path);p.add_argument('--name-authority',type=Path);p.add_argument('--entry',type=Path)
     p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     if a.action=='run' and not a.review:p.error('run requires separately reviewed target')
     if a.action=='stage' and not (a.review or a.name_authority):p.error('stage requires reviewed selection or exact native name authority')
@@ -199,7 +211,7 @@ if __name__=='__main__':
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
         try:
             if a.action=='capture':capture(t,a.source)
-            elif a.action=='stage':stage(t,a.source,a.review,a.name_authority)
+            elif a.action=='stage':stage(t,a.source,a.review,a.name_authority,a.entry)
             else:run(t,a.source,a.review)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
