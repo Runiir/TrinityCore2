@@ -4043,7 +4043,7 @@
         "chat.combat_log",
         "chat.timestamps"
       ],
-      "scope": "Fresh whole-pass owned_native_combat_log03 copies stock My actions to TC442Log, enables the Spell Casting group and its Success child, and checks Show Timestamp through observed stock controls. Native-owned Battle Shout6673 counter5 completes, matching filtered and unfiltered own SPELL_CAST_SUCCESS events. Actual stock log shows new05:39:19 timestamped Harnessone casts Battle Shout line, different from prior05:31:03. Original combat preference fingerprint, filter metadata/current selection, chat settings, spellbook layout and all10 native/public checks restore after deleting only the disposable copy.",
+      "scope": "Fresh whole-pass owned_native_combat_log03 copies stock My actions to TC442Log, enables the Spell Casting group and its Success child, and checks Show Timestamp through observed stock controls. Native-owned Battle Shout6673 counter5 completes, matching filtered and unfiltered own SPELL_CAST_SUCCESS events. Actual stock log shows new05:39:19 timestamped Harnessone casts Battle Shout line, different from prior05:31:03. Original combat preference fingerprint, filter metadata/current selection, chat settings, spellbook layout and all10 native/public checks restore after deleting only the disposable copy. UI150 additionally verifies one owned Heroic Throw damage line on the ordinary stock Combat Log:2126 Physical and8971 Overkill, exactly matching native/client/public11097 total damage. The General tab and saved filters restore; this extends the existing log scope without another operation count.",
       "limits": "Exact private idle warrior and copied combat-log filter only. Other spells/combat payloads, General-chat timestamps, log history limits and reconnect persistence remain open. Stock refilter rebuilds history, so message_count1 is not a monotonic event oracle. Numeric child state2 is unchecked enabled; only booleantrue enables Success. Failed whole trials remain excluded.",
       "evidence": [
         {
@@ -4065,6 +4065,26 @@
           "pointer": "artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc",
           "member": "evidence/client_interactions_20261005_ui72/owned_combat_filter_failure_review.json",
           "sha256": "b590134a37abad2f4c74f39bdfa4dc30a08df91d11f75a70920f3395a1118ea2"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_stock_damage_log_open03/episode.json",
+          "sha256": "0f42bf1a7e562c766d4294248b25292a3dea8f2d6cbf01d926b47c6785d7dce6"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_stock_damage_log_restore01/episode.json",
+          "sha256": "9f11452c26456cbdeefcfe2d184c98687dbc5a742c6021f1f43a464fc5c3fbc8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_combat_final_park01/episode.json",
+          "sha256": "352d67c17fbc4735753e85693c259481ecda0cb1513bdbbf9623a8753464a77f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_throw_admission_guards02.json",
+          "sha256": "ef06576d5ad45a1d29053c76f7200f194f1f3d234865c1dab7b23bf92b48d01d"
         }
       ]
     },
@@ -6650,6 +6670,73 @@
       ],
       "repeat_archive_sha256": "d9dc0d8325329529fea2089734c0b2fc5c1aea298b998bab0668d7aba0f1f6e0",
       "repeat_actual_remote_review_sha256": "0677e6b1a06d33745c03dee5aa84e96d959c234e37f7de929ea7548f84baa336"
+    },
+    {
+      "id": "owned_primary_heroic_throw_instant_damage",
+      "operations": [
+        "combat.instant_cast"
+      ],
+      "scope": "One normally learned Heroic Throw57755 from owned level85 Harnessone hits the exact stationary native Parched Buzzard2830 at21.86454 metres. One modern/native cast, native/client Start/Go and direct-damage packets, public SPELL_DAMAGE and stock Combat Log agree:11097 damage,8971 overkill, native health2126 to0. Automatic same-target melee receives a separately attributable native/client range response265. Reversible facing-only setup restores exact user pose[-6414.92,-3317.3,241.666,2.12974,0] and deletes both owned rows;13 stage,10 restoration,5 General-tab restore and7 normal parking checks pass. All16 admission mutation guards reject broken variants. Actual remote archive verifies every64 JSON/228 PNG and exact accepted combat packets.",
+      "limits": "Only this native-known stationary instant damage ability is newly qualified. Ranged autoattack, facing-error acceptance, cast-time/channel, cooldown/resource failures, continuous damage cadence, moving targets, other spells/classes and full combat remain open. Native zero mitigation arrives as nil/omitted public fields; the two public event dispatches are one hit. The stock log shows damage2126 after subtracting8971 overkill from11097. Whole UI148/149 failures, UI150 hostile idle entry, facing failure and unsafe stock-tab attempt remain excluded. Original General/filters, inventory/money/pets/saved rows/protected actors and both existing HDMI-1 client lifetimes are preserved. Native1181245 unchanged; scripts blocked, original CVar0 unrestored at1; code controller/model None. Failed diagnostic parser/import/tracking prerequisites are retained separately.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/spell_damage_bridge_deploy01/deployment.json",
+          "sha256": "780e06d0b89f4687bbbc3d550240f598d5bb89f7ee503a1887c3ec9c7cb938ad"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_clean_combat_entry01/episode.json",
+          "sha256": "02f9434c82cba3d2d4aa7abda58236ae044a00df8521232ea1144b923588d683"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_faced_throw_stage01/episode.json",
+          "sha256": "334e4483432bcdfa8263db38dea3fbae19b57b6145e6e005327654f1ad35a484"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_faced_throw_stage01/review.json",
+          "sha256": "2595dc0025f3a90f5279108b7a54c7d038adc71d53f8a9ce76875bf50b42260e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_faced_throw_stage01/primary_throw_facing_fixture.json",
+          "sha256": "98493f668bce3f12c5d132b39ae01c0a6f60906c3a796f7c22d65fdf19d18e8b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_faced_throw_native01/episode.json",
+          "sha256": "c5aa622a771a09cfddfb66b9d8415d228c1f81f005281a34966d4e51bc351d4c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_faced_throw_native01/primary_facing_restoration.json",
+          "sha256": "99e42260e185af341ad252f08b4bc5b9251096627c521cc80d3efd8872c012fe"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_stock_damage_log_open03/episode.json",
+          "sha256": "0f42bf1a7e562c766d4294248b25292a3dea8f2d6cbf01d926b47c6785d7dce6"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_stock_damage_log_restore01/episode.json",
+          "sha256": "9f11452c26456cbdeefcfe2d184c98687dbc5a742c6021f1f43a464fc5c3fbc8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_combat_final_park01/episode.json",
+          "sha256": "352d67c17fbc4735753e85693c259481ecda0cb1513bdbbf9623a8753464a77f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui150/primary_throw_admission_guards02.json",
+          "sha256": "ef06576d5ad45a1d29053c76f7200f194f1f3d234865c1dab7b23bf92b48d01d"
+        }
+      ],
+      "archive_sha256": "5b9d74d432cf0a8f121dd4531058a479f7982a3bdd94b1e755535a6f311bac9f",
+      "actual_remote_review_sha256": "99bf2746d13193630545513d9888199c3c3a69ae784b49ff773ea42c16a1e2ed"
     }
   ]
 }

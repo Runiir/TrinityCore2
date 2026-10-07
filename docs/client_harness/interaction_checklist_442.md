@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 444 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 445 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -885,7 +885,7 @@ Fixture: `class_variants`.
 - [x] `combat.melee_start` (qualified variant; [evidence](#ordinary_quest_melee_completion))
 - [x] `combat.melee_stop` (qualified variant; [evidence](#owned_owner_melee_stop))
 - [ ] `combat.ranged_attack`
-- [ ] `combat.instant_cast`
+- [x] `combat.instant_cast` (qualified variant; [evidence](#owned_primary_heroic_throw_instant_damage))
 - [ ] `combat.cast_time`
 - [ ] `combat.channel`
 - [ ] `combat.cast_cancel`
@@ -2494,7 +2494,7 @@ Remaining limits: Observed General window geometry, stock up/down buttons and ex
 
 ### owned_native_stock_combat_log_timestamps
 
-Fresh whole-pass owned_native_combat_log03 copies stock My actions to TC442Log, enables the Spell Casting group and its Success child, and checks Show Timestamp through observed stock controls. Native-owned Battle Shout6673 counter5 completes, matching filtered and unfiltered own SPELL_CAST_SUCCESS events. Actual stock log shows new05:39:19 timestamped Harnessone casts Battle Shout line, different from prior05:31:03. Original combat preference fingerprint, filter metadata/current selection, chat settings, spellbook layout and all10 native/public checks restore after deleting only the disposable copy.
+Fresh whole-pass owned_native_combat_log03 copies stock My actions to TC442Log, enables the Spell Casting group and its Success child, and checks Show Timestamp through observed stock controls. Native-owned Battle Shout6673 counter5 completes, matching filtered and unfiltered own SPELL_CAST_SUCCESS events. Actual stock log shows new05:39:19 timestamped Harnessone casts Battle Shout line, different from prior05:31:03. Original combat preference fingerprint, filter metadata/current selection, chat settings, spellbook layout and all10 native/public checks restore after deleting only the disposable copy. UI150 additionally verifies one owned Heroic Throw damage line on the ordinary stock Combat Log:2126 Physical and8971 Overkill, exactly matching native/client/public11097 total damage. The General tab and saved filters restore; this extends the existing log scope without another operation count.
 
 Remaining limits: Exact private idle warrior and copied combat-log filter only. Other spells/combat payloads, General-chat timestamps, log history limits and reconnect persistence remain open. Stock refilter rebuilds history, so message_count1 is not a monotonic event oracle. Numeric child state2 is unchecked enabled; only booleantrue enables Success. Failed whole trials remain excluded.
 
@@ -2502,6 +2502,10 @@ Remaining limits: Exact private idle warrior and copied combat-log filter only. 
 - [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/native_combat_log_visual_review.json`, SHA-256 `2a25edfb2109299b96f7d1f747a0ed24b04cff88b3a868723132cfc387d308bc`.
 - [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/native_combat_log_failure_review.json`, SHA-256 `f0855c149a7f68c7fc95669eff36079d782a86670162a0157df27748d0f17b46`.
 - [442_interactions_20261005_72.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261005_72.tar.gz.dvc), member `evidence/client_interactions_20261005_ui72/owned_combat_filter_failure_review.json`, SHA-256 `b590134a37abad2f4c74f39bdfa4dc30a08df91d11f75a70920f3395a1118ea2`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_stock_damage_log_open03/episode.json`, SHA-256 `0f42bf1a7e562c766d4294248b25292a3dea8f2d6cbf01d926b47c6785d7dce6`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_stock_damage_log_restore01/episode.json`, SHA-256 `9f11452c26456cbdeefcfe2d184c98687dbc5a742c6021f1f43a464fc5c3fbc8`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_combat_final_park01/episode.json`, SHA-256 `352d67c17fbc4735753e85693c259481ecda0cb1513bdbbf9623a8753464a77f`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_throw_admission_guards02.json`, SHA-256 `ef06576d5ad45a1d29053c76f7200f194f1f3d234865c1dab7b23bf92b48d01d`.
 
 ### owned_item_link_native_say_delivery
 
@@ -3290,3 +3294,21 @@ Remaining limits: Verified first notification and the static same-target Stop/re
 - [442_interactions_20261007_147.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc), member `evidence/client_interactions_20261007_ui147/primary_combat_final_park01/episode.json`, SHA-256 `f5d71c50cedf6ba7f8df51aeaf46acd9dcc386b7787c27d1c6b0e9f339eba0f6`.
 - [442_interactions_20261007_147.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc), member `evidence/client_interactions_20261007_ui147/native_feedback_admission_guards01.json`, SHA-256 `bcef2194246d8a4e80358be0c4d88c3d2ca1e967a76e59b9fdf058b07156ab3c`.
 - [442_interactions_20261007_147.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_147.tar.gz.dvc), member `evidence/client_interactions_20261007_ui147/native_feedback_closed_visual_review01.json`, SHA-256 `6156126cd1df34588492fd084772bff4d5ebbeb17def95fa7a500233292e2432`.
+
+### owned_primary_heroic_throw_instant_damage
+
+One normally learned Heroic Throw57755 from owned level85 Harnessone hits the exact stationary native Parched Buzzard2830 at21.86454 metres. One modern/native cast, native/client Start/Go and direct-damage packets, public SPELL_DAMAGE and stock Combat Log agree:11097 damage,8971 overkill, native health2126 to0. Automatic same-target melee receives a separately attributable native/client range response265. Reversible facing-only setup restores exact user pose[-6414.92,-3317.3,241.666,2.12974,0] and deletes both owned rows;13 stage,10 restoration,5 General-tab restore and7 normal parking checks pass. All16 admission mutation guards reject broken variants. Actual remote archive verifies every64 JSON/228 PNG and exact accepted combat packets.
+
+Remaining limits: Only this native-known stationary instant damage ability is newly qualified. Ranged autoattack, facing-error acceptance, cast-time/channel, cooldown/resource failures, continuous damage cadence, moving targets, other spells/classes and full combat remain open. Native zero mitigation arrives as nil/omitted public fields; the two public event dispatches are one hit. The stock log shows damage2126 after subtracting8971 overkill from11097. Whole UI148/149 failures, UI150 hostile idle entry, facing failure and unsafe stock-tab attempt remain excluded. Original General/filters, inventory/money/pets/saved rows/protected actors and both existing HDMI-1 client lifetimes are preserved. Native1181245 unchanged; scripts blocked, original CVar0 unrestored at1; code controller/model None. Failed diagnostic parser/import/tracking prerequisites are retained separately.
+
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/spell_damage_bridge_deploy01/deployment.json`, SHA-256 `780e06d0b89f4687bbbc3d550240f598d5bb89f7ee503a1887c3ec9c7cb938ad`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_clean_combat_entry01/episode.json`, SHA-256 `02f9434c82cba3d2d4aa7abda58236ae044a00df8521232ea1144b923588d683`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_faced_throw_stage01/episode.json`, SHA-256 `334e4483432bcdfa8263db38dea3fbae19b57b6145e6e005327654f1ad35a484`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_faced_throw_stage01/review.json`, SHA-256 `2595dc0025f3a90f5279108b7a54c7d038adc71d53f8a9ce76875bf50b42260e`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_faced_throw_stage01/primary_throw_facing_fixture.json`, SHA-256 `98493f668bce3f12c5d132b39ae01c0a6f60906c3a796f7c22d65fdf19d18e8b`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_faced_throw_native01/episode.json`, SHA-256 `c5aa622a771a09cfddfb66b9d8415d228c1f81f005281a34966d4e51bc351d4c`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_faced_throw_native01/primary_facing_restoration.json`, SHA-256 `99e42260e185af341ad252f08b4bc5b9251096627c521cc80d3efd8872c012fe`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_stock_damage_log_open03/episode.json`, SHA-256 `0f42bf1a7e562c766d4294248b25292a3dea8f2d6cbf01d926b47c6785d7dce6`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_stock_damage_log_restore01/episode.json`, SHA-256 `9f11452c26456cbdeefcfe2d184c98687dbc5a742c6021f1f43a464fc5c3fbc8`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_combat_final_park01/episode.json`, SHA-256 `352d67c17fbc4735753e85693c259481ecda0cb1513bdbbf9623a8753464a77f`.
+- [442_interactions_20261007_150.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_150.tar.gz.dvc), member `evidence/client_interactions_20261007_ui150/primary_throw_admission_guards02.json`, SHA-256 `ef06576d5ad45a1d29053c76f7200f194f1f3d234865c1dab7b23bf92b48d01d`.
