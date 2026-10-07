@@ -51,6 +51,7 @@ def run(t,preparation,entry,failed,action,source=None,review_path=None,destinati
         not all(protected(old).values()) or (lab.ROOT/'run/owned_stable_request_probe.json').exists()):
         raise RuntimeError('excluded pair recovery owner/pets/preservation baseline differs')
     t.receipt.update(failed_source=bound(failed),entry_source=bound(entry),native_session=session,
+        native_master_guid=f['native_master_guid'],
         retained_pet_before=current,qualification_added=False,input_sent=False,packet_bodies_retained=False,
         qualified_scope='Normal source-bound fixture cleanup only. Failed whole occupied swap remains excluded; '
             'no native SQL correction, pet deletion or gameplay qualification.');t.persist()
