@@ -17,6 +17,38 @@ from .observation.inventory import Inventory
 from .observation.journal import entries
 from .world.buffer import Reader,Writer
 from .world.objects import INDEX
+from .interaction_spellbook_navigation import detail,navigate
+from .interaction_operations import click_case
+from .interaction_macros import require
+
+
+def call_pet_recon(t,session):
+    learned=wire_known(t,session)
+    read_page(t,'call_pet_core','state','/tcui');t.clean_panels()
+    require(click_case(t,'fixture.call_pet.book','Open the stock spellbook for Call Pet recovery.',
+        lambda c:c['name']=='SpellbookMicroButton',lambda b,a,s:{'status':'spellbook_open_pass' if s and
+        'SpellBookFrame' in a['panels'] else 'client_or_protocol_failure'},hold=.4),'spellbook_open_pass')
+    tabs=detail(t,'call_pet_tabs')['tabs']
+    for tab in sorted(tabs,key=lambda r:r.get('name')!='Beast Mastery'):
+        if tab.get('hidden') or tab.get('guild'):continue
+        line=tab['index']
+        require(navigate(t,learned,'fixture.call_pet.line'+str(line),
+            'SpellBookSkillLineTab'+str(line),line=line,check_content=False),'spellbook_navigation_pass')
+        for page in range(3):
+            probe=detail(t,'call_pet_page'+str(line)+'_'+str(page),line=line)
+            for row in probe['rows']:
+                candidates=row.get('flyout',{}).get('slots',[]) if row.get('kind')=='FLYOUT' else [row]
+                for spell in candidates:
+                    if spell.get('id')==883 and spell.get('known') is True:
+                        if spell.get('name') not in ('Call Pet','Call Pet 1'):
+                            raise RuntimeError('observed native Call Pet883 caption is outside recovery scope')
+                        t.receipt.update(call_pet_row=row,call_pet_spell=spell,
+                            completed=True,phase='owned_call_pet_caption_observed',qualification_added=False)
+                        t.persist();t.clean_panels();return
+            if probe.get('page',0)>=probe.get('max_pages',0):break
+            require(navigate(t,learned,'fixture.call_pet.next'+str(line)+'_'+str(page),
+                'SpellBookNextPageButton',page=probe['page']+1,check_content=False),'spellbook_navigation_pass')
+    raise RuntimeError('native-known Call Pet883 is absent from bounded stock pages')
 
 
 def bound(path):return {'path':str(path.resolve()),'sha256':lab.sha256(path)}
@@ -92,18 +124,27 @@ def verify_packets(rows,source,destination,master):
         'ordered_native_outcome':len(native)==len(updates)==len(results)==1 and native[0]['time']<=updates[0]['time']<=results[0]['time']}
 
 
-def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,destination=None):
+def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,destination=None,call_pet_source=None):
     old,e,session,o=baseline(t,preparation,entry,opening)
+    if action=='call-pet-recon':
+        call_pet_recon(t,session);return
     if action=='finish':
         moved=closed(source)
         if (moved.get('phase')!='owned_stable_slot_move_verified' or moved.get('opening_source')!=bound(opening) or
             moved.get('runtime')!=t.receipt['runtime'] or moved.get('destination')!=0 or
             not all(moved.get('move_checks',{}).values()) or not pet_identity(e['baseline_pets'],pets(6),0,0)):
             raise RuntimeError('normal recovery requires an exact successful return to native active slot0')
-        t.receipt['return_source']=bound(source)
+        recon=closed(call_pet_source)
+        spell=recon.get('call_pet_spell',{})
+        if (recon.get('phase')!='owned_call_pet_caption_observed' or recon.get('runtime')!=t.receipt['runtime'] or
+            recon.get('opening_source')!=bound(opening) or recon.get('native_session')!=session or
+            spell.get('id')!=883 or spell.get('known') is not True or spell.get('name') not in ('Call Pet','Call Pet 1')):
+            raise RuntimeError('normal recovery requires a source-bound observed native Call Pet883 caption')
+        t.receipt.update(return_source=bound(source),call_pet_source=bound(call_pet_source),call_pet_spell=spell)
         read_page(t,'slot_recovery_state','state','/tcui');t.clean_panels()
         if o.present():raise RuntimeError('expected native slot roundtrip to dismiss the runtime pet')
-        t.receipt['call_pet_started_at']=time.time();t.persist();t.execute({'kind':'chat','value':'/cast Call Pet'})
+        t.receipt['call_pet_started_at']=time.time();t.persist()
+        t.execute({'kind':'chat','value':'/cast '+spell['name']})
         inv=Inventory(lab.ROOT,session,6);deadline=time.monotonic()+30
         while time.monotonic()<deadline:
             o.poll();inv.poll()
@@ -188,16 +229,18 @@ def run(t,preparation,entry,opening,action,source=None,review_path=None,slot=0,d
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['refresh','move','finish'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['refresh','move','finish','call-pet-recon'])
     for k in ('preparation','entry','opening','output'):p.add_argument('--'+k,type=Path,required=True)
     p.add_argument('--source',type=Path);p.add_argument('--review',type=Path)
+    p.add_argument('--call-pet-source',type=Path)
     p.add_argument('--slot',type=int,choices=[0,5],default=0);p.add_argument('--destination',type=int,choices=[0,5]);a=p.parse_args()
     if a.action in ('move','finish') and not a.source:p.error('requires a closed source')
     if a.action=='move' and (not a.review or a.destination is None):p.error('requires a separately reviewed destination')
+    if a.action=='finish' and not a.call_pet_source:p.error('requires a closed stock Call Pet caption source')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:run(t,a.preparation,a.entry,a.opening,a.action,a.source,a.review,a.slot,a.destination)
+        try:run(t,a.preparation,a.entry,a.opening,a.action,a.source,a.review,a.slot,a.destination,a.call_pet_source)
         except Exception as e:t.receipt['failure']=f'{type(e).__name__}: {e}'
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure')}),flush=True)
