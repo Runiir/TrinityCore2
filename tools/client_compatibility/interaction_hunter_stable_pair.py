@@ -153,6 +153,7 @@ def run(t,preparation,entry,action,source=None,review_path=None,number=4,destina
         while time.monotonic()<deadline and not o.poll().present():time.sleep(.25)
         if not o.present():raise RuntimeError('ordinary Call Pet did not restore active pair pet')
         t.receipt['call_pet_packets']=call_pet_packets(session,started,time.time())
+        t.receipt['native_save_command']={'command':'saveall','started_at':time.time()}
         lab.server_command('saveall');time.sleep(.5);after=pets(6);public=public_pet(t,'pair_call_pet')
         read_page(t,'pair_called_core','state','/tcui');state,frame=t.observe('pair_called_pet')
         slots={r['id']:r['slot'] for r in current};actives={n:int(n==active) for n in slots}
@@ -184,7 +185,8 @@ def run(t,preparation,entry,action,source=None,review_path=None,number=4,destina
         raise RuntimeError('reviewed drag geometry or idle cursor differs')
     slots={number:destination,other:source_slot};actives={4:0,6:0}
     with capture(t,session,guid):
-        t.receipt.update(input_sent=True,number=number,destination=destination,source_slot=source_slot,swap_number=other);t.persist()
+        t.receipt.update(input_sent=True,number=number,destination=destination,source_slot=source_slot,swap_number=other,
+            ordinary_input={'kind':'drag','start':start,'end':end,'duration':.8});t.persist()
         t.execute({'kind':'drag','start':start,'end':end,'duration':.8})
         state,frame=read_current_page(t,'pair_slot_after','stables',lambda s:
             public_rows(s.get('stable_probe',{}))==expected_rows([{**r,'slot':slots[r['id']]} for r in current]))
