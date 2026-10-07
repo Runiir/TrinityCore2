@@ -23,6 +23,7 @@ SAFE_BODY_NAMES={
     'CMSG_CANCEL_AURA','CMSG_PET_CANCEL_AURA',
     'CMSG_PET_ACTION','CMSG_PET_ABANDON','CMSG_PET_SPELL_AUTOCAST','CMSG_PET_SET_ACTION',
     'CMSG_REQUEST_PET_INFO','CMSG_QUERY_PET_NAME','CMSG_PET_NAME_QUERY',
+    'MSG_CHANNEL_START','MSG_CHANNEL_UPDATE','SMSG_SPELL_CHANNEL_START','SMSG_SPELL_CHANNEL_UPDATE','SMSG_PET_ADDED',
     'SMSG_PET_NAME_QUERY_RESPONSE','SMSG_QUERY_PET_NAME_RESPONSE','SMSG_PET_SPELLS','SMSG_PET_SPELLS_MESSAGE',
     'CMSG_WHO','SMSG_WHO',
     'CMSG_SAVE_EQUIPMENT_SET','CMSG_DELETE_EQUIPMENT_SET','CMSG_USE_EQUIPMENT_SET',
@@ -199,8 +200,9 @@ def checkpoint(directory,name):
     with tempfile.TemporaryDirectory(dir=lab.ROOT/'run') as folder:
         folder=Path(folder)
         for source,label in [(lab.ROOT/'logs/modern_world.jsonl','events.jsonl'),(lab.ROOT/'evidence/world_packets.jsonl','packets.jsonl'),
-                (lab.ROOT/'evidence/owned_pet_abandon_packets.jsonl','owned_pet_abandon_packets.jsonl')]:
-            if not source.exists() and label=='owned_pet_abandon_packets.jsonl':continue
+                (lab.ROOT/'evidence/owned_pet_abandon_packets.jsonl','owned_pet_abandon_packets.jsonl'),
+                (lab.ROOT/'evidence/owned_tame_request_packets.jsonl','owned_tame_request_packets.jsonl')]:
+            if not source.exists() and label in ('owned_pet_abandon_packets.jsonl','owned_tame_request_packets.jsonl'):continue
             with (folder/label).open('w') as output:
                 for row in entries(source):
                     if row.get('time',0)<since:continue
