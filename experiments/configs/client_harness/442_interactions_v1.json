@@ -6806,7 +6806,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_primary_native_melee_range_feedback"
     },
     {
       "id": "combat.line_of_sight_error",
@@ -15253,8 +15254,95 @@
           "sha256": "b52fcb310952d37df6fe0ef1a5b86b791a8555c37f01c74a530643550d0b959d"
         }
       ]
+    },
+    {
+      "id": "owned_primary_native_melee_range_feedback",
+      "operations": [
+        "combat.range_error"
+      ],
+      "scope": "One fresh native-login Harnessone level 85 melee attempt against the exact static native Parched Buzzard 2830, 20.7449 metres from the saved user pose. One exact owned Attack produces native SMSG_ATTACKSWING_NOTINRANGE, matching modern error body00 and fresh stock UI_ERROR_MESSAGE code 265 You are too far away! All 10 range/10 restoration and 7 final normal parking checks pass; 15 entry checks preserve the primary and five other actors. The accompanying primary critter swing separately passes 13 damage/10 restoration checks, with 9847 damage clipped to 15 health and matching native/client SWING_DAMAGE.",
+      "limits": "First fresh native range notification on this installed English client only. Repeated notifications across Stop/reload, moving targets, facing, spell range, hostile combat, class abilities and sustained cadence remain open. Native core deduplicates unchanged swing errors. Three failed selection preparations and three failed range trials remain whole excluded; no retroqualification. Scripts stay blocked, original CVar 0 unrestored at 1; only two existing HDMI-1 clients and no process restarts/models. Actual remote 520751252-byte compressed SHA and all 56 JSON / 227 PNG hashes plus accepted packet bodies are verified.",
+      "archive_sha256": "69aa47df5e129c6d09bd0bb9b5fd3977200adc08414aadeb6e2269af45ba1189",
+      "actual_remote_review_sha256": "a1f1caa53f72618ec09fbf606055517203d0c27760dfdf3003daaab90828a2bd",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_combat_entry01/episode.json",
+          "sha256": "4511f55272999e895de29be82ea4517e1aa3d766e11b2e6bc8df75afd741f3b2"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_melee_stage01/episode.json",
+          "sha256": "5d077517a744b87297805f21c06e82669561a57d1eac2956faa4fb2b3b9717ec"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_melee_damage01/episode.json",
+          "sha256": "efcab2c170e6614343ea9804f5b6ba944bd2ce08d88142fc577f1e3bfeb63c31"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_range_native_dedup_authority01.json",
+          "sha256": "5b45f112e750eddebd8267472ee3e534c7893cfcdbcdc31fa87ede1415e541a0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_combat_entry03/episode.json",
+          "sha256": "e06eaa93ec75a48b741a41a44cb814df935abbace88425606e032a21f8e297c5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_buzzard_template_name_authority03.json",
+          "sha256": "6af736b553f79c3d2f0f56881a99f0e4ed88b988fd26c34a1ba4b4723742777a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_range_stage07/episode.json",
+          "sha256": "e40f9c04251027943caa69517d7522e7a5173208d26a87c4622a86c5e678c614"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_range_stage07/review01.json",
+          "sha256": "2600ab4b65e3074b2142c82a5d7e576ac96187938d59ff8c2d90846f1295515e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_range_error04/episode.json",
+          "sha256": "de148ae98d7a0741af59cbb28d67ff0a74cf667eaba8cd6c38d17ad16767fdba"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_range_visual_review01.json",
+          "sha256": "0959c0a54b32d1da0259e4dc0de90767ce1da69a79fd6b177182b1b0594e8270"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_combat_final_park01/episode.json",
+          "sha256": "486e9bf2da74b77bdf134e9b4576c1067829397cb74d31df143b64ba42abd899"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_combat_scout_boundary01/episode.json",
+          "sha256": "d67947aa4b3cd9fb00a000082d3c39ed3acf234cc7308de1cc9b323e062c9589"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_combat_closed_capture01/episode.json",
+          "sha256": "98e456879416aa9bfad242a453eff9da64ca2767fec12d84e121f632522e255c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_combat_closed_visual_review01.json",
+          "sha256": "1d9f90b0104b88d2d9be457c85d3fdeb26357b7182bf542f2fa7372abed4754c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_145.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui145/primary_combat_admission_guards01.json",
+          "sha256": "e136cd4d078a3e41cd160e0a28a361e4edfd8056b2405bb0cfb1dfb719d5cfef"
+        }
+      ]
     }
   ],
-  "qualified_operations": 443,
+  "qualified_operations": 444,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
