@@ -137,6 +137,8 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
         return
     d=reviewed(t,review_path,'Erma')
     if d['frame']['sha256']!=e['frame']['sha256']:raise RuntimeError('reviewed Erma source image differs')
+    if state.get('framerate',0)<8:
+        raise RuntimeError('owned world click requires a normally rendering scout; no button input sent')
     t.execute({'kind':'hover','value':d['point']})
     t.receipt['mouse_before']=detail(t,'stable_settled_mouseover',
         lambda p:p.get('mouse',{}).get('mouseover_guid')==e['state']['target']['guid'])
