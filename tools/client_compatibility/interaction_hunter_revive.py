@@ -1,10 +1,12 @@
 """Cast ordinary Revive Pet once on the exact staged disposable owned pet."""
 import argparse
+from copy import deepcopy
 import json
 import time
 from pathlib import Path
 from . import actors, lab_runtime as lab
 from .hunter_revive_fixture import restored_pets
+from .hunter_revive_lifecycle import RevivePresence, corpse_budget, dead_identity, dead_pet_rows, native_revive_timing, bind_call_lifetime
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .interaction_owned_class_fixture import prepared, reviewed, saved, pets, origin_checks, SCRIPT_BOUNDARY
@@ -16,7 +18,7 @@ from .interaction_spellbook_navigation import wire_known, detail, navigate
 from .interaction_operations import click_case
 from .interaction_macros import require
 from .interaction_observation import read_page
-from .interaction_pet_dismiss import Presence, public_pet, vitals
+from .interaction_pet_dismiss import public_pet, vitals
 from .interaction_pet_summon import cast_identity
 from .interaction_pet_command_probe import expected_guid
 from .interaction_pet_target import pair
@@ -24,6 +26,17 @@ from .interaction_spellbook_recon import resources
 from .observation.inventory import Inventory
 from .observation.journal import entries
 from .world.objects import INDEX
+
+
+class ReviveTrial(Trial):
+    revive_before_submit = None
+
+    def execute(self, action, *, before_submit=None):
+        if action == {'kind': 'chat', 'value': '/cast Revive Pet'}:
+            if self.revive_before_submit is None or before_submit is not None:
+                raise RuntimeError('ordinary Revive requires its final native corpse budget guard')
+            return super().execute(action, before_submit=self.revive_before_submit)
+        return super().execute(action, before_submit=before_submit)
 
 
 def hunter_vitals(oracle):
@@ -70,7 +83,7 @@ def context(t, preparation, entry, fixture_path, allow_expired=False):
         fixture['runtime']['modern_world'] != t.receipt['runtime']['modern_world'] or
         saved(6) != old['natural_saved'] or not all(protected(old).values())):
         raise RuntimeError('exact disposable dead-pet preparation or protected actors differ')
-    oracle = Presence(session, 6, entered['started_at']).poll()
+    oracle = RevivePresence(session, 6, entered['started_at']).poll()
     fields = oracle.pet['fields'] if oracle.pet else {}
     current = pets(6)
     dead = [p for p in current if p['id'] == 16 and p['curhealth'] == 0 and p['slot'] == 0]
@@ -79,6 +92,7 @@ def context(t, preparation, entry, fixture_path, allow_expired=False):
     if ((not oracle.present() and not expired) or fields.get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
         fields.get(INDEX['OBJECT_FIELD_ENTRY']) != 299 or pair(fields, 'UNIT_FIELD_SUMMONEDBY') != 6 or
         fields.get(INDEX['UNIT_CREATED_BY_SPELL']) not in (13481, 883) or
+        not dead_pet_rows(fixture, current) or
         fields.get(INDEX['UNIT_FIELD_HEALTH'], 0) != 0 or not fields.get(INDEX['UNIT_FIELD_MAXHEALTH'], 0) or
         vitals(oracle)['UNIT_FIELD_HEALTH'] != 209):
         raise RuntimeError('requires the actual dead native owned Wolf16 and healthy owner')
@@ -100,13 +114,24 @@ def ready(t, oracle):
     return state, frame
 
 
-def load_dead(t, oracle, session):
+def load_dead(t, oracle, session, fixture_guard=None):
     if oracle.poll().present(): return
     if 883 not in wire_known(t, session): raise RuntimeError('ordinary Call Pet1 is not native-known')
     since = time.time()
-    t.receipt.update(call_dead_pet_started_at=since, call_dead_pet_fixture_only=True)
+    old_guid = oracle.pet['guid']
+    t.receipt.update(call_dead_pet_started_at=since, call_dead_pet_fixture_only=True, call_dead_pet_input_sent=False)
     t.persist()
-    t.execute({'kind': 'chat', 'value': '/cast Call Pet 1'})
+    def before_call(state):
+        oracle.poll()
+        if (oracle.present() or oracle.pet['guid'] != old_guid or not dead_identity(oracle.pet) or
+            old_guid not in oracle.removed or pair(oracle.player, 'UNIT_FIELD_SUMMON') != 0 or
+            t.receipt['call_dead_pet_input_sent']):
+            raise RuntimeError('fixture CallPet requires the same expired absent corpse; no CallPet submitted')
+        if fixture_guard is not None: fixture_guard()
+        t.receipt.update(call_dead_pet_input_sent=True, call_dead_pet_submitted_at=time.time(),
+            call_dead_pet_absence_before_submission={'guid': old_guid, 'native_present': False, 'native_summon': 0})
+        t.persist()
+    t.execute({'kind': 'chat', 'value': '/cast Call Pet 1'}, before_submit=before_call)
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
         oracle.poll()
@@ -121,49 +146,126 @@ def load_dead(t, oracle, session):
         not oracle.present() or oracle.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER']) != 16 or
         oracle.pet['fields'].get(INDEX['UNIT_FIELD_HEALTH'], 0) != 0):
         raise RuntimeError('one ordinary fixture Call Pet did not load the same dead Wolf16')
+    bind_call_lifetime(oracle, since, requested)
     t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
+
+
+def guard_fixture(t, old, fixture, inventory, oracle, owner_vitals):
+    if (saved(6) != old['natural_saved'] or not all(protected(old).values()) or
+        not dead_pet_rows(fixture, pets(6)) or hunter_vitals(oracle.poll()) != owner_vitals or
+        resources(inventory) != t.receipt['baseline_resources']):
+        raise RuntimeError('dead-pet fixture, named pet, owner resources or protected actors changed')
+
+
+def prepare_cast_corpse(t, oracle, session, old, fixture, inventory, owner_vitals):
+    oracle.poll()
+    budget = corpse_budget(oracle, time.time())
+    t.receipt['reviewed_corpse_budget'] = budget
+    t.receipt['reviewed_same_pet_fixture_recovery'] = not oracle.present() or not budget['setup_budget']
+    t.persist()
+    if oracle.present() and not budget['setup_budget']:
+        guid = oracle.pet['guid']
+        wait = {'guid': guid, 'started_at': time.time(), 'inputs_sent': False, 'initial_budget': budget}
+        t.receipt['natural_corpse_expiry_wait'] = wait
+        t.persist()
+        # An unbound login corpse may have nearly its full lifetime remaining.
+        # Wait for destruction and cleared ownership, never dismiss or reload it
+        # while present. Packet receipt alone cannot establish its death clock.
+        deadline = time.monotonic() + 65
+        while time.monotonic() < deadline:
+            oracle.poll()
+            if oracle.pet['guid'] != guid or not dead_identity(oracle.pet):
+                raise RuntimeError('reviewed dead corpse changed during its natural expiry wait')
+            if guid in oracle.removed and pair(oracle.player, 'UNIT_FIELD_SUMMON') == 0: break
+            time.sleep(.1)
+        else: raise RuntimeError('reviewed corpse did not expire naturally within its bounded wait')
+        wait.update(finished_at=time.time(), destruction_packet=oracle.destructions.get(guid),
+            native_summon_cleared=True)
+        t.persist()
+    guard_fixture(t, old, fixture, inventory, oracle, owner_vitals)
+    load_dead(t, oracle, session, lambda: guard_fixture(t, old, fixture, inventory, oracle, owner_vitals))
+    before, frame = ready(t, oracle)
+    guard_fixture(t, old, fixture, inventory, oracle, owner_vitals)
+    budget = corpse_budget(oracle.poll(), time.time())
+    t.receipt['pre_chat_corpse_budget'] = budget
+    t.persist()
+    if not budget['native_present'] or not budget['setup_budget']:
+        raise RuntimeError('dead-pet readiness exhausted the setup budget; no Revive submitted')
+    return before, frame
+
+
+def final_submission(t, oracle, old, fixture, inventory, owner_vitals, pet_guid, state):
+    if t.receipt.get('input_sent') or t.receipt.get('cast_input_sent'):
+        raise RuntimeError('the one ordinary Revive has already been submitted; refusing another Return')
+    guard_fixture(t, old, fixture, inventory, oracle, owner_vitals)
+    budget = corpse_budget(oracle.poll(), time.time())
+    valid = (budget['native_present'] and budget['submission_budget'] and budget['guid'] == pet_guid and
+        pair(oracle.player, 'UNIT_FIELD_TARGET') == pet_guid and
+        state.get('target', {}).get('guid') == expected_guid(oracle.pet) and
+        state['target'].get('health') == 0 and state['target'].get('name') == 'Wolf' and
+        not state.get('panels') and not state.get('lua_errors') and not state.get('blocked_actions'))
+    t.receipt.update(final_submission_corpse_budget=budget, final_submission_ready=bool(valid))
+    t.persist()
+    if not valid:
+        raise RuntimeError('dead corpse lacks the final native/public cast budget; no Revive submitted')
+    t.receipt.update(cast_started_at=time.time(), input_sent=True, cast_input_sent=True)
+    t.persist()
+
+
+def capture_outcome(t, oracle, **details):
+    # Regeneration is observed later through the same mutable native oracle.
+    # Freeze the pet at this capture window rather than moving its proof ahead.
+    t.receipt.update(**details, native_pet_after=deepcopy(oracle.pet))
+    t.persist()
 
 
 def run(t, preparation, entry, fixture_path, action, source, review_path):
     old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path, True)
     t.receipt.update(native_session=session, entry_source=bound(entry), dead_fixture_source=bound(fixture_path),
-        baseline_resources=resources(inventory), baseline_saved=saved(6), native_pet_before=oracle.pet,
-        qualification_added=False, input_sent=False)
+        baseline_resources=resources(inventory), baseline_saved=saved(6), native_reviewed_pet=deepcopy(oracle.pet),
+        native_pet_before=deepcopy(oracle.pet), qualification_added=False, input_sent=False, cast_input_sent=False)
+    owner_vitals = hunter_vitals(oracle)
     if action == 'recon':
         spell = caption(t, session)
-        load_dead(t, oracle, session)
+        load_dead(t, oracle, session, lambda: guard_fixture(t, old, fixture, inventory, oracle, owner_vitals))
         t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
         state, frame = ready(t, oracle)
         t.receipt.update(revive_spell=spell, state=state, frame=frame, protected_checks=protected(old),
-            native_ready_pet=oracle.pet, completed=True, phase='await_owned_revive_cast_review')
+            native_ready_pet=deepcopy(oracle.pet), native_corpse_budget=corpse_budget(oracle, time.time()),
+            completed=True, phase='await_owned_revive_cast_review')
         return
     recon = closed(source)
     if (recon.get('phase') != 'await_owned_revive_cast_review' or recon.get('runtime') != t.receipt['runtime'] or
         recon.get('actor') != t.fixture or recon.get('dead_fixture_source') != bound(fixture_path) or
         recon.get('entry_source') != bound(entry) or recon.get('revive_spell', {}).get('id') != 982):
         raise RuntimeError('closed same-entry observed Revive caption differs')
+    if (recon.get('native_ready_pet', {}).get('guid') == oracle.pet['guid'] and
+        recon.get('call_dead_pet_started_at') is not None):
+        bind_call_lifetime(oracle, recon['call_dead_pet_started_at'], recon.get('call_dead_pet_native_requests', []))
     if action == 'cast':
         checked = reviewed(t, review_path, 'Revive Pet')
         if checked.get('source') != bound(source) or checked.get('frame') != recon['frame']:
             raise RuntimeError('Revive review differs from the exact current dead-pet frame')
-        # A corpse can expire during the review. Restore only the same saved
-        # dead pet by its already verified slot, then check the new native and
-        # public corpse before the single fixed Revive input in this process.
-        t.receipt['reviewed_same_pet_fixture_recovery'] = not oracle.present()
-    load_dead(t, oracle, session)
-    before, frame = ready(t, oracle)
+    if action == 'cast':
+        before, frame = prepare_cast_corpse(t, oracle, session, old, fixture, inventory, owner_vitals)
+    else:
+        load_dead(t, oracle, session, lambda: guard_fixture(t, old, fixture, inventory, oracle, owner_vitals))
+        before, frame = ready(t, oracle)
     if action == 'refresh':
         t.receipt.update(revive_spell=recon['revive_spell'], recon_source=bound(source), state=before, frame=frame,
-            native_ready_pet=oracle.pet, completed=True, phase='await_owned_revive_cast_review')
+            native_ready_pet=deepcopy(oracle.pet), native_corpse_budget=corpse_budget(oracle, time.time()),
+            completed=True, phase='await_owned_revive_cast_review')
         return
     pet_guid = oracle.pet['guid']
     pet_max_health = oracle.pet['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]
-    owner_vitals = hunter_vitals(oracle)
     t.receipt.update(recon_source=bound(source), revive_spell=recon['revive_spell'],
-        native_vitals_before=owner_vitals, ordinary_input={'kind': 'chat', 'value': '/cast Revive Pet'},
-        cast_started_at=time.time(), input_sent=True)
+        native_vitals_before=owner_vitals, native_pet_before=deepcopy(oracle.pet),
+        ordinary_input={'kind': 'chat', 'value': '/cast Revive Pet'}, chat_setup_started_at=time.time())
     t.persist()
-    t.execute(t.receipt['ordinary_input'])
+    t.revive_before_submit = lambda state: final_submission(
+        t, oracle, old, fixture, inventory, owner_vitals, pet_guid, state)
+    try: t.execute(t.receipt['ordinary_input'])
+    finally: t.revive_before_submit = None
     deadline = time.monotonic() + 35
     while time.monotonic() < deadline:
         oracle.poll()
@@ -178,6 +280,7 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
     native = [row for p, row in parsed if row and p['direction'] == 'to_native' and p['name'] == 'CMSG_CAST_SPELL']
     go = [row for p, row in parsed if row and p['direction'] == 'from_native' and p['name'] == 'SMSG_SPELL_GO' and row['spell'] == 982]
     failures = [p for p in packets if p['name'] in ('SMSG_CAST_FAILED', 'SMSG_SPELL_FAILURE', 'SMSG_SPELL_FAILED_OTHER')]
+    timing = native_revive_timing(packets, native[0], t.receipt['final_submission_corpse_budget']['lifetime_started_at']) if len(native) == 1 else {}
     after, outcome_frame = t.observe('revive_outcome')
     fields = oracle.pet['fields'] if oracle.pet else {}
     checks = {'one_modern_cast': len(modern) == 1 and modern[0]['spell'] == 982,
@@ -185,6 +288,9 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
         'matching_native_completion': len(go) == 1 and len(native) == 1 and
             go[0]['counter'] == native[0]['counter'] and go[0]['caster'] == go[0]['unit'] == 6,
         'no_failure_packets': not failures,
+        'native_cast_timing': timing.get('one_matching_start_and_completion') is True and
+            timing.get('native_completion_ordered') is True and
+            timing.get('native_ten_second_cast') is True and timing.get('completion_within_conservative_corpse_deadline') is True,
         'same_owned_pet': oracle.present() and oracle.pet['guid'] == pet_guid and
             fields.get(INDEX['UNIT_FIELD_PETNUMBER']) == 16 and pair(fields, 'UNIT_FIELD_SUMMONEDBY') == 6,
         'native_dead_to_alive': fields.get(INDEX['UNIT_FIELD_HEALTH'], 0) > 0,
@@ -195,10 +301,10 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
         'saved_rows': saved(6) == t.receipt['baseline_saved'],
         'no_public_errors': not after.get('errors'),
         'ui_clean': not after.get('lua_errors') and not after.get('blocked_actions'), **protected(old)}
-    t.receipt.update(cast_finished_at=until, cast_packets=packets, native_cast_requests=native,
+    capture_outcome(t, oracle, cast_finished_at=until, cast_packets=packets, native_cast_requests=native,
         modern_cast_requests=modern, native_completions=go, failure_packets=failures,
-        capture_checks=checks, outcome_state=after, outcome_frame=outcome_frame, native_pet_after=oracle.pet)
-    t.persist()
+        native_cast_timing=timing,
+        capture_checks=checks, outcome_state=after, outcome_frame=outcome_frame)
     if not all(checks.values()):
         raise RuntimeError('one ordinary Revive did not pass native and public outcome checks; do not replay')
     deadline = time.monotonic() + 110
@@ -229,6 +335,7 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
     t.clean_panels()
     t.receipt.update(restoration_checks=restoration, retained_pet_after=restored, restored_frame=frame,
         restored_state=state, public_pet=public, native_pet_max_health=pet_max_health,
+        restored_native_pet=deepcopy(oracle.pet),
         offline_fixture_normalization_pending=True)
     if not all(restoration.values()): raise RuntimeError('Revive fixture restoration differs')
     t.receipt.update(completed=True, phase='owned_revive_cast_complete', qualified_scope=
@@ -243,7 +350,7 @@ if __name__ == '__main__':
     for key in ('source', 'review'): parser.add_argument('--' + key, type=Path)
     args = parser.parse_args()
     with actor('scout'):
-        trial = Trial(args.output, controller='code', chat_key_hold=1.2, chat_open_retry=True)
+        trial = ReviveTrial(args.output, controller='code', chat_key_hold=1.2, chat_open_retry=True)
         trial.receipt.update(custom_script_permission='blocked_by_user', softTargetInteract=SCRIPT_BOUNDARY)
         try: run(trial, args.preparation, args.entry, args.fixture, args.action, args.source, args.review)
         except Exception as error: trial.receipt.update(completed=False, failure=f'{type(error).__name__}: {error}')

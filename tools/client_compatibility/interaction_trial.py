@@ -181,7 +181,7 @@ class Trial:
         try:yield
         finally:self.combat_observation_deadline=None
 
-    def submit_chat(self,value,*,any_mode=False):
+    def submit_chat(self,value,*,any_mode=False,before_submit=None):
         """Submit exact observed text; diagnostics may start on any public page."""
         if (value.lstrip().split(maxsplit=1) or [''])[0].lower() in ('/run','/script','/console'):
             raise RuntimeError('custom script and console inputs are blocked by user instruction')
@@ -233,6 +233,7 @@ class Trial:
                 if time.monotonic()>deadline:
                     raise RuntimeError('chat edit differs from the selected command; refusing submission')
                 time.sleep(.2)
+            if before_submit is not None:before_submit(pending)
             self.io.key('Return',hold=hold)
             self.receipt['chat_submission_checks'][-1]['submitted']=True;self.persist()
             if any_mode:
@@ -251,19 +252,22 @@ class Trial:
                         if not exact:raise RuntimeError('diagnostic text changed; refusing to submit it')
                         # Match ordinary gameplay chat's bounded completion
                         # recovery. Never repeat text or submit changed input.
+                        if before_submit is not None:
+                            raise RuntimeError('guarded chat submission did not settle; refusing another Return')
                         row['recovery']='Return once for the same exact focused diagnostic'
                         self.persist();self.io.key('Return',hold=hold)
                         retried=True;deadline=time.monotonic()+12
                     time.sleep(.2)
 
-    def execute(self,action):
+    def execute(self,action,*,before_submit=None):
         with owned_input.lease():
             if action['kind']=='key':
                 hold=action.get('hold',.15)
                 if not .05<=hold<=2:raise ValueError('interaction key hold exceeds its bounded duration')
                 self.io.key(action['value'],hold=hold)
             elif action['kind']=='chat':
-                self.submit_chat(action['value'])
+                if before_submit is None:self.submit_chat(action['value'])
+                else:self.submit_chat(action['value'],before_submit=before_submit)
             elif action['kind']=='click':
                 hold=action.get('hold',.15)
                 if not .05<=hold<=2:raise ValueError('interaction click hold exceeds its bounded duration')
@@ -309,6 +313,8 @@ class Trial:
                 time.sleep(.2)
                 state,frame=self.observe(f'input_{len(self.receipt["cases"]):03}_chat_settling',seconds=seconds)
             if state.get('chat_edit_open'):
+                if before_submit is not None:
+                    raise RuntimeError('guarded chat submission did not settle; refusing another Return')
                 if not chat_input_matches(state,action['value']):
                     raise RuntimeError('chat input differs from the selected command; refusing to submit it')
                 transport.append({'reason':'selected command remained after name completion','input':'Return',

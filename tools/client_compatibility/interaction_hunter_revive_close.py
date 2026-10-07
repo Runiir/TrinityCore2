@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 from . import actors, lab_runtime as lab
 from .hunter_revive_fixture import restored_pets
+from .hunter_rest_accrual import preservation as rest_preservation
 from .interaction_bridge_deploy import shot
 from .interaction_hunter_stable_slots import bound
 from .interaction_owned_class_fixture import prepared, SCRIPT_BOUNDARY
@@ -36,6 +37,10 @@ def close(t, preparation, fixture_path, cast_path, park_path, finish_path, clean
     after = snapshot()
     hunter = after['6']
     allowed = {'totaltime', 'leveltime', 'logout_time', 'latency'}
+    rest = None
+    if hunter['native'].get('rest_bonus') != before['6']['native'].get('rest_bonus'):
+        rest = rest_preservation(before['6']['native'], hunter['native'], cast['entry_source'])
+        allowed.add('rest_bonus')
     changed = {k for k, v in before['6']['native'].items() if hunter['native'].get(k) != v}
     primary_path = Path(fixture['primary_stop_source']['path'])
     stop = closed(primary_path)
@@ -62,6 +67,7 @@ def close(t, preparation, fixture_path, cast_path, park_path, finish_path, clean
     t.receipt.update(sources=[bound(p) for p in (preparation, fixture_path, cast_path, park_path, finish_path, cleanup_path)],
         primary_stop_source=fixture['primary_stop_source'], all_offline_snapshot=after,
         hunter_changed_native_columns=sorted(changed), checks=checks, input_sent=False, qualification_added=False,
+        native_rest_accrual_preserved=rest,
         frame=shot(t.out / 'original_offline.png'), completed=all(checks.values()), phase='owned_revive_parked_boundary')
     if len(checks) != 21 or not all(checks.values()):
         raise RuntimeError('Revive offline preservation or disposable health restoration differs')

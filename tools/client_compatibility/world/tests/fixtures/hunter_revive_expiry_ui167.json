@@ -1,0 +1,90 @@
+{
+  "source": "client_interactions_20261007_ui167/hunter_revive_cast02; exact native created corpse expired before the one cast request",
+  "session": "796fac42",
+  "owner": 6,
+  "pet_guid": 17383895845845336071,
+  "packets": [
+    {
+      "time": 1791394437.912768,
+      "session": "796fac42",
+      "direction": "to_native",
+      "name": "CMSG_CAST_SPELL",
+      "body": "0373030000000000000000000000"
+    },
+    {
+      "time": 1791394437.9155984,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_START",
+      "body": "0106010603730300000208000000000000000000000000000000000000"
+    },
+    {
+      "time": 1791394437.9176176,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_GO",
+      "body": "010601060373030000000900000000000076163f00000040000000008fda13c65e7d4a426c0f62420000000000"
+    },
+    {
+      "time": 1791394437.9177597,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_GO",
+      "body": "010601060073030000000100000000000078163f00"
+    },
+    {
+      "time": 1791394437.9178283,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_UPDATE_OBJECT",
+      "body": "00000100000002f1072b0140f1030100000002899c802a0000904000002040a0f561420093d813c6c3f5484006711c9740e73d4a42f00000204076163f00e00f4940410000e040e1d192400000c0400000904005730005020300637b63bf0f400000780000800000070000002b0140f1090000002b0100004eea3e3f060000000600000000010202c6000000640000000a000000010000000800000000080000d0070000d00700004eea3e3fba2f8f3fec460000ec4600002449324124497241100000008582c66a7c010000000000000000803f0000803f73030000000000001f0000001a0000001e00000016000000170000000602000001000000c600000001000300160000000000803f"
+    },
+    {
+      "time": 1791394437.9206407,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_UPDATE_OBJECT",
+      "body": "00000100000000010603000c00000000002000220000070000002b0140f1310000000000000000000000"
+    },
+    {
+      "time": 1791394497.0079226,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_DESTROY_OBJECT",
+      "body": "070000002b0140f100"
+    },
+    {
+      "time": 1791394497.0088005,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_UPDATE_OBJECT",
+      "body": "00000100000000010603000c000000000020002200000000000000000000310000000000000000000000"
+    },
+    {
+      "time": 1791394498.2169087,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_START",
+      "body": "0106010604d60300000208000000000000102700000000000064000000"
+    },
+    {
+      "time": 1791394508.2174675,
+      "session": "796fac42",
+      "direction": "from_native",
+      "name": "SMSG_SPELL_GO",
+      "body": "0106010604d603000000090000000000001329400001060000000000000000420000000000f8e513c65ed23f42894c63424100000000"
+    }
+  ],
+  "chat_setup_started_at": 1791394491.1940212,
+  "native_request_at": 1791394498.206947,
+  "call_fixture_chat_setup_started_at": 1791394431.358468,
+  "call_fixture_native_requests": [
+    {
+      "time": 1791394437.912768,
+      "session": "796fac42",
+      "direction": "to_native",
+      "name": "CMSG_CAST_SPELL",
+      "body": "0373030000000000000000000000"
+    }
+  ]
+}

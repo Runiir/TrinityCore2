@@ -24,7 +24,17 @@ def pause(t,source,primary_stop):
     e=closed(source);stop=closed(primary_stop)
     count={'owned_abandon_cancel_parked_boundary':18,'owned_abandon_parked_boundary':19,
         'owned_tame_diagnostic_parked_boundary':20,'owned_tame_precast_parked_boundary':20,
-        'owned_reentry_parked_boundary':20,'owned_revive_parked_boundary':21}.get(e.get('phase'))
+        'owned_reentry_parked_boundary':20,'owned_revive_parked_boundary':21,
+        'owned_failed_revive_parked_boundary':21}.get(e.get('phase'))
+    if e.get('phase')=='owned_failed_revive_parked_boundary':
+        from .hunter_revive_failed_fixture import failed_cast
+        failed_source=Path(e.get('failed_cast_source',{}).get('path',''))
+        if (e.get('failed_cast_excluded') is not True or e.get('qualification_added') is not False or
+            e.get('input_sent') is not False or bound(failed_source)!=e.get('failed_cast_source') or
+            failed_cast(failed_source).get('runtime')!=e.get('runtime') or
+            e.get('checks',{}).get('failed_revive_preserved') is not True or
+            e.get('checks',{}).get('failed_revive_excluded') is not True):
+            raise RuntimeError('failed Revive boundary does not preserve the excluded closed failure')
     if (t.fixture.get('guid')!=2 or e.get('actor')!=t.fixture or e.get('runtime')!=t.receipt['runtime'] or
         count is None or len(e.get('checks',{}))!=count or not all(e['checks'].values()) or
         e.get('primary_stop_source')!=bound(primary_stop) or stop.get('phase')!='user_requested_primary_client_stopped' or

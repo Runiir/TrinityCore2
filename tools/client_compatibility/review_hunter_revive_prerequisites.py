@@ -24,6 +24,30 @@ def absent_clients():
                 raise RuntimeError('read-only prerequisite review requires both clients stopped')
 
 
+def public_revive(entry, recon, entry_ref):
+    """Read one actual stock caption from either source-bound Hunter recon form."""
+    detail = {'await_owned_tame_cast_review': 'fixture_tame_line2',
+        'await_owned_revive_cast_review': 'revive_page2_0'}.get(recon.get('phase'))
+    if (detail is None or recon.get('completed') is not True or recon.get('failure') is not None or
+        not recon.get('finished_at') or recon.get('entry_source') != entry_ref or
+        recon.get('native_session') != entry.get('native_session') or not entry.get('native_session') or
+        recon.get('runtime') != entry.get('runtime') or recon.get('actor') != entry.get('actor') or
+        recon.get('fixture_source') != entry.get('fixture_source') or
+        not entry['finished_at'] <= recon['started_at'] < recon['finished_at']):
+        raise RuntimeError('Revive stock caption is not bound to the actual closed Hunter entry')
+    observation = recon.get('spellbook_details', {}).get(detail, {})
+    state = observation.get('state', {})
+    probe = state.get('spellbook_probe', {})
+    rows = [r for r in probe.get('rows', []) if r.get('id') == 982]
+    if (observation.get('input_sent') is not False or state.get('source') != 'normal_addon_visible_ui_pixels' or
+        state.get('player') != 'Harnesshunt' or state.get('level') != 10 or
+        probe.get('skill_line') != 2 or len(rows) != 1 or rows[0].get('known') is not True or
+        rows[0].get('name') != 'Revive Pet' or rows[0].get('kind') != 'SPELL' or
+        (recon['phase'] == 'await_owned_revive_cast_review' and recon.get('revive_spell') != rows[0])):
+        raise RuntimeError('actual stock known Revive982 row or observed recon caption differs')
+    return rows[0]
+
+
 def review(output, entry_path, recon_path, pause_path, remote_path):
     started_at = time.time()
     output = output.resolve()
@@ -74,9 +98,8 @@ def review(output, entry_path, recon_path, pause_path, remote_path):
     cooldowns, = reader.unpack('H')
     history = [reader.unpack('IIHii') for _ in range(cooldowns)]
     reader.end()
-    public = recon['spellbook_details']['fixture_tame_line2']['state']['spellbook_probe']['rows']
-    public = [r for r in public if r.get('id') == 982]
-    if 982 not in spells or len(public) != 1 or public[0].get('known') is not True or public[0].get('name') != 'Revive Pet':
+    public = public_revive(entry, recon, bound(entry_path))
+    if 982 not in spells:
         raise RuntimeError('native and stock public Revive prerequisite disagree')
     abilities, _ = dbc('SkillLineAbility', 14)
     spell_rows, _ = dbc('Spell', 48)
@@ -106,7 +129,7 @@ def review(output, entry_path, recon_path, pause_path, remote_path):
         'sources': [bound(p) for p in (entry_path, recon_path, pause_path)], 'remote_source': bound(remote_path),
         'source_checkpoint': {'pointer': remote['pointer'], 'sha256': remote['archive_sha256'], 'bytes': remote['bytes']},
         'native_known_spell_packet': {**row, 'body_sha256': hashlib.sha256(body).hexdigest(),
-            'initial_login': initial, 'ids': spells, 'cooldowns': history}, 'public_revive': public[0],
+            'initial_login': initial, 'ids': spells, 'cooldowns': history}, 'public_revive': public,
         'dbc': {'hashes': {n: lab.sha256(lab.ROOT / 'data/dbc/enUS' / (n + '.dbc')) for n in
             ('SkillLineAbility', 'Spell', 'SpellLevels', 'SkillRaceClassInfo')},
             'ability': ability[0], 'levels': level[0], 'saved_skill': skill[0],

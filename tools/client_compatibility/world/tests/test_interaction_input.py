@@ -219,3 +219,46 @@ def test_closed_opener_can_retry_only_once(monkeypatch):
     monkeypatch.setattr(module.owned_input,'lease',nullcontext)
     with pytest.raises(RuntimeError,match='did not open'):t.submit_chat('/petfollow')
     assert events==['Return','Return']
+
+
+@pytest.mark.parametrize('guard_accepts',[False,True])
+def test_chat_submission_guard_runs_after_exact_text_before_final_return(monkeypatch,guard_accepts):
+    from types import SimpleNamespace
+    t=module.Trial.__new__(module.Trial);t.receipt={'cases':[]};t.persist=lambda:None
+    events=[];command='/cast Revive Pet'
+    t.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value)),
+        type=lambda value:events.append(('type',value)))
+    states=iter([{'chat_edit_open':True}, {'chat_edit_open':True,'chat_edit_text':command}])
+    t.observe=lambda *args,**kw:(next(states),{'file':'observed.png'})
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    def guard(state):
+        assert state['chat_edit_text']==command
+        assert t.receipt['chat_submission_checks'][-1]['matches']
+        assert not t.receipt['chat_submission_checks'][-1]['submitted']
+        events.append(('guard',command))
+        if not guard_accepts:raise RuntimeError('corpse expired before submission')
+    if guard_accepts:t.submit_chat(command,before_submit=guard)
+    else:
+        with pytest.raises(RuntimeError,match='corpse expired'):t.submit_chat(command,before_submit=guard)
+    expected=[('key','Return'),('type',command),('guard',command)]
+    assert events==expected+([('key','Return')] if guard_accepts else [])
+    assert t.receipt['chat_submission_checks'][-1]['submitted'] is guard_accepts
+
+
+def test_guarded_chat_never_retries_return_after_submission_attempt(monkeypatch):
+    from types import SimpleNamespace
+    t=module.Trial.__new__(module.Trial);t.receipt={'cases':[]};t.persist=lambda:None
+    events=[];command='/cast Revive Pet'
+    t.io=SimpleNamespace(key=lambda value,**kw:events.append(('key',value)),
+        type=lambda value:events.append(('type',value)))
+    def observe(label,**kw):
+        text='' if label.endswith('_chat_open') else command
+        return {'chat_edit_open':True,'chat_edit_text':text},{'file':label}
+    t.observe=observe
+    ticks=iter([0,0,0,13]);monkeypatch.setattr(module.time,'monotonic',lambda:next(ticks))
+    monkeypatch.setattr(module.time,'sleep',lambda _:None)
+    monkeypatch.setattr(module.owned_input,'lease',nullcontext)
+    with pytest.raises(RuntimeError,match='refusing another Return'):
+        t.execute({'kind':'chat','value':command},before_submit=lambda state:events.append(('guard',command)))
+    assert events==[('key','Return'),('type',command),('guard',command),('key','Return')]
