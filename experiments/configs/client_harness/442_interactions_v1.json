@@ -7205,7 +7205,8 @@
       "fixture": "pet_class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_hunter_tame_native_pet_and_stable_cache"
     },
     {
       "id": "pets.abandon_confirm",
@@ -15861,8 +15862,110 @@
       ],
       "archive_sha256": "277066799046e2cf5e6ac6f65f12bd9340da751b34720768aaaa52dc85b252fd",
       "actual_remote_review_sha256": "40ed0de395b7af360e2372d8f619bcd5e70771e322f519f9507eb8421d63ce01"
+    },
+    {
+      "id": "owned_hunter_tame_native_pet_and_stable_cache",
+      "scope": "One ordinary Tame Beast1515 on an existing Young Wolf creates the owned level10 Wolf12. Native and modern ten-second channel packets, stock channel observations, one native Added, one modern StableInfo and passive stock cache agree. Stored Harnesswolf4, all protected actors, owner pose/resources/saved rows and the user-stopped primary are preserved through normal parking and a 20-check closure.",
+      "limits": "Only this level10 Hunter/existing level1 Wolf variant is qualified. The native server emits an Interrupted failure after creating the pet, and the stock client displays it; error-free channel termination remains open. Stable capacity200, other tame variants, revive, vehicle controls and same-client reentry remain open. Local failed receipts are excluded. Scripts stay blocked and original softTargetInteract0 is unrestored at stock1. Both owned clients are stopped after an eight-check resource pause.",
+      "operations": [
+        "pets.tame"
+      ],
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_prepare02/episode.json",
+          "sha256": "70996ff92604b86a790a1a93847af08bcb2e75c874b9afde0130377b73d95980"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_entry02/episode.json",
+          "sha256": "9b4f138057aacc91d0794c423f174223d207ce2c3b6fc8ca155f5e8aadde8724"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_stored02/episode.json",
+          "sha256": "2599c6b00d7f58878699b675f83b82340048d1335398c818e56611f4e23bec4e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_wolf_stage01/episode.json",
+          "sha256": "ccfec41240027ed06bf230e60648ecaeb0fdefdfd621d173a8548af71287ceed"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_review_refresh01/episode.json",
+          "sha256": "82d09b30f4cb3cdf0773125390930109a65123315bbdea27cca49ef17ddc4ee1"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_cast01/episode.json",
+          "sha256": "cb7d92b47d0fc1bf00f19ccf48ea77dbdde4f71f2c241916e3b53289359d911c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_pose_restore01/episode.json",
+          "sha256": "ddf4fb3a33c96abb63dac522f9a2b156391e0b171c7b85a51281ff9704bbdc79"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_park01/episode.json",
+          "sha256": "28a9ae75e220564b32c16a980724e318373cd22f45aaf328033ed3dd4e85aea8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_original_finish01/episode.json",
+          "sha256": "99e29e4f5f6abce99531c586bac3bc6b2086b72b5d67801f62831578667be4df"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_success_close02/episode.json",
+          "sha256": "dee4448a9fdfc03e3526406adc236d461fa891cc3dbf1246c3349c900a72eb21"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_stable_before02/episode.json",
+          "sha256": "4666b961733a505af6d8fa4ffb2a468399ab5f72e5b6d30ea3b2a7da7f282011"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_stable_after03/episode.json",
+          "sha256": "cd12dfa596de5813dff03f321564033c9ef5c2daa10c1573f65c1fef50247153"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_local_admission03.json",
+          "sha256": "a5a975a0732ad7c7ec68e6e8f8f6f5a7556a11daa5f2c8c2096b57183711bffe"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/hunter_tame_termination_diagnostic01.json",
+          "sha256": "2b3cdbd95650134e169949489d5793242426943e96792ff2bac5e86999aa0e34"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/tame_stable_deploy03/deployment.json",
+          "sha256": "8f422c729fec2d569a107b5d1134eaabef6456e2cc44bee12aed9c1e10cd3b2f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/research_stable_candidate_tests01.json",
+          "sha256": "efa21f151ef1a7d29abf16d5c9ed408bcc3edc575ffc4199505369e65287ff3b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/scout_tame_publication_pause01/episode.json",
+          "sha256": "c34ae10dc7b15f12d8eea9845d0c852814d9a4fe4ad8fd2eb5fec3f460cc9d71"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_161.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui161/carried_primary_stop01.json",
+          "sha256": "72c45f6519bb9e8c4b241b84c74e4da67b5bcbc8ff5418cf54ff02dc491796a5"
+        }
+      ],
+      "archive_sha256": "977a61f9689d8a25264879c000115bee069842ec7cae128118810dd03fe4b2eb",
+      "actual_remote_review_sha256": "7483539998a8776a9aea584581fddff391d77556f67058c232ccd77acae51764"
     }
   ],
-  "qualified_operations": 449,
+  "qualified_operations": 450,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
