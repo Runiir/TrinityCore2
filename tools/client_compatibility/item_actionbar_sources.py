@@ -155,7 +155,7 @@ def validate_bundle(values, refs):
         p.get('primary_stop_source') == c.get('primary_stop_source') == refs['primary_stop'] and
         strict_equal(p.get('before'), snapshot) and strict_equal(p.get('after'), snapshot) and p.get('input_sent') is False and
         p.get('qualification_added') is False and p.get('action') == 'stop_parked_scout_after_learning_restoration' and
-        p.get('controller') == 'code' and p.get('model') is None and
+        p.get('controller') in ('code', 'code_diagnostic_ordinary_inputs') and p.get('model') is None and
         p.get('custom_script_permission') == 'blocked_by_user' and c['finished_at'] < p['started_at'],
         'whole paused six-actor learning boundary or chronology differs')
     whole(p.get('checks'), PAUSE_NAMES)

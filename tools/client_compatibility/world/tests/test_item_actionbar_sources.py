@@ -38,11 +38,13 @@ def fixture(tmp_path):
         'proof': proof, 'sources': {k: {'path': str((evidence / k / 'episode.json').resolve()), 'sha256': 'a' * 64} for k in s.ROLES},
         'primary_stop_source': s.bound(paths['primary_stop'])}
     write(paths['closure'], closure)
-    pause = {'phase': 'hunter_learn_scout_resource_paused', 'completed': True, 'failure': None,
+    pause = {'schema': 'client442_laya_interactions_v1',
+        'phase': 'hunter_learn_scout_resource_paused', 'completed': True, 'failure': None,
         'started_at': 12, 'finished_at': 13, 'actor': actor, 'runtime': runtime, 'source': s.bound(paths['closure']),
         'primary_stop_source': s.bound(paths['primary_stop']), 'before': native, 'after': native,
         'input_sent': False, 'qualification_added': False, 'action': 'stop_parked_scout_after_learning_restoration',
-        'controller': 'code', 'model': None, 'custom_script_permission': 'blocked_by_user',
+        'controller': 'code_diagnostic_ordinary_inputs', 'model': None, 'revision': None,
+        'fine_tuned': False, 'cases': [], 'cleanup': [], 'custom_script_permission': 'blocked_by_user',
         'checks': dict.fromkeys(s.PAUSE_NAMES, True), 'game_before': {'pid': 40, 'start_ticks': '1000'}}
     write(paths['pause'], pause)
     archive = 'artifacts/client_harness/442_interactions_20990101_170.tar.gz'
@@ -65,6 +67,55 @@ def fixture(tmp_path):
 
 def call(root, repo, paths):
     return s.source_bundle(*(paths[k] for k in ('closure', 'pause', 'remote', 'checkpoint', 'primary_stop')), root=root, repo=repo)
+
+
+def update_pause(paths, values):
+    """Keep synthetic authority genuinely hash-bound after an identity variation."""
+    write(paths['pause'], values['pause'])
+    member = next(row for row in values['checkpoint']['file_manifest'] if row['path'].endswith('/pause/episode.json'))
+    member.update(bytes=paths['pause'].stat().st_size, sha256=s.bound(paths['pause'])['sha256'])
+    write(paths['checkpoint'], values['checkpoint'])
+
+
+@pytest.mark.parametrize('controller', ['code', 'code_diagnostic_ordinary_inputs'])
+def test_pause_accepts_exact_code_identity_and_preserves_actual_bound_source_bytes(tmp_path, controller):
+    root, repo, paths, values = fixture(tmp_path)
+    values['pause']['controller'] = controller
+    update_pause(paths, values)
+    before = {role: path.read_bytes() for role, path in paths.items()}
+    result = call(root, repo, paths)
+    assert result['pause']['controller'] == controller and result['pause']['model'] is None
+    assert result['pause'] == values['pause']
+    assert result['predecessor'] == {role: s.bound(path) for role, path in paths.items()}
+    assert {role: path.read_bytes() for role, path in paths.items()} == before
+
+
+@pytest.mark.parametrize('controller', [None, True, False, 0, 1, '', 'laya', 'laya_candidate_selection',
+    'jev', 'learned', 'code_candidate_selection', 'code_diagnostic_ordinary_inputs ', ' code', [], {}, ['code']])
+def test_pause_rejects_learned_unknown_and_non_string_controller_identities(tmp_path, controller):
+    root, repo, paths, values = fixture(tmp_path)
+    values['pause']['controller'] = controller
+    update_pause(paths, values)
+    with pytest.raises(RuntimeError, match='whole paused six-actor learning boundary'):
+        call(root, repo, paths)
+
+
+@pytest.mark.parametrize('controller', ['code', 'code_diagnostic_ordinary_inputs'])
+@pytest.mark.parametrize('model', [False, True, 0, 1, '', 'gpt-6.1-sol', 'laya', 'Jev', [], {}, ['gpt-6.1-sol']])
+def test_pause_never_accepts_non_null_model_for_either_code_identity(tmp_path, controller, model):
+    root, repo, paths, values = fixture(tmp_path)
+    values['pause'].update(controller=controller, model=model)
+    update_pause(paths, values)
+    with pytest.raises(RuntimeError, match='whole paused six-actor learning boundary'):
+        call(root, repo, paths)
+
+
+def test_pause_requires_an_explicit_recognized_controller(tmp_path):
+    root, repo, paths, values = fixture(tmp_path)
+    values['pause'].pop('controller')
+    update_pause(paths, values)
+    with pytest.raises(RuntimeError, match='whole paused six-actor learning boundary'):
+        call(root, repo, paths)
 
 
 def test_real_closed_caller_sources_and_portable_archive_values_bind_without_future_hash(tmp_path):
