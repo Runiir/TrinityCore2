@@ -68,7 +68,7 @@ def prepare(t,previous,park,finish,original,primary):
         input_sent=False,qualification_added=False,
         qualified_scope='Fresh read-only retained Hunter boundary after separately closed primary work. '
             'Original historical receipts stay immutable; no creation, purchase, rename, pose or pet mutation.')
-    t.persist();install_observer(t,142)
+    t.persist();install_observer(t,143)
     if actors.register(6)!=fixture:raise RuntimeError('retained Hunter registration differs')
     t.receipt.update(completed=True,phase='await_owned_class_lobby_review',frame=shot(t.out/'owned_lobby.png'))
 
