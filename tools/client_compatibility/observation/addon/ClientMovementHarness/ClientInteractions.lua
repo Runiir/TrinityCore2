@@ -147,7 +147,7 @@ local function snapshot(viewMode,viewPage)
     local mode,page=viewMode or mode,viewPage or page
     local data={mode=mode,build=tonumber((select(2,GetBuildInfo()))),interface=select(4,GetBuildInfo()),player=UnitName('player'),guid=UnitGUID('player'),
         level=UnitLevel('player'),binding_count=GetNumBindings(),errors=errors,lua_errors=luaErrors,
-        blocked_actions=blockedActions,observer_version=145,observer_skips=observerSkips,
+        blocked_actions=blockedActions,observer_version=146,observer_skips=observerSkips,
         character_expanded=CharacterFrame and not not CharacterFrame.Expanded or false,
         appearance={helm=call(ShowingHelm),cloak=call(ShowingCloak)}}
     for key,value in pairs(Client442ObserveChatEdit()) do data[key]=value end
@@ -803,7 +803,7 @@ local function update()
             autoPages=math.ceil((data.control_count or 0)/12)
             autoPage=autoPhase=='controls' and autoPages>0 and math.min(controlPage,autoPages) or -1
             equipmentTick=equipmentTick+1
-            if equipmentTick%3==0 and #data.panels==0 and #data.bags==0 then autoPage=-6 end
+            if equipmentTick%3==0 and #data.panels==0 then autoPage=-6 end
             if equipmentTick%2==0 then
                 if WhoFrame and WhoFrame:IsVisible() then autoPage=-11
                 elseif AddonList and AddonList:IsVisible() then autoPage=-10
