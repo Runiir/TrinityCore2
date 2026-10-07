@@ -125,7 +125,7 @@ def load_dead(t, oracle, session):
 
 
 def run(t, preparation, entry, fixture_path, action, source, review_path):
-    old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path, action in ('recon', 'refresh'))
+    old, entered, fixture, session, oracle, inventory = context(t, preparation, entry, fixture_path, True)
     t.receipt.update(native_session=session, entry_source=bound(entry), dead_fixture_source=bound(fixture_path),
         baseline_resources=resources(inventory), baseline_saved=saved(6), native_pet_before=oracle.pet,
         qualification_added=False, input_sent=False)
@@ -135,22 +135,27 @@ def run(t, preparation, entry, fixture_path, action, source, review_path):
         t.execute({'kind': 'chat', 'value': '/targetexact Wolf'})
         state, frame = ready(t, oracle)
         t.receipt.update(revive_spell=spell, state=state, frame=frame, protected_checks=protected(old),
-            completed=True, phase='await_owned_revive_cast_review')
+            native_ready_pet=oracle.pet, completed=True, phase='await_owned_revive_cast_review')
         return
     recon = closed(source)
     if (recon.get('phase') != 'await_owned_revive_cast_review' or recon.get('runtime') != t.receipt['runtime'] or
         recon.get('actor') != t.fixture or recon.get('dead_fixture_source') != bound(fixture_path) or
         recon.get('entry_source') != bound(entry) or recon.get('revive_spell', {}).get('id') != 982):
         raise RuntimeError('closed same-entry observed Revive caption differs')
-    if action == 'refresh': load_dead(t, oracle, session)
+    if action == 'cast':
+        checked = reviewed(t, review_path, 'Revive Pet')
+        if checked.get('source') != bound(source) or checked.get('frame') != recon['frame']:
+            raise RuntimeError('Revive review differs from the exact current dead-pet frame')
+        # A corpse can expire during the review. Restore only the same saved
+        # dead pet by its already verified slot, then check the new native and
+        # public corpse before the single fixed Revive input in this process.
+        t.receipt['reviewed_same_pet_fixture_recovery'] = not oracle.present()
+    load_dead(t, oracle, session)
     before, frame = ready(t, oracle)
     if action == 'refresh':
         t.receipt.update(revive_spell=recon['revive_spell'], recon_source=bound(source), state=before, frame=frame,
-            completed=True, phase='await_owned_revive_cast_review')
+            native_ready_pet=oracle.pet, completed=True, phase='await_owned_revive_cast_review')
         return
-    checked = reviewed(t, review_path, 'Revive Pet')
-    if checked.get('source') != bound(source) or checked.get('frame') != recon['frame']:
-        raise RuntimeError('Revive review differs from the exact current dead-pet frame')
     pet_guid = oracle.pet['guid']
     pet_max_health = oracle.pet['fields'][INDEX['UNIT_FIELD_MAXHEALTH']]
     owner_vitals = hunter_vitals(oracle)
