@@ -1,5 +1,5 @@
 """Deploy the owned bridge while both existing clients stay at character selection."""
-import argparse,json,time
+import argparse,fcntl,json,time
 from pathlib import Path
 from . import actors,lab_runtime as lab,owned_input
 from .interaction_social import actor
@@ -117,6 +117,15 @@ def lobby(t,directory,review_path,stage):
 
 
 def finish(t,directory,review_path):
+    # Different owned clients share this deployment's joined completion record.
+    # Hold the lock across the read, validation and update, not just the write.
+    with (directory/'deployment_finish.lock').open('a') as handle:
+        fcntl.flock(handle,fcntl.LOCK_EX)
+        try:return finish_locked(t,directory,review_path)
+        finally:fcntl.flock(handle,fcntl.LOCK_UN)
+
+
+def finish_locked(t,directory,review_path):
     report=current(t,directory);name=t.fixture['actor'];d,_=review(t,review_path,t.fixture['character_name'])
     if (d.get('selected_character'),d.get('selected_level'))!=(t.fixture['character_name'],t.fixture['level']):
         raise RuntimeError('restored offline selected identity differs')
