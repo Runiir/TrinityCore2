@@ -27,6 +27,9 @@ def proof(data,packets,phase,digests=None):
     if phase=='owned-slot':
         from .hunter_slot_evidence import proof as slot_proof
         return slot_proof(data,digests,packets)
+    if phase=='owned-pair':
+        from .hunter_pair_evidence import proof as pair_proof
+        return pair_proof(data,digests,packets)
     if phase=='ability':
         from .primary_throw_checkpoint_evidence import proof as ability_proof
         return ability_proof(data,digests,packets)
@@ -112,13 +115,17 @@ def review(directory,output,phase):
             reader=DigestReader(raw)
             with tarfile.open(fileobj=reader,mode='r|gz') as archive:
                 for member in archive:
-                    if phase in ('ability','owned-slot') and member.name=='tracking/packets.jsonl':
+                    if phase in ('ability','owned-slot','owned-pair') and member.name=='tracking/packets.jsonl':
                         if phase=='ability':key='primary_faced_throw_native01/episode.json'
-                        else:
+                        elif phase=='owned-slot':
                             from .hunter_slot_evidence import NAMES
                             key=NAMES['restore']+'/episode.json'
                         field='packets' if phase=='ability' else 'call_pet_packets'
-                        wanted={packet_key(p) for p in data[key][field]}
+                        if phase=='owned-pair':
+                            refs=data['hunter_pair_close01/episode.json']['sources']
+                            keys=[str(Path(refs[i]['path']).relative_to(directory)) for i in (3,5)]
+                            wanted={packet_key(p) for k in keys for p in data[k][field]}
+                        else:wanted={packet_key(p) for p in data[key][field]}
                         require(0<len(wanted)<=256,'ability outcome packet bound differs')
                         with archive.extractfile(member) as f:
                             for line in f:
@@ -154,5 +161,5 @@ def review(directory,output,phase):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--directory',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot'],required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--phase',choices=['pre','repeat','integrity','ability','owned-slot','owned-pair'],required=True)
     a=p.parse_args();review(a.directory,a.output,a.phase)
