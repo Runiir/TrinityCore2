@@ -37,6 +37,46 @@ def native_catalog(body):
     r.end();return {'master':guid,'last_slot':last,'stable_capacity':last-4,'pets':rows}
 
 
+def restore(t,old,e,o,inv,retained):
+    # Stables is explicitly selected, so return to the ordinary state page
+    # before cleanup's state observations. Diagnostic commands never open it.
+    read_page(t,'stable_restore_state','state','/tcui')
+    t.clean_panels();t.execute({'kind':'chat','value':'/targetexact Erma'})
+    state,frame=t.observe('stable_request_restored');o.poll()
+    checks={'resources':resources(inv.poll())==e['baseline_resources'],'saved_rows':saved(6)==e['baseline_saved'],
+        'retained_named_pet':saved_pet_unchanged(retained,pets(6),time.time()),'owned_pet_present':o.pet is not None,
+        'position':state['world_position']==e['state']['world_position'],
+        'selection':state.get('target',{}).get('guid')==e['state']['target']['guid'],
+        'panels_closed':not state.get('panels'),'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions'),
+        **protected(old)}
+    t.receipt.update(restoration_checks=checks,restored_frame=frame);t.persist()
+    if not all(checks.values()):raise RuntimeError('stable capture preservation differs')
+
+
+def recover(t,preparation,source,old,session,o,inv,retained):
+    path=source.resolve()
+    if path.name!='episode.json' or not path.is_relative_to(lab.ROOT/'evidence') or path.is_symlink():
+        raise RuntimeError('requires a private failed stable episode')
+    failed=json.loads(path.read_text())
+    if (failed.get('completed') is not False or not failed.get('failure') or not failed.get('finished_at') or
+        failed.get('actor')!=t.fixture or failed.get('runtime')!=t.receipt['runtime'] or
+        failed.get('native_session')!=session or failed.get('capture_disarmed') is not True or
+        failed.get('fixture_source',{}).get('sha256')!=lab.sha256(preparation) or
+        (lab.ROOT/'run/owned_stable_request_probe.json').exists()):
+        raise RuntimeError('failed stable recovery identity or disarm differs')
+    bound=Path(failed.get('source',{}).get('path','')).resolve();e=closed(bound)
+    if (lab.sha256(bound)!=failed['source']['sha256'] or e.get('native_session')!=session or
+        e.get('runtime')!=t.receipt['runtime'] or e.get('actor')!=t.fixture or
+        e.get('phase')!='hunter_stable_request_staged' or
+        resources(inv)!=e['baseline_resources'] or saved(6)!=e['baseline_saved'] or
+        not saved_pet_unchanged(e['baseline_pets'],retained,time.time())):
+        raise RuntimeError('failed stable recovery baseline differs')
+    t.receipt.update(failed_source={'path':str(path),'sha256':lab.sha256(path)},stable_choice_replayed=False)
+    restore(t,old,e,o,inv,retained)
+    t.receipt.update(completed=True,phase='hunter_stable_recovery_verified',
+        qualified_scope='Normal diagnostic-page and panel restoration only; the failed opening remains excluded.')
+
+
 def eligibility(t,preparation,entry):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     if tuple(t.fixture.get(k) for k in ('guid','account_id','character_name','class','level'))!=(6,2,'Harnesshunt',3,10):
@@ -68,6 +108,8 @@ def staged(t,npc,o,label):
 
 def suite(t,preparation,entry,action,source=None,review_path=None):
     old,session,npc,o,inv,retained=eligibility(t,preparation,entry)
+    if action=='recover':
+        recover(t,preparation,source,old,session,o,inv,retained);return
     if action=='stage':
         t.clean_panels();t.execute({'kind':'chat','value':'/targetexact Erma'})
         state,frame,guid=staged(t,npc,o,'stable_master_staged')
@@ -140,23 +182,15 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
         t.receipt['capture_packets']=[p for p in entries(journal) if p.get('session')==session and
             p.get('time',0)>=started] if journal.is_file() else []
         if lab.sha256(path)!=digest:raise RuntimeError('armed stable probe changed; refusing disarm')
-        path.unlink();t.receipt['capture_disarmed']=True;t.clean_panels()
-        t.execute({'kind':'chat','value':'/targetexact Erma'});state,frame=t.observe('stable_request_restored');o.poll()
-        checks={'resources':resources(inv.poll())==e['baseline_resources'],'saved_rows':saved(6)==e['baseline_saved'],
-            'retained_named_pet':saved_pet_unchanged(retained,pets(6),time.time()),'owned_pet_present':o.pet is not None,
-            'position':state['world_position']==e['state']['world_position'],
-            'selection':state.get('target',{}).get('guid')==e['state']['target']['guid'],
-            'panels_closed':not state.get('panels'),'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions'),
-            **protected(old)}
-        t.receipt.update(restoration_checks=checks,restored_frame=frame);t.persist()
-        if not all(checks.values()):raise RuntimeError('stable capture preservation differs')
+        path.unlink();t.receipt['capture_disarmed']=True
+        restore(t,old,e,o,inv,retained)
     t.receipt.update(completed=True,phase='hunter_stable_native_open_verified',
         qualified_scope='Ordinary Erma gossip opens the native owned Hunter stable catalog. Named pet cache, level, model and '
             'selection match native records; resources, saved pet and all protected actors restore. Slot mutation and capacity remain open.')
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','refresh','capture'])
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','refresh','capture','recover'])
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
     if a.action!='stage' and not a.source:p.error('requires a closed staging source')
