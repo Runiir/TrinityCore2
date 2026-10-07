@@ -1,5 +1,5 @@
 """Capture only the two observed lobby requests under an exact closed entry lease."""
-import hashlib,json
+import hashlib,json,time
 import pytest
 from tools.client_compatibility.world.tests.test_native_bridge_codec import codec,result
 
@@ -74,7 +74,8 @@ def test_secrets_other_actions_foreign_sessions_and_wrong_widths_are_excluded(co
 
 
 def test_raw_event_is_separate_and_authentication_remains_excluded(codec,tmp_path):
-    c=config(tmp_path);probe(codec,tmp_path,c)
+    c=config(tmp_path);now=time.time();c.update(created_at=now-1,expires_at=now+100)
+    assert probe(codec,tmp_path,c,now=now)
     result(codec,op='packet_diagnostic',root=str(tmp_path),name='CMSG_GET_ACCOUNT_CHARACTER_LIST',body='0000000000')
     rows=[json.loads(line) for line in (tmp_path/'evidence/owned_entry_request_packets.jsonl').read_text().splitlines()]
     assert len(rows)==1 and rows[0]['name']=='CMSG_GET_ACCOUNT_CHARACTER_LIST'
