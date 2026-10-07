@@ -28,6 +28,7 @@ def run(t,preparation,entry,action,before_path=None,cast_path=None):
         input_sent=True,gameplay_input_sent=False,qualification_added=False);t.persist()
     page,frame=read_page(t,'tame_stable_cache','stables','/tcui stables')
     probe=page['stable_probe'];wire=None
+    t.receipt.update(public_stable=probe,frame=frame);t.persist()
     if action=='before':
         if (len(retained)!=1 or retained[0]['id']!=4 or retained[0]['slot']!=5 or retained[0]['active']!=0 or
                 public_rows(probe)!=[(6,'Harnesswolf',10,903)] or probe.get('stable_slots')!=16):
