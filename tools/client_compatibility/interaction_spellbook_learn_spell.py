@@ -10,6 +10,7 @@ from .hunter_learn_contract import (require as guard, SPELL, NAME, TRAINER_GUID,
 from .hunter_learn_sources import closed, linked, whole, private_json
 from .hunter_rest_accrual import bound
 from .hunter_learn_trainer import SPAWN_SOURCE, spawn_source_value, trainer_identity, validate_trainer_identity
+from .hunter_learn_autobar import public_assignments
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .interaction_owned_class_fixture import prepared, reviewed, enter as ordinary_enter, saved, pets, SCRIPT_BOUNDARY
@@ -128,13 +129,18 @@ def recon(t, preparation, entry):
     probe, row = caption(t, login, 'hunter_learn_future', False)
     t.clean_panels()
     bars = bar_detail(t, 'hunter_learn_bar_baseline')
-    guard(bars.get('active_spec') == old['learn_offline_baseline']['6']['native']['activeTalentGroup'] + 1,
-        'public and native active action spec differ')
+    baseline_saved = saved(6)
+    active_spec = old['learn_offline_baseline']['6']['native']['activeTalentGroup']
+    t.receipt.update(baseline_actionbar_public=bars, baseline_saved_observation=baseline_saved)
+    t.persist()
+    guard(baseline_saved == old['learn_offline_baseline']['6']['saved'],
+        'saved Hunter baseline changed before learning recon')
+    public_assignments(bars, baseline_saved['actions'], active_spec)
     state, frame = t.observe('hunter_learn_untrained_rendered')
-    baseline_value = {'snapshot': old['learn_offline_baseline'], 'saved': saved(6), 'resources': resources(oracle),
+    baseline_value = {'snapshot': old['learn_offline_baseline'], 'saved': baseline_saved, 'resources': resources(oracle),
         'pets': pets(6), 'prerequisite_fingerprint': prerequisite, 'entry_source': bound(entry),
         'rest_baseline_source': entered['rest_baseline_source'], 'native_pet_reload': entered['native_pet_reload'],
-        'bar_layout': bars, 'active_spec': old['learn_offline_baseline']['6']['native']['activeTalentGroup']}
+        'bar_layout': bars, 'active_spec': active_spec}
     t.receipt.update(entry_source=bound(entry), baseline=baseline_value, login_known_spell_ids=sorted(login),
         future_probe=probe, future_row=row, state=state, frame=frame, book_layout_baseline=layout,
         native_session=session, protected_checks=protected(old), input_sent=True,

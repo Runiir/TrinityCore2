@@ -77,7 +77,7 @@ def public_assignments(public, rows, active_spec):
         kind, ident = button.get('kind'), button.get('id')
         require((entry is None and not kind and ident in (None, False, 0)) or
             (entry is not None and type(ident) is int and ident == entry[0] and
-                {'spell': 0, 'companion': 0, 'macro': 64, 'item': 128}.get(kind) == entry[1]),
+                {'spell': 0, 'companion': 0, 'flyout': 48, 'macro': 64, 'item': 128}.get(kind) == entry[1]),
             'public action assignment differs from exact saved rows')
     return buttons
 

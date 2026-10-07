@@ -17,6 +17,8 @@ from tools.client_compatibility import hunter_learn_evidence as evidence
 from tools.client_compatibility import hunter_learn_preservation as preservation
 from tools.client_compatibility.interaction_metrics import choice_counts
 from tools.client_compatibility.world.tests.test_interaction_checkpoint_diagnostic import diagnostic_batch
+from tools.client_compatibility.world.tests.test_hunter_learn_trainer import trainer_fixture, SPAWN_BYTES
+from tools.client_compatibility.world.buffer import Writer
 
 
 def offline():
@@ -467,6 +469,157 @@ def test_generic_closed_failed_trial_keeps_actual_identity_failure_and_choices(b
     assert path.read_bytes() == raw
 
 
+def test_failed_fresh_observation_trial_keeps_failure_without_claiming_native_settlement(batch):
+    directory, put = batch
+    failed_train = trial('hunter_learn_transition_started')
+    failed_train.update(completed=False, failure='RuntimeError: original Train failed')
+    source = put('failed_train', failed_train)
+    run = trial('hunter_learn_observation_settlement_started', 20, 21)
+    run.update(completed=False, failure='KeyboardInterrupt: observation interrupted',
+        observation_settlement_source=source, cases=[{'status': 'observed', 'selected': 'Open Spellbook',
+            'after_frame': {'file': 'book.png'}}])
+    path = Path(put('failed_observation', run)['path'])
+    cases, metadata, trials = publication.checkpoint_runs([(path, run)], directory)
+    assert cases == run['cases'] and trials == [run]
+    assert metadata[0]['completed'] is False and metadata[0]['failure'] == run['failure']
+    assert 'record_kind' not in metadata[0] and 'operations_admitted' not in metadata[0]
+    assert choice_counts(trials)['code_choices_selected'] == 1
+
+
+def observation_case(batch, monkeypatch):
+    from tools.client_compatibility import hunter_learn_reconciliation as reconciliation
+    from tools.client_compatibility import hunter_learn_trainer as trainer
+    from tools.client_compatibility.world.tests.test_hunter_learn_reconciliation import navigation_case
+    directory, put = batch
+    runtime = {'worldserver': deepcopy(trainer.NATIVE), 'modern_world': {'pid': 2}, 'client': {'pid': 3}}
+    preparation = put('preparation', trial('await_owned_class_lobby_review', 900, 901))
+    entry = put('entry', trial('owned_class_entered', 1009, 1010))
+    spawn_path = directory / 'trainer_spawn.json'
+    publication.write_exclusive(spawn_path, SPAWN_BYTES)
+    monkeypatch.setattr(trainer, 'SPAWN_SOURCE', {'path': str(spawn_path), 'sha256': publication.lab.sha256(spawn_path)})
+    identity, trainer_packets = trainer_fixture(runtime=runtime, entry_ref=entry, with_facing=True)
+    baseline = {'active_spec': 0, 'saved': {'spells': deepcopy(contract.BASE_SPELLS),
+        'actions': deepcopy(reconciliation.ACTIONS)}, 'resources': {'money': contract.MONEY, 'health': 500}}
+    public = {'active_spec': 1, 'power': 100, 'power_type': 2, 'frames': {'MainMenuBar': True}, 'actions': [
+        {'button': 'ActionButton' + str(n), 'slot': n, 'visible': True, 'kind': None, 'id': None}
+        for n in range(1, 13)]}
+    for _, slot, action, kind in reconciliation.ACTIONS:
+        public['actions'][slot].update(kind='flyout' if kind == 48 else 'spell', id=action)
+    selected = {**trial('hunter_learn_lesson_selected', 1011.35, 1011.7), 'actor': {'guid': 6}, 'runtime': runtime,
+        'controller': 'code_diagnostic_ordinary_inputs',
+        'native_session': identity['native_session'], 'fixture_source': preparation, 'entry_source': entry,
+        'baseline': baseline, 'login_known_spell_ids': [1515, 79682], 'book_layout_baseline': {}, 'pose_fixture': {},
+        'trainer_identity': identity, 'native_catalog': identity['native_catalog'], 'frame': {'file': 'selected.png'},
+        'custom_script_permission': 'blocked_by_user', 'softTargetInteract': {
+            'original': '0', 'current_stock_disabled': '1', 'original_restored': False}}
+    selected_ref = put('selected', selected)
+    review_ref = put('review', {'reviewed': True, 'source': selected_ref}, filename='review.json')
+    high = (8 << 58) | (1 << 42) | (((contract.TRAINER_GUID >> 32) & 0xfffff) << 6)
+    modern = Writer().guid(contract.TRAINER_GUID & 0xffffffff, high).pack('ii', contract.TRAINER, contract.SPELL).finish()
+    def packet(direction, name, body, at):
+        return {'session': identity['native_session'], 'direction': direction, 'name': name, 'body': body.hex(), 'time': at}
+    packets = [packet('from_client', 'CMSG_TRAINER_BUY_SPELL', modern, 1011.9),
+        packet('to_native', 'CMSG_TRAINER_BUY_SPELL', struct.pack('<QII', contract.TRAINER_GUID, 40, 1462), 1012),
+        packet('from_native', 'SMSG_LEARNED_SPELL', struct.pack('<II', 1462, 0), 1012.1),
+        packet('to_client', 'SMSG_LEARNED_SPELLS', struct.pack('<IIBIB', 1, 0, 0, 1462, 0), 1012.2),
+        packet('from_native', 'SMSG_TRAINER_BUY_SUCCEEDED', struct.pack('<QI', contract.TRAINER_GUID, 1462), 1012.3)]
+    before = {'player': 'Harnesshunt', 'guid': 'Player-1-00000006', 'level': 10,
+        'world_position': [-9460, 114, 58], 'player_stats': {'health': 209},
+        'money': contract.MONEY, 'lua_errors': {}, 'blocked_actions': {},
+        'trainer': {'service': {'name': contract.NAME, 'state': 'available', 'cost': contract.PRICE}}}
+    original_case = {'id': 'spellbook.learn_spell.train1462', 'status': 'infrastructure_failure',
+        'error': reconciliation.CASE_ERROR, 'selected': 'button_0', 'selection_source': 'code',
+        'request': None, 'response': None, 'input_transport': [], 'time': 1011.85,
+        'input': {'kind': 'click', 'value': [210, 491], 'hold': .15,
+            'description': 'Click visible Button Train. Row: Benjamin Foxworthy.'},
+        'before': before, 'after': {**before, 'money': contract.MONEY - contract.PRICE},
+        'after_frame': {'movement': {'health_percent': 100, 'dead': False, 'in_combat': False, 'speed': 0}}}
+    saved = {**baseline['saved'], 'spells': sorted(contract.BASE_SPELLS + [[1462, 1, 0]])}
+    resources = {**baseline['resources'], 'money': contract.MONEY - contract.PRICE}
+    failed = {**deepcopy(selected), 'phase': 'hunter_learn_purchase_started', 'started_at': 1011.75,
+        'finished_at': 1013.1, 'completed': False, 'failure': reconciliation.FAILURE, 'source': selected_ref,
+        'purchase_source': selected_ref, 'screen_review': {**review_ref, 'frame': selected['frame']},
+        'purchase_started_at': 1011.8, 'purchase_finished_at': 1013, 'trainer_identity_checked_at': 1011.8,
+        'purchase_packets': packets, 'purchase_input_sent': True, 'input_sent': True, 'purchase_checks': None,
+        'qualification_added': False, 'cases': [original_case], 'after_saved': saved, 'after_resources': resources,
+        'protected_checks': reconciliation.PROTECTED, 'public_actionbar_after': public}
+    failed_ref = put('failed_train', failed)
+    monkeypatch.setattr(reconciliation, 'FAILED_SOURCE', failed_ref)
+    state = {**deepcopy(original_case['after']), 'target': identity['target']}
+    frame = {'file': 'fresh_observation.png', 'movement': {
+        'health_percent': 100, 'dead': False, 'in_combat': False, 'speed': 0}}
+    proof = reconciliation.observation_reconciliation(failed, failed_ref, selected, selected_ref, saved=saved,
+        resources=resources, protected_checks=reconciliation.PROTECTED, public=public, state=state,
+        frame=frame, rows=[*trainer_packets, *packets], observed_until=1021)
+    navigation = navigation_case(time=1020.5)
+    navigation.update(selected='Beast Mastery', selection_source='code', request=None, response=None,
+        input_transport=[], after_frame={'file': 'learned.png'})
+    run = {**trial('hunter_learn_transition_complete', 1020, 1022),
+        'controller': 'code_diagnostic_ordinary_inputs',
+        'custom_script_permission': failed['custom_script_permission'], 'softTargetInteract': failed['softTargetInteract'],
+        **{key: deepcopy(failed[key]) for key in reconciliation.FACT_FIELDS},
+        'observation_settlement_source': failed_ref, 'original_purchase_interval': [1011.8, 1013],
+        'original_case': deepcopy(original_case), 'original_purchase_input_sent': True, 'input_sent': True,
+        'gameplay_input_sent': False,
+        'observation_only': True, 'mutation_sent': False,
+        'purchase_input_sent': False, 'train_input_replayed': False, 'book_navigation_input_sent': True,
+        'qualification_added': False, 'purchase_started_at': 1011.8, 'purchase_finished_at': 1013,
+        'purchase_packets': packets, 'after_saved': saved, 'after_resources': resources,
+        'protected_checks': reconciliation.PROTECTED, 'public_actionbar_after': public, 'state': state, 'frame': frame,
+        'observation_reconciliation': proof, 'purchase_checks': proof['purchase_checks'],
+        'auto_action_placement': None, 'actionbar_restoration_required': False,
+        'cases': [navigation]}
+    return directory, put, run, failed, Path(failed_ref['path'])
+
+
+def test_native_outcome_observation_settlement_preserves_original_train_and_new_navigation_metrics(batch, monkeypatch):
+    directory, put, run, failed, failed_path = observation_case(batch, monkeypatch)
+    path = Path(put('observation', run)['path']); raw_failed = failed_path.read_bytes(); raw_new = path.read_bytes()
+    cases, metadata, trials = publication.checkpoint_runs([(failed_path, failed), (path, run)], directory)
+    assert cases == failed['cases'] + run['cases'] and trials == [failed, run]
+    assert metadata[0] == {'path': str(failed_path.relative_to(publication.lab.ROOT)), 'completed': False,
+        'failure': failed['failure'], 'controller': failed['controller'], 'model': None, 'revision': None}
+    new = metadata[1]
+    assert new['record_kind'] == 'native_outcome_observation_settlement' and new['operations_admitted'] == 0
+    assert new['observation_settlement_source'] == run['observation_settlement_source']
+    assert new['original_purchase_interval'] == [1011.8, 1013] and new['started_at'] == 1020
+    assert new['input_sent'] is True and new['gameplay_input_sent'] is False
+    assert new['purchase_input_sent'] is False and new['train_input_replayed'] is False
+    assert new['observation_only'] is True and new['mutation_sent'] is False and new['book_navigation_input_sent'] is True
+    assert new['controller'] == run['controller'] and new['model'] is run['model'] and new['revision'] is None
+    assert choice_counts(trials)['code_choices_selected'] == choice_counts(trials)['code_choices_executed'] == 2
+    assert sum(case['id'] == 'spellbook.learn_spell.train1462' for case in cases) == 1
+    assert failed_path.read_bytes() == raw_failed and path.read_bytes() == raw_new
+
+
+@pytest.mark.parametrize('fault', ['source_hash', 'foreign_source', 'new_train_case', 'replayed_train',
+    'old_collection_clock', 'altered_original_case', 'altered_proof', 'wrong_schema', 'missing_marker',
+    'missing_cases', 'missing_controller', 'missing_model', 'missing_revision', 'mutation', 'not_observation',
+    'gameplay_input', 'missing_gameplay_flag', 'wrong_observer_actor', 'wrong_navigation', 'navigation_clock'])
+def test_observation_settlement_requires_pinned_paid_proof_and_actual_trial_identity(batch, monkeypatch, fault):
+    directory, put, run, _, _ = observation_case(batch, monkeypatch)
+    if fault == 'source_hash': run['observation_settlement_source']['sha256'] = '0' * 64
+    elif fault == 'foreign_source': run['observation_settlement_source']['path'] = str(directory.parent / 'foreign/episode.json')
+    elif fault == 'new_train_case': run['cases'].append(deepcopy(run['original_case']))
+    elif fault == 'replayed_train': run['purchase_input_sent'] = True
+    elif fault == 'old_collection_clock': run['started_at'] = 1011.75
+    elif fault == 'altered_original_case': run['original_case']['status'] = 'spellbook_learning_pass'
+    elif fault == 'altered_proof': run['observation_reconciliation']['purchase_checks']['ordinary_train'] = False
+    elif fault == 'wrong_schema': run['schema'] = 'unknown_observation_settlement'
+    elif fault == 'missing_marker': run.pop('original_purchase_interval')
+    elif fault == 'mutation': run['mutation_sent'] = True
+    elif fault == 'not_observation': run['observation_only'] = False
+    elif fault == 'gameplay_input': run['gameplay_input_sent'] = True
+    elif fault == 'missing_gameplay_flag': run.pop('gameplay_input_sent')
+    elif fault == 'wrong_observer_actor': run['state']['player'] = 'Harnesstwo'
+    elif fault == 'wrong_navigation': run['cases'][0]['id'] = 'unrecognized.caption'
+    elif fault == 'navigation_clock': run['cases'][0]['time'] = 1012
+    else: run.pop(fault.removeprefix('missing_'))
+    path = Path(put('observation', run)['path'])
+    with pytest.raises((RuntimeError, KeyError)):
+        publication.checkpoint_runs([(path, run)], directory)
+
+
 def test_checkpoint_wrapper_restores_original_on_success_and_failure(diagnostic, monkeypatch):
     directory, put, path, run = diagnostic
     ordinary = trial('ordinary', 15, 16)
@@ -500,7 +653,9 @@ def test_learning_publisher_retains_trainer_movement_only_in_scoped_call(batch, 
     previous_names = original.SAFE_BODY_NAMES
     previous_values = frozenset(previous_names)
     previous_classifier = original.checkpoint_runs
-    trainer_names = {'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT'}
+    trainer_names = {'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT',
+        'MSG_MOVE_TELEPORT', 'SMSG_MOVE_TELEPORT', 'CMSG_MOVE_TELEPORT_ACK', 'MSG_MOVE_TELEPORT_ACK',
+        'SMSG_TRANSFER_PENDING', 'SMSG_NEW_WORLD', 'CMSG_WORLD_PORT_RESPONSE', 'MSG_MOVE_WORLDPORT_ACK'}
     calls = []
     def fake_checkpoint(selected, name):
         calls.append((selected, name))

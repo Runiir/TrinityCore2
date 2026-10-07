@@ -37,7 +37,7 @@ def public(actions, spec=0, page=1):
         slot = index + (page - 1) * 12
         entry = mapping.get(slot - 1)
         rows.append({'button': 'ActionButton' + str(index), 'slot': slot, 'visible': True,
-            **({'kind': {0: 'spell', 64: 'macro', 128: 'item'}[entry[1]], 'id': entry[0]} if entry else {})})
+            **({'kind': {0: 'spell', 48: 'flyout', 64: 'macro', 128: 'item'}[entry[1]], 'id': entry[0]} if entry else {})})
     return {'active_spec': spec + 1, 'page': page, 'effective_page': page, 'bonus_offset': 0,
         'frames': {'MainMenuBar': True}, 'actions': rows}
 
@@ -72,6 +72,27 @@ def test_unchanged_actions_require_no_owned_action_request_and_exact_public_assi
     drift['actions'][1].update(kind='spell', id=1462)
     with pytest.raises(RuntimeError, match='public action assignment'):
         proof.addition_guard(old, old, [], 'hunter', 10, 11, 0, drift)
+
+
+@pytest.mark.parametrize('fault', [None, 'wrong_flyout_id', 'wrong_public_kind', 'native_type_49'])
+def test_ui170_unchanged_four_row_baseline_accepts_only_exact_native_dropdown_48(fault):
+    # UI170 purchase01: the existing dropdown is flyout9, not a new1462 action.
+    # Native Player.h defines ACTION_BUTTON_DROPDOWN=0x30; GetActionInfo exposes
+    # exactly the same stored ID9 as kind "flyout" on public one-based slot11.
+    native = [[0, 0, 3044, 0], [0, 9, 59752, 0], [0, 10, 9, 48], [0, 11, 982, 0]]
+    shown = public(native)
+    for row in shown['actions']:
+        if not row.get('kind'):
+            row['visible'] = False
+    if fault == 'wrong_flyout_id': shown['actions'][10]['id'] = 10
+    elif fault == 'wrong_public_kind': shown['actions'][10]['kind'] = 'spell'
+    elif fault == 'native_type_49': native[2][3] = 49
+    if fault:
+        with pytest.raises(RuntimeError, match='public action assignment differs from exact saved rows'):
+            proof.addition_guard(native, deepcopy(native), learning()[:2], 'hunter', 10, 11, 0, shown)
+    else:
+        assert shown['actions'][10]['kind'] == 'flyout' and shown['actions'][10]['id'] == 9
+        assert proof.addition_guard(native, deepcopy(native), learning()[:2], 'hunter', 10, 11, 0, shown) is None
 
 
 @pytest.mark.parametrize('fault', ['missing_modern', 'missing_native', 'foreign', 'before_window', 'after_window',

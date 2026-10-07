@@ -296,9 +296,10 @@ def test_controller_interruption_closes_actual_failed_receipt_before_propagating
     assert persisted[-1]['failure'] == 'KeyboardInterrupt: actual interrupt' and persisted[-1]['finished_at'] == 20
 
 
-def test_recon_closes_stock_book_before_passive_actionbar_page_and_retains_caption(monkeypatch):
-    snapshot = {'6': {'native': {'activeTalentGroup': 0}}}
+@pytest.mark.parametrize('fault', ['none', 'public_assignment', 'saved_baseline'])
+def test_recon_closes_stock_book_and_validates_public_saved_baseline_before_purchase(monkeypatch, fault):
     original = {'spells': deepcopy(operation.BASE_SPELLS), 'actions': []}
+    snapshot = {'6': {'native': {'activeTalentGroup': 0}, 'saved': original}}
     resources = {'money': 8708}
     entered = {'learn_offline_baseline': snapshot, 'rest_baseline_source': {'path': 'precision'},
         'resources': resources, 'native_pet_reload': {'source': 'entry'}}
@@ -313,6 +314,7 @@ def test_recon_closes_stock_book_before_passive_actionbar_page_and_retains_capti
             self.panels = []
         def observe(self, label):
             return {'panels': list(self.panels)}, {'file': label + '.png'}
+        def persist(self): pass
         def execute(self, action):
             raise AssertionError('recon must not Train, cast, or modify actions')
     trial = Trial()
@@ -323,7 +325,8 @@ def test_recon_closes_stock_book_before_passive_actionbar_page_and_retains_capti
     monkeypatch.setattr(operation, 'wire_known', lambda *args: {1515, 79682})
     monkeypatch.setattr(operation, 'known', lambda _: deepcopy(operation.BASE_SPELLS))
     monkeypatch.setattr(operation, 'resources', lambda _: resources)
-    monkeypatch.setattr(operation, 'saved', lambda _: deepcopy(original))
+    monkeypatch.setattr(operation, 'saved', lambda _: deepcopy(original) if fault != 'saved_baseline' else
+        {**deepcopy(original), 'spells': []})
     monkeypatch.setattr(operation, 'pets', lambda _: [])
     monkeypatch.setattr(operation, 'bound', lambda path: {'path': str(path), 'sha256': 'exact'})
     monkeypatch.setattr(operation, 'protected', lambda _: {'protected': True})
@@ -336,10 +339,18 @@ def test_recon_closes_stock_book_before_passive_actionbar_page_and_retains_capti
     def passive_bar(t, label):
         assert not t.panels, 'observer145 never schedules actionbars while the stock book is open'
         calls.append(('read', label))
-        return {'active_spec': 1}
+        public = {'active_spec': 1, 'frames': {'MainMenuBar': True}, 'actions': [
+            {'button': 'ActionButton' + str(i), 'slot': i} for i in range(1, 13)]}
+        if fault == 'public_assignment': public['actions'][10].update(kind='flyout', id=9)
+        return public
     monkeypatch.setattr(operation, 'open_book', open_book)
     monkeypatch.setattr(operation, 'caption', caption)
     monkeypatch.setattr(operation, 'bar_detail', passive_bar)
+    if fault != 'none':
+        with pytest.raises(RuntimeError, match='public action assignment' if fault == 'public_assignment' else 'saved Hunter baseline'):
+            operation.recon(trial, 'preparation', 'entry')
+        assert trial.receipt.get('completed') is not True and 'baseline_saved_observation' in trial.receipt
+        return
     operation.recon(trial, 'preparation', 'entry')
     assert calls == [('close', ()), ('close', ('SpellBookFrame',)), ('read', 'hunter_learn_bar_baseline')]
     assert trial.receipt['future_probe'] == future and trial.receipt['book_layout_baseline'] == layout

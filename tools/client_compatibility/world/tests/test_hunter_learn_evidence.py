@@ -26,6 +26,8 @@ from tools.client_compatibility.world.tests.test_hunter_learn_trainer import tra
 from tools.client_compatibility.world.tests.test_hunter_learn_trainer import (object_body as trainer_object_body,
     packed_guid as trainer_packed_guid, teleport_body as trainer_teleport_body)
 from tools.client_compatibility import hunter_learn_trainer as trainer_evidence
+from tools.client_compatibility import hunter_learn_reconciliation as reconciliation
+from tools.client_compatibility.world.tests.test_hunter_learn_reconciliation import failed_case, navigation_case
 
 
 SESSION = "native-owned-hunter"
@@ -649,7 +651,7 @@ def test_labeled_or_partial_closure_is_not_complete_semantic_proof(fault):
         evidence.closure_checks(closure)
 
 
-def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, trainer_exposed=False):
+def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, trainer_exposed=False, settled_purchase=False):
     """Build closed synthetic source bytes; never borrow a live episode or archive."""
     data, digests, payloads, refs = {}, {}, {}, {}
     runtime = {"client": {"pid": 123, "instance": "fresh-scout"}, "native": {"pid": 321},
@@ -658,6 +660,8 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
     origin = {"guid": 2, "character_name": "Harnesstwo"}
     actor = {"guid": 6, "account_id": 2, "character_name": "Harnesshunt", "race": 1, "class": 3, "level": 10}
     base = snapshot()
+    if settled_purchase:
+        base['6']['saved']['actions'] = deepcopy(reconciliation.ACTIONS)
     purchase, entries, tracking, known = actual_fixture(same_owner=True)
     first_exact, first_text = native_rest(100.0, 10, 7600, 1)
     parked = learned_snapshot(base)
@@ -804,13 +808,20 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
                    "finished_at": 1011.38, "source": refs["opened"], "frame": frame_for("exposed_lesson")}
         put("exposed", exposed)
         trainer_view, lesson_frame = refs["exposed"], "exposed_lesson"
+    layout = {"book_type": "spell", "skill_line": 1, "pages": [1], "page": 1}
     put("selected", episode("hunter_learn_lesson_selected", 1011.4, 1011.45, source=trainer_view, native_catalog=catalog,
         trainer_identity=identity, entry_source=refs['entry0'],
+        baseline=baseline, login_known_spell_ids=known[0]['login_known_spell_ids'], book_layout_baseline=layout,
+        fixture_source=refs['preparation'],
+        controller='code_diagnostic_ordinary_inputs' if settled_purchase else 'code',
         state={"trainer": {"service": {"name": "Beast Lore"}}, 'target': identity['target']}, frame=frame_for("train"),
         screen_review=screen(lesson_frame, trainer_view, refs["preparation"], "Beast Lore")))
-    layout = {"book_type": "spell", "skill_line": 1, "pages": [1], "page": 1}
     public = {"active_spec": 1, "frames": {"MainMenuBar": True}, "actions": [
         {"button": "ActionButton" + str(index), "slot": index, "kind": None, "id": None, "visible": True} for index in range(1, 13)]}
+    if settled_purchase:
+        public.update(power=100, power_type=2)
+        for slot, ident, kind in ((0, 3044, 'spell'), (9, 59752, 'spell'), (10, 9, 'flyout'), (11, 982, 'spell')):
+            public['actions'][slot].update(kind=kind, id=ident)
     purchase_saved, learned_public, addition = deepcopy(parked["6"]["saved"]), deepcopy(public), None
     if automatic_bar:
         purchase_saved["actions"] = [[0, 0, 1462, 0]]
@@ -821,9 +832,9 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
         tracking["packets"].extend(action_packets)
         addition = evidence.addition_guard([], purchase_saved["actions"], purchase["purchase_packets"],
                                           SESSION, 1011.8, 1012.3, 0, learned_public)
-    put("purchase", episode("hunter_learn_transition_complete", 1011.8, 1013,
+    purchase_value = episode("hunter_learn_transition_complete", 1011.8, 1013,
         **{k: v for k, v in purchase.items() if k not in ('runtime', 'entry_source', 'purchase_started_at')},
-        baseline=baseline, entry_source=refs["entry0"], purchase_source=refs["selected"],
+        baseline=baseline, entry_source=refs["entry0"], purchase_source=refs["selected"], source=refs['selected'],
         purchase_started_at=1011.8, purchase_finished_at=1012.3, after_saved=purchase_saved,
         state={'target': identity['target']},
         after_resources=resource_observation(contract.MONEY - contract.PRICE),
@@ -831,7 +842,36 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
         reconciled_known_spell_ids=[1462, 1515, 79682], purchase_checks=checkset(evidence.PURCHASE_NAMES),
         purchase_input_sent=True, input_sent=True, auto_action_placement=addition,
         actionbar_restoration_required=automatic_bar, public_actionbar_after=learned_public, book_layout_baseline=layout,
-        screen_review=screen("train", refs["selected"], refs["preparation"], "Train")))
+        screen_review=screen("train", refs["selected"], refs["preparation"], "Train"))
+    if settled_purchase:
+        success = packet('from_native', 'SMSG_TRAINER_BUY_SUCCEEDED', struct.pack('<QI', contract.TRAINER_GUID, 1462), 1012.21)
+        purchase_value['purchase_packets'].append(success)
+        tracking['packets'].append(success)
+        purchase_value.update(fixture_source=refs['preparation'], controller='code_diagnostic_ordinary_inputs')
+        purchase_value['state'].update(player='Harnesshunt', level=10, money=8062, guid='Player-1-00000006',
+            world_position=[-9464.400390625, 120.40000152588, 0, 0], player_stats={'health': 209})
+        purchase_value['frame'] = frame_for('reconciliation_current')
+        purchase_value['frame']['movement'] = {'health_percent': 100, 'dead': False, 'in_combat': False, 'speed': 0}
+        failure = deepcopy(purchase_value)
+        failure.update(phase='hunter_learn_purchase_started', completed=False, failure=reconciliation.FAILURE,
+            purchase_checks=None, cases=[failed_case(identity['target'])], protected_checks=deepcopy(reconciliation.PROTECTED))
+        for key in ('learned_probe', 'learned_row', 'reconciled_known_spell_ids'):
+            failure.pop(key)
+        put('failed_purchase', failure)
+        monkeypatch.setattr(reconciliation, 'FAILED_SOURCE', refs['failed_purchase'])
+        selected = data[str(Path(refs['selected']['path']).relative_to(evidence.lab.ROOT))]
+        current_state = purchase_value['state']
+        proof = reconciliation.observation_reconciliation(failure, refs['failed_purchase'], selected, refs['selected'],
+            saved=purchase_saved, resources=purchase_value['after_resources'], protected_checks=reconciliation.PROTECTED,
+            public=learned_public, state=current_state, frame=purchase_value['frame'], rows=tracking['packets'], observed_until=1013.8)
+        purchase_value.update(started_at=1013.1, finished_at=1013.9, observation_settlement_source=refs['failed_purchase'],
+            original_purchase_interval=[1011.8, 1012.3], original_case=deepcopy(failure['cases'][0]),
+            original_purchase_input_sent=True, purchase_input_sent=False, input_sent=True, gameplay_input_sent=False,
+            train_input_replayed=False,
+            book_navigation_input_sent=True, observation_only=True, mutation_sent=False,
+            observation_reconciliation=proof, protected_checks=deepcopy(reconciliation.PROTECTED),
+            cases=[navigation_case()])
+    put('purchase', purchase_value)
     if automatic_bar:
         clear_packets = [packet("from_client", "CMSG_SET_ACTION_BUTTON", struct.pack("<IB", 0, 0), 1013.2),
                          packet("to_native", "CMSG_SET_ACTION_BUTTON", struct.pack("<BI", 0, 0), 1013.21)]
@@ -912,7 +952,7 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
     put("pause", episode("hunter_learn_scout_resource_paused", 2028, 2029, origin,
         source=refs["closure"], primary_stop_source=refs["primary_stop"], before=after, after=after,
         input_sent=False, checks=checkset(evidence.PAUSE_NAMES),
-        action="stop_parked_scout_after_learning_restoration", game_before={"pid": 123, "start_ticks": 456}))
+        action="stop_parked_scout_after_learning_restoration", game_before={"pid": 123, "start_ticks": "456"}))
     tracking["digests"] = digests
     tracking["manifest"] = {member: {"bytes": len(body), "sha256": digests[member]} for member, body in payloads.items()}
     return data, digests, tracking, payloads, refs
@@ -940,6 +980,105 @@ def test_whole_lifecycle_streams_from_verified_archive_bytes_without_receipt_sho
     compressed, checkpoint, _ = archive_fixture(members)
     data, digests, journals, _ = reviewer.inspect_archive(io.BytesIO(compressed), checkpoint, "evidence/synthetic/")
     assert evidence.proof(data, digests, journals)["actual_packet_journals_verified"] is True
+
+
+def test_source_specific_observation_reconciliation_proves_whole_lifecycle_and_complete_archive(monkeypatch):
+    data, digests, tracking, payloads, refs = lifecycle_fixture(monkeypatch, settled_purchase=True)
+    assert evidence.proof(data, digests, tracking)['native_purchases'] == 1
+    store = evidence.Sources(data, digests)
+    failed, current = store.get(refs['failed_purchase'], False), store.get(refs['purchase'])
+    assert failed['completed'] is False and failed['cases'][0]['status'] == 'infrastructure_failure'
+    assert current['started_at'] > current['purchase_finished_at']
+    members = list(payloads.items()) + [
+        (evidence.TRACKING_MEMBERS[0], b''.join(json.dumps(row).encode() + b'\n' for row in tracking['packets'])),
+        (evidence.TRACKING_MEMBERS[1], b''.join(json.dumps(row).encode() + b'\n' for row in tracking['events'])),
+    ]
+    compressed, checkpoint, _ = archive_fixture(members)
+    archived, hashes, journals, _ = reviewer.inspect_archive(io.BytesIO(compressed), checkpoint, 'evidence/synthetic/')
+    assert evidence.proof(archived, hashes, journals)['actual_packet_journals_verified'] is True
+
+
+@pytest.mark.parametrize('forbidden', [None, 'CMSG_CAST_SPELL', 'CMSG_PET_ACTION', 'CMSG_SET_ACTION_BUTTON'])
+def test_native_authority_filter_preserves_gameplay_requests_among_discarded_modern_object_duplicates(monkeypatch, forbidden):
+    _, _, tracking, payloads, _ = lifecycle_fixture(monkeypatch, settled_purchase=True)
+    modern_duplicates = [packet('to_client', 'SMSG_UPDATE_OBJECT', b'not-native-object-wire', 1013.6)] * 20001
+    rows = [*tracking['packets'], *modern_duplicates]
+    if forbidden:
+        rows.append(packet('to_native', forbidden, b'\0', 1013.7))
+    members = list(payloads.items()) + [
+        (evidence.TRACKING_MEMBERS[0], b''.join(json.dumps(row).encode() + b'\n' for row in rows)),
+        (evidence.TRACKING_MEMBERS[1], b''.join(json.dumps(row).encode() + b'\n' for row in tracking['events'])),
+    ]
+    compressed, checkpoint, _ = archive_fixture(members)
+    data, digests, journals, _ = reviewer.inspect_archive(io.BytesIO(compressed), checkpoint, 'evidence/synthetic/')
+    assert not any(p['name'] == 'SMSG_UPDATE_OBJECT' and p['direction'] == 'to_client' for p in journals['packets'])
+    assert any(p['name'] == 'SMSG_UPDATE_OBJECT' and p['direction'] == 'from_native' for p in journals['packets'])
+    if forbidden:
+        assert any(p['name'] == forbidden and p['direction'] == 'to_native' for p in journals['packets'])
+        with pytest.raises(RuntimeError):
+            evidence.proof(data, digests, journals)
+    else:
+        assert evidence.proof(data, digests, journals)['actual_packet_journals_verified'] is True
+
+
+def test_native_authority_filter_keeps_staging_teleports_and_other_protocol_directions(monkeypatch):
+    data, digests, _, _, _ = lifecycle_fixture(monkeypatch)
+    authority = evidence.NATIVE_AUTHORITY_NAMES
+    retained = ('MSG_MOVE_TELEPORT', 'SMSG_MOVE_TELEPORT', 'CMSG_MOVE_TELEPORT_ACK', 'MSG_MOVE_TELEPORT_ACK',
+        'SMSG_TRANSFER_PENDING', 'SMSG_NEW_WORLD', 'CMSG_WORLD_PORT_RESPONSE', 'MSG_MOVE_WORLDPORT_ACK',
+        'SMSG_UPDATE_ACTION_BUTTONS', 'CMSG_TRAINER_BUY_SPELL', 'SMSG_LEARNED_SPELLS', 'SMSG_SEND_KNOWN_SPELLS',
+        'CMSG_PLAYER_LOGIN', 'CMSG_LOGOUT_REQUEST', 'CMSG_SET_ACTION_BUTTON', 'CMSG_CAST_SPELL')
+    rows = [packet(direction, name, b'', 1013.6) for name in (*authority, *retained)
+        for direction in ('from_native', 'to_native', 'from_client', 'to_client')]
+    journals = {**evidence.tracking_state(), 'digests': digests}
+    for member in evidence.TRACKING_MEMBERS:
+        evidence.collect(member, iter(rows), data, journals)
+    expected = [p for p in rows if p['name'] not in authority or p['direction'] == 'from_native']
+    assert journals['packets'] == journals['events'] == expected
+
+
+@pytest.mark.parametrize('fault', ['missing_failed', 'changed_failed_source', 'rewritten_failure', 'fake_train',
+    'native_later_cast', 'native_before_purchase_cast', 'claimed_proof', 'lost_extended_native', 'controller', 'missing_gameplay_flag'])
+def test_whole_observation_reconciliation_refuses_missing_or_changed_original_facts(monkeypatch, fault):
+    data, digests, tracking, _, refs = lifecycle_fixture(monkeypatch, settled_purchase=True)
+    store = evidence.Sources(data, digests)
+    purchase = store.get(refs['purchase'])
+    if fault == 'missing_failed':
+        data.pop(str(Path(refs['failed_purchase']['path']).relative_to(evidence.lab.ROOT)))
+    elif fault == 'changed_failed_source': purchase['observation_settlement_source']['sha256'] = 'f' * 64
+    elif fault == 'rewritten_failure': store.get(refs['failed_purchase'], False)['failure'] = 'different failure'
+    elif fault == 'fake_train': purchase['cases'].append({'id': 'spellbook.learn_spell.train1462', 'status': 'hunter_learning_pass'})
+    elif fault in ('native_later_cast', 'native_before_purchase_cast'):
+        tracking['packets'].append(packet('to_native', 'CMSG_CAST_SPELL', b'\0', 1013.7 if fault == 'native_later_cast' else 1011.7))
+    elif fault == 'claimed_proof': purchase['observation_reconciliation']['original_case']['status'] = 'hunter_learning_pass'
+    elif fault == 'lost_extended_native': purchase['observation_reconciliation']['trainer_wire_packets'].pop(1)
+    elif fault == 'controller': purchase['controller'] = 'code'
+    else: purchase.pop('gameplay_input_sent')
+    with pytest.raises((RuntimeError, ValueError)):
+        evidence.proof(data, digests, tracking)
+
+
+@pytest.mark.parametrize('controller', ['code', 'code_diagnostic_ordinary_inputs'])
+def test_whole_pause_uses_the_actual_ordinary_trial_controller_without_rewriting_sources(monkeypatch, controller):
+    data, digests, tracking, _, refs = lifecycle_fixture(monkeypatch)
+    evidence.Sources(data, digests).get(refs['pause'])['controller'] = controller
+    assert evidence.proof(data, digests, tracking)['both_owned_clients_stopped'] is True
+
+
+@pytest.mark.parametrize('ticks', [456, 456.0, True, None, '', '0', '0456', '+456', '-456', '456.0', 'nan'])
+def test_whole_pause_refuses_noncanonical_process_start_ticks(monkeypatch, ticks):
+    data, digests, tracking, _, refs = lifecycle_fixture(monkeypatch)
+    evidence.Sources(data, digests).get(refs['pause'])['game_before']['start_ticks'] = ticks
+    with pytest.raises(RuntimeError, match='canonical decimal start ticks'):
+        evidence.proof(data, digests, tracking)
+
+
+def test_whole_pause_preserves_actual_decimal_string_process_lifetime(monkeypatch):
+    data, digests, tracking, _, refs = lifecycle_fixture(monkeypatch)
+    pause = evidence.Sources(data, digests).get(refs['pause'])
+    assert pause['game_before'] == {'pid': 123, 'start_ticks': '456'}
+    assert evidence.proof(data, digests, tracking)['both_owned_clients_stopped'] is True
+    assert pause['game_before']['start_ticks'] == '456'
 
 
 @pytest.mark.parametrize("fault", ["missing_clear", "altered_bar_restore", "missing_actual_action", "unreviewed_drag",

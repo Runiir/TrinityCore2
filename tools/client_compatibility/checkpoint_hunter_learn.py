@@ -453,6 +453,39 @@ def checkpoint_runs(episodes, directory, ordinary=None):
         require(path.is_relative_to(directory) and path.name == 'episode.json', 'episode is outside the current batch')
         require(json_bytes(path)[2] == run, 'episode changed during publication classification')
         schema = run.get('schema')
+        settlement_keys = {'observation_settlement_source', 'original_purchase_interval', 'observation_reconciliation'}
+        if settlement_keys & set(run):
+            if run.get('completed') is False:
+                selected_cases, metadata, attributed = ordinary([(path, run)], directory)
+                cases.extend(selected_cases); runs.extend(metadata); trials.extend(attributed)
+                continue
+            from .hunter_learn_reconciliation import validate_observation_reconciliation
+            require(schema == 'client442_laya_interactions_v1' and settlement_keys <= set(run),
+                'exact observation settlement schema or source markers differ')
+            successful(run)
+            require(run.get('observation_only') is True and run.get('mutation_sent') is False,
+                'native outcome settlement requires an observation-only receipt')
+            failed = source_value(run['observation_settlement_source'], directory, ancestry)
+            selected = successful(source_value(run['source'], directory, ancestry))
+            validate_observation_reconciliation(run, failed, selected)
+            for ref in refs(run):
+                if Path(ref['path']).is_relative_to(lab.ROOT / 'evidence'):
+                    source_value(ref, directory, ancestry)
+            selected_cases, metadata, attributed = ordinary([(path, run)], directory)
+            require(len(metadata) == len(attributed) == 1, 'observation settlement must retain its actual Trial identity')
+            metadata[0].update(record_kind='native_outcome_observation_settlement',
+                started_at=run['started_at'], finished_at=run['finished_at'],
+                observation_settlement_source=run['observation_settlement_source'],
+                original_purchase_interval=run['original_purchase_interval'],
+                original_purchase_input_sent=run['original_purchase_input_sent'],
+                input_sent=run['input_sent'], purchase_input_sent=run['purchase_input_sent'],
+                gameplay_input_sent=run['gameplay_input_sent'],
+                observation_only=run['observation_only'], mutation_sent=run['mutation_sent'],
+                book_navigation_input_sent=run['book_navigation_input_sent'],
+                train_input_replayed=run['train_input_replayed'], qualification_added=False,
+                operations_admitted=0, receipt_sha256=lab.sha256(path))
+            cases.extend(selected_cases); runs.extend(metadata); trials.extend(attributed)
+            continue
         if schema not in (LIFECYCLE_SCHEMA, CLOSURE_SCHEMA):
             selected, metadata, attributed = ordinary([(path, run)], directory)
             cases.extend(selected); runs.extend(metadata); trials.extend(attributed)
@@ -515,7 +548,9 @@ def checkpoint(directory, name):
     try:
         original.checkpoint_runs = adapted
         original.SAFE_BODY_NAMES = previous_body_names | {
-            'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT'}
+            'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT',
+            'MSG_MOVE_TELEPORT', 'SMSG_MOVE_TELEPORT', 'CMSG_MOVE_TELEPORT_ACK', 'MSG_MOVE_TELEPORT_ACK',
+            'SMSG_TRANSFER_PENDING', 'SMSG_NEW_WORLD', 'CMSG_WORLD_PORT_RESPONSE', 'MSG_MOVE_WORLDPORT_ACK'}
         return original.checkpoint(directory, name)
     finally:
         original.checkpoint_runs = previous

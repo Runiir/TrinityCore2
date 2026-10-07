@@ -27,6 +27,7 @@ from .hunter_learn_autobar import addition_guard, clear_guard, PICKUP_SOURCE, BI
 from .world.buffer import Reader
 from .hunter_learn_pet import reload_proof
 from .hunter_learn_trainer import validate_trainer_identity, SPAWN_SOURCE
+from .hunter_learn_reconciliation import validate_observation_reconciliation
 
 
 SCHEMA = 'client442_owned_hunter_learn_closure_v1'
@@ -63,6 +64,10 @@ PACKET_NAMES = frozenset(('CMSG_TRAINER_BUY_SPELL', 'SMSG_TRAINER_BUY_FAILED',
     'CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD', 'SMSG_SEND_KNOWN_SPELLS',
     'SMSG_UPDATE_OBJECT', 'SMSG_DESTROY_OBJECT', 'CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE',
     'SMSG_UPDATE_ACTION_BUTTONS', 'CMSG_SET_ACTION_BUTTON', 'CMSG_CAST_SPELL', 'CMSG_PET_ACTION', 'SMSG_TRAINER_LIST',
+    'SMSG_ON_MONSTER_MOVE', 'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT',
+    'MSG_MOVE_TELEPORT', 'SMSG_MOVE_TELEPORT', 'CMSG_MOVE_TELEPORT_ACK', 'MSG_MOVE_TELEPORT_ACK',
+    'SMSG_TRANSFER_PENDING', 'SMSG_NEW_WORLD', 'CMSG_WORLD_PORT_RESPONSE', 'MSG_MOVE_WORLDPORT_ACK'))
+NATIVE_AUTHORITY_NAMES = frozenset(('SMSG_UPDATE_OBJECT', 'SMSG_DESTROY_OBJECT', 'SMSG_TRAINER_LIST',
     'SMSG_ON_MONSTER_MOVE', 'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT'))
 TRACKING_MEMBERS = ('tracking/packets.jsonl', 'tracking/events.jsonl')
 # The inspected storage implementation is unchanged from accepted UI169.
@@ -433,9 +438,17 @@ def lifecycle(store, refs):
     require(all(v is True for v in derived.values()) and all(purchase.get('purchase_checks', {}).get(k) is True for k in derived),
         'exact native1462 learn, persistence or cost differs')
     checks(purchase, 'purchase_checks', PURCHASE_NAMES)
-    require(purchase['started_at'] <= purchase['purchase_started_at'] <=
-        purchase['purchase_finished_at'] <= purchase['finished_at'], 'ordinary purchase interval differs')
-    require(purchase.get('purchase_input_sent') is True and purchase.get('input_sent') is True and
+    if purchase.get('observation_settlement_source') is not None:
+        failed_purchase = store.get(purchase['observation_settlement_source'], False)
+        validate_observation_reconciliation(purchase, failed_purchase, selected)
+    else:
+        require(not any(k in purchase for k in ('original_purchase_interval', 'observation_reconciliation',
+            'original_purchase_input_sent', 'original_case')), 'observation reconciliation lacks its exact failed source')
+        require(purchase['started_at'] <= purchase['purchase_started_at'] <=
+            purchase['purchase_finished_at'] <= purchase['finished_at'] and
+            purchase.get('purchase_input_sent') is True and purchase.get('input_sent') is True,
+            'ordinary purchase interval or input differs')
+    require(
         not purchase.get('state', {}).get('lua_errors') and not purchase.get('state', {}).get('blocked_actions') and
         sorted(reconciled_known(purchase['login_known_spell_ids'], purchase['purchase_packets'], purchase['purchase_checks'])) ==
         purchase['reconciled_known_spell_ids'] and purchase['reconciled_known_spell_ids'] ==
@@ -558,7 +571,8 @@ def lifecycle(store, refs):
         all(value.get('native_session') == entered_again['native_session'] for value in (reentry, final)),
         'purchase/restoration and reentry do not belong to their exact owned native login')
     for value in current:
-        require(value.get('runtime') == runtime and value.get('model') is None and value.get('controller') == 'code' and
+        require(value.get('runtime') == runtime and value.get('model') is None and
+            value.get('controller') in ('code', 'code_diagnostic_ordinary_inputs') and
             value.get('custom_script_permission') == 'blocked_by_user' and
             value.get('softTargetInteract') == {'original': '0', 'current_stock_disabled': '1', 'original_restored': False} and
             value.get('actor') == (origin if value is reentry_preparation or value is finish else actor),
@@ -626,6 +640,10 @@ def collect(member, lines, data, tracking):
     for row in lines:
         if since <= row.get('time', 0) <= until and (row.get('name') in PACKET_NAMES or
             member == TRACKING_MEMBERS[1] and row.get('event') == 'instance_authenticated'):
+            # Native object/catalog/movement authority is independently replayed;
+            # translated modern duplicates add no authority to this bounded view.
+            if row.get('name') in NATIVE_AUTHORITY_NAMES and row.get('direction') != 'from_native':
+                continue
             destination.append(row)
             require(len(destination) <= 20000, 'learning tracking journal exceeds its bounded semantic window')
 
@@ -736,14 +754,18 @@ def proof(data, digests, tracking):
         closure['runtime'] == current[0]['runtime'], 'closure proof differs from archived lifecycle')
     accepted(pause, 'hunter_learn_scout_resource_paused')
     checks(pause, 'checks', PAUSE_NAMES)
+    game_before = pause.get('game_before', {})
+    require(type(game_before.get('pid')) is int and game_before['pid'] > 0 and
+        type(game_before.get('start_ticks')) is str and
+        re.fullmatch(r'[1-9][0-9]*', game_before['start_ticks']) is not None,
+        'scout shutdown requires the actual positive PID and canonical decimal start ticks')
     require(store.get(pause['source']) == closure and pause.get('runtime') == closure['runtime'] and
         pause.get('actor') == closure['actor'] and pause.get('primary_stop_source') == closure['primary_stop_source'] and
         pause.get('before') == pause.get('after') == snapshot and
         pause.get('input_sent') is False and pause.get('qualification_added') is False and
         pause.get('action') == 'stop_parked_scout_after_learning_restoration' and
-        pause.get('controller') == 'code' and pause.get('model') is None and
+        pause.get('controller') in ('code', 'code_diagnostic_ordinary_inputs') and pause.get('model') is None and
         pause.get('custom_script_permission') == 'blocked_by_user' and
-        pause.get('game_before', {}).get('pid', 0) > 0 and pause.get('game_before', {}).get('start_ticks', 0) > 0 and
         closure['finished_at'] < pause['started_at'], 'complete immutable scout shutdown differs')
     purchase = store.get(closure['sources']['purchase'])
     reentry = store.get(closure['sources']['reentry'])
@@ -751,6 +773,9 @@ def proof(data, digests, tracking):
     require(entries[0]['finished_at'] < entries[1]['started_at'],
         'ordinary restored reentry must have a separate later native login interval')
     actual_packets(purchase, entries, tracking, (current[1], reentry))
+    if purchase.get('observation_settlement_source') is not None:
+        validate_observation_reconciliation(purchase, store.get(purchase['observation_settlement_source'], False),
+            store.get(purchase['purchase_source']), wire=tracking['packets'])
     placement = purchase.get('auto_action_placement')
     expected_actions = []
     if placement is not None:
