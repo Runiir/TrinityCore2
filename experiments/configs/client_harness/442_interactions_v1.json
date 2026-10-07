@@ -699,7 +699,8 @@
       "fixture": "class_variants",
       "oracle": "Visible UI outcome and attributable native state; mutations must persist or be restored.",
       "availability": "verify_in_installed_build",
-      "automation": "pending_adapter"
+      "automation": "live_variant_qualified",
+      "qualification": "owned_hunter_beast_lore_trainer_learning"
     },
     {
       "id": "spellbook.unlearn_spell",
@@ -16062,8 +16063,155 @@
       ],
       "archive_sha256": "779300493370b4c70724acf17168c15dc5f50ea756ff6a4f9203e8ba78b16dae",
       "actual_remote_review_sha256": "fd0e683acc1a96b41e492437cc86b50c5d1c2bc14095c855e8abe3b96a9e9f32"
+    },
+    {
+      "id": "owned_hunter_beast_lore_trainer_learning",
+      "operations": [
+        "spellbook.learn_spell"
+      ],
+      "scope": "Owned level 10 Harnesshunt6 learns Beast Lore (1462) through one ordinary Train input at existing Benjamin Foxworthy (46983), trainer40. Exact modern/native buy, ordered learned delivery, the saved direct spell row, a 646-copper charge from8708 to8062 and the stock FUTURESPELL-to-known caption agree. A completed fresh observation reconciles the paid native outcome without replay. All 10 purchase, 28 closure and 8 shutdown checks pass. Exact offline cleanup removes only the new1462 row and refunds646; normal reentry shows the restored future trainer caption. Original action rows, resources, inventory, home pose, named Harnesswolf4, living Wolf16 and five protected actors are preserved. Two ordinary logins/logouts complete. All six actors are offline and both owned clients are stopped. The actual remote object verifies every current JSON/PNG member and both complete packet journals.",
+      "limits": "Only the level 10 Hunter and Beast Lore1462 lesson are qualified. Other learning variants, player unlearning and rank changes remain open. Offline row removal/refund is fixture cleanup. The original paid purchase01 whole episode remains failed and excluded; fresh observation01 and complete raw journals attribute its native outcome. Earlier preparation, staging, mapping, local review and initial publication failures stay recorded. Environmental metadata follows the complete ordered native lane; direct purchase/learn witnesses remain unique. The final codec-enabled world/auth suite passes6072 tests, with its root publishing test passing separately. The later narrow publisher mapping passes124 affected tests and all46 actual episode classifications. Native and bridge lifetimes/binaries are unchanged. One scout uses verified HDMI-1 and private input while needed; the primary stays stopped. Scripts remain blocked and original softTargetInteract0 remains unrestored at stock1. Controller is code; model is None.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/learning_prerequisites01/episode.json",
+          "sha256": "a058ad53d801dc7cc6dd4dfc1a1303b7440fb969bb9b0617fc8da2cc7e020a0f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_prepare02/episode.json",
+          "sha256": "2e758d6a0285e2008d87e5e1c5dad2eed1536262aa185f7fd1796233dc7022aa"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_entry02/episode.json",
+          "sha256": "7e03aacb0af71e1ff980665979bd19c8c76ad8ce7dea1e0d2ac8e7c445f20e6f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_recon02/episode.json",
+          "sha256": "386b6e26abc99b73889f451ea36ff5fb90200fa63558ab271e47f7f09b2c7102"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_stage03/episode.json",
+          "sha256": "d7577005e21ab6cf79533db99bec168b2dbdfb40835afbb0890ad349acbc6394"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_open02/episode.json",
+          "sha256": "a7b0e24c713d21ed2785f5f5712665cac062231b6b3f4aee0e794e70866d7b13"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_select_lesson01/episode.json",
+          "sha256": "1139d1cb2b1b6fe25d7c8cdccbe0bdf7f497ea24d64cd089a697144a5ff5541a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_purchase01/episode.json",
+          "sha256": "942ef7f3360fd00ff0c98f60422036da0369db340ac99f1f06f358e84f08b065"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_observation01/episode.json",
+          "sha256": "bc1656172e4b184d0c73bf012649475a2f2cd4768b0e9105af1be9a88819345a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_observation01/learned_caption_visual_review.json",
+          "sha256": "f45db906beba574b0bd5fa111c668733df8fade8c6efdad0123d3a8604990a7b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_restore01/episode.json",
+          "sha256": "5c89b4e05d41ed94e90a05f4e01129f384b0c99cdd9c5d376655e41b2b9664dc"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_park01/episode.json",
+          "sha256": "0a8fac3bdb5085668c12be370e5a01529086f69bdb2cd5f1f53af7951f0d6800"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_precision_after01/episode.json",
+          "sha256": "f5b5c3af47604ae82d7e5073283b69a4e0cfb673324684245690710f77e98196"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_clean01/episode.json",
+          "sha256": "d2d5089fea525928b7019607f9606fec78fc22c853e6191ec5a387d5b70ade25"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_restored_precision_before01/episode.json",
+          "sha256": "c697bf292472341734ffea3b9249a970d1cb98403eabd9901a2fac2cec6ccd0d"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_reentry01/episode.json",
+          "sha256": "4d15e30e048677aa1967a66b7bb41b7fc60e00812f01d94be2abab8c61706432"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_restored_park01/episode.json",
+          "sha256": "80de921a79e411187b9e6b41860fb5663fa6330d3e353318f6527534b52cc766"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_restored_precision_after01/episode.json",
+          "sha256": "1979a10a7dabb94fa9c2df29402a1e2bce32f62de509558fd9e171795d6e0dd4"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_original_finish02/episode.json",
+          "sha256": "0c031e5aeac1128c98e4872ae1ff7814d833cbec2f610d2af68060d5ae48e7ec"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_close01/episode.json",
+          "sha256": "ba541d5c15170acb8c7e2513240e28863a905504c20d510ae31485a2a7896737"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/scout_learning_pause01/episode.json",
+          "sha256": "e09d0a7ba94f88cc4a6f2e18071da9125ccb72eb8dd1655fd23eeffc9d93ac5e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/hunter_learning_local_review02.json",
+          "sha256": "a7caeb85a0a0131427ebe1d5bf0aba872a120bf60a07d359e7b242795b014b9a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/closed_validation01.json",
+          "sha256": "9956a000447f64c30f15b34a0450f2d52e04fd304c4130a9f22fae8b2bab0b5e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/closed_validation_correction01.json",
+          "sha256": "8813983deddd5ab40d663364c8169246b1d4908a34376d865308110d0e45cef9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/metadata_repair_freeze.json",
+          "sha256": "f2afc3c5768105d742754c1f200dfaaac96c3b93076b5c199f15a6d0c5198392"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/final_publication_validation02.json",
+          "sha256": "e0f0daf9107032e21be9cef53acf62194c03d7ae4743c1fc88779a65cf85f0e2"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_170.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui170/publication_projection_freeze.json",
+          "sha256": "079d2f721b59800e61937e8ad763445a7da8b1172c0a0fa417c1c3cc1932f577"
+        }
+      ],
+      "archive_sha256": "7d29ce3dcf310fa3287870f117492d13ce225506949d7cbe66e116e84cffa32c",
+      "actual_remote_review_sha256": "7b85cd41775cdedb2b27032f2e1aa892b5d164278ec0554ba694f35723d34453"
     }
   ],
-  "qualified_operations": 451,
+  "qualified_operations": 452,
   "qualification_limits": "Checked means the documented fixture variant passed. Other variants and whole-family coverage remain open."
 }
