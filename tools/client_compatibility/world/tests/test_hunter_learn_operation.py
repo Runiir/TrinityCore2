@@ -203,3 +203,128 @@ def test_controller_interruption_closes_actual_failed_receipt_before_propagating
     with pytest.raises(KeyboardInterrupt): operation.main()
     assert persisted[-1]['completed'] is False
     assert persisted[-1]['failure'] == 'KeyboardInterrupt: actual interrupt' and persisted[-1]['finished_at'] == 20
+
+
+def test_recon_closes_stock_book_before_passive_actionbar_page_and_retains_caption(monkeypatch):
+    snapshot = {'6': {'native': {'activeTalentGroup': 0}}}
+    original = {'spells': deepcopy(operation.BASE_SPELLS), 'actions': []}
+    resources = {'money': 8708}
+    entered = {'learn_offline_baseline': snapshot, 'rest_baseline_source': {'path': 'precision'},
+        'resources': resources, 'native_pet_reload': {'source': 'entry'}}
+    layout = {'book_type': 'spell', 'skill_line': 1, 'page': 1, 'pages': {'1': 1, '2': 1}}
+    future = spell_probe(False)
+    calls = []
+    class Trial:
+        def __init__(self):
+            self.receipt, self.panels = {}, []
+        def clean_panels(self):
+            calls.append(('close', tuple(self.panels)))
+            self.panels = []
+        def observe(self, label):
+            return {'panels': list(self.panels)}, {'file': label + '.png'}
+        def execute(self, action):
+            raise AssertionError('recon must not Train, cast, or modify actions')
+    trial = Trial()
+    monkeypatch.setattr(operation, 'baseline', lambda *args: ({'learn_offline_baseline': snapshot}, 'hunter'))
+    monkeypatch.setattr(operation, 'entry_source', lambda *args: entered)
+    monkeypatch.setattr(operation, 'native_prerequisites', lambda: {})
+    monkeypatch.setattr(operation, 'Inventory', lambda *args: SimpleNamespace(poll=lambda: object()))
+    monkeypatch.setattr(operation, 'wire_known', lambda *args: {1515, 79682})
+    monkeypatch.setattr(operation, 'known', lambda _: deepcopy(operation.BASE_SPELLS))
+    monkeypatch.setattr(operation, 'resources', lambda _: resources)
+    monkeypatch.setattr(operation, 'saved', lambda _: deepcopy(original))
+    monkeypatch.setattr(operation, 'pets', lambda _: [])
+    monkeypatch.setattr(operation, 'bound', lambda path: {'path': str(path), 'sha256': 'exact'})
+    monkeypatch.setattr(operation, 'protected', lambda _: {'protected': True})
+    def open_book(t, label):
+        t.panels = ['SpellBookFrame']
+        return deepcopy(layout)
+    def caption(t, *args):
+        t.panels = ['SpellBookFrame']
+        return deepcopy(future), deepcopy(future['rows'][0])
+    def passive_bar(t, label):
+        assert not t.panels, 'observer145 never schedules actionbars while the stock book is open'
+        calls.append(('read', label))
+        return {'active_spec': 1}
+    monkeypatch.setattr(operation, 'open_book', open_book)
+    monkeypatch.setattr(operation, 'caption', caption)
+    monkeypatch.setattr(operation, 'bar_detail', passive_bar)
+    operation.recon(trial, 'preparation', 'entry')
+    assert calls == [('close', ()), ('close', ('SpellBookFrame',)), ('read', 'hunter_learn_bar_baseline')]
+    assert trial.receipt['future_probe'] == future and trial.receipt['book_layout_baseline'] == layout
+    assert trial.receipt['completed'] is True
+
+
+def test_one_train_closes_trainer_and_learned_book_before_both_passive_actionbar_reads(monkeypatch):
+    import struct
+    original = {'spells': deepcopy(operation.BASE_SPELLS), 'actions': []}
+    after_saved = {**original, 'spells': sorted(operation.BASE_SPELLS + [[1462, 1, 0]])}
+    source = {'path': 'selected', 'sha256': 'exact'}
+    selected = {'frame': {'file': 'selected.png'}, 'entry_source': {'path': 'entry'},
+        'login_known_spell_ids': [1515, 79682],
+        'baseline': {'saved': original, 'resources': {'money': 8708}, 'active_spec': 0}}
+    public = {'active_spec': 1, 'frames': {'MainMenuBar': True},
+        'actions': [{'button': 'ActionButton' + str(i), 'slot': i, 'kind': None, 'id': None, 'visible': True}
+            for i in range(1, 13)]}
+    rows = [{'session': 'hunter', 'time': stamp, 'direction': direction, 'name': name, 'body': body.hex()}
+        for stamp, direction, name, body in (
+            (100.1, 'to_native', 'CMSG_TRAINER_BUY_SPELL', struct.pack('<QII', operation.TRAINER_GUID, 40, 1462)),
+            (100.2, 'from_native', 'SMSG_LEARNED_SPELL', struct.pack('<II', 1462, 0)),
+            (100.3, 'to_client', 'SMSG_LEARNED_SPELLS', struct.pack('<IIBIB', 1, 0, 0, 1462, 0)))]
+    calls, paid = [], [False]
+    class Trial:
+        def __init__(self):
+            self.receipt, self.panels = {}, ['ClassTrainerFrame']
+        def persist(self): pass
+        def clean_panels(self):
+            calls.append(('close', tuple(self.panels)))
+            self.panels = []
+        def observe(self, label):
+            return {'panels': list(self.panels), 'lua_errors': {}, 'blocked_actions': {},
+                'trainer': {'service': {'name': 'Beast Lore', 'state': 'available', 'cost': 646}}}, {'file': label + '.png'}
+        def execute(self, action):
+            raise AssertionError('unexpected cast or action-bar input')
+    class Cursor:
+        def __init__(self, *args): self.polls = 0
+        def poll(self):
+            self.polls += 1
+            return deepcopy(rows) if self.polls == 2 else []
+    trial = Trial()
+    monkeypatch.setattr(operation, 'prior', lambda *args: ({}, 'hunter', selected))
+    monkeypatch.setattr(operation, 'reviewed', lambda *args: {'source': source, 'frame': selected['frame'], 'point': [100, 100]})
+    monkeypatch.setattr(operation, 'bound', lambda _: source)
+    monkeypatch.setattr(operation, 'controls', lambda _: [{'name': 'ClassTrainerTrainButton'}])
+    monkeypatch.setattr(operation, 'point', lambda _: [100, 100])
+    monkeypatch.setattr(operation, 'native_prerequisites', lambda: {})
+    monkeypatch.setattr(operation, 'Cursor', Cursor)
+    monkeypatch.setattr(operation, 'Inventory', lambda *args: SimpleNamespace(poll=lambda: object()))
+    monkeypatch.setattr(operation, 'resources', lambda _: {'money': 8062 if paid[0] else 8708})
+    monkeypatch.setattr(operation, 'known', lambda _: deepcopy(after_saved['spells'] if paid[0] else original['spells']))
+    monkeypatch.setattr(operation, 'saved', lambda _: deepcopy(after_saved if paid[0] else original))
+    monkeypatch.setattr(operation, 'linked', lambda _: {'started_at': 99})
+    monkeypatch.setattr(operation, 'entries', lambda _: [])
+    monkeypatch.setattr(operation, 'protected', lambda _: {'protected': True})
+    stamps = iter((100, 101, 102))
+    monkeypatch.setattr(operation.time, 'time', lambda: next(stamps))
+    monkeypatch.setattr(operation.time, 'sleep', lambda _: None)
+    monkeypatch.setattr(operation.lab, 'server_command', lambda command: calls.append(('native', command)))
+    def passive_bar(t, label):
+        assert not t.panels, 'observer145 never schedules actionbars while trainer or book panels are open'
+        calls.append(('read', label))
+        return deepcopy(public)
+    def caption(t, *args):
+        t.panels = ['SpellBookFrame']
+        return spell_probe(True), spell_probe(True)['rows'][0]
+    def train_once(t, case_id, goal, selector, outcome):
+        calls.append(('train', case_id))
+        paid[0] = True
+        return outcome({}, {'lua_errors': {}, 'blocked_actions': {}}, 'interact')
+    monkeypatch.setattr(operation, 'bar_detail', passive_bar)
+    monkeypatch.setattr(operation, 'caption', caption)
+    monkeypatch.setattr(operation, 'click_case', train_once)
+    operation.learn(trial, 'preparation', 'selected', 'review')
+    assert [v for v in calls if v[0] == 'train'] == [('train', 'spellbook.learn_spell.train1462')]
+    assert ('close', ('ClassTrainerFrame',)) in calls and ('close', ('SpellBookFrame',)) in calls
+    assert [v[1] for v in calls if v[0] == 'read'] == ['hunter_learn_after_purchase_actions', 'hunter_learn_transition_actions']
+    assert trial.receipt['learned_probe'] == spell_probe(True) and trial.receipt['after_saved'] == after_saved
+    assert trial.receipt['completed'] is True and all(trial.receipt['purchase_checks'].values())

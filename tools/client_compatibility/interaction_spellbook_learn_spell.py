@@ -121,6 +121,7 @@ def recon(t, preparation, entry):
     t.clean_panels()
     layout = open_book(t, 'hunter_learn_baseline')
     probe, row = caption(t, login, 'hunter_learn_future', False)
+    t.clean_panels()
     bars = bar_detail(t, 'hunter_learn_bar_baseline')
     guard(bars.get('active_spec') == old['learn_offline_baseline']['6']['native']['activeTalentGroup'] + 1,
         'public and native active action spec differ')
@@ -265,6 +266,7 @@ def learn(t, preparation, source, review_path):
     def outcome(b, a, s):
         lab.server_command('saveall')
         time.sleep(1)
+        t.clean_panels()
         public = bar_detail(t, 'hunter_learn_after_purchase_actions')
         lab.server_command('saveall')
         time.sleep(.5)
@@ -277,6 +279,7 @@ def learn(t, preparation, source, review_path):
     learned = reconciled_known(e['login_known_spell_ids'], t.receipt['purchase_packets'], t.receipt['purchase_checks'])
     t.clean_panels()
     probe, row = caption(t, learned, 'hunter_learn_after', True)
+    t.clean_panels()
     public = bar_detail(t, 'hunter_learn_transition_actions')
     lab.server_command('saveall')
     time.sleep(.5)
