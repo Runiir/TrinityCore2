@@ -44,6 +44,13 @@ def review(directory,output):
     reject('wrong_native_update',lambda d,h,p:packet_change(d,'SMSG_PET_SLOT_UPDATED','04000000060000000000000000000000'))
     reject('native_failure_claimed_success',lambda d,h,p:packet_change(d,'SMSG_STABLE_RESULT','01'))
     reject('expired_private_capture',lambda d,h,p:d[keys['forward']]['capture_config'].update(expires_at=0))
+    def alter_recovery(d,p,request):
+        row=next(r for r in d[keys['restore']]['call_pet_packets'] if
+            (r['direction']=='to_native' if request else r['direction']=='from_native' and len(bytes.fromhex(r['body']))==21))
+        p.remove(packet_key(row));body=bytearray.fromhex(row['body'])
+        body[0 if request else 10]^=1;row['body']=body.hex();p.add(packet_key(row))
+    reject('mismatched_requested_cast_counter',lambda d,h,p:alter_recovery(d,p,True))
+    reject('wrong_native_pet_load_cooldown_flags',lambda d,h,p:alter_recovery(d,p,False))
     report={'schema':'client442_hunter_slot_local_review_v1','reviewed_at':time.time(),
         'actual_remote_verified':False,'local_tracking_verified':True,'proof':result,
         'guards':guards,'guard_count':len(guards),'all_guards_rejected':all(g['rejected'] for g in guards),
