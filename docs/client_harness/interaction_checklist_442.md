@@ -1,6 +1,6 @@
 # 4.4.2 player interaction checklist
 
-916 operation contracts across 45 families. 447 have a qualified fixture variant; the rest remain pending.
+916 operation contracts across 45 families. 448 have a qualified fixture variant; the rest remain pending.
 
 A checked box means the linked evidence qualifies the stated fixture variant. It does not close other content, class, map, permission, persistence or failure variants. Opening a panel qualifies only opening that panel.
 
@@ -943,7 +943,7 @@ Fixture: `pet_class_variants`.
 - [x] `pets.stable_swap` (qualified variant; [evidence](#owned_hunter_occupied_stable_swap_roundtrip))
 - [ ] `pets.tame`
 - [ ] `pets.abandon_confirm`
-- [ ] `pets.abandon_cancel`
+- [x] `pets.abandon_cancel` (qualified variant; [evidence](#owned_hunter_disposable_pet_abandon_cancel))
 - [ ] `pets.revive`
 - [ ] `pets.vehicle_pet_bar`
 - [x] `pets.persist` (qualified variant; [evidence](#owned_imp_persistence))
@@ -3368,3 +3368,20 @@ Remaining limits: Only this two-pet occupied native0/5 roundtrip is qualified. O
 - [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/hunter_pair_swap_forward01/episode.json`, SHA-256 `415bed3eaad495e1d6ef927e7f62956634b78449d6d7ee622935f938d3eb0d20`.
 - [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/native_pet_slot_deploy01/deployment.json`, SHA-256 `2db55b66734bdb7da990709ed2513d5cdde045524cac04756f3f98afbecc7a52`.
 - [442_interactions_20261007_155.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_155.tar.gz.dvc), member `evidence/client_interactions_20261007_ui155/user_stop_primary01/episode.json`, SHA-256 `72c45f6519bb9e8c4b241b84c74e4da67b5bcbc8ff5418cf54ff02dc491796a5`.
+
+### owned_hunter_disposable_pet_abandon_cancel
+
+One owned level10 Harnesshunt opens the stock Abandon dialog for disposable Wolf6/entry299, then clicks the freshly reviewed Cancel button. Dialog11 and Cancel12 checks preserve runtime/native/public pet presence, both complete saved pet identities, original owner resources/pose/selection and protected actors. Normal parking4, original selection5 and close18 pass. Actual183631184-byte remote compressed SHA and all30 JSON/102 PNG hashes verify; archived events contain zero Abandon requests during the accepted stage/cancel window.18 unsafe evidence variants reject.
+
+Remaining limits: Only Cancel for this exact active Wolf6 is qualified. Confirm, tame/channel/PetAdded, revive, other pets and slots remain open. Named Harnesswolf4 remains stored at native5; Wolf6 at native0. Earlier dialog01 and Cancel01 are whole failed and excluded. Primary remains stopped at user request, scout alone at offline original selection on HDMI-1; exact primary snapshot and all protected actors preserved. Native1971415 and bridge1903647 unchanged. Abandon confirmation bridge source/probe/tests are committed but unbuilt/undeployed and untested because the6GiB memory guard aborted before compilation. Scripts blocked, original CVar0 unrestored at1; code controller/model None.
+
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_prepare01/episode.json`, SHA-256 `a7399878ae6469dff1853497557ab544ef295d552157fa56060bc6d3d0f85be9`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_entry01/episode.json`, SHA-256 `2493d1a7dd951939a57cd77f0eea5ea0ca4f72864d50066c3ff4ca2c86467ec8`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_dialog03/episode.json`, SHA-256 `a372e3cfd9d500ab5a39cfbc362bf7c09f617f275b4d465088605b643d162f85`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_dialog03/review.json`, SHA-256 `bcd7ba7500fa1200594d86736daf06afd7aa9cb150a756c0c831849553b68794`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_cancel02/episode.json`, SHA-256 `bafa84e5000dd4efdf2ec18099147ee04820cc3bf6c44d797365acdf24f19081`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_park01/episode.json`, SHA-256 `4ad225fd0d9286e77b9f325c6c3082b951fe2cdbf2aa7675ae189d312088322a`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_origin_finish01/episode.json`, SHA-256 `43828d76fb8c5785114c976eae92d38fada65600c49161e9e5d4342fe1c6fa55`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_close01/episode.json`, SHA-256 `b538a743203173637d5d64a284644b382a17a73f764ab5edc308031b34513d04`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/primary_user_stop_source01.json`, SHA-256 `72c45f6519bb9e8c4b241b84c74e4da67b5bcbc8ff5418cf54ff02dc491796a5`.
+- [442_interactions_20261007_156.tar.gz.dvc](../../artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc), member `evidence/client_interactions_20261007_ui156/hunter_abandon_local_admission02.json`, SHA-256 `e58b6cd4f99e7770e939d6e5f306119823a0d05a9fe9d3e077cd7af8ad3b9e17`.

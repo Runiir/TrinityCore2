@@ -6969,6 +6969,68 @@
       ],
       "archive_sha256": "5a2a4e9a31d5750a7cf584536a217c6707046f77851f8734d562142cbfe7ab01",
       "actual_remote_review_sha256": "6b0e51f787a3979d0f3beeef418db53d585a9e9dda23756bd6da925a94758c56"
+    },
+    {
+      "id": "owned_hunter_disposable_pet_abandon_cancel",
+      "operations": [
+        "pets.abandon_cancel"
+      ],
+      "scope": "One owned level10 Harnesshunt opens the stock Abandon dialog for disposable Wolf6/entry299, then clicks the freshly reviewed Cancel button. Dialog11 and Cancel12 checks preserve runtime/native/public pet presence, both complete saved pet identities, original owner resources/pose/selection and protected actors. Normal parking4, original selection5 and close18 pass. Actual183631184-byte remote compressed SHA and all30 JSON/102 PNG hashes verify; archived events contain zero Abandon requests during the accepted stage/cancel window.18 unsafe evidence variants reject.",
+      "limits": "Only Cancel for this exact active Wolf6 is qualified. Confirm, tame/channel/PetAdded, revive, other pets and slots remain open. Named Harnesswolf4 remains stored at native5; Wolf6 at native0. Earlier dialog01 and Cancel01 are whole failed and excluded. Primary remains stopped at user request, scout alone at offline original selection on HDMI-1; exact primary snapshot and all protected actors preserved. Native1971415 and bridge1903647 unchanged. Abandon confirmation bridge source/probe/tests are committed but unbuilt/undeployed and untested because the6GiB memory guard aborted before compilation. Scripts blocked, original CVar0 unrestored at1; code controller/model None.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_prepare01/episode.json",
+          "sha256": "a7399878ae6469dff1853497557ab544ef295d552157fa56060bc6d3d0f85be9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_entry01/episode.json",
+          "sha256": "2493d1a7dd951939a57cd77f0eea5ea0ca4f72864d50066c3ff4ca2c86467ec8"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_dialog03/episode.json",
+          "sha256": "a372e3cfd9d500ab5a39cfbc362bf7c09f617f275b4d465088605b643d162f85"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_dialog03/review.json",
+          "sha256": "bcd7ba7500fa1200594d86736daf06afd7aa9cb150a756c0c831849553b68794"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_cancel02/episode.json",
+          "sha256": "bafa84e5000dd4efdf2ec18099147ee04820cc3bf6c44d797365acdf24f19081"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_park01/episode.json",
+          "sha256": "4ad225fd0d9286e77b9f325c6c3082b951fe2cdbf2aa7675ae189d312088322a"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_origin_finish01/episode.json",
+          "sha256": "43828d76fb8c5785114c976eae92d38fada65600c49161e9e5d4342fe1c6fa55"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_close01/episode.json",
+          "sha256": "b538a743203173637d5d64a284644b382a17a73f764ab5edc308031b34513d04"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/primary_user_stop_source01.json",
+          "sha256": "72c45f6519bb9e8c4b241b84c74e4da67b5bcbc8ff5418cf54ff02dc491796a5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261007_156.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261007_ui156/hunter_abandon_local_admission02.json",
+          "sha256": "e58b6cd4f99e7770e939d6e5f306119823a0d05a9fe9d3e077cd7af8ad3b9e17"
+        }
+      ],
+      "archive_sha256": "0133c5b076a708ae23404a765261a17cbcd8e7aedba54be973ca1b7ec1f4177d",
+      "actual_remote_review_sha256": "acf14b69b9897bda4f579323c4fe6aec8c81b2c52d71664a243fe1f072d0841a"
     }
   ]
 }
