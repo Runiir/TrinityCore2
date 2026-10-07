@@ -7,9 +7,8 @@ import struct
 from types import SimpleNamespace
 from . import lab_runtime as lab
 from .hunter_revive_fixture import dead_snapshot, restored_pets
-from .hunter_revive_lifecycle import CORPSE_SECONDS, MIN_SUBMISSION_REMAINING, native_revive_timing
-from .interaction_pet_summon import cast_identity
-from .interaction_pet_command_probe import expected_guid
+from .hunter_revive_timing import CORPSE_SECONDS, MIN_SUBMISSION_REMAINING, native_revive_timing
+from .pet_packet_identity import cast_identity, expected_guid
 from .review_native_feedback_checkpoint import require, packet_key, whole
 from .world.native_objects import records
 from .world.objects import INDEX

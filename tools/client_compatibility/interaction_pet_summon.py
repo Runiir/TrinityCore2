@@ -14,8 +14,8 @@ from .interaction_operations import click_case
 from .interaction_macros import require
 from .interaction_spellbook_recon import resources
 from .observation.inventory import Inventory
-from .world.buffer import Reader
-from .world.native_objects import records,guid as native_guid
+from .pet_packet_identity import cast_identity
+from .world.native_objects import records
 from .world.objects import INDEX
 
 
@@ -32,22 +32,6 @@ class SummonOracle(Presence):
                 if (row.get('kind')==3 and row['guid']>>52==0xf14 and
                         pair(row.get('fields',{}),'UNIT_FIELD_SUMMONEDBY')==self.owner):
                     self.creations[row['guid']]=packet['time']
-
-
-def cast_identity(packet):
-    r=Reader(bytes.fromhex(packet['body']));direction=packet['direction'];name=packet['name']
-    if name=='CMSG_CAST_SPELL' and direction=='from_client':
-        identity=r.guid();misc0,misc1,spell,visual=r.unpack('iiiI')
-        return {'spell':spell,'guid':identity,'misc0':misc0,'misc1':misc1,'visual':visual}
-    if name=='CMSG_CAST_SPELL' and direction=='to_native':
-        counter,spell,misc,flags,target_flags=r.unpack('BiiBI')
-        return {'counter':counter,'spell':spell,'misc':misc,'flags':flags,'target_flags':target_flags}
-    if name=='SMSG_SPELL_GO' and direction=='from_native':
-        caster=native_guid(r);unit=native_guid(r);counter,spell=r.unpack('Bi')
-        return {'caster':caster,'unit':unit,'counter':counter,'spell':spell}
-    if name=='SMSG_CAST_FAILED' and direction=='from_native':
-        counter,spell,reason=r.unpack('BiB');return {'counter':counter,'spell':spell,'reason':reason}
-    return None
 
 
 def summon_checks(oracle,since,old_guid,retained,selected,absence):

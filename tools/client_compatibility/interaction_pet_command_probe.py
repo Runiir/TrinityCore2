@@ -7,6 +7,7 @@ from .interaction_social import actor
 from .interaction_owned_class_fixture import prepared,origin_checks,SCRIPT_BOUNDARY
 from .interaction_spellbook_pet_recon import entry_source
 from .interaction_pet_follow_capture import FollowPresence
+from .pet_packet_identity import expected_guid
 
 
 def read(t,label):
@@ -19,10 +20,6 @@ def read(t,label):
             'ui_clean':not state.get('lua_errors') and not state.get('blocked_actions')}
         t.receipt.setdefault('pet_command_observations',[]).append(value);t.persist();return value
     finally:t.submit_chat('/tcui state',any_mode=True)
-
-
-def expected_guid(pet):
-    guid=pet['guid'];return f"Pet-0-1-{pet['map']}-0-{guid>>32&0xfffff}-{guid&0xffffffff:010X}"
 
 
 def follow_row(probe):

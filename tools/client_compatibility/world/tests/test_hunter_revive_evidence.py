@@ -7,9 +7,8 @@ import struct
 import sys
 import pytest
 from tools.client_compatibility import lab_runtime as lab
-from tools.client_compatibility.hunter_revive_lifecycle import native_revive_timing
-from tools.client_compatibility.interaction_pet_summon import cast_identity
-from tools.client_compatibility.interaction_pet_command_probe import expected_guid
+from tools.client_compatibility.hunter_revive_timing import native_revive_timing
+from tools.client_compatibility.pet_packet_identity import cast_identity, expected_guid
 from tools.client_compatibility.review_native_feedback_checkpoint import packet_key
 from tools.client_compatibility.world.native_objects import records
 from tools.client_compatibility.world.native_objects import guid as native_guid
@@ -481,6 +480,33 @@ def test_exact_actual_rest_float_source_binds_successful_close02_without_admissi
     assert evidence.proof(data, digests, tracking)['qualification_added'] is False
     rest = data[evidence.NAMES['close']]['native_rest_accrual_preserved']
     assert rest['expected_native_float32'] == 168.58815002441406
+
+
+def test_fresh_publishing_process_proves_synthetic_precision_chain_without_ui_or_protobuf():
+    import subprocess
+    script = '''
+import importlib.abc
+import sys
+blocked = ('google.protobuf', 'PIL', 'tools.second_client',
+    'tools.client_compatibility.auth', 'tools.client_compatibility.interaction_',
+    'tools.client_compatibility.hunter_revive_lifecycle')
+class NoUI(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.startswith(blocked):
+            raise AssertionError('publishing proof imported UI/protobuf: ' + fullname)
+sys.meta_path.insert(0, NoUI())
+from tools.client_compatibility.hunter_revive_evidence import proof
+from tools.client_compatibility.world.tests.test_hunter_revive_evidence import precision_fixture
+data, digests, tracking = precision_fixture()
+result = proof(data, digests, tracking)
+assert result['operation'] == 'pets.revive' and result['qualification_added'] is False
+assert not any(name.startswith(blocked) for name in sys.modules)
+print('pure publishing proof passed')
+'''
+    result = subprocess.run([sys.executable, '-c', script], cwd=lab.REPO,
+        capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == 'pure publishing proof passed'
 
 
 @pytest.mark.parametrize('fault', ['source_digest','entry_source','source_role','failed_precision','mutation','changed_snapshot',
