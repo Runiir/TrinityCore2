@@ -1,9 +1,11 @@
 """Read the actual remote native-feedback archive and verify every batch JSON/PNG."""
-import argparse,hashlib,json,tarfile,time
+import argparse,hashlib,json,struct,tarfile,time
 from pathlib import Path
 from . import lab_runtime as lab
 from .review_hunter_rename_checkpoint import DigestReader
 from .primary_range_feedback_evidence import stock_range_error
+from .world.buffer import Reader
+from .world.gameobjects import modern_guid
 
 
 def require(value,message):
@@ -34,6 +36,19 @@ def proof(data,packets,phase):
     ranges=[]
     for name in ('primary_range_error01','primary_range_error02'):
         e=data[name+'/episode.json'];whole(e,'range_checks',10);whole(e,'restoration_checks',10)
+        staged=data[Path(e['source']['path']).parent.name+'/episode.json'];whole(staged,'checks',13)
+        target=staged['target']['guid']
+        requests=[p for p in e['packets'] if p['name']=='CMSG_ATTACK_SWING']
+        native=[p for p in requests if p['direction']=='to_native']
+        client=[p for p in requests if p['direction']=='from_client']
+        require(len(native)==len(client)==1 and native[0]['body']==struct.pack('<Q',target).hex(),
+            'one exact current native Attack request absent')
+        r=Reader(bytes.fromhex(client[0]['body']));identity=r.guid();r.end()
+        require(identity==modern_guid(target,0) and 0<=native[0]['time']-client[0]['time']<2,
+            'owned modern Attack target differs')
+        require(not any(p['name']=='SMSG_ATTACKER_STATE_UPDATE' or
+            p['name']=='CMSG_CAST_SPELL' and p['direction']=='to_native' for p in e['packets']),
+            'unexpected damage or native spell during range attempt')
         require(e['actor']==entry['actor'] and e['runtime']==entry['runtime'] and e['session']==entry['session'] and
             e['custom_script_permission']=='blocked_by_user' and e['phase']=='primary_range_feedback_verified',
             'range actor, native epoch or script boundary differs')
@@ -46,7 +61,7 @@ def proof(data,packets,phase):
             n,c=pair['native'],pair['client']
             require(n['name']=='SMSG_ATTACKSWING_NOTINRANGE' and n['body']=='' and n['direction']=='from_native' and
                 c and c['name']=='SMSG_ATTACK_SWING_ERROR' and c['body']=='00' and c['direction']=='to_client' and
-                0<=c['time']-n['time']<2,'exact native/client error pair differs')
+                native[0]['time']<=n['time'] and 0<=c['time']-n['time']<2,'exact native/client error pair differs')
         ranges.append(e)
     reload=data['primary_observer_reload01/episode.json'];whole(reload,'checks',13)
     require(ranges[0]['finished_at']<reload['started_at']<reload['finished_at']<ranges[1]['started_at'] and
