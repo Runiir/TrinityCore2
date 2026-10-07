@@ -13,7 +13,7 @@ NAMES={k:'hunter_tame_'+v+'/episode.json' for k,v in (
     ('park','park01'),('finish','original_finish01'))}
 CLOSURE='hunter_tame_success_close01/episode.json'
 BEFORE='hunter_tame_stable_before02/episode.json'
-AFTER='hunter_tame_stable_after01/episode.json'
+AFTER='hunter_tame_stable_after02/episode.json'
 
 
 def proof(data,digests,tracking):

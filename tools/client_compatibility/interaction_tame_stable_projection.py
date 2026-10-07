@@ -13,6 +13,7 @@ from .interaction_observation import read_page
 from .interaction_spellbook_recon import resources
 from .observation.inventory import Inventory
 from .tame_stable_projection import public_rows,prove
+from .hunter_tame_boundary import retained_tame_pets
 
 
 def run(t,preparation,entry,action,before_path=None,cast_path=None):
@@ -58,7 +59,7 @@ def run(t,preparation,entry,action,before_path=None,cast_path=None):
             cast.get('entry_source')!=bound(entry) or cast.get('native_session')!=session or
             len(cast.get('capture_checks',{}))!=14 or not all(cast['capture_checks'].values()) or
             not before['finished_at']<cast['started_at']<cast['finished_at']<t.receipt['started_at'] or
-            cast.get('capture_disarmed') is not True or retained!=cast['retained_pet_after']):
+            cast.get('capture_disarmed') is not True or not retained_tame_pets(cast,retained)):
             raise RuntimeError('requires the whole same-entry baseline and single captured Tame')
         wire=prove(cast,before['public_stable'],probe)
         t.receipt.update(before_source=bound(before_path),cast_source=bound(cast_path))
