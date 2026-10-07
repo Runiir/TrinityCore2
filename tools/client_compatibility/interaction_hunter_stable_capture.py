@@ -19,6 +19,22 @@ from .observation.journal import entries
 from .world.buffer import Reader
 from .world.gameobjects import modern_guid
 from .world.objects import INDEX
+from .interaction_observation import read_current_page
+
+
+def native_catalog(body):
+    r=Reader(bytes.fromhex(body));guid,count,last=r.unpack('QBB');rows=[]
+    if not 5<=last<=20 or count>last+1:raise RuntimeError('native stable capacity differs')
+    for _ in range(count):
+        slot,number,entry,level=r.unpack('iIII');name=bytearray()
+        while True:
+            value=r.raw(1)[0]
+            if not value:break
+            name.append(value)
+            if len(name)>255:raise RuntimeError('native stable name is unbounded')
+        flags,=r.unpack('B');rows.append({'slot':slot,'number':number,'entry':entry,'level':level,
+            'name':name.decode(),'flags':flags})
+    r.end();return {'master':guid,'last_slot':last,'stable_capacity':last-4,'pets':rows}
 
 
 def eligibility(t,preparation,entry):
@@ -93,11 +109,32 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
         journal=lab.ROOT/'evidence/owned_stable_request_packets.jsonl'
         packets=[p for p in entries(journal) if p.get('session')==session and p.get('time',0)>=started] if journal.is_file() else []
         t.receipt.update(capture_packets=packets,response_frame=frame);t.persist()
-        if len(packets)!=1:raise RuntimeError('one ordinary stable request was not captured')
-        p=packets[0];r=Reader(bytes.fromhex(p['body']));submitted=r.guid();r.end()
-        if p['direction']!='from_client' or p['name']!='CMSG_REQUEST_STABLED_PETS' or list(submitted)!=e['modern_master_guid']:
-            raise RuntimeError('captured public stable master identity differs')
-        t.receipt['decoded_request']={'stable_master_guid':list(submitted)}
+        native=[p for p in packets if p.get('direction')=='from_native' and p.get('name')=='MSG_LIST_STABLED_PETS']
+        if not native or len({p['body'] for p in native})!=1:raise RuntimeError('consistent ordinary native stable catalog absent')
+        catalog=native_catalog(native[0]['body']);t.receipt['native_stable_catalog']=catalog
+        if catalog['master']!=guid:raise RuntimeError('native stable catalog master differs')
+        for p in packets:
+            if p.get('direction')!='from_client':continue
+            r=Reader(bytes.fromhex(p['body']));submitted=r.guid();r.end()
+            if p['name']!='CMSG_REQUEST_STABLED_PETS' or list(submitted)!=e['modern_master_guid']:
+                raise RuntimeError('captured public stable master identity differs')
+            t.receipt.setdefault('decoded_requests',[]).append({'stable_master_guid':list(submitted)})
+        public,pixels=read_current_page(t,'stable_cache','stables',lambda s:s.get('stable_probe',{}).get('visible') is True)
+        probe=public['stable_probe'];expected=[{'slot':p['slot']+1,'name':p['name'],'level':p['level'],
+            'display_id':retained[0]['modelid']} for p in catalog['pets']]
+        observed=[{k:p.get(k) for k in ('slot','name','level','display_id')} for p in probe.get('pets',[])]
+        checks={'native_named_pet':len(catalog['pets'])==1 and catalog['pets'][0]=={'slot':0,'number':4,
+            'entry':42717,'level':10,'name':'Harnesswolf','flags':1},'same_visible_native_master':catalog['master']==guid,
+            'stock_stable_open':probe['visible'] is True,'native_public_pet_cache':observed==expected,
+            'selected_named_pet':probe.get('selected')==1 and probe.get('name')=='Harnesswolf',
+            'public_show_event':probe.get('events',{}).get('PET_STABLE_SHOW',{}).get('count',0)>0,
+            'native_actual_capacity':catalog['stable_capacity']==16,'observer140':public.get('observer_version')==140,
+            'ui_clean':not public.get('lua_errors') and not public.get('blocked_actions')}
+        t.receipt.update(public_stable=probe,public_stable_frame=pixels,outcome_checks=checks);t.persist()
+        t.receipt['cases'].append({'id':'pets.stable_open','time':time.time(),'input_sent':True,
+            'status':'native_owned_stable_open_pass' if all(checks.values()) else 'client_or_protocol_failure',
+            'after_frame':pixels,'oracle':{'checks':checks}});t.persist()
+        if not all(checks.values()):raise RuntimeError('native and public stable opening differ')
     finally:
         journal=lab.ROOT/'evidence/owned_stable_request_packets.jsonl'
         t.receipt['capture_packets']=[p for p in entries(journal) if p.get('session')==session and
@@ -113,8 +150,9 @@ def suite(t,preparation,entry,action,source=None,review_path=None):
             **protected(old)}
         t.receipt.update(restoration_checks=checks,restored_frame=frame);t.persist()
         if not all(checks.values()):raise RuntimeError('stable capture preservation differs')
-    t.receipt.update(completed=True,phase='hunter_stable_request_captured',
-        qualified_scope='One normally submitted public Erma stable request shape only; no native translation or stable qualification.')
+    t.receipt.update(completed=True,phase='hunter_stable_native_open_verified',
+        qualified_scope='Ordinary Erma gossip opens the native owned Hunter stable catalog. Named pet cache, level, model and '
+            'selection match native records; resources, saved pet and all protected actors restore. Slot mutation and capacity remain open.')
 
 
 if __name__=='__main__':
