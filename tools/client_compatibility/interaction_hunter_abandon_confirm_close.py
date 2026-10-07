@@ -12,11 +12,22 @@ from .interaction_hunter_stable_slots import bound
 from .hunter_abandon_identity import named_preserved
 from .interaction_primary_combat_reentry import retained
 from .interaction_paused_scout_bridge_deploy import SCHEMA
+from .interaction_single_scout_bridge_deploy import SCHEMA as SINGLE_SCHEMA,verified_report
+from .interaction_parked_client_resource_pause import snapshot
+from .hunter_disposable_tame import disposable_number
 
 
 def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment):
     old=prepared(t,preparation,True);paths=(entry,stage,confirm,park,finish,primary_stop)
     e,s,a,p,f,stop=[closed(v) for v in paths];d=json.loads(deployment.read_text())
+    single=d.get('schema')==SINGLE_SCHEMA
+    if single:verified_report(deployment.parent,t.receipt['runtime'])
+    number=6
+    if a.get('disposable_tame_source'):
+        tame=Path(a['disposable_tame_source']['path'])
+        if a['disposable_tame_source']!=bound(tame):raise RuntimeError('disposable Tame source changed')
+        number=disposable_number(closed(tame),a['retained_pet_before'],t.receipt['runtime']['worldserver'])
+        if a.get('disposable_pet_number')!=number:raise RuntimeError('disposable Abandon number differs')
     for v,n in ((e,9),(s,11),(a,16),(p,4),(f,5),(stop,8)):
         if len(v.get('checks',{}))!=n or not all(v['checks'].values()):raise RuntimeError('whole Abandon source checks differ')
     if (a.get('phase')!='owned_disposable_pet_abandoned' or a.get('source')!=bound(stage) or
@@ -26,17 +37,17 @@ def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment)
         any(v.get('actor')!=old['class_actor'] for v in (e,s,a,p)) or f.get('actor')!=old['origin_actor'] or
         not e['finished_at']<s['started_at']<s['finished_at']<a['started_at']<a['finished_at']<p['started_at']<p['finished_at']<f['started_at'] or
         stop.get('phase')!='user_requested_primary_client_stopped' or stop.get('before')!=stop.get('after') or
-        d.get('schema')!=SCHEMA or not d.get('completed') or not d.get('finished_at') or
+        d.get('schema') not in (SCHEMA,SINGLE_SCHEMA) or not d.get('completed') or not d.get('finished_at') or
         d.get('primary_stop_source')!=bound(primary_stop) or d.get('native')!=t.receipt['runtime']['worldserver'] or
         d.get('after')!=t.receipt['runtime']['modern_world'] or d.get('scout_lifetime')!=t.receipt['runtime']['client'] or
-        d.get('before')!=stop['runtime']['modern_world'] or d.get('native')!=stop['runtime']['worldserver']):
+        (not single and d.get('before')!=stop['runtime']['modern_world']) or d.get('native')!=stop['runtime']['worldserver']):
         raise RuntimeError('fresh Abandon, single-scout deployment or stopped primary lineage differs')
     with actor('primary'):primary_ok=lab.owned_process('client') is None and retained(1,1)==stop['after']
     current=pets(6);checks={**origin_checks(old),**protected(old),
         'hunter_offline':character(6,2)['online']==0,'hunter_saved':saved(6)==p['retained_class_saved']==e['entered_saved'],
         'hunter_character':character(6,2)==p['retained_class_fixture'],
         'named_pet_preserved':named_preserved(a['retained_pet_before'],current),
-        'parked_pets_exact':current==p['retained_class_pets'],'test_pet_absent':all(r['id']!=6 for r in current),
+        'parked_pets_exact':current==p['retained_class_pets'],'test_pet_absent':all(r['id']!=number for r in current),
         'primary_intentionally_stopped':primary_ok,'origin_registration':actors.load()==old['origin_actor'],
         'no_probe':not any((lab.ROOT/'run'/name).exists() for name in
             ('owned_pet_abandon_probe.json','owned_tame_request_probe.json','owned_stable_request_probe.json')),
@@ -44,7 +55,8 @@ def close(t,preparation,entry,stage,confirm,park,finish,primary_stop,deployment)
         'single_scout_reconnected':set(d.get('parked_reconnect_attempt',{}))=={'scout'}}
     t.receipt.update(sources=[bound(v) for v in (preparation,*paths,deployment)],checks=checks,input_sent=False,
         primary_stop_source=bound(primary_stop),retained_pets=current,frame=shot(t.out/'scout_offline.png'),
-        completed=all(checks.values()),phase='owned_abandon_parked_boundary',qualification_added=False)
+        completed=all(checks.values()),phase='owned_abandon_parked_boundary',qualification_added=False,
+        all_offline_snapshot=snapshot(),disposable_pet_number=number)
     if not all(checks.values()):raise RuntimeError('disposable Abandon parked preservation differs')
 
 

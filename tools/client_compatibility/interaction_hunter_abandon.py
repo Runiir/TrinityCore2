@@ -20,6 +20,7 @@ from .interaction_macros import require
 from .observation.inventory import Inventory
 from .observation.journal import entries
 from .world.objects import INDEX
+from .hunter_disposable_tame import disposable_number,pair_preserved
 
 
 def disposable_pair(rows):
@@ -43,15 +44,18 @@ def events(session,since,until):
         since<=p.get('time',0)<=until and p.get('name')=='CMSG_PET_ABANDON']
 
 
-def run(t,preparation,entry,action,source=None,review_path=None):
+def run(t,preparation,entry,action,source=None,review_path=None,tame_source=None):
     old=prepared(t,preparation);session=actors.session_entry(t.fixture)['session']
     e=entry_source(t,entry,session,preparation);retained=pets(6)
-    if (t.fixture['guid'],t.fixture['class'],t.fixture['level'])!=(6,3,10) or not disposable_pair(retained):
+    number=disposable_number(closed(tame_source),retained,t.receipt['runtime']['worldserver']) if tame_source else 6
+    frozen=pair_preserved if tame_source else identities
+    valid_pair=lambda rows: disposable_number(closed(tame_source),rows,t.receipt['runtime']['worldserver'])==number if tame_source else disposable_pair(rows)
+    if (t.fixture['guid'],t.fixture['class'],t.fixture['level'])!=(6,3,10) or not valid_pair(retained):
         raise RuntimeError('requires disposable Wolf6 active and named Harnesswolf4 stored5')
-    if not identities(old['retained_class_pets'],retained) or not primary_absent():
+    if not frozen(old['retained_class_pets'],retained) or not primary_absent():
         raise RuntimeError('frozen pair or user-requested primary absence differs')
     o=Presence(session,6,e['started_at']).poll();inv=Inventory(lab.ROOT,session,6).poll()
-    if (not o.present() or o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])!=6 or
+    if (not o.present() or o.pet['fields'].get(INDEX['UNIT_FIELD_PETNUMBER'])!=number or
         o.pet['fields'].get(INDEX['OBJECT_FIELD_ENTRY'])!=299 or
         pair(o.pet['fields'],'UNIT_FIELD_SUMMONEDBY')!=6 or
         resources(inv)!=e['resources'] or saved(6)!=e['entered_saved']):
@@ -59,6 +63,7 @@ def run(t,preparation,entry,action,source=None,review_path=None):
     t.receipt.update(native_session=session,entry_source=bound(entry),native_pet=o.pet,
         retained_pet_before=retained,baseline_resources=resources(inv),baseline_saved=saved(6),
         input_sent=False,qualification_added=False,abandon_confirmation_sent=False)
+    if tame_source:t.receipt.update(disposable_tame_source=bound(tame_source),disposable_pet_number=number)
     t.persist()
     if action=='stage':
         t.clean_panels();initial,_=t.observe('test_pet_abandon_before')
@@ -82,7 +87,7 @@ def run(t,preparation,entry,action,source=None,review_path=None):
         state,frame=t.observe('test_pet_abandon_dialog');rows=controls(t);o.poll()
         popup=state['pet_popups'][0]['name']
         buttons=[c for c in rows if c.get('name') in (popup+'Button1',popup+'Button2') and c.get('enabled')]
-        checks={'exact_disposable_pair':disposable_pair(pets(6)) and identities(retained,pets(6)),
+        checks={'exact_disposable_pair':valid_pair(pets(6)) and frozen(retained,pets(6)),
             'native_test_pet_present':o.present(),'dialog':dialog(state),
             'stock_okay_cancel':sorted(c['text'] for c in buttons)==['Cancel','Okay'],
             'no_abandon_request':not events(session,t.receipt['started_at'],time.time()),
@@ -99,7 +104,8 @@ def run(t,preparation,entry,action,source=None,review_path=None):
         stage.get('runtime')!=t.receipt['runtime'] or stage.get('fixture_source')!=bound(preparation) or
         stage.get('entry_source')!=bound(entry) or stage.get('native_session')!=session or
         stage.get('native_pet',{}).get('guid')!=o.pet['guid'] or
-        len(stage.get('checks',{}))!=11 or not all(stage['checks'].values())):
+        len(stage.get('checks',{}))!=11 or not all(stage['checks'].values()) or
+        (tame_source and stage.get('disposable_tame_source')!=bound(tame_source))):
         raise RuntimeError('requires whole same-entry disposable Wolf6 Abandon dialog')
     d=reviewed(t,review_path,'Cancel Abandon')
     button=next(c for c in stage['dialog_controls'] if c['text']=='Cancel')
@@ -120,7 +126,7 @@ def run(t,preparation,entry,action,source=None,review_path=None):
         'no_abandon_request':not events(session,stage['started_at'],time.time()),
         'native_test_pet_present':o.present() and o.pet['guid']==stage['native_pet']['guid'],
         'public_test_pet_present':public.get('exists') is True and public.get('guid')==expected_guid(o.pet),
-        'complete_pair_preserved':identities(stage['retained_pet_before'],pets(6)),
+        'complete_pair_preserved':frozen(stage['retained_pet_before'],pets(6)),
         'resources':resources(inv.poll())==e['resources'],'saved_rows':saved(6)==e['entered_saved'],
         'position':state['world_position']==stage['initial_position'],
         'target_restored':state['target'].get('guid')==initial.get('guid'),
@@ -134,12 +140,12 @@ def run(t,preparation,entry,action,source=None,review_path=None):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['stage','cancel'])
     for name in ('preparation','entry','output'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);a=p.parse_args()
+    p.add_argument('--source',type=Path);p.add_argument('--review',type=Path);p.add_argument('--tame-source',type=Path);a=p.parse_args()
     if a.action=='cancel' and (not a.source or not a.review):p.error('cancel requires whole dialog and fresh review')
     with actor('scout'):
         t=Trial(a.output,controller='code',chat_key_hold=1.2,chat_open_retry=True)
         t.receipt.update(custom_script_permission='blocked_by_user',softTargetInteract=SCRIPT_BOUNDARY)
-        try:run(t,a.preparation,a.entry,a.action,a.source,a.review)
+        try:run(t,a.preparation,a.entry,a.action,a.source,a.review,a.tame_source)
         except Exception as e:t.receipt.update(completed=False,failure=f'{type(e).__name__}: {e}')
         finally:t.receipt['finished_at']=time.time();t.persist()
         print(json.dumps({k:t.receipt.get(k) for k in ('completed','phase','failure','checks')}),flush=True)
