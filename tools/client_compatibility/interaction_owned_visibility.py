@@ -1,7 +1,7 @@
 """Temporarily restore an owned minimized scout without requesting host focus."""
 from contextlib import contextmanager
 import time
-from Xlib import X,Xutil,display
+from Xlib import X,Xutil,Xatom,display,protocol
 from . import lab_runtime as lab,owned_input
 
 
@@ -22,6 +22,7 @@ def visible_scout(t):
         not monitor.get('second_monitor_verified') or monitor['monitor']['name']!='HDMI-1'):
         screen.close();raise RuntimeError('requires the verified owned minimized scout on HDMI-1')
     previous=dict(hints._data);row={'before_monitor':monitor,'before_state':state,'before_active':active,
+        'before_input_hint':previous['input'],'before_hint_flags':previous['flags'],'before_user_time':user,
         'memory_available_before':mem['MemAvailable'],'host_activation_sent':False,'host_input_sent':False,
         'client_restarted':False,'restored':False}
     t.receipt['owned_window_visibility']=row;t.persist()
@@ -34,7 +35,7 @@ def visible_scout(t):
         # ICCCM InputHint and zero user time decline focus on mapping. No
         # _NET_ACTIVE_WINDOW request or host input is sent at any point.
         window.set_wm_hints(**{**previous,'flags':previous['flags']|Xutil.InputHint,'input':0})
-        window.change_property(screen.intern_atom('_NET_WM_USER_TIME'),Xatom_CARDINAL(screen),32,[0])
+        window.change_property(screen.intern_atom('_NET_WM_USER_TIME'),Xatom.CARDINAL,32,[0])
         window.map();screen.sync();wait_state([Xutil.NormalState,0])
         row.update(visible_monitor=owned_input.focus(),visible_active=values(root,'_NET_ACTIVE_WINDOW'))
         if row['visible_active']!=active:raise RuntimeError('desktop focus changed; refusing game input')
@@ -42,8 +43,12 @@ def visible_scout(t):
             raise RuntimeError('owned scout window geometry changed; refusing game input')
         t.persist();yield
     finally:
-        window.iconify(screen.get_default_screen());screen.sync()
         try:
+            if values(window,'WM_STATE')!=state:
+                root.send_event(protocol.event.ClientMessage(window=window.id,
+                    client_type=screen.intern_atom('WM_CHANGE_STATE'),data=(32,[Xutil.IconicState,0,0,0,0])),
+                    event_mask=X.SubstructureRedirectMask|X.SubstructureNotifyMask)
+                screen.sync()
             wait_state(state)
             row.update(after_state=values(window,'WM_STATE'),after_active=values(root,'_NET_ACTIVE_WINDOW'),
                 after_monitor=owned_input.focus())
@@ -53,10 +58,6 @@ def visible_scout(t):
         finally:
             window.set_wm_hints(**previous)
             if user is None:window.delete_property(screen.intern_atom('_NET_WM_USER_TIME'))
-            else:window.change_property(screen.intern_atom('_NET_WM_USER_TIME'),Xatom_CARDINAL(screen),32,user)
+            else:window.change_property(screen.intern_atom('_NET_WM_USER_TIME'),Xatom.CARDINAL,32,user)
             screen.sync();screen.close();t.persist()
         if not row['restored']:raise RuntimeError('owned scout visibility or desktop focus did not restore')
-
-
-def Xatom_CARDINAL(screen):
-    return screen.intern_atom('CARDINAL')
