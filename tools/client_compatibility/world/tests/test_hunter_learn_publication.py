@@ -97,6 +97,65 @@ def test_closed_preflight_is_zero_choices_without_trial_identity(diagnostic):
     assert path.read_bytes() == raw
 
 
+def revive_parked_diagnostic(diagnostic):
+    directory, put, path, run = diagnostic
+    parked = {**trial('owned_revive_parked_boundary'), 'actor': {'guid': 2},
+        'input_sent': False, 'qualification_added': False,
+        'all_offline_snapshot': deepcopy(run['before']),
+        'checks': dict.fromkeys(publication.REVIVE_PARKED_CHECKS, True)}
+    source = put('accepted_revive_closure', parked)
+    run.update(source=source, sources=[source], actor=deepcopy(parked['actor']))
+    rewrite(path, run)
+    return directory, path, run, Path(source['path']), parked
+
+
+def test_revive_parked_preflight_projects_only_its_complete_offline_closure(diagnostic):
+    directory, path, run, source_path, source = revive_parked_diagnostic(diagnostic)
+    raw = path.read_bytes(), source_path.read_bytes()
+    cases, metadata, trials = publication.checkpoint_runs([(path, run)], directory)
+    assert cases == trials == []
+    assert metadata[0]['record_kind'] == 'offline_lifecycle_diagnostic'
+    assert metadata[0]['operations_admitted'] == 0
+    assert 'mutation_sent' not in source
+    assert publication.snapshot_source(source) == run['before'] == run['after']
+    assert (path.read_bytes(), source_path.read_bytes()) == raw
+
+
+@pytest.mark.parametrize('fault', ['schema', 'phase', 'incomplete', 'failed', 'input', 'qualification',
+    'actor', 'missing_check', 'extra_check', 'false_check', 'truthy_check', 'after_only',
+    'partial_snapshot', 'online_snapshot', 'actor_snapshot', 'borrowed_after', 'runtime', 'chronology', 'digest'])
+def test_revive_parked_preflight_refuses_other_authority_or_arbitrary_after(diagnostic, fault):
+    directory, path, run, source_path, source = revive_parked_diagnostic(diagnostic)
+    if fault == 'schema': source['schema'] = 'unknown_parked_source'
+    elif fault == 'phase': source['phase'] = 'unknown_parked_boundary'
+    elif fault == 'incomplete': source['completed'] = False
+    elif fault == 'failed': source['failure'] = 'RuntimeError: retained failure'
+    elif fault == 'input': source['input_sent'] = True
+    elif fault == 'qualification': source['qualification_added'] = True
+    elif fault == 'actor': source['actor']['guid'] = run['actor']['guid'] = 6
+    elif fault == 'missing_check': source['checks'].pop('both_pets_restored')
+    elif fault == 'extra_check': source['checks']['unrelated_success'] = True
+    elif fault == 'false_check': source['checks']['all_six_offline'] = False
+    elif fault == 'truthy_check': source['checks']['all_six_offline'] = 1
+    elif fault == 'after_only': source['after'] = source.pop('all_offline_snapshot')
+    elif fault == 'partial_snapshot': source['all_offline_snapshot'].pop('1')
+    elif fault == 'online_snapshot': source['all_offline_snapshot']['6']['native']['online'] = 1
+    elif fault == 'actor_snapshot': source['all_offline_snapshot']['1']['native']['guid'] = 2
+    elif fault == 'borrowed_after':
+        source['after'] = deepcopy(run['before'])
+        source['all_offline_snapshot']['1']['saved']['unrelated'] = [1]
+    elif fault == 'runtime': source['runtime']['worldserver']['pid'] = 99
+    elif fault == 'chronology': source['finished_at'] = run['started_at'] + 1
+    rewrite(source_path, source)
+    if fault != 'digest':
+        run['source']['sha256'] = publication.lab.sha256(source_path)
+    else:
+        run['source']['sha256'] = '0' * 64
+    rewrite(path, run)
+    with pytest.raises((RuntimeError, KeyError)):
+        publication.checkpoint_runs([(path, run)], directory)
+
+
 @pytest.mark.parametrize('fault', ['unknown_schema', 'unknown_phase', 'missing_checks', 'false_check', 'truthy_check',
     'cases', 'controller', 'revision', 'input', 'mutation', 'qualification', 'open',
     'nonfinite', 'backward', 'source_hash', 'outside_source', 'changed_state', 'partial_snapshot', 'wrong_prerequisite'])

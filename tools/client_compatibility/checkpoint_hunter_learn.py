@@ -26,6 +26,11 @@ PRECISION_CHECKS = {'all_six_offline', 'all_saved_state_unchanged', 'hunter_iden
     'snapshot_rest_matches', 'exact_float32'}
 PREFLIGHT_CHECKS = {'source_bound', 'all_six_offline', 'snapshot_preserved',
     'untrained_hunter', 'native_prerequisites'}
+REVIVE_PARKED_CHECKS = {*(f'actor_{guid}_unchanged' for guid in range(1, 6)),
+    'hunter_saved_rows', 'hunter_inventory', 'hunter_native_columns', 'both_pets_restored',
+    'hunter_home_pose', 'hunter_full_health', 'all_six_offline', 'primary_stopped',
+    'original_registration', 'native_lifetime', 'bridge_lifetime', 'one_successful_revive',
+    'no_failure_packets', 'ordinary_park_and_selection', 'no_probe', 'fixture_health_restored'}
 NORMALIZE_CHECKS = {'exact_source', 'all_six_offline', 'creator_only', 'health_preserved', 'protected_actors'}
 CLEAN_CHECKS = {'exact_source', 'all_six_offline', 'removed_new1462_only', 'exact_refund',
     'saved_inventory_preserved', 'protected_actors'}
@@ -296,6 +301,20 @@ def snapshot(value):
 
 def snapshot_source(value):
     phase = value.get('phase')
+    if phase == 'owned_revive_parked_boundary':
+        # The read-only preflight may precede the new scout preparation. Its
+        # carried UI169 authority contains a closure snapshot, never an `after`.
+        successful(value)
+        checks = value.get('checks')
+        require(value.get('schema') == 'client442_laya_interactions_v1' and
+            value.get('input_sent') is False and value.get('qualification_added') is False and
+            type(value.get('actor', {}).get('guid')) is int and value['actor']['guid'] == 2 and
+            isinstance(checks, dict) and set(checks) == REVIVE_PARKED_CHECKS and
+            all(result is True for result in checks.values()), 'accepted Revive parked source differs')
+        result = value.get('all_offline_snapshot')
+        require(isinstance(result, dict), 'accepted Revive parked snapshot is absent')
+        snapshot(result)
+        return result
     key = {'await_owned_class_lobby_review': 'learn_offline_baseline',
         'await_original_selection_review': 'all_offline_snapshot',
         'hunter_learn_creator_normalized': 'after', 'hunter_learn_offline_cleaned': 'after'}.get(phase)
