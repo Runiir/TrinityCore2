@@ -494,6 +494,36 @@ def test_checkpoint_wrapper_restores_original_on_success_and_failure(diagnostic,
     assert original.checkpoint_runs is classifier
 
 
+@pytest.mark.parametrize('outcome', ['success', 'exception', 'interrupt'])
+def test_learning_publisher_retains_trainer_movement_only_in_scoped_call(batch, monkeypatch, outcome):
+    directory, _ = batch
+    previous_names = original.SAFE_BODY_NAMES
+    previous_values = frozenset(previous_names)
+    previous_classifier = original.checkpoint_runs
+    trainer_names = {'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT'}
+    calls = []
+    def fake_checkpoint(selected, name):
+        calls.append((selected, name))
+        assert original.checkpoint_runs is not previous_classifier
+        assert original.SAFE_BODY_NAMES == previous_values | trainer_names
+        assert trainer_names <= original.SAFE_BODY_NAMES
+        assert 'SMSG_ON_MONSTER_MOVE' in original.SAFE_BODY_NAMES
+        assert frozenset(previous_names) == previous_values
+        if outcome == 'exception': raise RuntimeError('fixture publication failed')
+        if outcome == 'interrupt': raise KeyboardInterrupt('fixture publication interrupted')
+        return 'fixture publication complete'
+    monkeypatch.setattr(original, 'checkpoint', fake_checkpoint)
+    if outcome == 'success':
+        assert publication.checkpoint(directory, 'trainer_identity') == 'fixture publication complete'
+    else:
+        error = RuntimeError if outcome == 'exception' else KeyboardInterrupt
+        with pytest.raises(error): publication.checkpoint(directory, 'trainer_identity')
+    assert calls == [(directory, 'trainer_identity')]
+    assert original.SAFE_BODY_NAMES is previous_names
+    assert frozenset(original.SAFE_BODY_NAMES) == previous_values
+    assert original.checkpoint_runs is previous_classifier
+
+
 def test_publication_import_has_no_ui_protobuf_or_publishing_dependency():
     code = ('import sys; from tools.client_compatibility import checkpoint_hunter_learn; '
         'assert not any(n.startswith(("PIL", "google.protobuf", "dvclive")) or '

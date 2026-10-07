@@ -13,7 +13,9 @@ SPELL = 1462
 NAME = 'Beast Lore'
 TRAINER = 40
 TRAINER_NAME = 'Benjamin Foxworthy'
-TRAINER_GUID = 17379592752471406478
+# Frozen UI170 runtime identity; mandatory creation/catalog proof binds this
+# counter to the existing spawn. It is not the SQL creature spawn identifier.
+TRAINER_GUID = 17379592752471220506
 PRICE = 646
 MONEY = 8708
 BASE_SPELLS = [[1515, 1, 0], [79682, 1, 0]]

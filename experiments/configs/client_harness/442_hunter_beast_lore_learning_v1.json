@@ -49,6 +49,13 @@
     "trainer_id": 40,
     "creature_entry": 46983,
     "creature_spawn": 280678,
+    "native_guid": 17379592752471220506,
+    "runtime_guid_counter": 8474,
+    "trainer_identity_source": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui170/hunter_learning_trainer_spawn_uniqueness01.json",
+      "sha256": "50f901aff2012970a1f549d008ea373f8ad7adcb69f3a9ef33f3673ae8dba66e"
+    },
+    "trainer_identity_scope": "Exact current native worldserver lifetime, owned native creation at the sole database spawn pose, public target and trainer40 catalog; the runtime GUID counter is independent of the SQL spawn id.",
     "price": 646,
     "money_before": 8708,
     "money_after": 8062,

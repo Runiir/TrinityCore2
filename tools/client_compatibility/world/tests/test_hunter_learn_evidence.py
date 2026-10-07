@@ -22,6 +22,10 @@ from tools.client_compatibility import review_hunter_learn_checkpoint as reviewe
 from tools.client_compatibility.hunter_rest_accrual import native_rest
 from tools.client_compatibility.world.buffer import Writer
 from tools.client_compatibility.world.objects import INDEX
+from tools.client_compatibility.world.tests.test_hunter_learn_trainer import trainer_fixture, SPAWN_BYTES
+from tools.client_compatibility.world.tests.test_hunter_learn_trainer import (object_body as trainer_object_body,
+    packed_guid as trainer_packed_guid, teleport_body as trainer_teleport_body)
+from tools.client_compatibility import hunter_learn_trainer as trainer_evidence
 
 
 SESSION = "native-owned-hunter"
@@ -452,6 +456,13 @@ def actual_fixture(same_owner=False):
                                "name": row["name"], "direction": row["direction"],
                                "bytes": len(bytes.fromhex(row["body"])), "time": row["time"] - .00002}
                               for row in purchases)
+    identity, trainer_packets = trainer_fixture(with_facing=True)
+    purchase.update(trainer_identity=identity, native_catalog=identity['native_catalog'], runtime=identity['runtime'],
+        entry_source=identity['entry_source'], trainer_identity_checked_at=1011.8, purchase_started_at=1011.8)
+    tracking['packets'].extend(trainer_packets)
+    tracking['events'].extend({'event': 'native_packet', 'session': SESSION, 'direction': row['direction'],
+        'name': row['name'], 'bytes': len(bytes.fromhex(row['body'])), 'time': row['time'] - .00002}
+        for row in trainer_packets)
     return purchase, entries, tracking, known
 
 
@@ -641,7 +652,8 @@ def test_labeled_or_partial_closure_is_not_complete_semantic_proof(fault):
 def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, trainer_exposed=False):
     """Build closed synthetic source bytes; never borrow a live episode or archive."""
     data, digests, payloads, refs = {}, {}, {}, {}
-    runtime = {"client": {"pid": 123, "instance": "fresh-scout"}, "native": {"pid": 321}}
+    runtime = {"client": {"pid": 123, "instance": "fresh-scout"}, "native": {"pid": 321},
+               "worldserver": deepcopy(trainer_evidence.NATIVE)}
     previous_runtime = {**runtime, "client": {"pid": 122, "instance": "stopped-scout"}}
     origin = {"guid": 2, "character_name": "Harnesstwo"}
     actor = {"guid": 6, "account_id": 2, "character_name": "Harnesshunt", "race": 1, "class": 3, "level": 10}
@@ -665,6 +677,12 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
         digests[member] = hashlib.sha256(body).hexdigest()
         refs[name] = {"path": str(evidence.lab.ROOT / member), "sha256": digests[member]}
         return refs[name]
+
+    spawn_member = str(Path(trainer_evidence.SPAWN_SOURCE['path']).relative_to(evidence.lab.ROOT))
+    data[spawn_member] = json.loads(SPAWN_BYTES)
+    payloads[spawn_member] = SPAWN_BYTES
+    digests[spawn_member] = hashlib.sha256(SPAWN_BYTES).hexdigest()
+    refs['trainer_spawn'] = deepcopy(trainer_evidence.SPAWN_SOURCE)
 
     def episode(phase, start, finish, who=None, **fields):
         return {"completed": True, "failure": None, "phase": phase, "started_at": start,
@@ -728,7 +746,7 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
     monkeypatch.setattr(evidence, "CHECKPOINT_SHA256", refs["previous_checkpoint"]["sha256"])
     ancestry = []
     for name in ("primary_stop", "previous_preparation", "previous_normalized", "previous_closure",
-                 "previous_pause", "previous_checkpoint", "previous_remote"):
+                 "previous_pause", "previous_checkpoint", "previous_remote", "trainer_spawn"):
         original = str(Path(refs[name]["path"]).relative_to(evidence.lab.ROOT))
         copy = "evidence/synthetic/ancestry/" + refs[name]["sha256"] + ".json"
         ancestry.append({"original_path": refs[name]["path"], "sha256": refs[name]["sha256"],
@@ -771,8 +789,11 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
     put("untrained", episode("hunter_learn_untrained_reconciled", 1011.1, 1011.15,
         baseline=baseline, entry_source=refs["entry0"], future_probe=future, future_row=future["rows"][0], **known[0]))
     put("staged", episode("hunter_learn_trainer_staged", 1011.2, 1011.25, source=refs["untrained"], frame=frame_for("trainer")))
-    catalog = {"guid": contract.TRAINER_GUID, "rows": [[1462, 1, 646, 0, 0, 0, 0, 0, 0, 0]]}
+    identity, _ = trainer_fixture(runtime=runtime, entry_ref=refs['entry0'], with_facing=True)
+    catalog = identity['native_catalog']
+    purchase.update(trainer_identity=identity, native_catalog=catalog, runtime=runtime, entry_source=refs['entry0'])
     opened = episode("hunter_learn_trainer_open", 1011.3, 1011.35, source=refs["staged"], native_catalog=catalog,
+        trainer_identity=identity, state={'target': identity['target']},
         fixture_source=refs["preparation"], entry_source=refs["entry0"], baseline=baseline,
         login_known_spell_ids=known[0]["login_known_spell_ids"], frame=frame_for("lesson"),
         screen_review=screen("trainer", refs["staged"], refs["preparation"], "Benjamin Foxworthy"))
@@ -784,7 +805,8 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
         put("exposed", exposed)
         trainer_view, lesson_frame = refs["exposed"], "exposed_lesson"
     put("selected", episode("hunter_learn_lesson_selected", 1011.4, 1011.45, source=trainer_view, native_catalog=catalog,
-        state={"trainer": {"service": {"name": "Beast Lore"}}}, frame=frame_for("train"),
+        trainer_identity=identity, entry_source=refs['entry0'],
+        state={"trainer": {"service": {"name": "Beast Lore"}}, 'target': identity['target']}, frame=frame_for("train"),
         screen_review=screen(lesson_frame, trainer_view, refs["preparation"], "Beast Lore")))
     layout = {"book_type": "spell", "skill_line": 1, "pages": [1], "page": 1}
     public = {"active_spec": 1, "frames": {"MainMenuBar": True}, "actions": [
@@ -800,8 +822,10 @@ def lifecycle_fixture(monkeypatch, automatic_bar=False, settled_cleanup=False, t
         addition = evidence.addition_guard([], purchase_saved["actions"], purchase["purchase_packets"],
                                           SESSION, 1011.8, 1012.3, 0, learned_public)
     put("purchase", episode("hunter_learn_transition_complete", 1011.8, 1013,
-        **purchase, baseline=baseline, entry_source=refs["entry0"], purchase_source=refs["selected"],
+        **{k: v for k, v in purchase.items() if k not in ('runtime', 'entry_source', 'purchase_started_at')},
+        baseline=baseline, entry_source=refs["entry0"], purchase_source=refs["selected"],
         purchase_started_at=1011.8, purchase_finished_at=1012.3, after_saved=purchase_saved,
+        state={'target': identity['target']},
         after_resources=resource_observation(contract.MONEY - contract.PRICE),
         learned_probe=learned, learned_row=learned["rows"][0], **known[0],
         reconciled_known_spell_ids=[1462, 1515, 79682], purchase_checks=checkset(evidence.PURCHASE_NAMES),
@@ -951,6 +975,85 @@ def test_readonly_cleanup_settlement_requires_the_same_attempted_committed_trans
     failed["commit_attempted"] = False
     with pytest.raises(RuntimeError, match="settlement"):
         evidence.proof(data, digests, tracking)
+
+
+@pytest.mark.parametrize('fault', ['missing_creation', 'missing_catalog', 'missing_creation_metadata',
+    'missing_catalog_metadata', 'creation_body', 'hidden_movement', 'hidden_transport_movement',
+    'hidden_destroy', 'hidden_remove', 'hidden_recreate', 'hidden_dead', 'hidden_nontrainer', 'hidden_petnumber', 'hidden_teleport',
+    'changed_selected_proof', 'changed_purchase_proof', 'changed_public_target', 'changed_check_time',
+    'changed_creation_claim', 'changed_unique_spawn', 'missing_unique_spawn'])
+def test_whole_proof_requires_pinned_source_and_actual_current_trainer_packets(monkeypatch, fault):
+    data, digests, tracking, _, refs = lifecycle_fixture(monkeypatch)
+    store = evidence.Sources(data, digests)
+    purchase = store.get(refs['purchase'])
+    identity = purchase['trainer_identity']
+    creation = identity['creation']['packet']
+    catalog = identity['native_catalog']['packet']
+    key = evidence.packet_key
+    if fault in ('missing_creation', 'missing_catalog'):
+        removed = creation if fault == 'missing_creation' else catalog
+        tracking['packets'] = [p for p in tracking['packets'] if key(p) != key(removed)]
+    elif fault in ('missing_creation_metadata', 'missing_catalog_metadata'):
+        removed = creation if fault == 'missing_creation_metadata' else catalog
+        tracking['events'] = [e for e in tracking['events'] if not (e.get('name') == removed['name'] and
+            abs(e.get('time', 0) - removed['time']) < .001)]
+    elif fault == 'creation_body':
+        for p in tracking['packets']:
+            if key(p) == key(creation):
+                p['body'] = trainer_object_body(map_id=1).hex()
+    elif fault.startswith('hidden_'):
+        name = 'SMSG_UPDATE_OBJECT'
+        if fault in ('hidden_movement', 'hidden_transport_movement'):
+            name = 'SMSG_ON_MONSTER_MOVE' if fault == 'hidden_movement' else 'SMSG_ON_MONSTER_MOVE_TRANSPORT'
+            body = trainer_packed_guid(contract.TRAINER_GUID)
+        elif fault == 'hidden_destroy':
+            name, body = 'SMSG_DESTROY_OBJECT', struct.pack('<Q', contract.TRAINER_GUID)
+        elif fault == 'hidden_teleport':
+            name, body = 'SMSG_MOVE_UPDATE_TELEPORT', trainer_teleport_body(contract.TRAINER_GUID)
+        elif fault == 'hidden_remove':
+            body = struct.pack('<HIBI', 0, 1, 3, 1) + trainer_packed_guid(contract.TRAINER_GUID)
+        elif fault == 'hidden_recreate':
+            body = trainer_object_body()
+        else:
+            field = {'hidden_dead': 'UNIT_FIELD_HEALTH', 'hidden_nontrainer': 'UNIT_NPC_FLAGS',
+                     'hidden_petnumber': 'UNIT_FIELD_PETNUMBER'}[fault]
+            body = trainer_object_body({trainer_evidence.INDEX[field]: 0 if fault == 'hidden_dead' else 1}, creation=False)
+        tracking['packets'].append(packet('from_native', name, body, 1011.95))
+    elif fault == 'changed_selected_proof':
+        store.get(refs['selected'])['trainer_identity']['final_fields']['26'] = 0
+    elif fault == 'changed_purchase_proof':
+        purchase['trainer_identity']['entry_source']['sha256'] = 'f' * 64
+    elif fault == 'changed_public_target':
+        purchase['state']['target']['guid'] = 'Creature-0-1-0-0-46983-000002F78E'
+    elif fault == 'changed_check_time':
+        purchase['trainer_identity_checked_at'] += .1
+    elif fault == 'changed_creation_claim':
+        for value in data.values():
+            if isinstance(value, dict) and value.get('trainer_identity'):
+                value['trainer_identity']['creation']['object']['movement']['position'][0] += 1
+    else:
+        member = str(Path(store.ancestry[0]['sources'][-1]['copy_path']).relative_to(evidence.lab.ROOT))
+        if fault == 'changed_unique_spawn':
+            data[member]['rows'][0][0] += 1
+        else:
+            data.pop(member)
+    with pytest.raises((RuntimeError, ValueError)):
+        evidence.proof(data, digests, tracking)
+
+
+@pytest.mark.parametrize('movement_name', ['SMSG_ON_MONSTER_MOVE', 'SMSG_ON_MONSTER_MOVE_TRANSPORT'])
+def test_archive_stream_preserves_hidden_trainer_movement_for_whole_proof_rejection(monkeypatch, movement_name):
+    _, _, tracking, payloads, _ = lifecycle_fixture(monkeypatch)
+    tracking['packets'].append(packet('from_native', movement_name, trainer_packed_guid(contract.TRAINER_GUID), 1011.95))
+    members = list(payloads.items()) + [
+        (evidence.TRACKING_MEMBERS[0], b''.join(json.dumps(row).encode() + b'\n' for row in tracking['packets'])),
+        (evidence.TRACKING_MEMBERS[1], b''.join(json.dumps(row).encode() + b'\n' for row in tracking['events'])),
+    ]
+    compressed, checkpoint, _ = archive_fixture(members)
+    data, digests, journals, _ = reviewer.inspect_archive(io.BytesIO(compressed), checkpoint, 'evidence/synthetic/')
+    assert any(p['name'] == movement_name for p in journals['packets'])
+    with pytest.raises(RuntimeError, match='movement'):
+        evidence.proof(data, digests, journals)
 
 
 @pytest.mark.parametrize("fault", ["purchase_charge", "learned_caption", "trainer_identity", "runtime_actor",

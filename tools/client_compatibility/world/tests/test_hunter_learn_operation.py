@@ -346,13 +346,14 @@ def test_recon_closes_stock_book_before_passive_actionbar_page_and_retains_capti
     assert trial.receipt['completed'] is True
 
 
-def test_one_train_closes_trainer_and_learned_book_before_both_passive_actionbar_reads(monkeypatch):
+@pytest.mark.parametrize('identity_matches', [True, False])
+def test_one_train_closes_trainer_and_learned_book_before_both_passive_actionbar_reads(monkeypatch, identity_matches):
     import struct
     original = {'spells': deepcopy(operation.BASE_SPELLS), 'actions': []}
     after_saved = {**original, 'spells': sorted(operation.BASE_SPELLS + [[1462, 1, 0]])}
     source = {'path': 'selected', 'sha256': 'exact'}
     selected = {'frame': {'file': 'selected.png'}, 'entry_source': {'path': 'entry'},
-        'login_known_spell_ids': [1515, 79682],
+        'login_known_spell_ids': [1515, 79682], 'trainer_identity': {'source': 'current'}, 'native_catalog': {},
         'baseline': {'saved': original, 'resources': {'money': 8708}, 'active_spec': 0}}
     public = {'active_spec': 1, 'frames': {'MainMenuBar': True},
         'actions': [{'button': 'ActionButton' + str(i), 'slot': i, 'kind': None, 'id': None, 'visible': True}
@@ -365,7 +366,7 @@ def test_one_train_closes_trainer_and_learned_book_before_both_passive_actionbar
     calls, paid = [], [False]
     class Trial:
         def __init__(self):
-            self.receipt, self.panels = {}, ['ClassTrainerFrame']
+            self.receipt, self.panels = {'runtime': {'worldserver': {'pid': 1}}}, ['ClassTrainerFrame']
         def persist(self): pass
         def clean_panels(self):
             calls.append(('close', tuple(self.panels)))
@@ -395,6 +396,11 @@ def test_one_train_closes_trainer_and_learned_book_before_both_passive_actionbar
     monkeypatch.setattr(operation, 'linked', lambda _: {'started_at': 99})
     monkeypatch.setattr(operation, 'entries', lambda _: [])
     monkeypatch.setattr(operation, 'protected', lambda _: {'protected': True})
+    def validate_identity(*args, **kwargs):
+        calls.append(('identity', kwargs['observed_until']))
+        if not identity_matches: raise RuntimeError('native trainer was removed before Train')
+        return selected['trainer_identity']
+    monkeypatch.setattr(operation, 'validate_trainer_identity', validate_identity)
     stamps = iter((100, 101, 102))
     monkeypatch.setattr(operation.time, 'time', lambda: next(stamps))
     monkeypatch.setattr(operation.time, 'sleep', lambda _: None)
@@ -413,9 +419,91 @@ def test_one_train_closes_trainer_and_learned_book_before_both_passive_actionbar
     monkeypatch.setattr(operation, 'bar_detail', passive_bar)
     monkeypatch.setattr(operation, 'caption', caption)
     monkeypatch.setattr(operation, 'click_case', train_once)
+    if not identity_matches:
+        with pytest.raises(RuntimeError, match='removed before Train'):
+            operation.learn(trial, 'preparation', 'selected', 'review')
+        assert not any(v[0] == 'train' for v in calls)
+        assert not trial.receipt.get('purchase_input_sent')
+        return
     operation.learn(trial, 'preparation', 'selected', 'review')
     assert [v for v in calls if v[0] == 'train'] == [('train', 'spellbook.learn_spell.train1462')]
     assert ('close', ('ClassTrainerFrame',)) in calls and ('close', ('SpellBookFrame',)) in calls
     assert [v[1] for v in calls if v[0] == 'read'] == ['hunter_learn_after_purchase_actions', 'hunter_learn_transition_actions']
     assert trial.receipt['learned_probe'] == spell_probe(True) and trial.receipt['after_saved'] == after_saved
     assert trial.receipt['completed'] is True and all(trial.receipt['purchase_checks'].values())
+
+
+@pytest.mark.parametrize('fault', ['none', 'stale_guid', 'missing_create'])
+def test_open_retains_source_bound_catalog_frame_and_named_identity_failures_before_rejection(monkeypatch, fault):
+    target = {'guid': 'Creature-0-1-0-0-46983-000000211A', 'name': 'Benjamin Foxworthy', 'visible': True}
+    state = {'target': target, 'panels': ['ClassTrainerFrame'], 'lua_errors': {}, 'blocked_actions': {}}
+    frame = {'file': 'hunter_learn_trainer_open.png', 'sha256': 'exact'}
+    saved = {'spells': deepcopy(operation.BASE_SPELLS)}
+    staged = {'frame': {'file': 'stage.png'}, 'state': {'target': target}, 'baseline': {'saved': saved},
+        'entry_source': {'path': 'entry', 'sha256': 'bound'}}
+    source = {'path': 'stage', 'sha256': 'bound'}
+    native = {'guid': 17379592752471406478 if fault == 'stale_guid' else operation.TRAINER_GUID,
+        'trainer': 40, 'rows': [[1462, 1, 646, 0, 0, 0, 0, 0, 0, 0]], 'packet': {'name': 'SMSG_TRAINER_LIST'}}
+    persisted, inputs, identity_calls = [], [], []
+    class Trial:
+        def __init__(self): self.receipt = {'started_at': 10, 'runtime': {'worldserver': {'pid': 1}}}
+        def persist(self): persisted.append(deepcopy(self.receipt))
+        def observe(self, label): return deepcopy(state), deepcopy(frame)
+        def step(self, case, *args, **kwargs):
+            assert case == 'spellbook.learn_spell.trainer_interact'
+            inputs.append(case)
+            return {'status': 'hunter_trainer_open_pass'}
+    trial = Trial()
+    monkeypatch.setattr(operation, 'prior', lambda *args: ({}, 'hunter', staged))
+    monkeypatch.setattr(operation, 'bound', lambda _: source)
+    monkeypatch.setattr(operation, 'reviewed', lambda *args:
+        {'source': source, 'frame': staged['frame'], 'point': [100, 100]})
+    monkeypatch.setattr(operation, 'catalog', lambda *args, **kwargs: deepcopy(native))
+    monkeypatch.setattr(operation, 'saved', lambda _: deepcopy(saved))
+    monkeypatch.setattr(operation, 'protected', lambda _: {'actor_1_unchanged': True})
+    monkeypatch.setattr(operation, 'controls', lambda _: [])
+    monkeypatch.setattr(operation, 'linked', lambda _: {'started_at': 5})
+    monkeypatch.setattr(operation, 'entries', lambda _: iter([]))
+    monkeypatch.setattr(operation, 'spawn_source_value', lambda: {'sole': True})
+    monkeypatch.setattr(operation.time, 'time', lambda: 15)
+    def identity(rows, session, since, until, observed, catalog, runtime, spawn, ref, *, entry_ref):
+        identity_calls.append((session, since, until, observed, catalog, runtime, spawn, ref, entry_ref))
+        if fault == 'missing_create': raise RuntimeError('one current trainer creation is required')
+        return {'schema': 'bound_current_trainer', 'target': deepcopy(observed)}
+    monkeypatch.setattr(operation, 'trainer_identity', identity)
+    if fault == 'none':
+        operation.open_trainer(trial, 'preparation', 'stage', 'review')
+        assert trial.receipt['completed'] is True and all(trial.receipt['trainer_open_checks'].values())
+    else:
+        with pytest.raises(RuntimeError, match='frozen_runtime_guid' if fault == 'stale_guid' else 'current_trainer_identity'):
+            operation.open_trainer(trial, 'preparation', 'stage', 'review')
+        assert not trial.receipt.get('completed')
+        assert persisted[-1]['trainer_open_checks'] == trial.receipt['trainer_open_checks']
+    assert trial.receipt['state'] == state and trial.receipt['frame'] == frame
+    assert trial.receipt['native_catalog'] == native and len(identity_calls) == 1
+    assert identity_calls[0][-1] == staged['entry_source']
+    assert inputs == ['spellbook.learn_spell.trainer_interact']
+
+
+@pytest.mark.parametrize('already_exact', [True, False])
+def test_layout_shortcut_requires_the_complete_exact_page_vector_otherwise_navigates(monkeypatch, already_exact):
+    layout = {'visible': True, 'book_type': 'spell', 'skill_line': 1, 'page': 1,
+        'tabs': [{'index': line} for line in range(1, 5)], 'pages': {str(line): 1 for line in range(1, 5)}}
+    current, calls = deepcopy(layout), []
+    if not already_exact: current['pages']['2'] = 2
+    monkeypatch.setattr(operation, 'open_book', lambda *args: deepcopy(current))
+    monkeypatch.setattr(operation, 'detail', lambda *args, **kwargs: deepcopy(current))
+    def navigate(t, learned, label, button, *, line, check_content):
+        calls.append(button)
+        assert check_content is False
+        if button == 'SpellBookPrevPageButton': current['pages'][str(line)] -= 1
+        else: assert button == 'SpellBookSkillLineTab' + str(line)
+        current.update(skill_line=line, page=current['pages'][str(line)])
+        return {'status': 'spellbook_navigation_pass'}
+    monkeypatch.setattr(operation, 'navigate', navigate)
+    restored = operation.restore_layout(object(), {1515, 79682}, layout)
+    assert all(restored[k] == layout[k] for k in ('book_type', 'skill_line', 'pages', 'page'))
+    if already_exact: assert calls == []
+    else:
+        assert calls == ['SpellBookSkillLineTab1', 'SpellBookSkillLineTab2', 'SpellBookPrevPageButton',
+            'SpellBookSkillLineTab3', 'SpellBookSkillLineTab4', 'SpellBookSkillLineTab1']

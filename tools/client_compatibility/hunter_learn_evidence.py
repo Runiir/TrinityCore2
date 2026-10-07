@@ -26,6 +26,7 @@ from .hunter_rest_accrual import bound, FORMULA_SOURCE
 from .hunter_learn_autobar import addition_guard, clear_guard, PICKUP_SOURCE, BINDING_SOURCE
 from .world.buffer import Reader
 from .hunter_learn_pet import reload_proof
+from .hunter_learn_trainer import validate_trainer_identity, SPAWN_SOURCE
 
 
 SCHEMA = 'client442_owned_hunter_learn_closure_v1'
@@ -61,7 +62,8 @@ PACKET_NAMES = frozenset(('CMSG_TRAINER_BUY_SPELL', 'SMSG_TRAINER_BUY_FAILED',
     'SMSG_TRAINER_BUY_SUCCEEDED', 'SMSG_LEARNED_SPELL', 'SMSG_LEARNED_SPELLS',
     'CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD', 'SMSG_SEND_KNOWN_SPELLS',
     'SMSG_UPDATE_OBJECT', 'SMSG_DESTROY_OBJECT', 'CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE',
-    'SMSG_UPDATE_ACTION_BUTTONS', 'CMSG_SET_ACTION_BUTTON', 'CMSG_CAST_SPELL', 'CMSG_PET_ACTION', 'SMSG_TRAINER_LIST'))
+    'SMSG_UPDATE_ACTION_BUTTONS', 'CMSG_SET_ACTION_BUTTON', 'CMSG_CAST_SPELL', 'CMSG_PET_ACTION', 'SMSG_TRAINER_LIST',
+    'SMSG_ON_MONSTER_MOVE', 'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT'))
 TRACKING_MEMBERS = ('tracking/packets.jsonl', 'tracking/events.jsonl')
 # The inspected storage implementation is unchanged from accepted UI169.
 FLOAT_SOURCES = {
@@ -353,6 +355,22 @@ def lifecycle(store, refs):
         untrained['baseline'] == b and untrained['entry_source'] == entry_ref,
         'immutable untrained purchase baseline differs')
     prerequisite(b['prerequisite_fingerprint'])
+    identity = opened.get('trainer_identity')
+    require(isinstance(identity, dict) and identity.get('spawn_source') == SPAWN_SOURCE and
+        store.get(SPAWN_SOURCE, False) == identity.get('spawn') and
+        identity.get('native_session') == entry['native_session'] and
+        identity.get('source_interval', [None, None])[0] == entry['started_at'] and
+        opened['started_at'] <= identity['source_interval'][1] <= opened['finished_at'] and
+        opened['started_at'] <= identity.get('native_catalog', {}).get('packet', {}).get('time', 0),
+        'fresh frozen trainer proof is not bound to its owned entry and pinned unique spawn')
+    for value in (opened, *([exposed] if exposed is not None else []), selected, purchase):
+        require(value.get('trainer_identity') == identity and value.get('entry_source') == entry_ref and
+            value.get('native_session') == entry['native_session'], 'immutable trainer identity changed through purchase')
+        validate_trainer_identity(identity, value.get('state', {}).get('target', {}),
+            value.get('native_catalog'), value['runtime'], entry_ref)
+    require(purchase.get('trainer_identity_checked_at') == purchase['purchase_started_at'] and
+        identity['source_interval'][1] <= purchase['trainer_identity_checked_at'],
+        'current frozen trainer identity was not checked immediately before Train')
     pet_reload(entry['native_pet_reload'], entry)
     require(book_row(untrained['future_probe'], False) == untrained['future_row'] and
         book_row(purchase['learned_probe'], True) == purchase['learned_row'] and
@@ -648,6 +666,14 @@ def actual_packets(purchase, entries, tracking, known_receipts=()):
     require(guid == expected_guid and trainer == TRAINER and spell == SPELL and
         modern[0]['time'] <= learns[0]['time'] and learns[0]['time'] - modern[0]['time'] < 2,
         'actual modern Beast Lore trainer identity/body/order differs')
+    identity = purchase.get('trainer_identity')
+    require(isinstance(identity, dict) and purchase.get('entry_source') == identity.get('entry_source') and
+        identity.get('source_interval', [None, None])[0] == entries[0]['started_at'] and
+        purchase.get('trainer_identity_checked_at') == purchase.get('purchase_started_at') and
+        purchase['trainer_identity_checked_at'] <= learns[0]['time'],
+        'actual purchase lacks the source-bound current frozen trainer proof')
+    validate_trainer_identity(identity, identity['target'], purchase.get('native_catalog'),
+        purchase.get('runtime'), purchase['entry_source'], wire=wire, observed_until=learns[0]['time'])
     instances = []
     for number, entry in enumerate(entries):
         session = entry['native_session']
@@ -672,7 +698,7 @@ def actual_packets(purchase, entries, tracking, known_receipts=()):
                 observation.get('session') == session and observation.get('time') == known[0]['time'] and
                 observation.get('initial_login') == initial, 'receipt login authority differs from exact actual native-known packet')
     require(len(set(instances)) == 2, 'restored reentry did not establish a fresh physical instance')
-    for packet in [modern[0], *learns]:
+    for packet in [modern[0], *learns, *identity['wire_packets']]:
         event_session = packet['session'] if packet['direction'] in ('from_native', 'to_native') else instances[0]
         metadata = [e for e in events if e.get('session') == event_session and e.get('name') == packet['name'] and
             e.get('direction') == packet['direction'] and e.get('bytes') == len(bytes.fromhex(packet['body'])) and

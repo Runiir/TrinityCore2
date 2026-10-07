@@ -9,6 +9,7 @@ from .hunter_learn_contract import (require as guard, SPELL, NAME, TRAINER_GUID,
     native_prerequisites, book_row, learned_checks, reconciled_known)
 from .hunter_learn_sources import closed, linked, whole, private_json
 from .hunter_rest_accrual import bound
+from .hunter_learn_trainer import SPAWN_SOURCE, spawn_source_value, trainer_identity, validate_trainer_identity
 from .interaction_social import actor
 from .interaction_trial import Trial
 from .interaction_owned_class_fixture import prepared, reviewed, enter as ordinary_enter, saved, pets, SCRIPT_BOUNDARY
@@ -51,6 +52,10 @@ def prior(t, path, preparation, phase):
         t.receipt['pose_fixture'] = e['pose_fixture']
     if e.get('purchase_source'):
         t.receipt['purchase_source'] = e['purchase_source']
+    if e.get('trainer_identity'):
+        t.receipt['trainer_identity'] = e['trainer_identity']
+    if e.get('native_catalog'):
+        t.receipt['native_catalog'] = e['native_catalog']
     t.persist()
     return old, session, e
 
@@ -162,12 +167,35 @@ def open_trainer(t, preparation, source, review_path):
             lambda c: 'train' in c['text'].lower(), lambda b, a, s: {'status': 'hunter_service_pass' if s and
                 'ClassTrainerFrame' in a['panels'] else 'client_or_protocol_failure'}), 'hunter_service_pass')
     state, frame = t.observe('hunter_learn_trainer_open')
+    t.receipt.update(state=state, frame=frame)
+    t.persist()
     native = catalog(session, t.receipt['started_at'], entry=46983, trainer_id=40)
     rows = [r for r in native['rows'] if r[0] == SPELL]
-    guard(native['guid'] == TRAINER_GUID and rows == [[1462, 1, 646, 0, 0, 0, 0, 0, 0, 0]] and
-        'ClassTrainerFrame' in state['panels'] and saved(6) == e['baseline']['saved'] and all(protected(old).values()),
-        'fresh exact native Beast Lore catalog differs')
-    t.receipt.update(native_catalog=native, trainer_controls=controls(t), state=state, frame=frame,
+    until = time.time()
+    t.receipt.update(native_catalog=native, trainer_identity_source=SPAWN_SOURCE,
+        trainer_identity_checked_at=until)
+    t.persist()
+    try:
+        entered = linked(e['entry_source'])
+        identity = trainer_identity(entries(lab.ROOT / 'evidence/world_packets.jsonl'), session,
+            entered['started_at'], until, state.get('target', {}), native, t.receipt['runtime'],
+            spawn_source_value(), SPAWN_SOURCE, entry_ref=e['entry_source'])
+        t.receipt['trainer_identity'] = identity
+        identity_matches = True
+    except (RuntimeError, ValueError, KeyError, TypeError) as error:
+        t.receipt['trainer_identity_failure'] = type(error).__name__ + ': ' + str(error)
+        identity_matches = False
+    protected_checks = protected(old)
+    checks = {'frozen_runtime_guid': native['guid'] == TRAINER_GUID,
+        'exact_available_lesson': rows == [[1462, 1, 646, 0, 0, 0, 0, 0, 0, 0]],
+        'stock_trainer_visible': 'ClassTrainerFrame' in state['panels'], 'current_trainer_identity': identity_matches,
+        'saved_rows': saved(6) == e['baseline']['saved'], 'protected_actors': all(protected_checks.values()),
+        'ui_clean': not state.get('lua_errors') and not state.get('blocked_actions')}
+    t.receipt.update(trainer_open_checks=checks, protected_checks=protected_checks)
+    t.persist()
+    guard(all(checks.values()), 'fresh exact native Beast Lore catalog differs: ' +
+        ', '.join(name for name, passed in checks.items() if not passed))
+    t.receipt.update(trainer_controls=controls(t),
         completed=True, phase='hunter_learn_trainer_open', qualification_added=False)
 
 
@@ -176,6 +204,8 @@ def expose(t, preparation, source):
     native_prerequisites()
     guard(e['native_catalog']['guid'] == TRAINER_GUID and any(r == [1462, 1, 646, 0, 0, 0, 0, 0, 0, 0]
         for r in e['native_catalog']['rows']), 'fresh available1462 catalog differs')
+    validate_trainer_identity(e['trainer_identity'], e['trainer_identity']['target'], e['native_catalog'],
+        t.receipt['runtime'], e['entry_source'])
     for attempt in range(8):
         current = [c for c in controls(t) if c['name'].startswith('ClassTrainerSkill')]
         if any(c['text'].strip() == NAME for c in current):
@@ -235,8 +265,12 @@ def learn(t, preparation, source, review_path):
             for p in entries(lab.ROOT / 'evidence/world_packets.jsonl') if p.get('time', 0) >= entered['started_at']),
         'untrained source/resources or one-purchase replay guard differs')
     started = time.time()
+    validate_trainer_identity(e['trainer_identity'], state.get('target', {}), e['native_catalog'],
+        t.receipt['runtime'], e['entry_source'], wire=list(entries(lab.ROOT / 'evidence/world_packets.jsonl')),
+        observed_until=started)
     t.receipt.update(purchase_started_at=started, input_sent=True, purchase_input_sent=True,
-        qualification_added=False, purchase_source=bound(source), purchase_packets=[], phase='hunter_learn_purchase_started')
+        trainer_identity_checked_at=started, qualification_added=False,
+        purchase_source=bound(source), purchase_packets=[], phase='hunter_learn_purchase_started')
     t.persist()
     collected = []
     def capture_purchase(selected, public):
@@ -315,7 +349,21 @@ def restore(t, preparation, source, action_cleanup=None):
 
 
 def restore_layout(t, learned, layout):
-    open_book(t, 'hunter_learn_restore')
+    current = open_book(t, 'hunter_learn_restore')
+    keys = ('book_type', 'skill_line', 'pages', 'page')
+    complete_pages = {str(line) for line in range(1, 5)}
+    complete = (current.get('visible') is True and current.get('book_type') == 'spell' and
+        len(current.get('tabs', [])) == 4 and
+        {tab.get('index') for tab in current.get('tabs', [])} == {1, 2, 3, 4} and
+        isinstance(current.get('pages'), dict) and set(current['pages']) == complete_pages and
+        isinstance(layout.get('pages'), dict) and set(layout['pages']) == complete_pages and
+        all(type(page) is int and page > 0 for page in current['pages'].values()) and
+        all(type(page) is int and page > 0 for page in layout['pages'].values()) and
+        type(current.get('skill_line')) is int and current['skill_line'] in (1, 2, 3, 4) and
+        type(layout.get('skill_line')) is int and type(current.get('page')) is int and type(layout.get('page')) is int and
+        current.get('page') == current['pages'][str(current['skill_line'])])
+    if complete and all(current.get(k) == layout.get(k) for k in keys):
+        return current
     for line, target in sorted(layout['pages'].items(), key=lambda item: int(item[0])):
         line = int(line)
         if not target:
@@ -333,7 +381,7 @@ def restore_layout(t, learned, layout):
     require(navigate(t, learned, 'spellbook.learn_spell.restore_selected', 'SpellBookSkillLineTab' + str(layout['skill_line']),
         line=layout['skill_line'], check_content=False), 'spellbook_navigation_pass')
     after = detail(t, 'hunter_learn_layout_restored')
-    guard(all(after.get(k) == layout.get(k) for k in ('book_type', 'skill_line', 'pages', 'page')), 'original stock book layout differs')
+    guard(all(after.get(k) == layout.get(k) for k in keys), 'original stock book layout differs')
     return after
 
 

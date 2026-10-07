@@ -506,16 +506,20 @@ def checkpoint_runs(episodes, directory, ordinary=None):
 
 
 def checkpoint(directory, name):
-    """Invoke the established publisher with a narrowly scoped classifier."""
+    """Publish learning records and retain the frozen trainer's movement proof."""
     from . import checkpoint_interactions as original
     previous = original.checkpoint_runs
+    previous_body_names = original.SAFE_BODY_NAMES
     def adapted(episodes, batch):
         return checkpoint_runs(episodes, batch, ordinary=previous)
-    original.checkpoint_runs = adapted
     try:
+        original.checkpoint_runs = adapted
+        original.SAFE_BODY_NAMES = previous_body_names | {
+            'SMSG_ON_MONSTER_MOVE_TRANSPORT', 'SMSG_MOVE_UPDATE_TELEPORT'}
         return original.checkpoint(directory, name)
     finally:
         original.checkpoint_runs = previous
+        original.SAFE_BODY_NAMES = previous_body_names
 
 
 def main():
