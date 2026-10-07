@@ -2,6 +2,7 @@
 from pathlib import Path
 from . import lab_runtime as lab
 from .hunter_pair_identity import identities
+from .world.objects import INDEX
 from .review_native_feedback_checkpoint import require
 
 CLOSURE='hunter_abandon_close01/episode.json'
@@ -48,6 +49,15 @@ def proof(data,digests,abandon_events):
         not a['state'].get('lua_errors') and not a['state'].get('blocked_actions') and not abandon_events,
         'stock dialog outcome or archived no-request boundary differs')
     baseline=old['retained_class_pets']
+    pet=s['native_pet'];fields=pet['fields'];guid=pet['guid']
+    require(fields[str(INDEX['UNIT_FIELD_PETNUMBER'])]==6 and
+        fields[str(INDEX['OBJECT_FIELD_ENTRY'])]==299 and guid>>52==0xf14 and
+        (guid>>32)&0xfffff==299 and pet['map']==0 and a['native_pet']['guid']==guid and
+        a['public_pet']['guid']==f"Pet-0-1-0-0-299-{guid&0xffffffff:010X}" and
+        a['baseline_resources']==s['baseline_resources']==e['resources'] and
+        all(p['retained_class_fixture'][k]==e['entered_native'][k] for k in
+            ('money','level','xp','health','position_x','position_y','position_z','orientation','map')),
+        'native disposable identity or original owner resources/pose differs')
     require([(x['id'],x['owner'],x['entry'],x['name'],x['slot'],x['active'],x['CreatedBySpell']) for x in baseline]==[
         (4,6,42717,'Harnesswolf',5,0,883),(6,6,299,'Wolf',0,1,883)] and
         identities(baseline,s['retained_pet_before']) and identities(s['retained_pet_before'],a['retained_pet_after']) and
