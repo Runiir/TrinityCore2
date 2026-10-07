@@ -113,7 +113,10 @@ def review(directory,output,phase):
             with tarfile.open(fileobj=reader,mode='r|gz') as archive:
                 for member in archive:
                     if phase in ('ability','owned-slot') and member.name=='tracking/packets.jsonl':
-                        key='primary_faced_throw_native01/episode.json' if phase=='ability' else 'hunter_slot_trial_finish01/episode.json'
+                        if phase=='ability':key='primary_faced_throw_native01/episode.json'
+                        else:
+                            from .hunter_slot_evidence import NAMES
+                            key=NAMES['restore']+'/episode.json'
                         field='packets' if phase=='ability' else 'call_pet_packets'
                         wanted={packet_key(p) for p in data[key][field]}
                         require(0<len(wanted)<=256,'ability outcome packet bound differs')

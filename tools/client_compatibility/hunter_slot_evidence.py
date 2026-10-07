@@ -9,10 +9,10 @@ from .review_native_feedback_checkpoint import require,packet_key
 
 
 NAMES={
-    'entry':'hunter_slot_entry01','stage':'hunter_slot_trial_stage01','open':'hunter_slot_trial_open01',
-    'forward_stage':'hunter_slot_trial_forward_stage01','forward':'hunter_slot_trial_forward01',
-    'back_stage':'hunter_slot_trial_back_stage01','back':'hunter_slot_trial_back01',
-    'recon':'hunter_slot_trial_call_pet_recon01','restore':'hunter_slot_trial_finish01',
+    'entry':'hunter_slot_entry01','stage':'hunter_slot_trial_stage02','open':'hunter_slot_trial_open02',
+    'forward_stage':'hunter_slot_trial_forward_stage02','forward':'hunter_slot_trial_forward02',
+    'back_stage':'hunter_slot_trial_back_stage02','back':'hunter_slot_trial_back02',
+    'recon':'hunter_slot_trial_call_pet_recon02','restore':'hunter_slot_trial_finish02',
     'park':'hunter_slot_final_park01','finish':'hunter_slot_origin_finish01','close':'hunter_slot_final_close01'}
 
 
