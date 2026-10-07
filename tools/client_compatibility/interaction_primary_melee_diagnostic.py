@@ -14,7 +14,7 @@ from .interaction_operations import command
 from .interaction_macros import require
 from .interaction_pet_dismiss import Presence
 from .interaction_pet_target import pair
-from .world.native_objects import records
+from .world.native_objects import records,guid
 from .world.objects import INDEX
 from .world.buffer import Reader
 from .world.gameobjects import modern_guid
@@ -134,7 +134,7 @@ def run(t,path,review_path):
             health(o)!=target['fields'][str(INDEX['UNIT_FIELD_HEALTH'])] or pair(o.player,'UNIT_FIELD_TARGET')!=target['guid']):
             raise RuntimeError('primary target changed before attempt')
         public,_=read_page(t,'primary_before_swings','combat_log','/tcui combat_log')
-        sequence=public.get('sequence',0);command(t,'/tcui state');since=None
+        command(t,'/tcui state');since=None
         def admit():
             nonlocal since
             accepted=0<=time.time()-image.stat().st_mtime<110 and lab.sha256(image)==d['frame']['sha256']
@@ -150,8 +150,14 @@ def run(t,path,review_path):
             t.execute({'kind':'chat','value':'/stopattack'})
             public,frame=read_page(t,'primary_after_swings','combat_log','/tcui combat_log')
             command(t,'/tcui state');state,_=t.observe('primary_damage_outcome');o.poll()
-        packets=[p for p in o.combat if p['time']>=since];hits,foreign=pairs(packets,1,target['guid'],0)
-        events=public_events(public,sequence,hits,t.guid,target_guid(target))
+        packets=[p for p in o.combat if p['time']>=since];hits,orphaned=pairs(packets,1,target['guid'],0)
+        foreign=[]
+        for p in packets:
+            if p['name']=='SMSG_ATTACKER_STATE_UPDATE' and p['direction']=='from_native':
+                r=Reader(bytes.fromhex(p['body']));r.unpack('I');attacker,victim=guid(r),guid(r)
+                if victim==target['guid'] and attacker!=1:foreign.append(p)
+        events=public_events(public['melee_probe'],t.receipt['cases'][0]['before']['owner_melee']['event_sequence'],
+            hits,t.guid,target_guid(target))
         checks=health_checks(target['fields'][str(INDEX['UNIT_FIELD_HEALTH'])],health(o),hits,state['target'].get('health'),foreign,
             allow_death=True,public_death=state['target'].get('exists') is False)
         starts=combat_pairs(packets,d['session'],since,time.time(),{'guid':1,'map':0},target,'SMSG_ATTACK_START')
@@ -163,6 +169,7 @@ def run(t,path,review_path):
         checks.update(one_exact_attack=bool(len(modern)==len(native)==1 and submitted==modern_guid(target['guid'],0) and
             native[0]['body']==struct.pack('<Q',target['guid']).hex()),
             native_public_start=bool(starts and all(p['client'] for p in starts)),public_swing_event=bool(events),
+            no_orphan_hits=not orphaned,
             no_range_facing_error=not any(p['name'] in NAMES and ('ATTACKSWING_' in p['name'] or p['name']=='SMSG_ATTACK_SWING_ERROR') for p in packets),
             no_native_spell_cast=not any(p['name']=='CMSG_CAST_SPELL' and p['direction']=='to_native' for p in packets),
             melee_stopped=not state['owner_melee']['active'])
