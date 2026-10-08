@@ -21,6 +21,7 @@ FORBIDDEN = (shared.FORBIDDEN - {ACTION}) | frozenset((
     'CMSG_ATTACK_STOP', 'CMSG_ATTACKSWING', 'CMSG_ATTACKSTOP', 'CMSG_CANCEL_CAST',
     'CMSG_CANCEL_CHANNELLING', 'CMSG_CANCEL_AURA', 'CMSG_CANCEL_AUTO_REPEAT_SPELL',
     'CMSG_TOGGLE_PVP', 'CMSG_SET_SHEATHED', 'CMSG_STANDSTATECHANGE', 'CMSG_STAND_STATE_CHANGE',
+    'CMSG_CHAT_MESSAGE_AFK', 'CMSG_MESSAGECHAT_AFK',
     'CMSG_GAMEOBJ_USE', 'CMSG_GAME_OBJ_USE', 'CMSG_GAMEOBJ_REPORT_USE',
     'CMSG_GOSSIP_HELLO', 'CMSG_TALK_TO_GOSSIP', 'CMSG_GOSSIP_SELECT_OPTION',
     'CMSG_REPAIR_ITEM', 'CMSG_ITEM_REFUND', 'CMSG_ITEM_REFUND_INFO', 'CMSG_WRAP_ITEM',
@@ -142,16 +143,40 @@ def modern_swap(raw):
         'native_destination': native[0], 'native_source': native[1]}
 
 
-def forbidden_packets(rows, session, since, until):
+def forbidden_packets(rows, session, since, until, *, login_sync=None):
     scoped = packet_rows(rows, session, since, until)
+    allowed = set()
+    if login_sync is not None:
+        from .bag_swap_login_sync import packet_key, validate_login_sync
+        proof = validate_login_sync(login_sync)
+        require(session in (proof['session'], proof['instance_session']),
+            'login settlement allowance belongs to another physical/native session')
+        allowed.update(proof['allowed_packet_keys'])
+        allowed.update(proof['allowed_metadata_keys'])
     bad = []
     for row in scoped:
         name = row.get('name')
+        if (login_sync is not None) and 'event' not in row:
+            from .bag_swap_login_sync import WIRE_DIRECTIONS, WIRE_FIELDS
+            require(set(row) == WIRE_FIELDS and type(name) is str and name and
+                type(row.get('direction')) is str and row['direction'] in WIRE_DIRECTIONS,
+                'proof-bound replay requires canonical raw wire rows')
+            body(row)
         if name == 'SMSG_INVENTORY_CHANGE_FAILURE':
             bad.append(row)
+        elif login_sync is not None and row.get('event') in (
+            'movement_forwarded', 'unmapped_client_packet', 'native_active_mover_confirmed',
+            'active_mover_deferred_until_player_create') and (
+            type(name) is str and name.startswith(('CMSG_MOVE_', 'MSG_MOVE_')) or
+            row.get('event') in ('native_active_mover_confirmed', 'active_mover_deferred_until_player_create')):
+            if packet_key(row) not in allowed:
+                bad.append(row)
         elif row.get('direction') in ('from_client', 'to_native') and type(name) is str and (
-            name in FORBIDDEN or (name.startswith(FORBIDDEN_PREFIXES) and name not in MOVER_INITIALIZATION)):
-            bad.append(row)
+            name in FORBIDDEN or (name.startswith(FORBIDDEN_PREFIXES) and
+                (login_sync is not None or name not in MOVER_INITIALIZATION)) or
+            ((login_sync is not None) and name in MOVER_INITIALIZATION)):
+            if not allowed or packet_key(row) not in allowed:
+                bad.append(row)
     require(not bad, 'bag swap refuses other gameplay mutation, item use/cast/action assignment, combat, target, movement, pet input or inventory failure')
     return {'no_forbidden_input': True, 'no_inventory_failure': True}
 
@@ -173,15 +198,15 @@ def _pair(requests, *, reverse=False):
     return {'reverse': reverse, 'modern': deepcopy(modern), 'native': deepcopy(native), 'decoded': parsed}
 
 
-def swap_packets(rows, session, since, until, *, reverse=False):
+def swap_packets(rows, session, since, until, *, reverse=False, login_sync=None):
     scoped = packet_rows(rows, session, since, until)
-    forbidden_packets(rows, session, since, until)
+    forbidden_packets(rows, session, since, until, login_sync=login_sync)
     return _pair([r for r in scoped if r.get('name') == ACTION], reverse=reverse)
 
 
-def roundtrip_packets(rows, session, since, until):
+def roundtrip_packets(rows, session, since, until, *, login_sync=None):
     scoped = packet_rows(rows, session, since, until)
-    forbidden_packets(rows, session, since, until)
+    forbidden_packets(rows, session, since, until, login_sync=login_sync)
     requests = [r for r in scoped if r.get('name') == ACTION]
     require(len(requests) == 4, 'exactly two unique modern/native swap pairs total are required')
     forwards, reverses = [], []
@@ -269,17 +294,17 @@ def public_items(public, resources, *, swapped=False):
         'public_guid_source': 'delivered_inventory_packets', 'items': deepcopy(rows)}
 
 
-def native_replay(rows, session, since, until, *, rest_threshold=None):
+def native_replay(rows, session, since, until, *, rest_threshold=None, login_sync=None):
     """Inspect every owner state and preserve both occupied items' complete native fields."""
     scoped = packet_rows(rows, session, since, until)
-    forbidden_packets(rows, session, since, until)
+    forbidden_packets(rows, session, since, until, login_sync=login_sync)
     swaps = [r for r in scoped if r.get('name') == ACTION]
     forward, reverse = None, None
     if swaps:
         if len(swaps) == 2:
             forward = _pair(swaps)
         else:
-            chain = roundtrip_packets(rows, session, since, until)
+            chain = roundtrip_packets(rows, session, since, until, login_sync=login_sync)
             forward, reverse = chain['forward'], chain['reverse']
     filtered = [r for r in rows if not (r.get('session') == session and r.get('name') == ACTION and
         finite(r.get('time')) and since <= r['time'] <= until)]
@@ -299,6 +324,11 @@ def native_replay(rows, session, since, until, *, rest_threshold=None):
             guid = record['guid']
             if guid == 2:
                 owner_fields.update(record.get('fields', {}))
+                stand = owner_fields.get(INDEX['UNIT_FIELD_BYTES_1'], 0) & 255
+                sheath = owner_fields.get(INDEX['UNIT_FIELD_BYTES_2'], 0) & 255
+                afk = bool(owner_fields.get(INDEX['PLAYER_FLAGS'], 0) & 2)
+                require(sheath == 0 and stand == 0 and not afk,
+                    'native original standing, sheath or AFK state changed')
                 start = INDEX['PLAYER_FIELD_INV_SLOT_HEAD']
                 inventory = {i: owner_fields.get(i, 0) for i in range(start, start + 78)}
                 pair_indices = {start + slot * 2 + part for slot in (23, 24) for part in (0, 1)}
