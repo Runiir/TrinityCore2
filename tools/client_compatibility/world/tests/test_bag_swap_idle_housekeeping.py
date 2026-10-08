@@ -46,6 +46,16 @@ def test_actual_retained_idle_native_sparse_effect_and_owner_chat_metadata():
     assert proof['afk_metadata'][0]['session'] == 'c6195b73'
 
 
+def test_actual_packed_bytes2_upper_flags_preserve_unsheathed_original_pose():
+    row = native_packet({h.INDEX['UNIT_FIELD_BYTES_1']: 0,
+        h.INDEX['UNIT_FIELD_BYTES_2']: 285212672, h.INDEX['PLAYER_FLAGS']: 0})
+    assert h.original_pose([row]) == {'pose': {'stand': 0, 'sheath': 0}, 'afk': False}
+    fields = h.original_objects([row])
+    assert fields['2'][str(h.INDEX['UNIT_FIELD_BYTES_2'])] == 285212672
+    changed = native_packet({h.INDEX['UNIT_FIELD_BYTES_2']: 285212928}, creation=False)
+    with pytest.raises(RuntimeError): h.native_history([changed], fields)
+
+
 @pytest.mark.parametrize('fault', ['health', 'unchanged_aux', 'owner_recreated', 'owner_removed', 'item_field', 'item_removed'])
 def test_complete_native_history_rejects_other_owner_and_item_changes(fault):
     original = {'2': {'61': 49, '68': 0, '73': 0, '77': 0, '148': 0, '18': 60},

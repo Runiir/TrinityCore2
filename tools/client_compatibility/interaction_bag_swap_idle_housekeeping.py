@@ -107,6 +107,16 @@ def original_objects(rows):
     return {str(guid): {str(k): v for k, v in fields.items()} for guid, fields in objects.items()}
 
 
+def original_pose(rows):
+    originals = [r for row in rows if row.get('name') == 'SMSG_UPDATE_OBJECT' and row.get('direction') == 'from_native'
+        for r in records(body(row)) if r.get('guid') == 2 and r['update_type'] in (1, 2)]
+    require(len(originals) == 1, 'actual original login must create its sole native owner')
+    fields = originals[0]['fields']
+    return {'pose': {'stand': fields.get(INDEX['UNIT_FIELD_BYTES_1'], 0) & 255,
+        'sheath': fields.get(INDEX['UNIT_FIELD_BYTES_2'], 0) & 255},
+        'afk': bool(fields.get(INDEX['PLAYER_FLAGS'], 0) & 2)}
+
+
 def native_history(rows, original):
     objects = deepcopy(original)
     require(type(objects) is dict and '2' in objects, 'complete original owned native fields required')
@@ -270,11 +280,7 @@ def authority(t, preparation, failure):
     from . import actors
     require(actors.load() == t.fixture and actors.session_entry(t.fixture)['session'] == ready['native_session'],
         'idle housekeeping cannot change registration or replay login')
-    originals = [r for row in failed['raw_entry_packets'] if row.get('name') == 'SMSG_UPDATE_OBJECT' and
-        row.get('direction') == 'from_native' for r in records(body(row)) if r.get('guid') == 2 and r['update_type'] in (1, 2)]
-    require(len(originals) == 1 and originals[0]['fields'].get(INDEX['UNIT_FIELD_BYTES_1'], 0) == 0 and
-        originals[0]['fields'].get(INDEX['UNIT_FIELD_BYTES_2'], 0) == 0 and
-        originals[0]['fields'].get(INDEX['PLAYER_FLAGS'], 0) == 0,
+    require(original_pose(failed['raw_entry_packets']) == {'pose': ORIGINAL['pose'], 'afk': ORIGINAL['afk']},
         'actual original login must prove standing, unsheathed and non-AFK')
     from .interaction_item_actionbar_parked_selection_capture import game_identity
     from .owned_input import focus
