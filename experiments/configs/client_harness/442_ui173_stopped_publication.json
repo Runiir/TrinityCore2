@@ -1,0 +1,155 @@
+{
+  "schema": "client442_ui173_stopped_bag_entry_publication_record_v1",
+  "operation": "bags.swap_item",
+  "verdict": "excluded_failed_entry_system_stop",
+  "qualification_added": false,
+  "operations_admitted": 0,
+  "qualified_operations_before": 453,
+  "qualified_operations_after": 453,
+  "plan_operations": 916,
+  "original_failed_entry": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/entry01/episode.json",
+    "sha256": "63e2bd045a162b7cb125f76dd3532ca0f43a3e77137ca9e02a7e8cfbf009329a"
+  },
+  "closed_source": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/stopped_closure01/closure.json",
+    "sha256": "2e395a9d89344bd448da3bff43dc341189cf596c853385d577ba0029366f8281"
+  },
+  "source_index": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/stopped_closure01/source_index.json",
+    "sha256": "d5fe2ff77747d91defbd2514bfdc12e51c1e2d5011a702d6a844a63ff4e83c79"
+  },
+  "publication_code_commit": "69ca991027c25547610163307142c0b4d8f149b0",
+  "publication_source_members": 102,
+  "entry_input_sent": true,
+  "bag_swap_inputs_sent": false,
+  "normal_logout_input_sent": false,
+  "housekeeping_inputs_sent": false,
+  "stop_action": "committed lab_runtime stop-client for actor=scout",
+  "actual_sigterm_time_retained": false,
+  "owned_game_start_ticks_retained": false,
+  "ten_stop_checks": {
+    "actor2_native_changes_confined_to_accounting_rest": true,
+    "all_characters_offline": true,
+    "all_saved_inventory_pets_unchanged": true,
+    "bridge_lifetime": true,
+    "native_lifetime": true,
+    "observed_owned_game_pid_absent": true,
+    "origin_registration": true,
+    "primary_still_stopped": true,
+    "protected_five_snapshots_unchanged": true,
+    "scout_launcher_absent": true
+  },
+  "all_six_offline_preserved": true,
+  "all_saved_inventory_pets_preserved": true,
+  "both_owned_clients_stopped": true,
+  "native_rest": {
+    "exact_float32": 54.89884567260742,
+    "bits": "6b985b42",
+    "logout_time": 1791431626,
+    "fresh_before_and_after_exact_queries": true
+  },
+  "journal_history": {
+    "source_packet_count": 5444,
+    "source_event_count": 6731,
+    "original_prefix_packet_count": 1202,
+    "original_prefix_event_count": 1493,
+    "original_prefix_end": 1791431448.852425,
+    "last_wire_at": 1791431566.2817762,
+    "saved_logout_time": 1791431626,
+    "socket_expiry_seconds": 60,
+    "metadata_only_delivered_movement_count": 966,
+    "metadata_only_delivered_movement_bodies_retained": false
+  },
+  "main_checkpoint": {
+    "source": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/checkpoint_receipt.json",
+      "sha256": "8ec762342525769ac95f2b7457e8193ca9af9621ede524dfe7f3ffd944cd9e4a"
+    },
+    "remote_review": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui173_stopped_entry_remote_review01.json",
+      "sha256": "0027c15074566a2dfc9f153924047cea9eb3cc319eddae9dec202cf75db09ae5"
+    },
+    "pointer": "artifacts/client_harness/442_interactions_20261008_173.tar.gz.dvc",
+    "pointer_sha256": "481dc9f0495536bb35f63b75abd5cf01707098c8215fa750553e51f7f6cdf55b",
+    "md5": "6eb59e9129b821433ecfac6aa69a94b3",
+    "compressed_bytes": 183808224,
+    "sha256": "0228e4b408456f5d2f9c3eb403384682e92a112a879781045095cd27874a2fd4",
+    "manifest_members": 1478,
+    "json_members": 908,
+    "png_members": 29,
+    "journal_members": 16,
+    "complete_manifest_verified": true,
+    "whole_journals_verified": true,
+    "accepted_ui171_and_excluded_ui172_ancestry_verified": true,
+    "opaque_legacy_authorities_verified": true
+  },
+  "publication_metadata_checkpoint": {
+    "checkpoint_source": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui173_publication_metadata_checkpoint01.json",
+      "sha256": "58006013394093d755b383a0de572fbefd556c1a1a17dd82f7eceae92e7388ef"
+    },
+    "remote_review": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui173_publication_metadata_remote_review01.json",
+      "sha256": "bb4144a30a68c345e7a6105e5531bab6a1e0d5d3ea9821ddb69dc2976415f9f5"
+    },
+    "pointer": "artifacts/client_harness/442_interactions_20261008_173_publication.tar.gz.dvc",
+    "md5": "2ce5f612c18424fd9f09975b54cd2a5b",
+    "compressed_bytes": 1151043,
+    "sha256": "1564b92f55f0f463fac48ebc507bed2dcd85a76e701e8182ea81489dfdd2c975",
+    "members": 22,
+    "all_member_bytes_verified": true
+  },
+  "offload": {
+    "frame_pruning": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/frame_pruning.json",
+      "sha256": "669985a891702b63eac283ce09c5a9e97727ce309e6108e6c5b69f1a0aa06eeb"
+    },
+    "main_archive_eviction": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui173_archive_eviction01.json",
+      "sha256": "f8c55c5a449c7ad76118c01960a902f853b9b9618cc09ed16aa09e9674a658fb"
+    },
+    "json_journals_retained_for_successor": true,
+    "publication_archive_eviction": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui173_publication_archive_eviction01.json",
+      "sha256": "94aa0c31336c3022027bf648164a1402617cf0a5b2eb45a68762b146c4ea6293"
+    }
+  },
+  "retained_validation": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/stopped_validation02/retention.json",
+    "sha256": "3ea5e96e83c871ca793bae24a2fe8696d2971120d66e0e8ed7c49b510c16b5d9"
+  },
+  "actual_closure_validation": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/actual_closure_validation01/validation.json",
+    "sha256": "039ac1b01e2698c8be7d6a5e5fd80d5abf2b72e918ad47d94ff26c4a14dc35d8"
+  },
+  "publication_prerequisite_repair": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/publication_prerequisite_diagnostic01/repair.json",
+    "sha256": "da64353d4a11b4839a734190cb1174394fa24a6ae84ad77d32f8d32e49a52290"
+  },
+  "publication_failures": {
+    "first_main_checkpoint": "missing native_server_before.json; refused before archive creation",
+    "repair": "fresh post-closure prepublication native identity matched original and completed closure; original preexperiment sidecar remains explicitly missing",
+    "first_metadata_attempt": "aggregate metadata exceeded initial16MiB retention budget; refused before writes; exact17MiB receipt fits unchanged32MiB file/archive cap with bounded1MiB overhead allowance",
+    "first_workqueue_update": "nonexistent next key, raised KeyError before queue write; actual schema uses queued/last_closed_batches/open_failures, inspected and corrected"
+  },
+  "final_review": {
+    "report": {
+      "path": "/tmp/ui173_bag_swap_stopped_independent_review02/review_report.json",
+      "sha256": "7c477755c7d42822dd7f97cdac4714acc4dcb85032afd1605dd6ac7e1228f9fd"
+    },
+    "seal": {
+      "path": "/tmp/ui173_bag_swap_stopped_independent_review02/review_seal.json",
+      "sha256": "b726addc7bb5491549e2e2499e266ec94b5e65abd4a7bb687ad819b30cbeb662"
+    },
+    "verdict": "approved",
+    "targeted_tests": 181,
+    "independent_contract_checks": 15,
+    "original_repros": 22,
+    "skips": 0
+  },
+  "prior_failures_retained": true,
+  "scripts_blocked": true,
+  "softTargetInteract_original_restored": false,
+  "next_required": "Fresh indexed UI174 authority requires validated UI173 publication epoch and complete v2 physical/native journal proof before one occupied swap/reverse/restoration/logout/pause unit on HDMI-1"
+}
