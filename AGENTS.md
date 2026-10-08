@@ -1,4 +1,10 @@
 Use pixi for python related stuff.
+Run client-compatibility Python, tests, proof replay, and DVC operations through
+`pixi run python -m tools.client_compatibility.bounded_run -- <command>`.
+The default task budget is 2 GiB with no swap; only the one owned scout launcher
+and its game child may use `--memory-mib 4096`. Keep a 4 GiB available reserve.
+Never fall back to unbounded execution if the user scope cannot be created.
+Use `save_dvc_exp=False` for DVCLive; checkpoint only the selected artifact.
 Always launch game clients on the second physical monitor (currently HDMI-1). Verify the owned game window is on that monitor; do not silently use the primary monitor.
 Use DVC/DVCLive for experiment tracking.
 Commit experiment code/configs to git, and checkpoint generated data/artifacts with DVC.

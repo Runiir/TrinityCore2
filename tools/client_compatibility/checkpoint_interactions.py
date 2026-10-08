@@ -62,6 +62,11 @@ def checkpoint_runs(episodes,directory):
 def tracking_live(**options):
     # Source classification and its tests do not require the publishing-only
     # DVCLive dependency; the actual checkpoint still requires it.
+    # These checkpoints publish their exact artifact separately. Automatic
+    # experiment saving scans and rewrites unrelated repository stages.
+    if options.get('save_dvc_exp', False) is not False:
+        raise ValueError('interaction tracking must disable automatic DVC experiment saving')
+    options['save_dvc_exp'] = False
     from dvclive import Live
     return Live(**options)
 
