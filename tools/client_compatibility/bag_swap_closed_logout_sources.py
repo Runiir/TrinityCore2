@@ -13,6 +13,7 @@ import re
 import subprocess
 import tempfile
 import os
+import sys
 
 from . import bag_swap_indexed_sources as indexed
 from . import bag_swap_indexed_archive as archive
@@ -48,6 +49,16 @@ CHANGED_OLD = frozenset((
     'tools/client_compatibility/world/tests/test_bag_swap_login_sync_v2.py'))
 BATCH = 'evidence/client_interactions_20261008_ui176/'
 POINTER = 'artifacts/client_harness/442_interactions_20261008_176.tar.gz.dvc'
+LATER_BATCH = 'evidence/client_interactions_20261008_ui178/'
+LATER_POINTER = 'artifacts/client_harness/442_interactions_20261008_178.tar.gz.dvc'
+LATER_CHANGED = frozenset((
+    'tools/client_compatibility/bag_swap_closed_logout_sources.py',
+    'tools/client_compatibility/bag_swap_closed_logout_contract.py',
+    'tools/client_compatibility/world/tests/test_bag_swap_closed_logout_sources.py',
+    'tools/client_compatibility/world/tests/test_bag_swap_closed_logout_contract.py',
+    'tools/client_compatibility/observation/journal.py',
+    'tools/client_compatibility/bag_swap_indexed_archive.py',
+    'tools/client_compatibility/world/tests/test_bag_swap_indexed_archive.py'))
 bound, reference = indexed.bound, indexed.reference
 ROW_FIELDS = {'original_path', 'original_member', 'copy_member', 'sha256', 'bytes', 'kinds'}
 REMOTE_CHECKS = frozenset(('actor_runtime_epoch', 'all_eight_shutdown_checks',
@@ -61,6 +72,11 @@ REMOTE_CHECKS = frozenset(('actor_runtime_epoch', 'all_eight_shutdown_checks',
     'post_intentional_stop_xlib_diagnostic_retained', 'protected_five_full_saved_inventory_pose_health_power',
     'reference_chain', 'second_monitor_retained', 'supplied_entry_hash_and_size', 'supplied_logout_hash',
     'trio_order_and_receipt_exact', 'zero_added_qualification_whole_unit_excluded'))
+LATER_REMOTE_CHECKS = (REMOTE_CHECKS - {'entry_packets_multiset_contained', 'entry_events_multiset_contained',
+    'one_bit_modern_logout_request_physical_metadata', 'post_intentional_stop_xlib_diagnostic_retained'}) | frozenset((
+    'original_empty_failed_raw_and_finalization_failure_retained', 'source_owned_complete_login_prefix_rederived',
+    'original_entry_events_exact_complete_prefix', 'retained_initial_v2_and_four_login_packets_match_whole_prefix',
+    'no_automatic_idle_or_extra_housekeeping', 'source129_complete_raw_epoch_and_closed_parent_bound'))
 
 
 def _encode(value): return indexed._encode(value)
@@ -74,15 +90,59 @@ def _write(path, value, root=None):
     return write(Path(path), _encode(value), _root(root))
 
 
+def _profile(pins, root):
+    """Only the two actual source-owned excluded normal-logout generations."""
+    for batch, pointer in ((BATCH, POINTER), (LATER_BATCH, LATER_POINTER)):
+        if pins.get('closure', {}).get('path') == str(root / batch / 'failed_entry_stop01/episode.json'):
+            require(pins.get('checkpoint', {}).get('path') == str(root / batch / 'checkpoint_receipt.json'),
+                'excluded closure and checkpoint must belong to the same actual generation')
+            return {'batch': batch, 'pointer': pointer, 'later': batch == LATER_BATCH,
+                'precision': 'precision_before01/episode.json' if batch == LATER_BATCH else 'rest_before01/episode.json',
+                'journal_schema': 'client442_ui178_failed_entry_complete_journals_v1' if batch == LATER_BATCH else
+                    'client442_ui176_failed_entry_complete_journals_v1'}
+    raise RuntimeError('only the actual published excluded UI176 or UI178 normal-logout sources may supply this baseline')
+
+
+def _checkpoint_profile(cp):
+    for batch, pointer in ((BATCH, POINTER), (LATER_BATCH, LATER_POINTER)):
+        if cp.get('file') == pointer.removesuffix('.dvc'):
+            return {'batch': batch, 'pointer': pointer, 'later': batch == LATER_BATCH}
+    raise RuntimeError('only the two actual excluded normal-logout checkpoint files are supported')
+
+
+def _review_identity(value, later, *, limit=MAX_CARRY_BYTES, size=None):
+    """Keep UI178's declared source size typed while comparing exact identities."""
+    if not later:
+        reference(value)
+        return value
+    require(type(value) is dict and set(value) == {'path', 'sha256', 'bytes'} and
+        type(value['bytes']) is int and 0 < value['bytes'] <= limit and
+        (size is None or value['bytes'] == size),
+        'actual UI178 remote reference must retain its exact typed physical source byte count')
+    identity = {key: value[key] for key in ('path', 'sha256')}
+    reference(identity)
+    return identity
+
+
+def _review_bindings(remote, pins, stop, refs, store):
+    later = _profile(pins, store.root)['later']
+    identities = {}
+    for name, ref in (('checkpoint_source', pins['checkpoint']), ('journal_receipt_source', refs['journals'])):
+        size = Path(store.paths[store.member(ref)]).stat().st_size if later else None
+        identities[name] = _review_identity(remote.get(name), later, size=size)
+    require(identities['checkpoint_source'] == pins['checkpoint'] and remote.get('code_commit') == stop['code_commit'] and
+        identities['journal_receipt_source'] == refs['journals'],
+        'actual remote seal binds a different source-owned closure epoch or physical source bytes')
+
+
 def admission_pins(value, *, root=None):
     root = _root(root)
     require(type(value) is dict and set(value) == {'closure', 'checkpoint', 'remote'},
         'actual excluded stop, checkpoint and remote pins are mandatory')
     for ref in value.values(): indexed._member(ref, root)
-    require(Path(value['closure']['path']) == root / BATCH / 'failed_entry_stop01/episode.json' and
-        Path(value['checkpoint']['path']) == root / BATCH / 'checkpoint_receipt.json' and
-        not Path(value['remote']['path']).is_relative_to(root / BATCH),
-        'only the actual published excluded UI176 boundary may supply this baseline')
+    profile = _profile(value, root)
+    require(not Path(value['remote']['path']).is_relative_to(root / profile['batch']),
+        'actual excluded boundary remote review must remain outside its sealed source batch')
     return deepcopy(value)
 
 
@@ -90,11 +150,11 @@ def read_admission_pins(path, *, root=None):
     return admission_pins(_json(path, MAX_DESCRIPTOR_BYTES, root=root)[0], root=root)
 
 
-def _sources(stop, root):
-    batch = root / BATCH
+def _sources(stop, root, pins):
+    profile = _profile(pins, root); batch = root / profile['batch']
     return {'stop': bound(batch / 'failed_entry_stop01/episode.json'),
         'logout': stop['source'], 'ready': stop['preparation_source'], 'entry': stop['first_failure_source'],
-        'precision': bound(batch / 'rest_before01/episode.json'),
+        'precision': bound(batch / profile['precision']),
         'journals': bound(batch / 'full_closed_journals01/journal_receipt.json')}
 
 
@@ -129,8 +189,12 @@ def _stop_summary(stop, refs):
 
 def _core(stop, refs, pins, pointer, parent_runtime):
     summary = _stop_summary(stop, refs)
-    summary.update(prior_crash_authority_source=parent_runtime['authority_source'],
-        prior_crash_boundary_source=parent_runtime['_descriptor']['boundary_source'])
+    if parent_runtime.get('schema') == RUNTIME_SCHEMA:
+        summary.update(prior_closed_authority_source=parent_runtime['authority_source'],
+            prior_closed_boundary_source=parent_runtime['_descriptor']['refs']['closure'])
+    else:
+        summary.update(prior_crash_authority_source=parent_runtime['authority_source'],
+            prior_crash_boundary_source=parent_runtime['_descriptor']['boundary_source'])
     result = {'closure': summary, 'snapshot': deepcopy(stop['after']),
         'predecessor': {**pins, 'primary_stop': parent_runtime['core']['primary_stop_source']},
         'primary_stop_source': parent_runtime['core']['primary_stop_source'], 'dvc_pointer': pointer,
@@ -160,8 +224,13 @@ def _runtime_core(core):
         set(core['predecessor']) == set(indexed.ROLES) and core['origin_actor'].get('guid') == 2 and
         core['origin_actor'].get('account_id') == 2 and core['origin_actor'].get('actor') == 'scout',
         'exact excluded owned stop and original scout identities required')
-    for ref in [*c['sources'].values(), *core['predecessor'].values(),
-                c['prior_crash_authority_source'], c['prior_crash_boundary_source']]: reference(ref)
+    profile = _profile(core['predecessor'], Path(core['predecessor']['closure']['path']).parents[3])
+    parent_names = ('prior_closed_authority_source', 'prior_closed_boundary_source') if profile['later'] else (
+        'prior_crash_authority_source', 'prior_crash_boundary_source')
+    other_names = ('prior_crash_authority_source', 'prior_crash_boundary_source') if profile['later'] else (
+        'prior_closed_authority_source', 'prior_closed_boundary_source')
+    require(not any(name in c for name in other_names), 'one exact parent authority kind must remain explicit')
+    for ref in [*c['sources'].values(), *core['predecessor'].values(), *(c[name] for name in parent_names)]: reference(ref)
     for identity in [*core['runtime'].values(), c['game_before']]:
         require(type(identity) is dict and type(identity.get('pid')) is int and identity['pid'] > 0 and
             type(identity.get('start_ticks')) is str and re.fullmatch('[1-9][0-9]*', identity['start_ticks']),
@@ -172,10 +241,11 @@ def _runtime_core(core):
 
 
 def _pointer(cp, remote, root, repo):
-    path = Path(repo) / POINTER
+    profile = _checkpoint_profile(cp); pointer_name = profile['pointer']
+    path = Path(repo) / pointer_name
     ref = bound(path); raw = path.read_bytes()
     require(0 < len(raw) <= 4096 and cp.get('cloud_verified') is True and
-        cp.get('file') == POINTER.removesuffix('.dvc') and type(cp.get('bytes')) is int and cp['bytes'] > 0 and
+        cp.get('file') == pointer_name.removesuffix('.dvc') and type(cp.get('bytes')) is int and cp['bytes'] > 0 and
         type(cp.get('sha256')) is str and re.fullmatch('[0-9a-f]{64}', cp['sha256']),
         'actual published UI176 checkpoint and bounded pointer required')
     text = raw.decode('utf-8'); oid = re.findall(r'^\s*-?\s*md5:\s*([0-9a-f]{32})\s*$', text, re.MULTILINE)
@@ -183,38 +253,30 @@ def _pointer(cp, remote, root, repo):
         re.findall(r'^\s*path:\s*(\S+)\s*$', text, re.MULTILINE) == [Path(cp['file']).name] and
         re.search(r'^\s*hash:\s*md5\s*$', text, re.MULTILINE), 'actual UI176 pointer bytes differ')
     if remote is not None:
-        require(remote.get('pointer') == POINTER and remote.get('pointer_sha256') == ref['sha256'] and
+        require(remote.get('pointer') == pointer_name and remote.get('pointer_sha256') == ref['sha256'] and
             remote.get('object_md5') == oid[0] and remote.get('bytes') == cp['bytes'] and
             remote.get('archive_sha256') == cp['sha256'] and remote.get('actual_remote_verified') is True and
             remote.get('complete_manifest_verified') is True,
             'mandatory actual complete remote UI176 verification differs')
-        require(remote.get('schema') == 'client442_ui176_closed_excluded_failed_batch_remote_review_v1' and
-            all(remote.get(k) is True for k in ('approval', 'scope_closed', 'source123_envelopes_match_retained_git_commit',
-                'source_index_classes_and_raw_bindings_verified', 'whole_failed_unit_excluded')) and
-            remote.get('outcome') == 'approved' and remote.get('result') == 'pass' and
-            remote.get('qualification_added') is False and type(remote.get('operations_admitted')) is int and
-            remote['operations_admitted'] == 0 and
-            type(remote.get('lifecycle_verified_checks')) is dict and len(remote['lifecycle_verified_checks']) == 30 and
-            all(v is True for v in remote['lifecycle_verified_checks'].values()),
-            'actual sealed complete excluded normal-logout review required')
-    pointer = {'source': ref, 'pointer': POINTER, 'oid': oid[0], 'bytes': cp['bytes']}
+    pointer = {'source': ref, 'pointer': pointer_name, 'oid': oid[0], 'bytes': cp['bytes']}
     if remote is not None: _portable_pointer(pointer, raw.hex(), cp, remote)
     return pointer, raw.hex()
 
 
 def _local_preflight(pins, root, repo):
     stop = _json(pins['closure']['path'], root=root, ref=pins['closure'])[0]
-    refs = _sources(stop, root)
+    profile = _profile(pins, root); refs = _sources(stop, root, pins)
     ready = _json(refs['ready']['path'], root=root, ref=refs['ready'])[0]
     compact = _json(ready['runtime_authority_source']['path'], MAX_RUNTIME_BYTES,
         root=root, ref=ready['runtime_authority_source'])[0]
-    require(compact.get('schema') == crash.RUNTIME_SCHEMA and ready.get('all_offline_snapshot') == compact['core']['snapshot'] and
+    parent = sys.modules[__name__] if profile['later'] else crash
+    require(compact.get('schema') == parent.RUNTIME_SCHEMA and ready.get('all_offline_snapshot') == compact['core']['snapshot'] and
         ready.get('runtime') == stop.get('runtime') and compact.get('authority_source') == ready['authority_source'],
         'actual UI176 ready must retain its admitted UI174 crash authority')
-    crash._runtime_core(compact['core'])
+    parent._runtime_core(compact['core'])
     compact['_descriptor'] = _json(ready['authority_source']['path'], MAX_DESCRIPTOR_BYTES,
         root=root, ref=ready['authority_source'])[0]
-    crash._descriptor(compact['_descriptor'], root)
+    parent._descriptor(compact['_descriptor'], root)
     cp = _json(pins['checkpoint']['path'], MAX_CARRY_BYTES, root=root, ref=pins['checkpoint'])[0]
     pointer, raw_hex = _pointer(cp, None, root, repo)
     return _core(stop, refs, pins, pointer, compact), raw_hex
@@ -229,6 +291,8 @@ def preflight_bundle(closure, remote, checkpoint, *, pins, root=None, repo=None)
 
 def replay(store, refs):
     from . import bag_swap_closed_logout_contract as history
+    profile = _profile({'closure': refs['stop'], 'checkpoint': {'path': str(Path(refs['stop']['path']).parent.parent /
+        'checkpoint_receipt.json')}}, store.root)
     ready, precision, failed, logout, stop, receipt = [store.get(refs[k], False) for k in
         ('ready', 'precision', 'entry', 'logout', 'stop', 'journals')]
     require(all(v.get('runtime') == ready.get('runtime') and v.get('actor') == ready.get('actor') and
@@ -252,7 +316,7 @@ def replay(store, refs):
         logout.get('after') == logout.get('all_offline_snapshot') == stop.get('before') == final,
         'truthful precision, failed entry and successful normal logout are required')
     old, now, inventory = preservation._preserved(baseline, final)
-    require(receipt.get('schema') == 'client442_ui176_failed_entry_complete_journals_v1' and
+    require(receipt.get('schema') == profile['journal_schema'] and
         receipt.get('closed_source') == refs['stop'] and receipt.get('failed_source') == refs['entry'] and
         receipt.get('qualification_added') is False and receipt.get('interval') ==
             {'from': store.get(ready['resume_source'], False)['started_at'], 'until': stop['finished_at']},
@@ -260,7 +324,8 @@ def replay(store, refs):
     journals = {key: crash._journal(store, ref) for key, ref in receipt['journal_sources'].items()}
     require(set(journals) == {'packets', 'events'} and all(len(journals[k]) == receipt['row_counts'][k] for k in journals),
         'complete actual journal row counts differ')
-    proof = history.closed_history(journals['packets'], journals['events'], ready, failed, stop)
+    options = {'provenance_profile': 'ui178_finalization'} if profile['later'] else {}
+    proof = history.closed_history(journals['packets'], journals['events'], ready, failed, stop, **options)
     before = preservation.exact_precision(precision['row'], baseline)
     after = preservation.exact_precision(stop['exact_precision_after'], final)
     require(preservation.exact_precision(stop['exact_precision_before'], final) == after and
@@ -289,13 +354,14 @@ def validate_manifest(value, root=None):
         'pointer_raw_hex', 'members', 'authorities'} and value.get('schema') == CARRY_SCHEMA and
         type(value.get('predecessor')) is dict and set(value['predecessor']) == set(indexed.ROLES),
         'exact flat excluded predecessor carry required')
-    admission_pins({k: value['predecessor'][k] for k in ('closure', 'checkpoint', 'remote')}, root=root)
+    pins = {k: value['predecessor'][k] for k in ('closure', 'checkpoint', 'remote')}
+    admission_pins(pins, root=root); profile = _profile(pins, root)
     from .review_bag_swap_failed_checkpoint import manifest
     require(type(value.get('archive')) is dict and set(value['archive']) ==
         {'file', 'bytes', 'sha256', 'manifest', 'tracking_manifest'}, 'actual payload and remote tracking manifests required')
     selected = manifest({'bytes': value['archive']['bytes'], 'sha256': value['archive']['sha256'],
-        'file_manifest': value['archive']['manifest'] + value['archive']['tracking_manifest']}, BATCH)
-    require(value['archive']['file'] == POINTER.removesuffix('.dvc') and len(selected) <= 100000 and
+        'file_manifest': value['archive']['manifest'] + value['archive']['tracking_manifest']}, profile['batch'])
+    require(value['archive']['file'] == profile['pointer'].removesuffix('.dvc') and len(selected) <= 100000 and
         type(value.get('members')) is list and len(value['members']) == len(selected) and
         type(value.get('authorities')) is list and len(value['authorities']) == 2,
         'complete published UI176 manifest and two mandatory external roles required')
@@ -350,22 +416,20 @@ def _restore(store, carry):
             Path(store.paths[member]).stat().st_size == row['bytes'], 'flat retained physical source differs')
         paths[row['original_member']] = store.paths[member]
         digests[row['original_member']] = row['sha256']; sizes[row['original_member']] = row['bytes']
-    old_member = BATCH + archive.CARRY_NAME
+    profile = _profile(carry['predecessor'], root)
+    old_member = profile['batch'] + (CARRY_NAME if profile['later'] else archive.CARRY_NAME)
     require(old_member in paths, 'unchanged UI173 flat carry must remain in actual UI176 archive')
     old = archive._read(paths[old_member], 'json', sizes[old_member], indexed.MAX_CARRY_BYTES, digests[old_member])
     classes = _classes(paths, digests, sizes, old, root)
     require(all(frozenset(row['kinds']) == classes[row['original_member']] for row in carry['members']),
         'flat types must preserve the unchanged original indexed/crash classes')
-    data, journals = archive._materialize(paths, digests, old, root, sizes=sizes)
-    from .bag_swap_evidence import Sources
-    view = Sources(data, digests, local=False, paths=paths)
-    view.root, view.raw_journals = root, journals
+    view = _view(paths, digests, sizes, old, root, profile)
     cp = view.get(carry['predecessor']['checkpoint'], False)
     remote = view.get(carry['predecessor']['remote'], False)
     require(carry['archive'] == {'file': cp['file'], 'bytes': cp['bytes'], 'sha256': cp['sha256'],
-        'manifest': cp['file_manifest'], 'tracking_manifest': remote.get('tracking_files')},
+        'manifest': _payload_manifest(cp, remote), 'tracking_manifest': remote.get('tracking_files')},
         'flat predecessor differs from its actual checkpoint and complete remote tracking manifest')
-    archive._metadata(data, cp)
+    archive._metadata(view.data, cp)
     return view
 
 
@@ -391,18 +455,20 @@ def validate_cache(value, *, store, root=None):
     ready = old_store.get(refs['ready'], False)
     compact = deepcopy(old_store.get(ready['runtime_authority_source'], False))
     compact['_descriptor'] = old_store.get(ready['authority_source'], False)
-    previous = crash.validate_cache(compact['_descriptor'], store=old_store, root=root)
+    profile = _profile(value['refs'], root)
+    parent = sys.modules[__name__] if profile['later'] else crash
+    require(compact.get('schema') == parent.RUNTIME_SCHEMA and compact.get('authority_source') == ready['authority_source'],
+        'retained predecessor runtime kind and descriptor binding differ')
+    previous = parent.validate_cache(compact['_descriptor'], store=old_store, root=root)
     require(previous == compact['core'] and previous['snapshot'] == ready['all_offline_snapshot'],
         'full retained UI174 crash and unchanged UI173 ancestry differs')
-    crash.validate_current_code_epoch(old_store, old_store.get(ready['resume_source'], False), ready, previous['closure'])
+    parent.validate_current_code_epoch(old_store, old_store.get(ready['resume_source'], False), ready, previous['closure'])
     proof = replay(old_store, refs)
     core = _core(stop, refs, {k: value['refs'][k] for k in ('closure', 'checkpoint', 'remote')}, value['dvc_pointer'], compact)
     cp = old_store.get(value['refs']['checkpoint'], False)
     remote = old_store.get(value['refs']['remote'], False)
     _portable_pointer(value['dvc_pointer'], value['pointer_raw_hex'], cp, remote)
-    require(remote.get('checkpoint_source') == value['refs']['checkpoint'] and
-        remote.get('code_commit') == stop['code_commit'] and remote.get('journal_receipt_source') == refs['journals'],
-        'actual remote checkpoint, closure epoch or journal source differs')
+    _review_bindings(remote, value['refs'], stop, refs, old_store)
     require(hashlib.sha256(_encode(core)).hexdigest() == value['core_sha256'],
         'excluded normal-logout core differs from the complete actual predecessor replay')
     return core
@@ -410,80 +476,130 @@ def validate_cache(value, *, store, root=None):
 
 def _sources_from_values(stop, store, stop_ref):
     batch = Path(stop_ref['path']).parent.parent
+    profile = _profile({'closure': stop_ref, 'checkpoint': {'path': str(batch / 'checkpoint_receipt.json')}}, store.root)
     def ref(name):
         path = batch / name; member = str(path.relative_to(store.root))
         result = {'path': str(path), 'sha256': store.digests.get(member)}; reference(result); return result
     return {'stop': stop_ref, 'logout': stop['source'], 'ready': stop['preparation_source'],
-        'entry': stop['first_failure_source'], 'precision': ref('rest_before01/episode.json'),
+        'entry': stop['first_failure_source'], 'precision': ref(profile['precision']),
         'journals': ref('full_closed_journals01/journal_receipt.json')}
 
 
 def _portable_pointer(pointer, raw_hex, cp, remote):
+    profile = _checkpoint_profile(cp); pointer_name = profile['pointer']
     require(type(pointer) is dict and set(pointer) == {'source', 'pointer', 'oid', 'bytes'} and
-        pointer.get('pointer') == POINTER and pointer.get('oid') == remote.get('object_md5') and
+        pointer.get('pointer') == pointer_name and pointer.get('oid') == remote.get('object_md5') and
         pointer.get('bytes') == cp.get('bytes') and type(raw_hex) is str and
         0 < len(raw_hex) <= 8192 and re.fullmatch('[0-9a-f]+', raw_hex) and len(raw_hex) % 2 == 0,
         'bounded complete actual normal-logout pointer required')
     reference(pointer['source']); raw = bytes.fromhex(raw_hex)
-    require(pointer['source']['path'].endswith('/' + POINTER) and
+    require(pointer['source']['path'].endswith('/' + pointer_name) and
         hashlib.sha256(raw).hexdigest() == pointer['source']['sha256'] == remote.get('pointer_sha256') and
         re.findall(rb'^\s*-?\s*md5:\s*([0-9a-f]{32})\s*$', raw, re.MULTILINE) == [pointer['oid'].encode()] and
         re.findall(rb'^\s*size:\s*([0-9]+)\s*$', raw, re.MULTILINE) == [str(cp['bytes']).encode()] and
         re.findall(rb'^\s*path:\s*(\S+)\s*$', raw, re.MULTILINE) == [Path(cp['file']).name.encode()] and
         re.search(rb'^\s*hash:\s*md5\s*$', raw, re.MULTILINE), 'actual normal-logout pointer bytes differ')
-    require(cp.get('cloud_verified') is True and cp.get('file') == POINTER.removesuffix('.dvc') and
-        remote.get('schema') == 'client442_ui176_closed_excluded_failed_batch_remote_review_v1' and
-        remote.get('pointer') == POINTER and remote.get('archive_sha256') == cp.get('sha256') and
+    schema = 'client442_ui178_closed_excluded_failed_batch_remote_review_v1' if profile['later'] else (
+        'client442_ui176_closed_excluded_failed_batch_remote_review_v1')
+    source_flag = 'source129_envelopes_match_retained_git_commit' if profile['later'] else (
+        'source123_envelopes_match_retained_git_commit')
+    binding_flag = 'source_flat_classes_and_raw_bindings_verified' if profile['later'] else (
+        'source_index_classes_and_raw_bindings_verified')
+    checks = LATER_REMOTE_CHECKS if profile['later'] else REMOTE_CHECKS
+    if profile['later']:
+        require(all(type(remote.get(name)) is int for name in ('complete_raw_source_members', 'manifest_files', 'all_files',
+            'payload_files', 'tracking_file_count')) and remote.get('closed_parent_bound') is True and
+            remote.get('tracking_payload_manifest_exact') is True and remote.get('tracking_file_count') == 16 and
+            remote.get('payload_files') == len(_payload_manifest(cp, remote)),
+            'actual UI178 remote source/count fields and closed-parent binding must retain their native types')
+    require(cp.get('cloud_verified') is True and cp.get('file') == pointer_name.removesuffix('.dvc') and
+        remote.get('schema') == schema and
+        remote.get('pointer') == pointer_name and remote.get('archive_sha256') == cp.get('sha256') and
         remote.get('bytes') == cp.get('bytes') and remote.get('outcome') == 'approved' and remote.get('result') == 'pass' and
         all(remote.get(k) is True for k in ('approval', 'scope_closed', 'actual_remote_verified',
-            'complete_manifest_verified', 'source123_envelopes_match_retained_git_commit',
-            'source_index_classes_and_raw_bindings_verified', 'whole_failed_unit_excluded')) and
+            'complete_manifest_verified', source_flag,
+            binding_flag, 'whole_failed_unit_excluded')) and
         remote.get('qualification_added') is False and type(remote.get('operations_admitted')) is int and
         remote['operations_admitted'] == 0 and type(remote.get('lifecycle_verified_checks')) is dict and
-        set(remote['lifecycle_verified_checks']) == REMOTE_CHECKS and
+        set(remote['lifecycle_verified_checks']) == checks and
         all(v is True for v in remote['lifecycle_verified_checks'].values()) and
-        remote.get('manifest_files') == len(cp['file_manifest']) and remote.get('all_files') == len(cp['file_manifest']) + 16 and
-        remote.get('complete_raw_source_members') == 123,
+        remote.get('manifest_files') == len(cp['file_manifest']) and
+        remote.get('all_files') == len(cp['file_manifest']) + (0 if profile['later'] else 16) and
+        remote.get('complete_raw_source_members') == (129 if profile['later'] else 123),
         'mandatory actual sealed zero-admission complete remote review differs')
-    reference(remote.get('lifecycle_review_source'))
+    _review_identity(remote.get('lifecycle_review_source'), profile['later'], limit=MAX_DESCRIPTOR_BYTES)
 
 
 def _classes(paths, digests, sizes, old, root):
-    classes = archive.validate_carry_manifest(old, root)
-    classes.update(archive._crash_copies(paths, digests, dict(classes), root, sizes))
+    if old.get('schema') == CARRY_SCHEMA:
+        # The current predecessor remains flat; only its canonical old map
+        # supplies typed physical copies in the restored original keyspace.
+        classes = validate_manifest(old, root)
+    else:
+        classes = archive.validate_carry_manifest(old, root)
+        classes.update(archive._crash_copies(paths, digests, dict(classes), root, sizes))
     return {member: frozenset(classes[member][2]) if member in classes else frozenset((
         archive.index._opaque_kind(digests[member], sizes[member]) or archive.index._ordinary_kind(member),))
         for member in paths}
+
+
+def _view(paths, digests, sizes, old, root, profile):
+    if profile['later']:
+        require(old.get('schema') == CARRY_SCHEMA and not _profile(old['predecessor'], root)['later'],
+            'actual UI178 must restore only its original canonical UI176 flat map')
+        return materialize(paths, digests, sizes, old, root)
+    data, journals = archive._materialize(paths, digests, old, root, sizes=sizes)
+    from .bag_swap_evidence import Sources
+    view = Sources(data, digests, local=False, paths=paths)
+    view.root, view.raw_journals = root, journals
+    return view
 
 
 def _full_checkpoint(cp, seal):
     require(type(seal.get('tracking_files')) is list and len(seal['tracking_files']) == 16 and
         all(type(row) is dict and type(row.get('path')) is str and row['path'].startswith('tracking/')
             for row in seal['tracking_files']) and
-        not any(row['path'].startswith('tracking/') for row in cp['file_manifest']),
-        'generic UI176 checkpoint payload and sixteen actual remote tracking identities remain separate')
-    result = {**cp, 'file_manifest': cp['file_manifest'] + seal['tracking_files']}
+        type(cp.get('file_manifest')) is list,
+        'sixteen source-owned tracking identities and actual checkpoint manifest required')
+    profile = _checkpoint_profile(cp)
+    tracking = [row for row in cp['file_manifest'] if row['path'].startswith('tracking/')]
+    if profile['later']:
+        require(strict_equal(tracking, seal['tracking_files']),
+            'actual UI178 complete checkpoint must retain exactly its sixteen remote tracking identities')
+        result = cp
+    else:
+        require(not tracking, 'generic UI176 payload-only checkpoint keeps remote tracking identities separate')
+        result = {**cp, 'file_manifest': cp['file_manifest'] + seal['tracking_files']}
     from .review_bag_swap_failed_checkpoint import manifest
-    manifest(result, BATCH)
+    manifest(result, _checkpoint_profile(cp)['batch'])
     return result
 
 
-def _admit(data, digests, journals, paths, pins, pointer, raw_hex, root, cp):
+def _payload_manifest(cp, seal):
+    complete = _full_checkpoint(cp, seal)
+    return [row for row in complete['file_manifest'] if not row['path'].startswith('tracking/')]
+
+
+def _admit(data, digests, journals, paths, pins, pointer, raw_hex, root, cp, *, store=None):
     from .bag_swap_evidence import Sources
-    store = Sources(data, digests, local=False, paths=paths)
-    store.root, store.raw_journals = root, journals
+    if store is None:
+        store = Sources(data, digests, local=False, paths=paths)
+        store.root, store.raw_journals = root, journals
+    profile = _profile(pins, root)
     stop = store.get(pins['closure'], False); refs = _sources_from_values(stop, store, pins['closure'])
     ready = store.get(refs['ready'], False)
     compact = deepcopy(store.get(ready['runtime_authority_source'], False))
     compact['_descriptor'] = store.get(ready['authority_source'], False)
-    previous = crash.validate_cache(compact['_descriptor'], store=store, root=root)
+    parent = sys.modules[__name__] if profile['later'] else crash
+    require(compact.get('schema') == parent.RUNTIME_SCHEMA and compact.get('authority_source') == ready['authority_source'],
+        'actual parent runtime kind and descriptor binding differ')
+    previous = parent.validate_cache(compact['_descriptor'], store=store, root=root)
     require(previous == compact['core'] and previous['snapshot'] == ready['all_offline_snapshot'],
         'actual crash ancestry and ready baseline differ')
-    crash.validate_current_code_epoch(store, store.get(ready['resume_source'], False), ready, previous['closure'])
+    parent.validate_current_code_epoch(store, store.get(ready['resume_source'], False), ready, previous['closure'])
     remote = store.get(pins['remote'], False)
     _portable_pointer(pointer, raw_hex, cp, remote)
-    require(remote.get('checkpoint_source') == pins['checkpoint'] and remote.get('code_commit') == stop['code_commit'] and
-        remote.get('journal_receipt_source') == refs['journals'], 'remote seal binds a different actual closure epoch')
+    _review_bindings(remote, pins, stop, refs, store)
     replay(store, refs)
     return _core(stop, refs, pins, pointer, compact)
 
@@ -493,25 +609,30 @@ def source_bundle(closure, remote, checkpoint, *, pins, root=None, repo=None):
     from .review_hunter_learn_checkpoint import remote_options, remote_request
     root, repo = _root(root), Path(repo or indexed.REPO)
     pins = admission_pins(pins, root=root)
+    profile = _profile(pins, root)
     require(all(str(path) == pins[k]['path'] for k, path in
         (('closure', closure), ('remote', remote), ('checkpoint', checkpoint))), 'actual normal-logout source paths differ')
     cp = _json(checkpoint, MAX_CARRY_BYTES, root=root, ref=pins['checkpoint'])[0]
     seal = _json(remote, MAX_DESCRIPTOR_BYTES, root=root, ref=pins['remote'])[0]
     pointer, raw_hex = _pointer(cp, seal, root, repo)
-    with tempfile.TemporaryDirectory(prefix='client442-ui176-admission-') as temporary:
+    # The full raw predecessor belongs on the evidence filesystem. A default
+    # /tmp spool can be tmpfs, charging its large retained files to this same
+    # no-swap task's memory budget before the source proof is replayed.
+    with archive._private_spool(root, '.client442-closed-admission-') as temporary:
         with urlopen(remote_request(remote_options(repo), pointer['oid']), timeout=60) as stream:
-            selected, paths, reader = archive._stream(stream, _full_checkpoint(cp, seal), BATCH, Path(temporary))
+            selected, paths, reader = archive._stream(stream, _full_checkpoint(cp, seal), profile['batch'], Path(temporary))
         require(reader.md5.hexdigest() == pointer['oid'], 'complete actual UI176 compressed MD5 differs')
         digests = {m: row['sha256'] for m, row in selected.items()}
         sizes = {m: row['bytes'] for m, row in selected.items()}
-        old_member = BATCH + archive.CARRY_NAME
+        old_member = profile['batch'] + (CARRY_NAME if profile['later'] else archive.CARRY_NAME)
         old = archive._read(paths[old_member], 'json', sizes[old_member], MAX_CARRY_BYTES, digests[old_member])
-        data, journals = archive._materialize(paths, digests, old, root, sizes=sizes)
+        store = _view(paths, digests, sizes, old, root, profile)
+        data, journals = store.data, store.raw_journals
         archive._metadata(data, cp)
         for key, value in (('checkpoint', cp), ('remote', seal)):
             member = indexed._member(pins[key], root)
             data[member], digests[member], paths[member] = value, pins[key]['sha256'], pins[key]['path']
-        core = _admit(data, digests, journals, paths, pins, pointer, raw_hex, root, cp)
+        core = _admit(data, digests, journals, paths, pins, pointer, raw_hex, root, cp, store=store)
     require(all(bound(ref['path']) == ref for ref in pins.values()), 'actual publication changed during admission')
     return {**core, 'pointer_raw_hex': raw_hex}
 
@@ -525,6 +646,7 @@ def carry_authority(batch, *, admitted, root=None, repo=None):
         not (batch / CARRY_NAME).exists() and not (batch / RAW_DIRECTORY).exists(),
         'exclusive canonical flat UI176 carry destination required')
     pins = {k: admitted['predecessor'][k] for k in ('closure', 'checkpoint', 'remote')}
+    profile = _profile(pins, root)
     cp = _json(pins['checkpoint']['path'], MAX_CARRY_BYTES, root=root, ref=pins['checkpoint'])[0]
     seal = _json(pins['remote']['path'], MAX_DESCRIPTOR_BYTES, root=root, ref=pins['remote'])[0]
     _portable_pointer(admitted['dvc_pointer'], admitted['pointer_raw_hex'], cp, seal)
@@ -532,10 +654,10 @@ def carry_authority(batch, *, admitted, root=None, repo=None):
     with tempfile.TemporaryDirectory(prefix='.ui176-carry-', dir=batch) as staged:
         raw_directory = Path(staged) / RAW_DIRECTORY; raw_directory.mkdir(mode=0o700)
         with urlopen(remote_request(remote_options(repo or indexed.REPO), admitted['dvc_pointer']['oid']), timeout=60) as stream:
-            selected, paths, reader = archive._stream(stream, _full_checkpoint(cp, seal), BATCH, raw_directory)
+            selected, paths, reader = archive._stream(stream, _full_checkpoint(cp, seal), profile['batch'], raw_directory)
         require(reader.md5.hexdigest() == admitted['dvc_pointer']['oid'], 'complete UI176 carry compressed MD5 differs')
         sizes = {m: row['bytes'] for m, row in selected.items()}; digests = {m: row['sha256'] for m, row in selected.items()}
-        old_member = BATCH + archive.CARRY_NAME
+        old_member = profile['batch'] + (CARRY_NAME if profile['later'] else archive.CARRY_NAME)
         old = archive._read(paths[old_member], 'json', sizes[old_member], MAX_CARRY_BYTES, digests[old_member])
         classes = _classes(paths, digests, sizes, old, root)
         rows = [{'original_path': str(root / m), 'original_member': m, 'sha256': row['sha256'], 'bytes': row['bytes'],
@@ -552,7 +674,7 @@ def carry_authority(batch, *, admitted, root=None, repo=None):
                 'copy_member': str((destination / target.name).relative_to(root)), 'kinds': ['json']})
         carry = {'schema': CARRY_SCHEMA, 'predecessor': deepcopy(admitted['predecessor']),
             'archive': {'file': cp['file'], 'sha256': cp['sha256'], 'bytes': cp['bytes'],
-                'manifest': cp['file_manifest'], 'tracking_manifest': seal['tracking_files']},
+                'manifest': _payload_manifest(cp, seal), 'tracking_manifest': seal['tracking_files']},
             'dvc_pointer': deepcopy(admitted['dvc_pointer']), 'pointer_raw_hex': admitted['pointer_raw_hex'],
             'members': rows, 'authorities': authorities}
         validate_manifest(carry, root)
@@ -577,10 +699,14 @@ def materialize(paths, digests, sizes, carry, root, *, role_refs=None, local=Fal
         original_paths[row['original_member']] = paths[row['copy_member']]
         original_digests[row['original_member']] = row['sha256']
         original_sizes[row['original_member']] = row['bytes']
-    old_member = BATCH + archive.CARRY_NAME
+    profile = _profile(carry['predecessor'], root)
+    old_member = profile['batch'] + (CARRY_NAME if profile['later'] else archive.CARRY_NAME)
     require(old_member in original_paths, 'unchanged UI173 map must remain in the original UI176 keyspace')
     old = archive._read(original_paths[old_member], 'json', original_sizes[old_member],
         MAX_CARRY_BYTES, original_digests[old_member])
+    if profile['later']:
+        require(old.get('schema') == CARRY_SCHEMA and not _profile(old['predecessor'], root)['later'],
+            'actual UI178 must retain only its original canonical UI176 flat map')
     classes = _classes(original_paths, original_digests, original_sizes, old, root)
     require(all(frozenset(row['kinds']) == classes[row['original_member']] for row in carry['members']),
         'flat types must preserve the unchanged original indexed/crash classes')
@@ -595,6 +721,7 @@ def materialize(paths, digests, sizes, carry, root, *, role_refs=None, local=Fal
     require(strict_equal(data.get(carry_member), carry),
         'flat aliases must use the exact current physically retained carry map')
     active_carry = deepcopy(carry)
+    current_journals = frozenset(journals)
     class FlatSources(Sources):
         def _refresh_maps(self):
             # Diagnostic JSON and lazily decoded historical maps are retained
@@ -620,6 +747,10 @@ def materialize(paths, digests, sizes, carry, root, *, role_refs=None, local=Fal
 
         def journal(self, ref):
             member = self.member(ref)
+            if member in current_journals:
+                # Current journals were fully byte-bound and decoded above;
+                # they retain direct ownership in this restored keyspace.
+                return self.raw_journals[member]
             identity = (ref['path'], ref['sha256'])
             kinds = self.logical_kinds.get(identity, self.copy_kinds.get(identity))
             require(kinds is not None and 'journal' in kinds, 'typed raw journal view required')
@@ -692,14 +823,19 @@ def _epoch_paths(store, closure):
         'source-owned actual excluded normal-logout predecessor required')
     old_ready_ref = closure['sources']['ready']; reference(old_ready_ref)
     root = _root(store.root)
-    require(old_ready_ref['path'] == str(root / BATCH / 'scout_ready01/episode.json'),
-        'current epoch must derive from the actual UI176 ready source')
+    batch = Path(old_ready_ref['path']).parent.parent
+    profile = _profile({'closure': {'path': str(batch / 'failed_entry_stop01/episode.json')},
+        'checkpoint': {'path': str(batch / 'checkpoint_receipt.json')}}, root)
+    require(old_ready_ref['path'] == str(root / profile['batch'] / 'scout_ready01/episode.json'),
+        'current epoch must derive from the actual excluded ready source')
     old_ready = store.get(old_ready_ref, False)
     old_resume = store.get(old_ready['resume_source'], False)
     old_ref = old_ready['current_code_epoch_source']; reference(old_ref)
     old = store.get(old_ref, False)
-    require(type(old) is dict and set(old) == {'schema', 'code_commit', 'committed_sources', 'carried_sources'} and
-        old.get('schema') == crash.EPOCH_SCHEMA and old.get('code_commit') == closure.get('code_commit') ==
+    fields = {'schema', 'code_commit', 'committed_sources', 'carried_sources'}
+    if profile['later']: fields.add('excluded_predecessor_code_commit')
+    require(type(old) is dict and set(old) == fields and
+        old.get('schema') == (EPOCH_SCHEMA if profile['later'] else crash.EPOCH_SCHEMA) and old.get('code_commit') == closure.get('code_commit') ==
         old_ready.get('code_commit') == old_resume.get('code_commit') and
         old_resume.get('current_code_epoch_source') == old_ref and
         old_ready.get('committed_sources') == old_resume.get('committed_sources') == old.get('committed_sources'),
@@ -707,10 +843,32 @@ def _epoch_paths(store, closure):
     indexed.stopped._commit(old['code_commit'])
     require(type(old['committed_sources']) is list and old['committed_sources'], 'complete prior source vector required')
     repo = indexed.stopped._repo(old['committed_sources'])
-    prior_paths = indexed.stopped._vector(old['committed_sources'], repo)
-    require(not set(prior_paths) & set(NEW_FILES), 'successor-only members cannot relabel the old UI176 source epoch')
+    if profile['later']:
+        require(len(old['committed_sources']) == 129,
+            'the actual excluded UI178 publication retains exactly its original 129 raw members')
+        require(type(old['excluded_predecessor_code_commit']) is str and
+            old['excluded_predecessor_code_commit'] != old['code_commit'],
+            'UI178 retains its distinct original excluded parent code commit')
+        indexed.stopped._commit(old['excluded_predecessor_code_commit'])
+        prior_paths = _current_vector(old['committed_sources'], repo)
+        require(set(NEW_FILES) <= set(prior_paths), 'actual UI178 must retain its original complete successor source names')
+    else:
+        # The historical 123-member package keeps the legacy 128-member cap.
+        prior_paths = indexed.stopped._vector(old['committed_sources'], repo)
+        require(not set(prior_paths) & set(NEW_FILES), 'successor-only members cannot relabel the old UI176 source epoch')
     indexed.stopped._envelopes(store, old, old['committed_sources'], old['code_commit'])
     return old, repo, sorted(set(prior_paths) | set(NEW_FILES))
+
+
+def _current_vector(rows, repo):
+    require(type(rows) is list and rows and len(_encode(rows)) <= MAX_DESCRIPTOR_BYTES,
+        'bounded typed complete current source vector required')
+    for row in rows:
+        reference(row)
+        require(Path(row['path']).is_relative_to(repo), 'current raw source must remain in its original repository')
+    members = [str(Path(row['path']).relative_to(repo)) for row in rows]
+    require(members == sorted(set(members)), 'canonical unique current source membership required')
+    return members
 
 
 def _source_transition(epoch, previous, repo, wanted):
@@ -727,11 +885,13 @@ def _source_transition(epoch, previous, repo, wanted):
     for row in rows:
         reference(row)
         require(Path(row['path']).is_relative_to(repo), 'current raw source must remain in its original repository')
-    members = [str(Path(row['path']).relative_to(repo)) for row in rows]
+    members = _current_vector(rows, repo)
     require(members == wanted, 'current source vector must equal the exact prior-plus-successor canonical paths')
     hashes = {row['path']: row['sha256'] for row in previous['committed_sources']}
+    later = previous.get('schema') == EPOCH_SCHEMA
+    permitted = LATER_CHANGED if later else CHANGED_OLD
     require(all(row['sha256'] == hashes[row['path']] for row in rows if row['path'] in hashes and
-        str(Path(row['path']).relative_to(repo)) not in CHANGED_OLD),
+        str(Path(row['path']).relative_to(repo)) not in permitted),
         'unrelated prior source must retain its actual UI176 bytes')
 
 

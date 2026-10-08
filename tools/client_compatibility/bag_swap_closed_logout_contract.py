@@ -1,4 +1,4 @@
-"""Pure candidate for the actual excluded UI176 ordinary logout and owned stop.
+"""Pure exclusion replay for source-selected UI176 and UI178 normal logouts.
 
 The callback is only for isolated diagnostics. Production defaults to the
 approved standard v2 module. No legacy module or historical receipt is changed.
@@ -298,14 +298,17 @@ def _lobby(rows, events, prefix, audit_until):
         'latency_occurrences': len(pings) // 4, 'character_list_occurrences': len(enumeration) // 4}
 
 
-def _prefix_history(rows, events, ready, F, until, provider):
+def _prefix_history(rows, events, ready, F, until, provider, profile):
     sync = provider
     require(type(ready) is dict and type(F) is dict and
-        F.get('phase') == 'bags_swap_entry_started' and F.get('completed') is False and
+        F.get('phase') == ('bags_swap_entered' if profile == 'ui178_finalization' else
+            'bags_swap_entry_started') and F.get('completed') is False and
         type(F.get('failure')) is str and F['failure'] and F.get('qualification_added') is False and
         F.get('cases') == [] and F.get('cleanup') == [],
         'only the original failed, unqualified entry without cleanup can close')
     since, original_end, session = F['started_at'], F['entry_input_finished_at'], F['native_session']
+    if profile == 'ui178_finalization':
+        original_end = F['login_sync']['until']
     require(all(finite(v) for v in (since, original_end, F.get('finished_at'), until)) and
         since < original_end <= F['finished_at'] < until and
         ready.get('native_session') == session, 'failed entry chronology or ready owner differs')
@@ -320,7 +323,8 @@ def _prefix_history(rows, events, ready, F, until, provider):
         len(set(map(key, scoped))) == len(scoped), 'failed closure requires unique canonical raw rows')
     for row in scoped:
         body(row)
-    original = shared.packet_rows(F['raw_entry_packets'], session, since, original_end)
+    original = shared.packet_rows(scoped if profile == 'ui178_finalization' else
+        F['raw_entry_packets'], session, since, original_end)
     require(sorted(map(key, shared.packet_rows(scoped, session, since, original_end))) == sorted(map(key, original)),
         'failed original raw login history must remain complete and immutable')
     require(type(events) is list and all(type(e) is dict for e in events), 'failed closure events required')
@@ -355,13 +359,19 @@ def _prefix_history(rows, events, ready, F, until, provider):
     require(sorted(map(key, [r for r in scoped if r['name'] in login_names])) ==
         sorted(map(key, boot['login_packets'])), 'failed closure requires its sole original login')
     late = [r for r in scoped if r['time'] > F['finished_at']]
-    quartet = [_one(late, name, direction, raw) for name, direction, raw in (
-        ('CMSG_STAND_STATE_CHANGE', 'from_client', b'\x01'),
-        ('CMSG_STANDSTATECHANGE', 'to_native', b'\x01\0\0\0'),
-        ('SMSG_STAND_STATE_UPDATE', 'from_native', b'\x01'),
-        ('SMSG_STAND_STATE_UPDATE', 'to_client', b'\x01\0\0\0\0'))]
-    require(len([r for r in scoped if r['name'] in STAND_NAMES]) == 4,
-        'failed closure permits the sole automatic sit quartet, no cleanup stand')
+    if profile == 'ui178_finalization':
+        quartet = [_one(late, 'SMSG_STAND_STATE_UPDATE', direction, raw) for direction, raw in
+            (('from_native', b'\x01'), ('to_client', b'\x01\0\0\0\0'))]
+        require(len([r for r in scoped if r['name'] in STAND_NAMES]) == 2,
+            'finalization closure permits only the two server-side logout sit packets')
+    else:
+        quartet = [_one(late, name, direction, raw) for name, direction, raw in (
+            ('CMSG_STAND_STATE_CHANGE', 'from_client', b'\x01'),
+            ('CMSG_STANDSTATECHANGE', 'to_native', b'\x01\0\0\0'),
+            ('SMSG_STAND_STATE_UPDATE', 'from_native', b'\x01'),
+            ('SMSG_STAND_STATE_UPDATE', 'to_client', b'\x01\0\0\0\0'))]
+        require(len([r for r in scoped if r['name'] in STAND_NAMES]) == 4,
+            'failed closure permits the sole automatic sit quartet, no cleanup stand')
     _ordered(quartet)
     modern = _one(scoped, 'CMSG_LOGOUT_REQUEST', 'from_client', b'\0')
     request = _one(scoped, 'CMSG_LOGOUT_REQUEST', 'to_native', b'')
@@ -371,7 +381,9 @@ def _prefix_history(rows, events, ready, F, until, provider):
     complete = _one(scoped, 'SMSG_LOGOUT_COMPLETE', 'from_native', b'')
     delivered_complete = _one(scoped, 'SMSG_LOGOUT_COMPLETE', 'to_client', b'\0')
     _ordered([modern, request, response, delivered_response, root])
-    require(quartet[-1]['time'] < modern['time'] and root['time'] < complete['time'] <
+    require((delivered_response['time'] < quartet[0]['time'] < quartet[-1]['time'] < root['time']
+        if profile == 'ui178_finalization' else quartet[-1]['time'] < modern['time']) and
+        root['time'] < complete['time'] <
         delivered_complete['time'] < until and 19 <= complete['time'] - request['time'] <= 21 and
         until - delivered_complete['time'] < 1,
         'failed closure must be the observed idle then ordinary timed logout')
@@ -406,7 +418,13 @@ def _prefix_history(rows, events, ready, F, until, provider):
             changed = {index: value for index, value in record.get('fields', {}).items()
                 if value != current[identity].get(index, 0)}
             if changed:
-                if identity == 2 and changed == {INDEX['UNIT_FIELD_BYTES_1']: 1, INDEX['PLAYER_FLAGS']: 2}:
+                if profile == 'ui178_finalization':
+                    require(identity == 2 and changed == {INDEX['UNIT_FIELD_BYTES_1']: 1,
+                        INDEX['UNIT_FIELD_FLAGS']: base[2][INDEX['UNIT_FIELD_FLAGS']] | STUNNED} and
+                        not logout_effect and root['time'] < row['time'] < root['time'] + 2,
+                        'finalization closure permits only the combined server sit and logout stunned effect')
+                    logout_effect.append(row)
+                elif identity == 2 and changed == {INDEX['UNIT_FIELD_BYTES_1']: 1, INDEX['PLAYER_FLAGS']: 2}:
                     require(not idle_effect and not logout_effect and quartet[-1]['time'] <= row['time'] <
                         quartet[-1]['time'] + 2, 'automatic seated/AFK effect is early, repeated or late')
                     idle_effect.append(row)
@@ -417,17 +435,21 @@ def _prefix_history(rows, events, ready, F, until, provider):
                 else:
                     raise RuntimeError('failed closure changed another complete native owner/item field')
             current[identity].update(record.get('fields', {}))
-    require(len(idle_effect) == len(logout_effect) == 1,
-        'failed closure requires sole seated/AFK and logout stunned effects')
+    require(len(logout_effect) == 1 and len(idle_effect) ==
+        (0 if profile == 'ui178_finalization' else 1),
+        'failed closure requires its exact observed idle/logout owner transitions')
     afk = [e for e in owned_events if e.get('name') in AFK_NAMES]
-    require(len(afk) == 2 and [(e.get('event'), e.get('name'), e.get('direction'),
-        e.get('session'), e.get('bytes')) for e in afk] ==
-        [('modern_packet', AFK_NAMES[0], 'from_client', session, 5),
-         ('native_packet', AFK_NAMES[1], 'to_native', session, 5)] and
-        all(type(e.get('bytes')) is int for e in afk) and
-        quartet[1]['time'] <= afk[0]['time'] < afk[1]['time'] <= idle_effect[0]['time'] and
-        afk[1]['time'] - afk[0]['time'] < .1,
-        'automatic AFK requires its sole metadata-only native forwarding pair')
+    if profile == 'ui178_finalization':
+        require(not afk, 'finalization closure cannot invent automatic AFK input')
+    else:
+        require(len(afk) == 2 and [(e.get('event'), e.get('name'), e.get('direction'),
+            e.get('session'), e.get('bytes')) for e in afk] ==
+            [('modern_packet', AFK_NAMES[0], 'from_client', session, 5),
+             ('native_packet', AFK_NAMES[1], 'to_native', session, 5)] and
+            all(type(e.get('bytes')) is int for e in afk) and
+            quartet[1]['time'] <= afk[0]['time'] < afk[1]['time'] <= idle_effect[0]['time'] and
+            afk[1]['time'] - afk[0]['time'] < .1,
+            'automatic AFK requires its sole metadata-only native forwarding pair')
     relevant_rows = quartet + logout_rows + owned_native_rows
     matched = _metadata(relevant_rows, owned_events, session, physical)
     unparsed_moves = [e for e in owned_events if e['time'] > original_end and
@@ -439,7 +461,7 @@ def _prefix_history(rows, events, ready, F, until, provider):
     require(all(key(e) in movement_metadata_keys for e in owned_events if e['time'] > original_end and
         str(e.get('name', '')).startswith(('SMSG_MOVE_', 'SMSG_SPLINE_MOVE_', 'MSG_MOVE_'))),
         'failed closure movement metadata has an unbound native or delivered effect')
-    permit_raw = set(map(key, quartet[:2]))
+    permit_raw = set(map(key, [] if profile == 'ui178_finalization' else quartet[:2]))
     permit_events = set(map(key, matched + afk))
     _guard([r for r in scoped if key(r) not in permit_raw], session, since, until, login_sync=boot, events=owned_events, provider=provider)
     for owner in (session, physical):
@@ -468,7 +490,8 @@ def _prefix_history(rows, events, ready, F, until, provider):
         'resting', 'summon', 'rest_threshold', 'rest_state')}
     initial_state = {**native_state, 'pose': {'stand': 0, 'sheath': 0}, 'afk': False,
         'unit_flags': base[2][INDEX['UNIT_FIELD_FLAGS']], 'native_rooted': False}
-    final_state = {**native_state, 'pose': {'stand': 1, 'sheath': 0}, 'afk': True,
+    final_state = {**native_state, 'pose': {'stand': 1, 'sheath': 0},
+        'afk': profile != 'ui178_finalization',
         'unit_flags': current[2][INDEX['UNIT_FIELD_FLAGS']], 'native_rooted': True}
     return deepcopy({'schema': SCHEMA, 'qualification_excluded': True, 'session': session,
         'instance_session': physical, 'since': since, 'until': until, 'login_sync': boot,
@@ -476,12 +499,15 @@ def _prefix_history(rows, events, ready, F, until, provider):
         'original_sql_inventory': inventory, 'original_objects': _json_objects(base),
         'final_objects': _json_objects(current), 'all_native_item_fields_unchanged': True,
         'all_native_inventory_slots_unchanged': True, 'no_swap_or_cleanup_input': True,
-        'automatic_idle': {'stand_packets': quartet, 'owner_update': idle_effect[0],
-            'afk_metadata': afk, 'afk_body_retained': False},
+        'automatic_idle': None if profile == 'ui178_finalization' else
+            {'stand_packets': quartet, 'owner_update': idle_effect[0],
+             'afk_metadata': afk, 'afk_body_retained': False},
         'logout': {'modern': modern, 'native': request, 'response': response,
             'delivered_response': delivered_response, 'root': root, 'owner_update': logout_effect[0],
-            'complete': complete, 'delivered_complete': delivered_complete, 'connection_closed': close[0]},
-        'allowed_packet_keys': sorted(map(key, quartet[:2] + owned_native_rows)),
+            'complete': complete, 'delivered_complete': delivered_complete, 'connection_closed': close[0],
+            **({'server_sit_packets': quartet} if profile == 'ui178_finalization' else {})},
+        'allowed_packet_keys': sorted(map(key, ([] if profile == 'ui178_finalization' else
+            quartet[:2]) + owned_native_rows)),
         'allowed_metadata_keys': sorted(map(key, matched + afk)),
         'source_packet_count': len(scoped), 'source_packets_sha256': _digest(scoped),
         'source_event_count': len(owned_events), 'source_events_sha256': _digest(owned_events),
@@ -499,11 +525,13 @@ def _reference(value):
     return deepcopy(value)
 
 
-def _stop(ready, failed, stop):
+def _stop(ready, failed, stop, profile):
     require(type(ready) is dict and type(failed) is dict and type(stop) is dict and
         ready.get('phase') == 'bags_swap_scout_ready' and ready.get('completed') is True and
         ready.get('failure') is None and ready.get('controller') == 'code' and
-        failed.get('failure') == 'RuntimeError: login settlement must be one ordered two-second initial prefix' and
+        failed.get('failure') == ('RuntimeError: one complete owned modern/native login chain is required'
+            if profile == 'ui178_finalization' else
+            'RuntimeError: login settlement must be one ordered two-second initial prefix') and
         stop.get('schema') == 'client442_laya_interactions_v1' and
         stop.get('phase') == 'bags_swap_failed_entry_closed_paused' and
         stop.get('completed') is True and stop.get('failure') is None and
@@ -550,28 +578,69 @@ def _stop(ready, failed, stop):
     return refs
 
 
-def closed_history(packets, events, ready, failed, stop, *, login_provider=None):
+def _finalization_prefix(prefix, prefix_events, ready, failed, provider):
+    require(failed.get('phase') == 'bags_swap_entered' and failed.get('completed') is False and
+        failed.get('failure') == failed.get('entry_finalization_failure') ==
+        'RuntimeError: one complete owned modern/native login chain is required' and
+        type(failed.get('raw_entry_packets')) is list and not failed['raw_entry_packets'] and
+        contract.strict_equal(prefix_events, failed.get('raw_entry_events')) and prefix,
+        'original failed finalization labels and complete retained metadata must remain unchanged')
+    expected = {'ordinary_login', 'native_owner', 'saved_baseline', 'protected_actors',
+        'public_level1', 'empty_cursor'}
+    require(type(failed.get('checks')) is dict and set(failed['checks']) == expected and
+        all(value is True for value in failed['checks'].values()),
+        'all six original successful pre-finalization checks must be retained')
+    retained = failed['login_sync']
+    require(retained.get('since') == failed['started_at'] and
+        retained.get('session') == ready['native_session'] and
+        finite(retained.get('until')) and retained['boot_finished_at'] <= retained['until'] <
+        failed['entry_input_finished_at'], 'original successful v2 proof window differs')
+    provider.validate_login_sync(retained, events=prefix_events)
+    pose = [failed['native_before_entry'][name] for name in
+        ('position_x', 'position_y', 'position_z', 'orientation')]
+    rebuilt = provider.login_sync(prefix, prefix_events, ready['native_session'],
+        failed['started_at'], retained['until'], pose)
+    require(contract.strict_equal(rebuilt, retained) and
+        contract.strict_equal(retained['login_packets'], failed.get('login_packets')),
+        'all original successful v2 boot/login bytes must match the complete source journal')
+    owner = contract.native_replay(prefix, ready['native_session'], failed['started_at'],
+        retained['until'], login_sync=retained, events=prefix_events)
+    require(contract.strict_equal(owner, failed.get('native_owner_proof')) and
+        contract.strict_equal(owner['packets'], failed.get('owner_packets')),
+        'original successful native-owner proof bytes must match the complete source journal')
+
+
+def closed_history(packets, events, ready, failed, stop, *, login_provider=None,
+        provenance_profile='ui176'):
     """Return exclusion metadata only; source-byte admission belongs to the provider."""
     try:
-        return _closed_history(packets, events, ready, failed, stop, login_provider or sync)
+        require(type(provenance_profile) is str and
+            provenance_profile in ('ui176', 'ui178_finalization'),
+            'explicit supported closed-history provenance profile required')
+        return _closed_history(packets, events, ready, failed, stop, login_provider or sync,
+            provenance_profile)
     except (KeyError, ValueError, TypeError, IndexError, OverflowError) as error:
         raise RuntimeError('closed normal logout history cannot be parsed exactly') from error
 
 
-def _closed_history(packets, events, ready, failed, stop, provider):
+def _closed_history(packets, events, ready, failed, stop, provider, profile):
     require(type(packets) is list and type(events) is list and
         len(packets) <= MAX_ROWS and len(events) <= MAX_ROWS, 'bounded complete journals required')
     journals._rows(packets, True)
     journals._rows(events, False)
-    refs = _stop(ready, failed, stop)
+    refs = _stop(ready, failed, stop, profile)
     require(provider.SCHEMA == sync.SCHEMA, 'approved v2 initializer classifier required')
     require(all(row['time'] <= stop['finished_at'] for row in packets + events),
         'journal contains rows after the frozen stop cutoff')
     since, prefix_end, session = failed['started_at'], failed['entry_input_finished_at'], ready['native_session']
     prefix = [row for row in packets if since <= row['time'] <= prefix_end]
     prefix_events = [row for row in events if since <= row['time'] <= prefix_end]
-    require(contract.strict_equal(prefix, failed.get('raw_entry_packets')) and
-        contract.strict_equal(prefix_events, failed.get('raw_entry_events')), 'complete ordered failed prefixes differ')
+    if profile == 'ui178_finalization':
+        _finalization_prefix(prefix, prefix_events, ready, failed, provider)
+    else:
+        require(contract.strict_equal(prefix, failed.get('raw_entry_packets')) and
+            contract.strict_equal(prefix_events, failed.get('raw_entry_events')),
+            'complete ordered failed prefixes differ')
     require(all(row['session'] == session for row in packets), 'RAW native-owner attribution differs')
     pose = [failed['native_before_entry'][name] for name in ('position_x', 'position_y', 'position_z', 'orientation')]
     boot = provider.login_sync(prefix, prefix_events, session, since, prefix_end, pose)
@@ -582,11 +651,15 @@ def _closed_history(packets, events, ready, failed, stop, provider):
         row.get('guid') != 2 and row.get('account_id') != 2
         for row in events if row['time'] > prefix_end),
         'post-prefix metadata has an additional attributable lifecycle or unknown native effect')
-    base = _original(prefix, ready['all_offline_snapshot']['2']['inventory'])
-    effect_guard = _native_effects(packets, events, session, physical, prefix_end)
+    # UI178's first successful proof is the original startup cutoff. The
+    # longer failed-finalization interval is rederived, never a broader permit.
+    effect_end = failed['login_sync']['until'] if profile == 'ui178_finalization' else prefix_end
+    base = _original([row for row in prefix if row['time'] <= effect_end],
+        ready['all_offline_snapshot']['2']['inventory'])
+    effect_guard = _native_effects(packets, events, session, physical, effect_end)
     effect_guard.update(_spline_updates(packets, events, session, physical, set(base),
         failed['native_before_entry']['map']))
-    aura_clear = [row for row in packets if row['time'] > prefix_end and
+    aura_clear = [row for row in packets if row['time'] > effect_end and
         (row['name'], row['direction'], body(row)) == ('SMSG_AURA_UPDATE', 'from_native', bytes.fromhex('01020000000000'))]
     require(len(aura_clear) == 1, 'one exact observed actor2 slot-zero aura-clear body is required')
     aura_clear = aura_clear[0]
@@ -597,12 +670,12 @@ def _closed_history(packets, events, ready, failed, stop, provider):
     aura_metadata = _metadata([aura_clear], events, session, physical)
     owned_rows = []
     for row in packets:
-        _native_attack(row, set(base), original=row['time'] <= prefix_end)
+        _native_attack(row, set(base), original=row['time'] <= effect_end)
         if key(row) != key(aura_clear):
-            stopped_native._combat(row, set(base), original=row['time'] <= prefix_end)
-        if row['time'] > prefix_end and _owned_records(row, set(base)):
+            stopped_native._combat(row, set(base), original=row['time'] <= effect_end)
+        if row['time'] > effect_end and _owned_records(row, set(base)):
             owned_rows.append(row)
-    require(len(owned_rows) == 2 and
+    require(len(owned_rows) == (1 if profile == 'ui178_finalization' else 2) and
         all(a['time'] < b['time'] for a, b in zip(owned_rows, owned_rows[1:])),
         'only the actual ordered automatic-idle and logout owned updates are allowed')
     foreign = [row for row in events if row.get('session') not in (session, physical)]
@@ -633,27 +706,30 @@ def _closed_history(packets, events, ready, failed, stop, provider):
         native_close['time'] - realm_close['time'] < 1, 'physical logout and actual owned-stop close chronology differs')
     first_raw = [row for row in packets if row['time'] <= physical_close['time']]
     first_events = [row for row in events if row['time'] <= physical_close['time']]
-    history = _prefix_history(first_raw, first_events, ready, failed, physical_close['time'], provider)
+    history = _prefix_history(first_raw, first_events, ready, failed, physical_close['time'], provider, profile)
     history['logout']['observed_aura_clear'] = {'packet': deepcopy(aura_clear), 'metadata': deepcopy(aura_metadata[0]),
         'excluded_lifecycle_only': True}
-    original = idle_contract.original_objects(prefix)
-    logout_boundary = _metadata([history['logout']['modern']], first_events, session, physical)[0]['time']
-    idle = idle_contract.automatic_idle([row for row in packets if row['time'] < logout_boundary],
-        [row for row in events if row['time'] < logout_boundary], session, physical,
-        prefix_end, logout_boundary, original=original)
-    require(key(idle['automatic_owner_update']['packet']) == key(history['automatic_idle']['owner_update']),
-        'automatic idle derivations differ')
+    if profile == 'ui176':
+        original = idle_contract.original_objects(prefix)
+        logout_boundary = _metadata([history['logout']['modern']], first_events, session, physical)[0]['time']
+        idle = idle_contract.automatic_idle([row for row in packets if row['time'] < logout_boundary],
+            [row for row in events if row['time'] < logout_boundary], session, physical,
+            prefix_end, logout_boundary, original=original)
+        require(key(idle['automatic_owner_update']['packet']) == key(history['automatic_idle']['owner_update']),
+            'automatic idle derivations differ')
     suffix_raw = [row for row in packets if physical_close['time'] < row['time'] < realm_close['time']]
     suffix_events = [row for row in events if physical_close['time'] < row['time'] < realm_close['time']]
-    require(len(suffix_raw) == 8 and len(suffix_events) == 56 and
+    require(len(suffix_raw) == (6 if profile == 'ui178_finalization' else 8) and
+        len(suffix_events) == (24 if profile == 'ui178_finalization' else 56) and
         not any(row['time'] >= realm_close['time'] for row in packets) and
         [row for row in events if row['time'] >= realm_close['time']] == [realm_close, native_close],
-        'the actual eight-RAW/fifty-eight-event lobby-and-stop tail must be complete')
+        'the selected actual lobby-and-stop tail must be complete')
     ping_rows = [row for row in suffix_events if row.get('name') in ('CMSG_PING', 'SMSG_PONG')]
     require(all(a['time'] < b['time'] for a, b in zip(ping_rows, ping_rows[1:])),
         'lobby latency must retain its observed occurrence order')
     lobby = _lobby(suffix_raw, suffix_events, history, realm_close['time'])
-    require(lobby['latency_occurrences'] == 8 and lobby['character_list_occurrences'] == 1,
+    require(lobby['latency_occurrences'] == (1 if profile == 'ui178_finalization' else 8) and
+        lobby['character_list_occurrences'] == 1,
         'actual lobby read-only occurrence counts differ')
     # Stock mutation guards still see every non-startup/non-idle input in the
     # complete interval, including preparation and the stopped lobby suffix.
@@ -668,7 +744,12 @@ def _closed_history(packets, events, ready, failed, stop, provider):
     return {'schema': SCHEMA, 'qualification_excluded': True, 'operations_admitted': 0,
         'session': session, 'instance_session': physical, 'sources': refs,
         'classifier_schema': provider.SCHEMA, 'classifier_candidate_source': getattr(provider, 'candidate_source', None),
-        'original_failure_preserved': failed['failure'], 'original_prefix_packets_sha256': ordered_digest(prefix),
+        'original_failure_preserved': failed['failure'],
+        **({'provenance_profile': profile, 'original_phase_preserved': failed['phase'],
+            'original_raw_entry_packets_preserved_empty': True, 'journal_prefix_rederived': True,
+            'original_finalization_failure_preserved': failed['entry_finalization_failure']}
+            if profile == 'ui178_finalization' else {}),
+        'original_prefix_packets_sha256': ordered_digest(prefix),
         'original_prefix_events_sha256': ordered_digest(prefix_events),
         'source_packet_count': len(packets), 'source_event_count': len(events),
         'source_packets_ordered_sha256': ordered_digest(packets), 'source_events_ordered_sha256': ordered_digest(events),

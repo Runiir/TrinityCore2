@@ -487,3 +487,348 @@ def test_writer_copies_fresh_committed_envelopes_for_complete_derived_union(tmp_
     assert len(created['committed_sources'])==len(created['carried_sources'])==129
     assert created['excluded_predecessor_code_commit']==previous['code_commit']
     source.indexed.stopped._envelopes(store,created,created['committed_sources'],created['code_commit'])
+
+
+@pytest.fixture
+def later_flat(flat):
+    """A second flat generation preserves its inner map in the old keyspace."""
+    c=flat;root=c['root'];original=root/source.LATER_BATCH
+    original.mkdir()
+    inner=deepcopy(c['carry']);files={}
+    for row in [*inner['members'],*inner['authorities']]:
+        raw=(root/row['copy_member']).read_bytes()
+        row['copy_member']=str((original/source.RAW_DIRECTORY/Path(row['copy_member']).name).relative_to(root))
+        files[row['copy_member']]=raw
+    files[source.LATER_BATCH+source.CARRY_NAME]=encoded(inner)
+    roles={}
+    for name,schema in [('authority',source.CACHE_SCHEMA),('runtime_authority',source.RUNTIME_SCHEMA)]:
+        member=source.LATER_BATCH+'resume/'+name+'.json';raw=encoded({'schema':schema})
+        files[member]=raw;roles[name]={'path':str(root/member),'sha256':digest(raw)}
+    files[source.LATER_BATCH+'scout_ready01/episode.json']=encoded({'completed':True,'failure':None,
+        'schema':'client442_laya_interactions_v1','phase':'bags_swap_scout_ready',
+        'authority_source':roles['authority'],'runtime_authority_source':roles['runtime_authority']})
+    stop=source.LATER_BATCH+'failed_entry_stop01/episode.json';files[stop]=encoded({'completed':True,'failure':None})
+    files[source.LATER_BATCH+'frame.png']=b'\x89PNG\r\n\x1a\nfixture'
+    files['tracking/packets.jsonl']=encoded({'time':100})
+    files['tracking/events.jsonl']=encoded({'time':100})
+    for i in range(13):files[f'tracking/live/fixture{i}.tsv']=b'fixture\n'
+    raw,cp,files=packed(files);cp['file']=source.LATER_POINTER.removesuffix('.dvc')
+    tracking=[row for row in cp['file_manifest'] if row['path'].startswith('tracking/')]
+    payload=[row for row in cp['file_manifest'] if not row['path'].startswith('tracking/')]
+    for member,value in files.items():
+        path=root/member;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(value)
+    paths={member:str(root/member) for member in files}
+    digests={member:digest(value) for member,value in files.items()}
+    sizes={member:len(value) for member,value in files.items()}
+    classes=source._classes(paths,digests,sizes,inner,root)
+    cp_path=original/'checkpoint_receipt.json';cp_path.write_bytes(encoded(cp))
+    remote=root/'evidence/ui178_remote.json';remote.write_bytes(encoded({'tracking_files':tracking}))
+    predecessor={'closure':{'path':str(root/stop),'sha256':digests[stop]},'checkpoint':source.bound(cp_path),
+        'remote':source.bound(remote),'primary_stop':c['carry']['predecessor']['primary_stop']}
+    successor=root/'evidence/client_interactions_20261008_ui179';successor.mkdir()
+    rows=[{'original_path':str(root/member),'original_member':member,'sha256':digests[member],'bytes':sizes[member],
+        'copy_member':str((successor/source.RAW_DIRECTORY/(digests[member]+'.blob')).relative_to(root)),
+        'kinds':sorted(classes[member])} for member in files]
+    external=[]
+    for role in ('checkpoint','remote'):
+        ref=predecessor[role];external.append({'role':role,'original_path':ref['path'],
+            'original_member':str(Path(ref['path']).relative_to(root)),'sha256':ref['sha256'],
+            'bytes':Path(ref['path']).stat().st_size,
+            'copy_member':str((successor/source.RAW_DIRECTORY/(ref['sha256']+'.blob')).relative_to(root)),'kinds':['json']})
+    carry={'schema':source.CARRY_SCHEMA,'predecessor':predecessor,
+        'archive':{'file':cp['file'],'bytes':cp['bytes'],'sha256':cp['sha256'],
+            'manifest':payload,'tracking_manifest':tracking},'dvc_pointer':{},'pointer_raw_hex':'',
+        'members':rows,'authorities':external}
+    for row in [*rows,*external]:
+        target=root/row['copy_member'];target.parent.mkdir(parents=True,exist_ok=True)
+        if not target.exists():target.write_bytes(Path(row['original_path']).read_bytes())
+    (successor/source.CARRY_NAME).write_bytes(encoded(carry))
+    return {'root':root,'batch':successor,'carry':carry,'original':original,'inner':inner,'old':c,
+        'files':files,'cp':cp,'tracking':tracking,'raw':raw,'roles':roles}
+
+
+@pytest.mark.parametrize('local',[True,False])
+def test_second_flat_generation_restores_each_canonical_keyspace_without_promoting_diagnostics(later_flat,local):
+    c=later_flat;diagnostic_carries(c,2)
+    store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
+    member=source.LATER_BATCH+'scout_ready01/episode.json'
+    ref={'path':str(c['root']/member),'sha256':digest(c['files'][member])}
+    assert store.get(ref,False)['runtime_authority_source']==c['roles']['runtime_authority']
+    assert store.maps==[c['carry']]
+    historical=ready_ref(c['old'])
+    with pytest.raises(RuntimeError,match='absent or ambiguous'):store.get(historical,False)
+    restored=source._restore(store,c['carry'])
+    assert restored.get(historical,False)['phase']=='bags_swap_scout_ready'
+    assert restored.maps==[c['inner']]
+    assert restored.get(ref,False)['runtime_authority_source']==c['roles']['runtime_authority']
+    assert restored.get(c['carry']['predecessor']['checkpoint'],False)==c['cp']
+
+
+@pytest.mark.parametrize('local',[True,False])
+def test_current_direct_journal_keeps_its_own_byte_bound_keyspace_beside_historical_raw_aliases(later_flat,local):
+    c=later_flat;path=c['batch']/'full_closed_journals01/packets.jsonl'
+    path.parent.mkdir();path.write_bytes(encoded({'time':201,'current':True}))
+    store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
+    assert store.journal(source.bound(path))==[{'time':201,'current':True}]
+    ref=source.bound(path);ref['sha256']='f'*64
+    with pytest.raises(RuntimeError,match='absent or ambiguous'):store.journal(ref)
+    binary=next(row for row in c['carry']['members'] if row['original_member'].endswith('/frame.png'))
+    with pytest.raises(RuntimeError,match='typed raw journal view'):
+        store.journal({'path':binary['original_path'],'sha256':binary['sha256']})
+
+
+@pytest.mark.parametrize('damage',['other_generation','checkpoint_generation','precision_generation','source_kind'])
+def test_second_generation_rejects_cross_generation_aliases_and_typed_copy_substitution(later_flat,damage):
+    c=later_flat;bad=deepcopy(c['carry'])
+    if damage=='other_generation':bad['predecessor']['closure']['path']=str(c['root']/'evidence/client_interactions_20261008_ui177/failed_entry_stop01/episode.json')
+    elif damage=='checkpoint_generation':bad['predecessor']['checkpoint']['path']=str(c['root']/source.BATCH/'checkpoint_receipt.json')
+    elif damage=='precision_generation':bad['archive']['file']=source.POINTER.removesuffix('.dvc')
+    else:
+        row=next(row for row in bad['members'] if row['original_member'].endswith('/frame.png'))
+        row['kinds']=['json']
+        (c['batch']/source.CARRY_NAME).write_bytes(encoded(bad))
+        with pytest.raises(RuntimeError,match='types must preserve'):load_portable({**c,'carry':bad})
+        return
+    with pytest.raises(RuntimeError):source.validate_manifest(bad,c['root'])
+
+
+def later_epoch_case(tmp_path):
+    store,repo,closure,ready,resume,epoch,previous,raw=epoch_case(tmp_path)
+    del raw[next(member for member in raw if '/prior_' in member)]
+    raw['tools/client_compatibility/observation/journal.py']=b'old journal observer'
+    later_members=sorted(raw)
+    old_rows=[];old_copies=[]
+    for i,member in enumerate(later_members):
+        value=raw[member];ref={'path':str(repo/member),'sha256':digest(value)};old_rows.append(ref)
+        old_copies.append(store.add(source.LATER_BATCH+'resume/code_sources/'+str(i)+'.json',
+            {'schema':source.indexed.stopped.CODE_SCHEMA,'code_commit':'c'*40,'original_path':ref['path'],
+             'sha256':ref['sha256'],'bytes':len(value),'raw_hex':value.hex()}))
+    old={'schema':source.EPOCH_SCHEMA,'code_commit':'c'*40,'committed_sources':old_rows,'carried_sources':old_copies,
+        'excluded_predecessor_code_commit':'b'*40}
+    old_ref=store.add(source.LATER_BATCH+'resume/current_code_epoch.json',old)
+    old_resume=store.add(source.LATER_BATCH+'resume/resume.json',{'code_commit':'c'*40,
+        'committed_sources':old_rows,'current_code_epoch_source':old_ref})
+    old_ready=store.add(source.LATER_BATCH+'scout_ready01/episode.json',{'code_commit':'c'*40,
+        'committed_sources':old_rows,'current_code_epoch_source':old_ref,'resume_source':old_resume})
+    closure={'schema':source.CLOSURE_SCHEMA,'phase':source.PHASE,'excluded_failed_entry':True,
+        'code_commit':'c'*40,'sources':{'ready':old_ready}}
+    rows=deepcopy(old_rows);copies=[]
+    for i,row in enumerate(rows):
+        member=str(Path(row['path']).relative_to(repo));value=raw[member]
+        if member in source.LATER_CHANGED:value+=b' narrow successor repair';row['sha256']=digest(value)
+        copies.append(store.add('evidence/current/resume/code_sources/later'+str(i)+'.json',
+            {'schema':source.indexed.stopped.CODE_SCHEMA,'code_commit':'d'*40,'original_path':row['path'],
+             'sha256':row['sha256'],'bytes':len(value),'raw_hex':value.hex()}))
+    epoch={'schema':source.EPOCH_SCHEMA,'code_commit':'d'*40,'committed_sources':rows,'carried_sources':copies,
+        'excluded_predecessor_code_commit':'c'*40}
+    epoch_ref=store.add('evidence/current/resume/current_code_epoch.json',epoch)
+    ready={'code_commit':'d'*40,'committed_sources':rows,'current_code_epoch_source':epoch_ref}
+    return store,repo,closure,ready,deepcopy(ready),epoch,old
+
+
+def test_second_generation_replays_129_envelopes_without_changing_the_legacy_128_cap(tmp_path):
+    values=later_epoch_case(tmp_path);store,repo,closure,ready,resume,epoch,old=values
+    result=source.validate_current_code_epoch(store,resume,ready,closure)
+    assert result['complete_raw_source_members']==129
+    assert result['predecessor_publication_code_commit']=='c'*40
+    with pytest.raises(RuntimeError,match='bounded complete code vector'):
+        source.indexed.stopped._vector(old['committed_sources'],repo)
+
+
+def test_second_generation_writer_copies_the_exact_fresh_129_sources_and_narrow_journal_repair(tmp_path,monkeypatch):
+    store,repo,closure,ready,resume,epoch,old=later_epoch_case(tmp_path)
+    monkeypatch.setattr(source.indexed,'ROOT',tmp_path);monkeypatch.setattr(source.indexed,'REPO',repo)
+    monkeypatch.setattr(source,'local_store',lambda *args,**kwargs:store)
+    from tools.client_compatibility import bag_swap_projection as projection
+    monkeypatch.setattr(projection,'source_identities',lambda actual:epoch['committed_sources'])
+    package={str(Path(row['path']).relative_to(repo)):bytes.fromhex(store.get(ref,False)['raw_hex'])
+        for row,ref in zip(epoch['committed_sources'],epoch['carried_sources'])}
+    def committed(command,**kwargs):
+        return epoch['code_commit'] if command[1]=='rev-parse' else package[command[2].split(':',1)[1]]
+    monkeypatch.setattr(source.subprocess,'check_output',committed)
+    original_write=source._write
+    def written(path,value,root=None):
+        ref=original_write(path,value,root);store.values[ref['path']]=value;return ref
+    monkeypatch.setattr(source,'_write',written)
+    directory=tmp_path/'evidence/current/resume';directory.mkdir(parents=True)
+    actual=store.get(source.current_code_epoch(directory,{'closure':closure}),False)
+    assert actual['excluded_predecessor_code_commit']==old['code_commit']
+    assert actual['committed_sources']==epoch['committed_sources']
+    source.indexed.stopped._envelopes(store,actual,actual['committed_sources'],actual['code_commit'])
+    source._source_transition(actual,old,repo,sorted(package))
+
+
+@pytest.mark.parametrize('damage',['reuse','missing','extra','legacy_allowed_change','journal_wrong_raw'])
+def test_second_generation_writer_rejects_stale_or_unrelated_sources_before_creating_any_envelope(tmp_path,monkeypatch,damage):
+    store,repo,closure,ready,resume,epoch,old=later_epoch_case(tmp_path)
+    monkeypatch.setattr(source.indexed,'ROOT',tmp_path);monkeypatch.setattr(source.indexed,'REPO',repo)
+    monkeypatch.setattr(source,'local_store',lambda *args,**kwargs:store)
+    rows=deepcopy(epoch['committed_sources']);commit=epoch['code_commit']
+    if damage=='reuse':commit=old['code_commit']
+    elif damage=='missing':rows.pop()
+    elif damage=='extra':rows.append({'path':str(repo/'zz_extra.py'),'sha256':'a'*64})
+    elif damage=='legacy_allowed_change':next(row for row in rows if row['path'].endswith('/checkpoint_bag_swap.py'))['sha256']='f'*64
+    else:rows[0]['sha256']=True
+    from tools.client_compatibility import bag_swap_projection as projection
+    monkeypatch.setattr(projection,'source_identities',lambda actual:rows)
+    monkeypatch.setattr(source.subprocess,'check_output',lambda *args,**kwargs:commit)
+    directory=tmp_path/'evidence/current/resume';directory.mkdir(parents=True)
+    with pytest.raises(RuntimeError):source.current_code_epoch(directory,{'closure':closure})
+    assert not (directory/'code_sources').exists()
+
+
+@pytest.mark.parametrize('damage',['old_epoch_schema','old_epoch_fields','old_parent_reuse','old_missing_successor',
+    'old_duplicate','old_reordered','old_raw','current_reuse','current_missing','current_extra',
+    'current_unrelated_change','current_legacy_allowed_change','current_wrong_parent','current_raw'])
+def test_second_generation_source_transition_rejects_incomplete_relabelled_or_unrelated_epochs(tmp_path,damage):
+    store,repo,closure,ready,resume,epoch,old=later_epoch_case(tmp_path)
+    if damage=='old_epoch_schema':old['schema']=source.crash.EPOCH_SCHEMA
+    elif damage=='old_epoch_fields':old['invented']=True
+    elif damage=='old_parent_reuse':old['excluded_predecessor_code_commit']=old['code_commit']
+    elif damage=='old_missing_successor':old['committed_sources'].pop()
+    elif damage=='old_duplicate':old['committed_sources'][1]=old['committed_sources'][0]
+    elif damage=='old_reordered':old['committed_sources'].reverse()
+    elif damage=='old_raw':store.get(old['carried_sources'][0],False)['raw_hex']='00'
+    elif damage=='current_reuse':epoch['code_commit']=ready['code_commit']=resume['code_commit']=old['code_commit']
+    elif damage=='current_missing':epoch['committed_sources'].pop()
+    elif damage=='current_extra':epoch['committed_sources'].append({'path':str(repo/'zz_extra.py'),'sha256':'a'*64})
+    elif damage=='current_unrelated_change':next(row for row in epoch['committed_sources'] if row['path'].endswith('/untouched.py'))['sha256']='f'*64
+    elif damage=='current_legacy_allowed_change':next(row for row in epoch['committed_sources'] if row['path'].endswith('/checkpoint_bag_swap.py'))['sha256']='f'*64
+    elif damage=='current_wrong_parent':epoch['excluded_predecessor_code_commit']='e'*40
+    else:store.get(epoch['carried_sources'][0],False)['bytes']=True
+    with pytest.raises(RuntimeError):source.validate_current_code_epoch(store,resume,ready,closure)
+
+
+def later_sealed_pointer(c,monkeypatch):
+    cp,remote,pointer,raw=sealed_stream(c,monkeypatch)
+    cp['file']=source.LATER_POINTER.removesuffix('.dvc')
+    cp['file_manifest']+=remote['tracking_files']
+    raw=(f'outs:\n- md5: {pointer["oid"]}\n  size: {cp["bytes"]}\n  hash: md5\n  path: {Path(cp["file"]).name}\n').encode()
+    pointer.update(pointer=source.LATER_POINTER,
+        source={'path':str(c['root'].parent/source.LATER_POINTER),'sha256':digest(raw)})
+    remote.update(schema='client442_ui178_closed_excluded_failed_batch_remote_review_v1',
+        pointer=source.LATER_POINTER,pointer_sha256=digest(raw),complete_raw_source_members=129,
+        source129_envelopes_match_retained_git_commit=True,source_flat_classes_and_raw_bindings_verified=True,
+        closed_parent_bound=True,lifecycle_verified_checks=dict.fromkeys(source.LATER_REMOTE_CHECKS,True),
+        manifest_files=len(cp['file_manifest']),all_files=len(cp['file_manifest']),
+        payload_files=len(cp['file_manifest'])-16,tracking_file_count=16,tracking_payload_manifest_exact=True)
+    remote.pop('source123_envelopes_match_retained_git_commit')
+    remote.pop('source_index_classes_and_raw_bindings_verified')
+    remote['lifecycle_review_source']['bytes']=128
+    return cp,remote,pointer,raw
+
+
+def test_actual_ui178_pointer_requires_its_own_remote_source_epoch_and_exact32_checks(later_flat,monkeypatch):
+    cp,remote,pointer,raw=later_sealed_pointer(later_flat,monkeypatch)
+    assert len(source.LATER_REMOTE_CHECKS)==32
+    assert remote['complete_raw_source_members']==129
+    source._portable_pointer(pointer,raw.hex(),cp,remote)
+
+
+@pytest.mark.parametrize('damage',['old_schema','old_source_count','float_source_count','bool_manifest_count',
+    'old_source_flag','old_binding_flag','missing_check','false_check','extra_check','old_checkset',
+    'false_parent','wrong_pointer','wrong_object','wrong_archive','qualification','bool_ops'])
+def test_ui178_remote_cannot_borrow_legacy_approval_or_omit_any_typed_current_guard(later_flat,monkeypatch,damage):
+    cp,remote,pointer,raw=later_sealed_pointer(later_flat,monkeypatch)
+    if damage=='old_schema':remote['schema']='client442_ui176_closed_excluded_failed_batch_remote_review_v1'
+    elif damage=='old_source_count':remote['complete_raw_source_members']=123
+    elif damage=='float_source_count':remote['complete_raw_source_members']=129.0
+    elif damage=='bool_manifest_count':remote['manifest_files']=True
+    elif damage=='old_source_flag':remote.pop('source129_envelopes_match_retained_git_commit');remote['source123_envelopes_match_retained_git_commit']=True
+    elif damage=='old_binding_flag':remote.pop('source_flat_classes_and_raw_bindings_verified');remote['source_index_classes_and_raw_bindings_verified']=True
+    elif damage=='missing_check':remote['lifecycle_verified_checks'].pop('source_owned_complete_login_prefix_rederived')
+    elif damage=='false_check':remote['lifecycle_verified_checks']['source_owned_complete_login_prefix_rederived']=False
+    elif damage=='extra_check':remote['lifecycle_verified_checks']['invented_approval']=True
+    elif damage=='old_checkset':remote['lifecycle_verified_checks']=dict.fromkeys(source.REMOTE_CHECKS,True)
+    elif damage=='false_parent':remote['closed_parent_bound']=False
+    elif damage=='wrong_pointer':pointer['pointer']=source.POINTER
+    elif damage=='wrong_object':remote['object_md5']='f'*32
+    elif damage=='wrong_archive':remote['archive_sha256']='f'*64
+    elif damage=='qualification':remote['qualification_added']=True
+    else:remote['operations_admitted']=False
+    with pytest.raises(RuntimeError):source._portable_pointer(pointer,raw.hex(),cp,remote)
+
+
+@pytest.mark.parametrize('damage',['missing_tracking','duplicate_tracking','float_tracking_bytes','reordered_tracking',
+    'old_plus16_all_count','wrong_payload_count','false_metadata_partition','wrong_tracking_count'])
+def test_ui178_complete_manifest_partition_cannot_borrow_the_legacy_payload_only_shape(later_flat,monkeypatch,damage):
+    cp,remote,pointer,raw=later_sealed_pointer(later_flat,monkeypatch)
+    if damage=='missing_tracking':cp['file_manifest']=[row for row in cp['file_manifest'] if not row['path'].startswith('tracking/')]
+    elif damage=='duplicate_tracking':cp['file_manifest'].append(deepcopy(remote['tracking_files'][0]))
+    elif damage=='float_tracking_bytes':next(row for row in cp['file_manifest'] if row['path'].startswith('tracking/'))['bytes']=float(remote['tracking_files'][0]['bytes'])
+    elif damage=='reordered_tracking':remote['tracking_files'].reverse()
+    elif damage=='old_plus16_all_count':remote['all_files']+=16
+    elif damage=='wrong_payload_count':remote['payload_files']+=1
+    elif damage=='false_metadata_partition':remote['tracking_payload_manifest_exact']=False
+    else:remote['tracking_file_count']=15
+    with pytest.raises(RuntimeError):source._portable_pointer(pointer,raw.hex(),cp,remote)
+
+
+def test_ui178_full_checkpoint_uses_each_published_manifest_member_once(later_flat,monkeypatch):
+    cp,remote,pointer,raw=later_sealed_pointer(later_flat,monkeypatch)
+    full=source._full_checkpoint(cp,remote)
+    assert full==cp
+    assert len(full['file_manifest'])==len({row['path'] for row in full['file_manifest']})
+    assert source._payload_manifest(cp,remote)==[row for row in cp['file_manifest'] if not row['path'].startswith('tracking/')]
+
+
+@pytest.mark.parametrize('damage',[None,'missing_bytes','bool_bytes','float_bytes','zero_bytes','oversized_bytes','extra_field'])
+def test_ui178_sized_review_reference_preserves_the_exact_typed_source_metadata(damage):
+    value={'path':'/tmp/actual_review.json','sha256':'a'*64,'bytes':128}
+    if damage=='missing_bytes':value.pop('bytes')
+    elif damage=='bool_bytes':value['bytes']=True
+    elif damage=='float_bytes':value['bytes']=128.0
+    elif damage=='zero_bytes':value['bytes']=0
+    elif damage=='oversized_bytes':value['bytes']=source.MAX_DESCRIPTOR_BYTES+1
+    elif damage=='extra_field':value['unbound']=True
+    if damage is None:
+        assert source._review_identity(value,True,limit=source.MAX_DESCRIPTOR_BYTES)=={'path':value['path'],'sha256':value['sha256']}
+    else:
+        with pytest.raises(RuntimeError):source._review_identity(value,True,limit=source.MAX_DESCRIPTOR_BYTES)
+
+
+@pytest.mark.parametrize('damage',[None,'checkpoint_size','journal_size','checkpoint_hash','journal_hash',
+    'checkpoint_bool_bytes','journal_float_bytes','wrong_commit','legacy_shape'])
+def test_ui178_remote_checkpoint_and_journal_refs_bind_their_exact_physical_file_sizes(later_flat,damage):
+    c=later_flat;journal=c['original']/'full_closed_journals01/journal_receipt.json'
+    journal.parent.mkdir();journal.write_bytes(encoded({'schema':'fixture_current_journal','closed':True}))
+    journal_ref=source.bound(journal);pins={key:c['carry']['predecessor'][key] for key in ('closure','checkpoint','remote')}
+    cp_ref=pins['checkpoint'];physical={str(Path(ref['path']).relative_to(c['root'])):ref['path'] for ref in (cp_ref,journal_ref)}
+    store=evidence.Sources({}, {member:source.bound(path)['sha256'] for member,path in physical.items()},paths=physical)
+    store.root=c['root']
+    remote={'checkpoint_source':{**cp_ref,'bytes':Path(cp_ref['path']).stat().st_size},
+        'journal_receipt_source':{**journal_ref,'bytes':journal.stat().st_size},'code_commit':'d'*40}
+    if damage=='checkpoint_size':remote['checkpoint_source']['bytes']+=1
+    elif damage=='journal_size':remote['journal_receipt_source']['bytes']+=1
+    elif damage=='checkpoint_hash':remote['checkpoint_source']['sha256']='f'*64
+    elif damage=='journal_hash':remote['journal_receipt_source']['sha256']='f'*64
+    elif damage=='checkpoint_bool_bytes':remote['checkpoint_source']['bytes']=True
+    elif damage=='journal_float_bytes':remote['journal_receipt_source']['bytes']=float(journal.stat().st_size)
+    elif damage=='wrong_commit':remote['code_commit']='e'*40
+    elif damage=='legacy_shape':remote['journal_receipt_source'].pop('bytes')
+    if damage is None:source._review_bindings(remote,pins,{'code_commit':'d'*40},{'journals':journal_ref},store)
+    else:
+        with pytest.raises(RuntimeError):source._review_bindings(remote,pins,{'code_commit':'d'*40},{'journals':journal_ref},store)
+
+
+@pytest.mark.parametrize('failure',[False,True])
+def test_production_source_bundle_uses_private_evidence_spool_and_cleans_after_proof(flat,monkeypatch,failure):
+    c=flat;cp,remote,pointer,raw=sealed_stream(c,monkeypatch)
+    pins={name:c['carry']['predecessor'][name] for name in ('closure','checkpoint','remote')}
+    monkeypatch.setattr(source,'_pointer',lambda *args,**kwargs:(pointer,raw.hex()))
+    original=archive._private_spool;allocated=[]
+    def private(root,prefix):
+        spool=original(root,prefix);allocated.append(Path(spool.name));return spool
+    monkeypatch.setattr(archive,'_private_spool',private)
+    def admitted(*args,**kwargs):
+        assert kwargs['store'].get(c['roles']['authority'],False)['schema']==source.CACHE_SCHEMA
+        if failure:raise RuntimeError('deliberate full proof failure')
+        return {'source_proof':'fixture_verified'}
+    monkeypatch.setattr(source,'_admit',admitted)
+    call=lambda:source.source_bundle(pins['closure']['path'],pins['remote']['path'],pins['checkpoint']['path'],
+        pins=pins,root=c['root'])
+    if failure:
+        with pytest.raises(RuntimeError,match='deliberate full proof failure'):call()
+    else:assert call()['source_proof']=='fixture_verified'
+    assert len(allocated)==1 and allocated[0].parent==c['root']/'evidence'
+    assert not allocated[0].exists()

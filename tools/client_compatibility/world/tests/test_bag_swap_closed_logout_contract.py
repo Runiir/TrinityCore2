@@ -617,3 +617,136 @@ def test_metadata_only_position_update_requires_exact_owner_shape_size_and_causa
     elif fault == 'nan_time': event['time'] = float('nan')
     else: event['time'] = float('inf')
     with pytest.raises(RuntimeError): spline_proof(packets, events)
+
+
+def finalization_fixture(root):
+    """A successful retained first proof with an immutable failed final lookup."""
+    values = list(fixture(root))
+    packets, events, ready, failed, stop = values
+    prefix = deepcopy(failed['raw_entry_packets'])
+    boot = sync.login_sync(prefix, failed['raw_entry_events'], SESSION,
+        failed['started_at'], 2001.5, [failed['native_before_entry'][name] for name in
+            ('position_x', 'position_y', 'position_z', 'orientation')])
+    owner = contract.native_replay(prefix, SESSION, failed['started_at'], boot['until'],
+        login_sync=boot, events=failed['raw_entry_events'])
+    failed.update(phase='bags_swap_entered', raw_entry_packets=[], login_sync=boot,
+        failure='RuntimeError: one complete owned modern/native login chain is required',
+        entry_finalization_failure='RuntimeError: one complete owned modern/native login chain is required',
+        login_packets=deepcopy(boot['login_packets']), native_owner_proof=owner,
+        owner_packets=deepcopy(owner['packets']),
+        checks=dict.fromkeys(('ordinary_login', 'native_owner', 'saved_baseline',
+            'protected_actors', 'public_level1', 'empty_cursor'), True))
+    packets[:] = [row for row in packets if not 2304 <= row['time'] < 2306]
+    events[:] = [row for row in events if not 2304 <= row['time'] < 2306]
+    owner_index = next(i for i, row in enumerate(packets) if row['name'] == 'SMSG_UPDATE_OBJECT' and
+        row['time'] == 2314.04)
+    replacement = dict(native_packet({53: 8 | 0x40000, 68: 1}, creation=False, time=2314.04), session=SESSION)
+    old_metadata = metadata(packets[owner_index])
+    packets[owner_index] = replacement
+    events[events.index(old_metadata)] = metadata(replacement)
+    for direction, raw, time in [('from_native', b'\x01', 2314.024),
+            ('to_client', b'\x01\0\0\0\0', 2314.026)]:
+        row = wire('SMSG_STAND_STATE_UPDATE', direction, raw, time)
+        packets.append(row); events.append(metadata(row))
+    physical_close = next(e for e in events if e['event'] == 'world_connection_closed' and
+        e['session'] == PHYSICAL)
+    remove_names = ('CMSG_SERVER_TIME_OFFSET_REQUEST', 'SMSG_SERVER_TIME_OFFSET')
+    packets[:] = [row for row in packets if not (row['time'] > physical_close['time'] and
+        row['name'] in remove_names)]
+    events[:] = [row for row in events if not (row['time'] > physical_close['time'] and
+        (row.get('name') in remove_names or row.get('name') in ('CMSG_PING', 'SMSG_PONG') and
+            row['time'] >= physical_close['time'] + 1))]
+    packets.sort(key=lambda row: row['time']); events.sort(key=lambda row: row['time'])
+    return values
+
+
+def finalization_proof(values):
+    return closed.closed_history(*values, provenance_profile='ui178_finalization')
+
+
+def test_finalization_exclusion_rederives_real_journal_without_relabeling_or_repairing_failure(tmp_path):
+    values = finalization_fixture(tmp_path)
+    original = deepcopy(values)
+    proof = finalization_proof(values)
+    assert values == original
+    assert values[3]['raw_entry_packets'] == [] and values[3]['completed'] is False
+    assert proof['original_raw_entry_packets_preserved_empty'] is True
+    assert proof['original_phase_preserved'] == 'bags_swap_entered'
+    assert proof['original_finalization_failure_preserved'] == values[3]['failure']
+    assert proof['journal_prefix_rederived'] is True
+    assert proof['qualification_excluded'] is True and proof['operations_admitted'] == 0
+    assert proof['automatic_idle'] is None and proof['native_final']['afk'] is False
+    assert proof['native_final']['pose']['stand'] == 1
+    assert proof['lobby']['source_packet_count'] == 6 and proof['lobby']['source_event_count'] == 24
+    assert proof['lobby']['latency_occurrences'] == proof['lobby']['character_list_occurrences'] == 1
+    assert len(proof['normal_logout']['server_sit_packets']) == 2
+    with pytest.raises(RuntimeError): closed.closed_history(*values)
+
+
+@pytest.mark.parametrize('fault', ['raw_repaired', 'metadata_missing', 'metadata_reordered', 'first_proof_body',
+    'login_body', 'owner_proof', 'owner_packets', 'check_false', 'check_integer', 'check_missing',
+    'failure_changed', 'failure_missing', 'phase_changed', 'marked_completed', 'missing_server_sit',
+    'duplicate_server_sit', 'client_sit', 'afk_input', 'extra_owner_change', 'extra_item', 'extra_movement',
+    'extra_cast', 'missing_login_raw', 'missing_boot_raw', 'lobby_ping_missing', 'lobby_extra_latency',
+    'stop_check_false', 'exact_float_changed', 'gap_owner_change', 'gap_spell_learning'])
+def test_finalization_profile_requires_original_sources_and_exact_observed_no_idle_logout(tmp_path, fault):
+    values = finalization_fixture(tmp_path)
+    packets, events, ready, failed, stop = values
+    if fault == 'raw_repaired': failed['raw_entry_packets'] = deepcopy(packets[:1])
+    elif fault == 'metadata_missing': failed['raw_entry_events'].pop()
+    elif fault == 'metadata_reordered': failed['raw_entry_events'].reverse()
+    elif fault == 'first_proof_body': failed['login_sync']['source_packets'][0]['body'] = '00'
+    elif fault == 'login_body': failed['login_packets'][0]['body'] = '00'
+    elif fault == 'owner_proof': failed['native_owner_proof']['rest_threshold'] += 1
+    elif fault == 'owner_packets': failed['owner_packets'][0]['body'] = '00'
+    elif fault.startswith('check_'):
+        if fault == 'check_missing': failed['checks'].pop('empty_cursor')
+        else: failed['checks']['empty_cursor'] = False if fault == 'check_false' else 1
+    elif fault == 'failure_changed': failed['failure'] += ' changed'
+    elif fault == 'failure_missing': failed.pop('entry_finalization_failure')
+    elif fault == 'phase_changed': failed['phase'] = 'bags_swap_entry_started'
+    elif fault == 'marked_completed': failed['completed'] = True
+    elif fault == 'missing_server_sit':
+        packets[:] = [r for r in packets if not (r['name'] == 'SMSG_STAND_STATE_UPDATE' and
+            r['direction'] == 'from_native')]
+    elif fault == 'duplicate_server_sit':
+        row = deepcopy(next(r for r in packets if r['name'] == 'SMSG_STAND_STATE_UPDATE'))
+        row['time'] += .0005; append_packet(values, row)
+    elif fault == 'client_sit': append_packet(values, wire('CMSG_STAND_STATE_CHANGE', 'from_client', b'\1', 2314.025))
+    elif fault == 'afk_input':
+        events.append(dict(event='modern_packet', session=SESSION, name='CMSG_CHAT_MESSAGE_AFK',
+            direction='from_client', bytes=5, time=2314.025))
+        events.sort(key=lambda r: r['time'])
+    elif fault == 'extra_owner_change':
+        append_packet(values, dict(native_packet({61: 123}, creation=False, time=2314.5), session=SESSION))
+    elif fault == 'extra_item':
+        row = dict(native_packet({3: 999}, guid=(0x4000 << 48) | 44, kind=1, time=2314.5), session=SESSION)
+        append_packet(values, row)
+    elif fault in ('extra_movement', 'extra_cast'):
+        append_packet(values, wire('CMSG_MOVE_HEARTBEAT' if fault == 'extra_movement' else 'CMSG_CAST_SPELL',
+            'from_client', b'\0', 2314.5))
+    elif fault in ('missing_login_raw', 'missing_boot_raw'):
+        name = 'CMSG_PLAYER_LOGIN' if fault == 'missing_login_raw' else sync.INITIALIZE
+        packets.pop(next(i for i, r in enumerate(packets) if r['name'] == name and r['direction'] == 'from_client'))
+    elif fault == 'lobby_ping_missing':
+        events.pop(next(i for i, r in enumerate(events) if r.get('name') == 'SMSG_PONG' and
+            r['direction'] == 'from_native' and r['time'] > 2334.003))
+    elif fault == 'lobby_extra_latency':
+        extra = [deepcopy(r) for r in events if r.get('name') in ('CMSG_PING', 'SMSG_PONG') and
+            r['time'] > 2334.003]
+        for r in extra: r['time'] += 1
+        events.extend(extra); events.sort(key=lambda r:r['time'])
+    elif fault in ('gap_owner_change', 'gap_spell_learning'):
+        row = (dict(native_packet({61: 123}, creation=False, time=2001.7), session=SESSION) if
+            fault == 'gap_owner_change' else wire('SMSG_LEARNED_SPELL', 'from_native', b'\0', 2001.7))
+        append_packet(values, row)
+        failed['raw_entry_events'] = deepcopy([e for e in events if
+            failed['started_at'] <= e['time'] <= failed['entry_input_finished_at']])
+    elif fault == 'stop_check_false': stop['shutdown_checks']['owned_game_absent'] = False
+    else: stop['exact_precision_after']['exact_rest_bonus_float32_bits'] = '00000000'
+    with pytest.raises(RuntimeError): finalization_proof(values)
+
+
+@pytest.mark.parametrize('profile', [None, '', 'ui178', 'ui178_finalization ', True, 1])
+def test_closed_history_profile_cannot_be_implicit_or_an_unknown_mode(tmp_path, profile):
+    with pytest.raises(RuntimeError): closed.closed_history(*finalization_fixture(tmp_path), provenance_profile=profile)

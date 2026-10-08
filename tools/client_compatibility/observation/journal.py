@@ -11,12 +11,70 @@ class Cursor:
     def __init__(self, path):
         self.path, self.offsets = path, {}
 
+    def _sources(self):
+        """Pin a stable ordered inode set before streaming historical rows.
+
+        Opening the active path after reading old parts can instead open its
+        replacement and omit the renamed inode. Retry discovery before yielding
+        any rows; a later rotation remains readable through the pinned handle.
+        """
+        minimum = None
+        historical, required = {}, set()
+
+        def remember(source, stat):
+            identity = (stat.st_dev, stat.st_ino)
+            if source != self.path:
+                if historical.setdefault(source, identity) != identity:
+                    raise RuntimeError('historical journal source was replaced before checkpoint')
+            return identity
+
+        for _ in range(4):
+            handles, accepted = [], False
+            try:
+                listed = paths(self.path)
+                if minimum is None: minimum = len(listed)
+                for source in listed:
+                    try:
+                        if source != self.path: remember(source, source.stat())
+                        handle = source.open()
+                        handles.append(handle)
+                        required.add(remember(source, os.fstat(handle.fileno())))
+                    except FileNotFoundError:
+                        if source != self.path:
+                            raise RuntimeError('historical journal source disappeared before checkpoint') from None
+                        break
+                else:
+                    current = paths(self.path)
+                    identities = []
+                    for source in current:
+                        try: stat = source.stat()
+                        except FileNotFoundError:
+                            if source != self.path:
+                                raise RuntimeError('historical journal source disappeared before checkpoint') from None
+                            break
+                        identities.append(remember(source, stat))
+                    else:
+                        # A retry must retain every historical path/inode fact,
+                        # even when another rotation keeps the file count equal.
+                        for source in historical:
+                            try: stat = source.stat()
+                            except FileNotFoundError:
+                                raise RuntimeError('historical journal source disappeared before checkpoint') from None
+                            remember(source, stat)
+                        pinned = [(stat.st_dev, stat.st_ino) for stat in
+                            (os.fstat(handle.fileno()) for handle in handles)]
+                        if len(current) >= minimum and pinned == identities and required <= set(identities):
+                            accepted = True
+                            return handles
+            finally:
+                if not accepted:
+                    for handle in handles: handle.close()
+        raise RuntimeError('owned journal inode inventory did not stabilize before checkpoint')
+
     def poll(self):
-        for path in paths(self.path):
-            try: handle = path.open()
-            except FileNotFoundError: continue
-            with handle:
-                import os
+        handles = self._sources()
+        try:
+            for handle in handles:
                 stat = os.fstat(handle.fileno()); identity = (stat.st_dev, stat.st_ino)
                 offset = self.offsets.get(identity, 0)
                 if stat.st_size < offset: raise RuntimeError('owned journal was truncated before checkpoint')
@@ -25,6 +83,8 @@ class Cursor:
                     if not line.endswith('\n'): break
                     self.offsets[identity] = handle.tell()
                     yield json.loads(line)
+        finally:
+            for handle in handles: handle.close()
 
 
 def entries(path):

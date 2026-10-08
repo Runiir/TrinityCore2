@@ -905,3 +905,104 @@ def test_genuine_generic_ready_caps_bound_ordinary_schema_target_before_decode(c
         else:
             compressed, cp, prefix = successor_archive(c)
             archive.inspect_archive(io.BytesIO(compressed), cp, prefix)
+
+
+@pytest.mark.parametrize('failure',[False,True])
+def test_private_raw_spool_uses_the_owned_evidence_filesystem_and_cleans_on_exit(tmp_path,failure):
+    root=tmp_path/'root';root.mkdir();(root/'evidence').mkdir()
+    directory=None
+    try:
+        with archive._private_spool(root,'.owned-test-spool-') as name:
+            directory=Path(name)
+            assert directory.parent==root/'evidence'
+            assert directory.resolve()==directory and not directory.is_symlink()
+            assert directory.stat().st_mode & 0o777==0o700
+            (directory/'raw.blob').write_bytes(b'original bounded source')
+            if failure:raise RuntimeError('ordinary source verification failure')
+    except RuntimeError as error:
+        assert failure and str(error)=='ordinary source verification failure'
+    assert directory is not None and not directory.exists()
+
+
+@pytest.mark.parametrize('damage',['absent_evidence','symlink_evidence','symlink_parent'])
+def test_raw_spool_requires_existing_canonical_evidence_before_creating_any_directory(tmp_path,monkeypatch,damage):
+    root=tmp_path/'root';root.mkdir()
+    if damage=='symlink_evidence':
+        actual=tmp_path/'actual';actual.mkdir();(root/'evidence').symlink_to(actual,target_is_directory=True)
+    elif damage=='symlink_parent':
+        (root/'evidence').mkdir();alias=tmp_path/'root_alias';alias.symlink_to(root,target_is_directory=True);root=alias
+    def forbidden(*args,**kwargs):raise AssertionError('invalid source staging must not allocate')
+    monkeypatch.setattr(archive.tempfile,'TemporaryDirectory',forbidden)
+    with pytest.raises(RuntimeError):archive._private_spool(root,'.owned-test-spool-')
+
+
+def test_portable_full_archive_spool_ignores_global_tmpdir_and_keeps_output_identical(carried,monkeypatch,tmp_path):
+    c=carried;compressed,cp,prefix=successor_archive(c)
+    trap=tmp_path/'global_tmpdir';trap.mkdir();monkeypatch.setenv('TMPDIR',str(trap))
+    original=archive.tempfile.TemporaryDirectory;calls=[]
+    def allocated(*args,**kwargs):
+        calls.append(dict(kwargs));return original(*args,**kwargs)
+    monkeypatch.setattr(archive.tempfile,'TemporaryDirectory',allocated)
+    data,digests,tracking,count=archive.inspect_archive(io.BytesIO(compressed),cp,prefix)
+    name=Path(tracking['_spool'].name)
+    try:
+        assert count==len(compressed) and data[prefix+'entry/episode.json']=={}
+        assert calls==[{'prefix':'.client442-indexed-carry-','dir':c['root']/'evidence'}]
+        assert name.parent==c['root']/'evidence'
+        assert not list(trap.iterdir())
+    finally:tracking['_spool'].cleanup()
+    assert not name.exists()
+
+
+@pytest.mark.parametrize('filesystem',['tmpfs','ramfs','','overlay','unknown','ext4\nxfs'])
+def test_memory_or_unidentified_spool_filesystems_reject_before_allocation(tmp_path,monkeypatch,filesystem):
+    root=tmp_path/'root';root.mkdir();(root/'evidence').mkdir()
+    def observed(*args,**kwargs):
+        return archive.subprocess.CompletedProcess(args[0],0,stdout=filesystem,stderr='')
+    def forbidden(*args,**kwargs):raise AssertionError('non-disk staging must not allocate')
+    monkeypatch.setattr(archive.subprocess,'run',observed)
+    monkeypatch.setattr(archive.tempfile,'TemporaryDirectory',forbidden)
+    with pytest.raises(RuntimeError,match='supported disk-backed evidence filesystem required'):
+        archive._private_spool(root,'.owned-test-spool-')
+    assert list((root/'evidence').iterdir())==[]
+
+
+@pytest.mark.parametrize('failure',['missing','nonzero','timeout','encoding'])
+def test_spool_filesystem_discovery_errors_fail_closed_before_allocation(tmp_path,monkeypatch,failure):
+    root=tmp_path/'root';root.mkdir();(root/'evidence').mkdir()
+    errors={'missing':FileNotFoundError('findmnt unavailable'),
+        'nonzero':archive.subprocess.CalledProcessError(1,['findmnt']),
+        'timeout':archive.subprocess.TimeoutExpired(['findmnt'],5),
+        'encoding':UnicodeDecodeError('ascii',b'\xff',0,1,'not ascii')}
+    def observed(*args,**kwargs):raise errors[failure]
+    def forbidden(*args,**kwargs):raise AssertionError('failed discovery must not allocate')
+    monkeypatch.setattr(archive.subprocess,'run',observed)
+    monkeypatch.setattr(archive.tempfile,'TemporaryDirectory',forbidden)
+    with pytest.raises(RuntimeError,match='disk-backed evidence filesystem discovery failed'):
+        archive._private_spool(root,'.owned-test-spool-')
+    assert list((root/'evidence').iterdir())==[]
+
+
+def test_actual_memory_filesystem_is_denied_before_temporary_spool_creation(monkeypatch):
+    import tempfile
+    filesystem=archive.subprocess.run(['findmnt','--noheadings','--raw','--output','FSTYPE',
+        '--target','/tmp'],check=True,capture_output=True,encoding='ascii',timeout=5).stdout.strip()
+    if filesystem not in ('tmpfs','ramfs'):pytest.skip('host /tmp is not a memory filesystem')
+    with tempfile.TemporaryDirectory(prefix='client442-tiny-tmpfs-negative-',dir='/tmp') as name:
+        root=Path(name);(root/'evidence').mkdir()
+        def forbidden(*args,**kwargs):raise AssertionError('real memory staging must not allocate')
+        monkeypatch.setattr(archive.tempfile,'TemporaryDirectory',forbidden)
+        with pytest.raises(RuntimeError,match='supported disk-backed evidence filesystem required'):
+            archive._private_spool(root,'.owned-test-spool-')
+        assert list((root/'evidence').iterdir())==[]
+
+
+def test_actual_lab_disk_filesystem_accepts_tiny_spool_and_cleans():
+    root=Path('/home/runiir/.local/share/trinity-client442-lab')
+    filesystem=archive.subprocess.run(['findmnt','--noheadings','--raw','--output','FSTYPE',
+        '--target',str(root/'evidence')],check=True,capture_output=True,encoding='ascii',timeout=5).stdout.strip()
+    assert filesystem=='ext4'
+    with archive._private_spool(root,'.client442-tiny-disk-positive-') as name:
+        path=Path(name);(path/'raw.blob').write_bytes(b'one bounded source')
+        assert path.parent==root/'evidence' and path.stat().st_mode & 0o777==0o700
+    assert not path.exists()

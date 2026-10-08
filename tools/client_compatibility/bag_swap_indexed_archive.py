@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import shutil
 import stat
+import subprocess
 import tarfile
 import tempfile
 
@@ -718,10 +719,43 @@ def parent_view(store, carry):
     return data, digests, tracking
 
 
+def _disk_backed_parent(parent):
+    """Fail closed unless mount discovery identifies supported disk storage."""
+    try:
+        observed = subprocess.run(['findmnt', '--noheadings', '--raw', '--output', 'FSTYPE',
+            '--target', str(parent)], check=True, capture_output=True, encoding='ascii', timeout=5)
+    except (OSError, subprocess.SubprocessError, UnicodeError) as error:
+        raise RuntimeError('disk-backed evidence filesystem discovery failed') from error
+    require(observed.stdout.strip() in ('ext2', 'ext3', 'ext4', 'xfs', 'btrfs', 'f2fs', 'zfs', 'bcachefs'),
+        'supported disk-backed evidence filesystem required for raw source staging')
+
+
+def _private_spool(root, prefix):
+    """Keep full raw evidence on its owned filesystem, with scoped cleanup."""
+    root = provider._root(root)
+    parent = root / 'evidence'
+    require(parent.is_dir() and parent.resolve() == parent and
+        not any(path.is_symlink() for path in (parent, *parent.parents)) and
+        parent.stat().st_uid == os.getuid(),
+        'private canonical existing evidence filesystem required for raw source staging')
+    _disk_backed_parent(parent)
+    spool = tempfile.TemporaryDirectory(prefix=prefix, dir=parent)
+    try:
+        path = Path(spool.name); identity = path.lstat()
+        require(path.parent == parent and path.resolve() == path and stat.S_ISDIR(identity.st_mode) and
+            not path.is_symlink() and identity.st_uid == os.getuid() and stat.S_IMODE(identity.st_mode) == 0o700 and
+            (path.stat().st_dev, path.stat().st_ino) == (identity.st_dev, identity.st_ino),
+            'raw source staging must retain its exclusive private directory identity')
+    except BaseException:
+        spool.cleanup()
+        raise
+    return spool
+
+
 def inspect_archive(raw, cp, prefix, *, role_refs=None):
     """Read the whole successor archive without applying its carried v1 index."""
     root = provider._root()
-    spool = tempfile.TemporaryDirectory(prefix='client442-indexed-carry-')
+    spool = _private_spool(root, '.client442-indexed-carry-')
     try:
         selected, paths, reader = _stream(raw, cp, prefix, Path(spool.name))
         from . import bag_swap_closed_logout_sources as closed
