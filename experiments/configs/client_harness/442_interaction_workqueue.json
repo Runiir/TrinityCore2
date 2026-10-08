@@ -3,9 +3,9 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "453/916 qualified, 463 open. UI171 admits only actionbars.drag_item: existing Hearthstone 6948/GUID 41, one ordinary drag to empty button 3/public 75/native 74 on effective page 7, one modern/native assignment and clear, one reviewed Shift pickup/cursor cancellation, and complete saved/inventory/resources/pose/layout restoration. Exact native float32 rest follows one normal login; one logout and eight shutdown checks leave all six actors offline and both owned clients stopped. The actual DVC remote verifies 236,655,195 compressed bytes, SHA a73daaafc3524eb99361889ee1af6163c22920ab65ffe720699fd37267b20501, all 126 JSON/123 PNG members and both complete ordered journals. Gameplay C235c10e2 remains immutable; read-only proof/shutdown Da60300d444 carries the exact source transition and original game/window ownership. Original recon01/reload01/clear01/close_pause01 and earlier test/probe failures stay excluded and retained. Final 240 focused, independent 123 portable/117 runtime and 6,556 codec-enabled tests pass, plus the separate root archive test. All 123 verified frames (194,851,764 bytes) are offloaded. The next occupied bag swap implementation is underway; it is not yet admitted. Native and bridge remain unchanged. Use one scout on HDMI-1 only while needed; primary stays stopped. Scripts remain blocked, original CVar 0 unrestored at stock 1.",
+  "current": "453/916 qualified, 463 open. UI171 actionbars.drag_item remains the latest admitted operation. UI172 occupied bag entry remains failed and excluded: two unchanged-pose login boot messages triggered the old movement guard; no bag drag or housekeeping input was sent. The game later completed its ordinary timed idle logout. A source-owned character-selection capture and eight shutdown checks stopped only the owned scout while preserving all six offline snapshots, native/bridge lifetimes and the primary stop. Exact native rest is 53.438228607177734 (float32 bfc05542), logout time 1791422949. The complete excluded archive is remotely verified: 127197223 compressed bytes, SHA1298d24a596d3c4a54bf236da3882c0d6512e13f36cb3c2a28c340c5ab946c44, 632 JSON, 27 PNG and 13 journals; all manifest files and the accepted UI171 raw ancestry are verified. The current complete journal copies contain 53172 raw packets and 65526 events, preserving the original ordered 53172/65516 prefix and accounting for four pre-entry latency plus six stop events. Publication code4d9cb257 carries86 exact raw sources; root147, native124 and portable50 tests pass. No operation was added. UI173 must use this current excluded offline boundary plus accepted UI171 lineage and the exact stationary login classifier before one fresh occupied swap/reverse. All live code, proof and cleanup must be ready before the scout launches on HDMI-1. Both owned clients are stopped; scripts remain blocked, original CVar0 unrestored at stock1.",
   "queued": [
-    "Next bags.swap_item: original scout occupied backpack slots contain Hearthstone6948/GUID41 and58231/GUID33. Fresh reviewed occupied-slot swap and exact reverse, two unique modern/native CMSG_SWAP_INV_ITEM pairs, all item-instance fields/resources/saved state restored. No item use, provisioning, second client or native build needed; this variant remains open.",
+    "Next bags.swap_item in a fresh UI173 batch: source the actually closed excluded UI172 offline boundary and its actual checkpoint/remote proof while preserving accepted UI171 qualification ancestry. Prepare full+compact authority, exact fresh offline FLOAT, stationary initial login proof, complete occupied GUID41/33 forward/reverse, autosave, restoration, ordinary logout and eight shutdown checks before launch. One scout on HDMI-1; no item use, provisioning, second client or native build. This operation remains open.",
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
     "macro action-bar drag cast edit and character-specific persistence",
@@ -257,7 +257,8 @@
     "UI166 corrected native AfterCast completion: one ordinary Tame1515,10.020-second public/native channel, Wolf16, no native failures/cancel/public Interrupted; pose8/park4/origin5/closure20/pause8. Actual remote246039087 bytes SHA1eb19d3266cb6a2ccf128272f239c8d5a22fdeeaac4e118c7bd7404fd4fe6a12 verifies62 JSON/136 PNG;136 frames223769313 bytes and exact archive/cache offloaded. Both owned clients stopped. Earlier Revive unknown-spell inference corrected by actual native login/public spellbook and dependent-spell persistence source; no spell grant or pet damage.",
     "UI169: one ordinary Revive982, whole18outcome/17restoration, normalpark4/originalfinish5, normalize/close02(21)/pause8 allpass; actualremote182381021bytes/37JSON/91PNG fullproof; pets.revive only admitted451/916; all6offline/bothownedclientsstopped; exactlocalframes/archive/cacheoffloaded.",
     "UI170: one ordinary Beast Lore1462 Train, original failed receipt retained, fresh observation with10 checks, exact cleanup/refund and untrained reentry, closure28/pause8. Actual remote proof verifies 545774556 bytes, 92 JSON/376 PNG members and both journals. Only spellbook.learn_spell is admitted, reaching452/916. All six actors are offline and both owned clients are stopped.",
-    "UI171/DVC171: actionbars.drag_item only; 126 JSON/123 PNG and both complete journals remotely verified, exact item assignment/clear and full restore, one login/logout, eight shutdown checks, both owned clients stopped. 453/916."
+    "UI171/DVC171: actionbars.drag_item only; 126 JSON/123 PNG and both complete journals remotely verified, exact item assignment/clear and full restore, one login/logout, eight shutdown checks, both owned clients stopped. 453/916.",
+    "UI172 excluded bag entry closed: original entry/H06/H07 failures retained, no bag or cleanup input sent, actual automatic idle logout, source-owned selection image and8stop checks, all6offline preserved. Complete remote127197223B/632JSON/27PNG/13JSONL/allmanifest/source86/originalUI171raw ancestry accepted, pointer442_interactions_20261008_172. Qualification stays453/916."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending. UI104 accepts only one owned-name Who search/result. Positive race filters, cross-realm/enemy/arena/addon queries, non-ASCII exact-name folding, sorting/selection, invitations/whisper and missing-name/long-list Who results remain unqualified. The transient Who read cache is not cleared during cleanup. UI105 accepts only the original owned offline friend short ASCII note across normal character logout/reentry. Full-client restart, account-service persistence and online-note variants remain pending.",
   "open_failures": [
@@ -371,7 +372,8 @@
     "UI160 new Tame Added fixture first has9 failed/138 passed because its baseline uses unsupported capacity204. Corrected native capacity20 passes147; final focused168/full4135 pass. Initial guessed test path collection error and old-codec unknown-function regression remain retained. No failed receipt is admitted.",
     "UI161 stable_before01 remains whole failed before Tame. Correct modern catalog is cleared by a later archaeology-history optional stable presence0; actual87/3/44-byte chain retained, regression red1 followed by140 focused/4152 full passing candidate tests. Precast park01 times out before logout because observer remained pinned to stables; restore9, fresh park4, original5, no-Tame closure20 and pause8 pass. Initial guessed pre-cast guard filename collection failure is retained; corrected109 guards pass. No Tame gameplay input was sent in this failed chain.",
     "UI167 initial recon rejects omitted zero health/actual max198; cast01 fails precondition before Revive. Actual cast02 has one982 nativeGO but pet destroyed1.20secondsbefore request, so remains whole failed/excluded. Source-bound offline cleanup changes only disposable Wolf16 health0->278, creator883->13481, active0->1; exact native offline rest accrual148.981->154.469 is preserved. Fresh original capture follows stale review metadata refusal without input. Normal park4/origin5/closure21/pause8 pass; scout stopped. Corpse timing must cover actual finalReturn and10sec cast; native dispatchHIT matches effect109.",
-    "UI170 paid purchase01 fails its public flyout48 baseline mapping after a real successful1462 purchase; the whole episode remains failed and excluded. Fresh observation01 verifies its native outcome, exact646 charge and learned stock caption without replay. Earlier preparation, entry, recon, staging and stale trainer identity errors are retained. Initial local proof rejects ambiguous equal-size movement metadata; complete native receive ordering repairs the verifier. All284 focused tests and the full closed replay pass. The initial broad run passes4293 and skips1747 with the codec path unset; final6072 codec-enabled passes and the root archive test supply coverage. First publication classifies45 of46 and refuses the accepted UI169 closure phase; strict21-check offline source projection then passes124 affected tests and all46 classifications. Original receipts are unchanged. External /tmp import-path failures and the validation metadata run-name correction remain recorded. Corrected runs pass; no gameplay was repeated."
+    "UI170 paid purchase01 fails its public flyout48 baseline mapping after a real successful1462 purchase; the whole episode remains failed and excluded. Fresh observation01 verifies its native outcome, exact646 charge and learned stock caption without replay. Earlier preparation, entry, recon, staging and stale trainer identity errors are retained. Initial local proof rejects ambiguous equal-size movement metadata; complete native receive ordering repairs the verifier. All284 focused tests and the full closed replay pass. The initial broad run passes4293 and skips1747 with the codec path unset; final6072 codec-enabled passes and the root archive test supply coverage. First publication classifies45 of46 and refuses the accepted UI169 closure phase; strict21-check offline source projection then passes124 affected tests and all46 classifications. Original receipts are unchanged. External /tmp import-path failures and the validation metadata run-name correction remain recorded. Corrected runs pass; no gameplay was repeated.",
+    "UI172 initial publisher fixtures: journal output-key fixture1fail/32pass and predecessor canonical-byte fixture1fail/16pass retained; final147root/124native/50portable pass. Expected precommit Git-membership refusal was read-only and required committing new source first. Root extra read-only publication preflight first used default pixi without google.protobuf and then the wrong checks key; both retained, corrected auth manifest/shutdown_checks preflight passes. No gameplay request or qualification accompanies those recorder errors. Original entry/H06/H07 failures remain immutable and excluded; future fresh UI173 must wire the exact first-two-seconds unchanged-pose login classifier throughout full-history proofs."
   ],
   "client_policy": {
     "default": "One owned scout client when a live test needs it; zero during resource-limited builds. Primary only for an actual two-client test.",
@@ -379,12 +381,38 @@
     "reason": "user requested lower concurrent client resource use",
     "requested_stop_source": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261007_ui155/user_stop_primary01/episode.json",
     "scout_resource_pause": {
-      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui171/item_close_pause02/episode.json",
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/failed_pause01/episode.json",
       "checks": 8,
       "all_six_saved_snapshots_preserved": true
     },
-    "scout": "stopped after the verified UI171 item actionbar roundtrip; launch one on HDMI-1 only for the next reviewed occupied bag swap",
+    "scout": "stopped after excluded UI172 closure; launch one on HDMI-1 only after the fresh UI173 whole unit is reviewed and committed",
     "scout_closed_boundary": {
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/failed_pause01/episode.json",
+      "sha256": "723c3df1a161e70126bc1c062289f5628223490c12666ee5df3d69ed5ec30012",
+      "checks": 8,
+      "all_six_offline": true,
+      "all_six_saved_snapshots_preserved": true,
+      "original_selected": "Harnesstwo",
+      "retained_pet_numbers": [
+        4,
+        16
+      ],
+      "bag_swap_input_sent": false,
+      "housekeeping_input_sent": false,
+      "excluded_failed_entry": true,
+      "qualification_added": false,
+      "operations_admitted": 0,
+      "remote_review": {
+        "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui172_failed_entry_remote_review01.json",
+        "sha256": "0ac9d684b073b553fa2d4c127f4e44bf81b7a6783a55feae71c7fc4fd0645b98"
+      },
+      "checkpoint_source": {
+        "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/checkpoint_receipt.json",
+        "sha256": "2c26ecbe9599d5a38a61310fd8bb046670f05692a1176ad5069ac202bf261b50"
+      },
+      "dvc_pointer": "artifacts/client_harness/442_interactions_20261008_172.tar.gz.dvc"
+    },
+    "previous_qualified_boundary": {
       "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui171/item_close_pause02/episode.json",
       "checks": 8,
       "all_six_offline": true,
