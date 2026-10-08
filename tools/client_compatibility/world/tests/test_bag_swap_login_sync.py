@@ -739,3 +739,75 @@ def test_malformed_extra_raw_rows_cannot_disappear_from_completeness(fault):
         proof(value)
     with pytest.raises(RuntimeError):
         contract.forbidden_packets(value['rows'], value['session'], value['since'], value['until'], login_sync=result)
+
+
+def fresh_login():
+    """Synthetic fresh epoch using the retained exact wire layout, without old receipt authority."""
+    from tools.client_compatibility.world.movement import encode, parse
+    value = recorded()
+    value.pop('failed_entry_sha256')
+    delta = 2000.0 - value['since']
+    old_session = value['session']
+    sessions = {old_session: 'fresh-native-owner', '04aa8d2f': 'fresh-physical-instance'}
+    value['session'] = sessions[old_session]
+    value['since'] = 2000.0
+    value['until'] += delta
+    for row in [*value['rows'], *value['events']]:
+        row['session'] = sessions.get(row['session'], row['session'])
+        row['time'] += delta
+    clock = 710000
+    change_body(packet(value, sync.INITIALIZE), 0, 'I', clock)
+    for name, gap in ((sync.HEARTBEAT, 1525), (sync.LANDING, 1775)):
+        modern = packet(value, name)
+        change_body(modern, len(sync.ACTOR_GUID) + 12, 'I', clock + gap)
+        native_name, raw = encode(name, 2, parse(bytes.fromhex(modern['body']), 2))
+        packet(value, native_name, 'to_native')['body'] = raw.hex()
+    return value
+
+
+def test_fresh_session_time_and_clock_proof_is_serialized_and_reconstructed():
+    value = json.loads(json.dumps(fresh_login(), allow_nan=False))
+    result = proof(value)
+    assert result['session'] == 'fresh-native-owner'
+    assert result['instance_session'] == 'fresh-physical-instance'
+    assert result['initialization']['clock'] == 710000
+    assert result['since'] == 2000.0
+    assert result['clock_deltas'] == [1525, 250]
+    assert sync.validate_login_sync(json.loads(json.dumps(result))) == result
+
+
+@pytest.mark.parametrize('event', ['instance_authenticated', 'native_player_created',
+    'movement_forwarded', 'native_active_mover_confirmed', 'active_mover_deferred_until_player_create'])
+@pytest.mark.parametrize('bad_time', ['missing', None, True, float('nan'), float('inf'), float('-inf')])
+def test_foreign_actor2_metadata_is_typed_before_time_or_session_filtering(event, bad_time):
+    value = fresh_login()
+    extra = {'event': event, 'session': 'foreign-connection', 'time': bad_time,
+        **({'account_id': 2} if event == 'instance_authenticated' else {'guid': 2})}
+    if bad_time == 'missing':
+        extra.pop('time')
+    value['events'].append(extra)
+    with pytest.raises(RuntimeError, match='actor2 login metadata'):
+        proof(value)
+
+
+@pytest.mark.parametrize('event', ['instance_authenticated', 'native_player_created',
+    'movement_forwarded', 'native_active_mover_confirmed', 'active_mover_deferred_until_player_create'])
+def test_finite_foreign_actor2_metadata_cannot_disappear_from_fresh_window(event):
+    value = fresh_login()
+    value['events'].append({'event': event, 'session': 'foreign-connection', 'time': value['until'] - .01,
+        **({'account_id': 2} if event == 'instance_authenticated' else {'guid': 2})})
+    with pytest.raises(RuntimeError):
+        proof(value)
+
+
+@pytest.mark.parametrize('direction', ['from_client', 'to_native'])
+@pytest.mark.parametrize('bad_time', ['inside', 'missing', None, float('nan')])
+def test_foreign_raw_login_cannot_disappear_before_the_unique_login_guard(direction, bad_time):
+    value = fresh_login()
+    extra = {**packet(value, 'CMSG_PLAYER_LOGIN', direction), 'session': 'another-native-owner',
+        'time': value['since'] + .1 if bad_time == 'inside' else bad_time}
+    if bad_time == 'missing':
+        extra.pop('time')
+    value['rows'].append(extra)
+    with pytest.raises(RuntimeError, match='login'):
+        proof(value)

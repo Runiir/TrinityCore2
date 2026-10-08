@@ -16,7 +16,7 @@ import time
 from . import lab_runtime as lab
 from .bag_swap_contract import (ACTOR, REST_CAP, require, finite, owned_snapshot,
     login_packets, native_replay, forbidden_packets)
-from .item_actionbar_contract import public_assignments
+from .item_actionbar_contract import public_assignments, strict_equal
 from .bag_swap_preservation import ACCOUNTING, PRECISION_QUERY, exact_precision, float32_bits
 
 SCHEMA = 'client442_bag_swap_scout_resume_v1'
@@ -32,6 +32,23 @@ PAUSE_CHECKS = ('scout_launcher_absent', 'owned_game_absent', 'all_retained_save
 def sources():
     from . import bag_swap_sources
     return bag_swap_sources
+
+
+def authority_sources(schema):
+    if schema == sources().RUNTIME_SCHEMA:
+        return sources()
+    require(schema == 'client442_bag_swap_fresh_runtime_authority_v1',
+        'one recognized source-bound predecessor runtime schema required')
+    from . import bag_swap_fresh_sources
+    return bag_swap_fresh_sources
+
+
+def fresh_authority(ready):
+    ref = ready['runtime_authority_source']
+    require(sources().bound(ref['path']) == ref, 'runtime authority source bytes changed')
+    schema = sources().private_json(ref['path'], False).get('schema')
+    authority_sources(schema)
+    return schema == 'client442_bag_swap_fresh_runtime_authority_v1'
 
 
 def identity(kind):
@@ -88,6 +105,58 @@ def metadata():
     return entries(lab.ROOT / 'logs/modern_world.jsonl')
 
 
+def history_events(owner, since, until):
+    """Read the bounded current interval without loading older journal history."""
+    require(finite(since) and finite(until) and since <= until, 'bounded metadata interval differs')
+    sessions = {owner} if type(owner) is str else set()
+    for row in metadata():
+        require(type(row) is dict, 'packet metadata rows must be objects')
+        if row.get('event') in ('instance_authenticated', 'world_authenticated') and row.get('account_id') == 2:
+            require(finite(row.get('time')), 'owned physical authentication time must be finite')
+            if since <= row['time'] <= until:
+                sessions.add(row.get('session'))
+    result = []
+    for row in metadata():
+        require(type(row) is dict, 'packet metadata rows must be objects')
+        if row.get('session') in sessions or row.get('account_id') == 2 or row.get('guid') == 2:
+            require(finite(row.get('time')), 'malformed attributable packet metadata cannot be filtered out')
+        if finite(row.get('time')) and since <= row['time'] <= until:
+            result.append(row)
+            require(len(result) <= 250000, 'bounded current packet metadata interval exceeded')
+    return result
+
+
+def history_packets(owner, since, until, *, instance=None):
+    """Retain only the fresh owned wire interval, validating attribution first."""
+    require(type(owner) is str and owner and finite(since) and finite(until) and since <= until,
+        'bounded owned packet interval differs')
+    sessions = {owner} | ({instance} if type(instance) is str else set())
+    result = []
+    for row in packets():
+        require(type(row) is dict, 'raw packet rows must be objects')
+        attributable = row.get('session') in sessions or row.get('account_id') == 2 or row.get('guid') == 2
+        if attributable:
+            require(finite(row.get('time')), 'malformed attributable raw packet cannot be filtered out')
+        if attributable and since <= row['time'] <= until:
+            result.append(row)
+            require(len(result) <= 250000, 'bounded current owned packet interval exceeded')
+    return result
+
+
+def entry_settlement(entry, rows, events, *, required=False):
+    """Reconstruct a retained startup allowance from the actual wire and metadata."""
+    supplied = entry.get('login_sync')
+    if supplied is None:
+        require(required is False, 'fresh offline continuation requires exact stationary login settlement')
+        return None
+    from .bag_swap_login_sync import login_sync
+    pose = [float(entry['native_before_entry'][key]) for key in
+        ('position_x', 'position_y', 'position_z', 'orientation')]
+    actual = login_sync(rows, events, entry['native_session'], entry['started_at'], entry['finished_at'], pose)
+    require(strict_equal(supplied, actual), 'retained login settlement differs from actual packet and metadata sources')
+    return actual
+
+
 def oracle(owner_session):
     from .observation.inventory import Inventory
     return Inventory(lab.ROOT, owner_session, 2).poll()
@@ -136,8 +205,9 @@ def source_report(report):
     compact = report.get('runtime_authority_source')
     sources().reference(compact)
     require(sources().bound(compact['path']) == compact, 'compact UI171 runtime authority bytes changed')
-    old = sources().cached_runtime(compact['path'], ref)
-    require(report.get('predecessor') == old['predecessor'], 'UI171 predecessor roles differ')
+    compact_value = sources().private_json(compact['path'], False)
+    old = authority_sources(compact_value.get('schema')).cached_runtime(compact['path'], ref)
+    require(report.get('predecessor') == old['predecessor'], 'latest offline predecessor roles differ')
     return {k: old[k] for k in ('closure', 'snapshot', 'predecessor', 'primary_stop_source',
         'dvc_pointer', 'runtime', 'origin_actor')}
 
@@ -165,7 +235,8 @@ def available_memory_kib():
 def start(directory, output, closure, remote, checkpoint):
     require(available_memory_kib() >= 6 * 1024 * 1024,
         'predecessor streaming requires 6 GiB available memory before parsing')
-    old = sources().source_bundle(closure, remote, checkpoint)
+    from . import bag_swap_fresh_sources as fresh
+    old = fresh.source_bundle(closure, remote, checkpoint)
     stopped, before = old['closure'], old['snapshot']
     primary_stopped(Path(old['primary_stop_source']['path']))
     from .review_hunter_revive_prerequisites import absent_clients
@@ -175,28 +246,25 @@ def start(directory, output, closure, remote, checkpoint):
         snapshot() == before and registration() == old['origin_actor'] and
         gone(stopped['runtime']['client']['pid'], stopped['runtime']['client']['start_ticks']) and
         gone(stopped['game_before']['pid'], stopped['game_before']['start_ticks']),
-        'unchanged all-six UI171 pause, owner registration or stopped clients differ')
+        'unchanged latest all-six offline pause, owner registration or stopped clients differ')
     memory = available_memory_kib()
     require(memory >= 6 * 1024 * 1024, 'one scout launch requires 6 GiB available memory')
     create_resume(directory, output)
-    authority = Path(directory) / 'authority.json'
-    lab.private_write(authority, json.dumps({'schema': 'client442_bag_swap_predecessor_authority_v1',
-        'values': old['values'], 'refs': old['predecessor'], 'graph': old['graph']}, separators=(',', ':')) + '\n')
     require(Path(directory).parent == Path(output).parent and Path(directory).parent.parent == lab.ROOT / 'evidence',
         'fresh launch and cached authority must share the named ordinary batch')
-    from .checkpoint_bag_swap import carry_authority
-    authority_ref = sources().bound(authority)
-    carry_authority(Path(directory).parent, authority_ref, admitted=old)
-    compact = Path(directory) / 'runtime_authority.json'
-    lab.private_write(compact, json.dumps(sources().compact_authority(old, authority_ref),
-        separators=(',', ':')) + '\n')
+    authority_ref = fresh.write_cache(Path(directory), old)
+    fresh.carry_authority(Path(directory).parent, authority_ref, admitted=old)
+    compact_ref = fresh.write_runtime(Path(directory), old, authority_ref)
+    from .checkpoint_bag_swap import current_code_epoch
+    epoch_ref = current_code_epoch(Path(directory), old)
     old = {k: old[k] for k in ('closure', 'snapshot', 'predecessor', 'primary_stop_source',
         'dvc_pointer', 'runtime', 'origin_actor')}
     gc.collect()
     memory = available_memory_kib()
     require(memory >= 6 * 1024 * 1024, 'one scout launch requires 6 GiB after predecessor streaming/carry')
     report = {'schema': SCHEMA, 'started_at': time.time(), 'predecessor': old['predecessor'],
-        'authority_source': authority_ref, 'runtime_authority_source': sources().bound(compact),
+        'authority_source': authority_ref, 'runtime_authority_source': compact_ref,
+        'current_code_epoch_source': epoch_ref,
         'predecessor_dvc_pointer': old['dvc_pointer'],
         'previous_runtime': stopped['runtime'], 'all_offline_snapshot': before, 'origin_actor': old['origin_actor'],
         'available_memory_kib_before': memory, 'launch_attempted': False, 'installed': False,
@@ -292,7 +360,7 @@ def finish(t, directory, review_path):
     checked, selected = review(t, review_path, 'Harnesstwo')
     require((checked.get('selected_character'), checked.get('selected_level')) == ('Harnesstwo', 1),
         'reviewed original selection differs')
-    events = list(metadata())
+    events = history_events(None, report['started_at'], time.time())
     auth = [r for r in events if r.get('event') == 'world_authenticated' and r.get('account_id') == 2 and
         report['started_at'] <= r.get('time', 0) <= time.time()]
     require(len(auth) == 1 and type(auth[0].get('session')) is str and auth[0]['session'],
@@ -308,6 +376,7 @@ def finish(t, directory, review_path):
     t.receipt.update(phase='bags_swap_scout_ready', native_session=owner_session,
         resume_source=sources().bound(Path(directory) / 'resume.json'), selection_source=checked['source'],
         authority_source=report['authority_source'], runtime_authority_source=report['runtime_authority_source'],
+        current_code_epoch_source=report['current_code_epoch_source'],
         predecessor=report['predecessor'], all_offline_snapshot=report['all_offline_snapshot'],
         predecessor_dvc_pointer=report['predecessor_dvc_pointer'],
         realm_authentication=auth[0], frame=image, input_sent=False,
@@ -326,7 +395,7 @@ def prepared(t, preparation, online=False):
     owned_snapshot(baseline)
     old = source_report({'predecessor': ready['predecessor'], 'authority_source': ready['authority_source'],
         'runtime_authority_source': ready['runtime_authority_source']})
-    require(baseline == old['snapshot'], 'ready baseline differs from accepted UI171 pause')
+    require(baseline == old['snapshot'], 'ready baseline differs from the latest accepted offline pause')
     now = snapshot()
     owned_snapshot(now, offline=not online, swapped=online and now['2']['inventory'] != baseline['2']['inventory'])
     require(all(now[g] == baseline[g] for g in ('1', '3', '4', '5', '6')),
@@ -412,15 +481,17 @@ def enter(t, preparation, precision_path, review_path):
         frame_identity(frame, t.receipt['runtime'], ready['frame'])
         require(session(t.fixture) == owner_session, 'ordinary login changed its owned realm session')
         until = time.time()
-        raw = [p for p in packets() if p.get('session') == owner_session and
-            t.receipt['entry_input_started_at'] <= p.get('time', 0) <= until]
-        chain = login_packets(raw, owner_session, t.receipt['entry_input_started_at'], until)
-        owner = native_replay(raw, owner_session, t.receipt['entry_input_started_at'], until)
+        raw = history_packets(owner_session, t.receipt['started_at'], until)
+        from .bag_swap_login_sync import login_sync
+        events = history_events(owner_session, t.receipt['started_at'], until)
+        pose = [float(before[key]) for key in ('position_x', 'position_y', 'position_z', 'orientation')]
+        boot = login_sync(raw, events, owner_session, t.receipt['started_at'], until, pose)
+        chain = login_packets(raw, owner_session, t.receipt['started_at'], until)
+        owner = native_replay(raw, owner_session, t.receipt['started_at'], until, login_sync=boot)
+        t.receipt['login_sync'] = boot
         now = snapshot()
-        require(now['2']['native'] == {**before, 'online': 1} and now['2']['saved'] == ready['all_offline_snapshot']['2']['saved'] and
-            now['2']['inventory'] == ready['all_offline_snapshot']['2']['inventory'] and now['2']['pets'] == [] and
-            all(now[g] == ready['all_offline_snapshot'][g] for g in ('1', '3', '4', '5', '6')),
-            'ordinary entry changed saved native/resources or protected actors')
+        from .bag_swap_preservation import online_preservation
+        preserved = online_preservation(ready['all_offline_snapshot'], now)
         require(state.get('player') == 'Harnesstwo' and type(state.get('level')) is int and state['level'] == 1 and
             state.get('guid') == t.guid and state.get('xp') == 0 and state.get('xp_max') == 400 and
             type(state.get('xp_exhaustion')) is int and state['xp_exhaustion'] == 2 * owner['rest_threshold'] and
@@ -435,6 +506,7 @@ def enter(t, preparation, precision_path, review_path):
         t.receipt.update(login_packets=[chain[k] for k in ('modern', 'request', 'verify', 'delivered')],
             native_owner_proof=owner, owner_packets=owner['packets'], entered_native=now['2']['native'],
             saved=now['2']['saved'], resources=resources(native), public=public, active_spec=active,
+            online_preservation=preserved,
             state=state, frame=frame, native_original=native_baseline(t),
             checks={'ordinary_login': True, 'native_owner': True, 'saved_baseline': True,
                 'protected_actors': True, 'public_level1': True, 'empty_cursor': True},
@@ -447,13 +519,16 @@ def enter(t, preparation, precision_path, review_path):
         until = time.time()
         t.receipt['entry_input_finished_at'] = until
         try:
-            complete_rows = [p for p in packets() if p.get('session') == owner_session and
-                t.receipt['started_at'] <= p.get('time', 0) <= until]
+            complete_rows = history_packets(owner_session, t.receipt['started_at'], until)
             t.receipt['raw_entry_packets'] = complete_rows
+            complete_events = history_events(owner_session, t.receipt['started_at'], until)
+            t.receipt['raw_entry_events'] = complete_events
             if t.receipt.get('completed') is True:
+                boot = login_sync(complete_rows, complete_events, owner_session, t.receipt['started_at'], until, pose)
                 complete = native_replay(complete_rows, owner_session, t.receipt['started_at'], until,
-                    rest_threshold=t.receipt['native_owner_proof']['rest_threshold'])
-                t.receipt.update(native_owner_proof=complete, owner_packets=complete['packets'], finished_at=until)
+                    rest_threshold=t.receipt['native_owner_proof']['rest_threshold'], login_sync=boot)
+                t.receipt.update(login_sync=boot, native_owner_proof=complete,
+                    owner_packets=complete['packets'], finished_at=until)
         except BaseException as error:
             t.receipt['entry_finalization_failure'] = f'{type(error).__name__}: {error}'
             if t.receipt.get('completed') is True:
@@ -487,15 +562,22 @@ def whole_logout_history(rows, entry, owner, ordered, recovery=False):
     from .bag_swap_contract import packet_rows
     until = ordered[1]['time']
     raw = packet_rows(rows, owner, entry['started_at'], until)
+    events = history_events(owner, entry['started_at'], until) if entry.get('login_sync') is not None else []
+    boot = entry_settlement(entry, raw, events)
+    forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot)
+    if boot is not None:
+        forbidden_packets(events, boot['instance_session'], entry['started_at'], until, login_sync=boot)
     replay = native_replay(raw, owner, entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
     require(len(replay['native_inventory_transitions']) in ((1, 3) if recovery else (3,)),
         'ordinary logout requires the whole native occupied swap and exact inverse history')
     return raw, replay
 
 
 def final_logout_history(ready, entry, parked):
-    raw, replay = whole_logout_history(list(packets()), entry, ready['native_session'], parked['logout_packets'],
+    rows = history_packets(ready['native_session'], entry['started_at'], parked['logout_packets'][1]['time'],
+        instance=entry.get('login_sync', {}).get('instance_session'))
+    raw, replay = whole_logout_history(rows, entry, ready['native_session'], parked['logout_packets'],
         recovery=parked.get('recovery_only') is True)
     require(raw == parked['raw_native_logout_history'] and replay == parked['native_logout_proof'],
         'actual whole owner/item history through native logout changed before stop')
@@ -538,10 +620,16 @@ def park(t, preparation, source, recovery=False):
     pre_logout_state = native_state(ready['native_session'])
     require(pre_logout_state == restored['baseline']['native_state'], 'ordinary logout native layout differs from original entry')
     entry = sources().linked(restored['entry_source'])
-    raw = list(packets())
-    forbidden_packets(raw, ready['native_session'], entry['started_at'], time.time())
-    native_replay(raw, ready['native_session'], entry['started_at'], time.time(),
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
+    until = time.time()
+    raw = history_packets(ready['native_session'], entry['started_at'], until,
+        instance=entry.get('login_sync', {}).get('instance_session'))
+    events = history_events(ready['native_session'], entry['started_at'], until)
+    boot = entry_settlement(entry, raw, events, required=fresh_authority(ready))
+    forbidden_packets(raw, ready['native_session'], entry['started_at'], until, login_sync=boot)
+    for owner in {ready['native_session'], boot['instance_session']} if boot is not None else {ready['native_session']}:
+        forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot)
+    native_replay(raw, ready['native_session'], entry['started_at'], until,
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
     t.receipt.update(source=sources().bound(source), entry_source=restored['entry_source'],
         before=before, logout_started_at=time.time(), input_sent=True, phase='bags_swap_parking_started')
     t.persist()
@@ -559,7 +647,8 @@ def park(t, preparation, source, recovery=False):
             after['2']['pets'] == [] and set(after['2']['native']) == set(baseline['2']['native']) and
             {k for k in baseline['2']['native'] if baseline['2']['native'][k] != after['2']['native'][k]} <= ACCOUNTING | {'rest_bonus'},
             'ordinary logout changed pose, health, power, inventory, pets or protected actors')
-        rows = list(packets())
+        rows = history_packets(ready['native_session'], entry['started_at'], time.time(),
+            instance=entry.get('login_sync', {}).get('instance_session'))
         ordered = logout_packets(rows, ready['native_session'], t.receipt['logout_started_at'], time.time())
         whole, replay = whole_logout_history(rows, entry, ready['native_session'], ordered, recovery=recovery)
         parked_frame = shot(t.out / 'original_selection.png')
@@ -569,8 +658,8 @@ def park(t, preparation, source, recovery=False):
             checks={k: True for k in PARK_CHECKS}, completed=True, phase='bags_swap_parked')
     finally:
         t.receipt['logout_finished_at'] = time.time()
-        t.receipt['raw_logout_packets'] = [p for p in packets() if p.get('session') == ready['native_session'] and
-            t.receipt['logout_started_at'] <= p.get('time', 0) <= t.receipt['logout_finished_at'] and
+        t.receipt['raw_logout_packets'] = [p for p in history_packets(ready['native_session'],
+            t.receipt['logout_started_at'], t.receipt['logout_finished_at']) if
             p.get('name') in ('CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE')]
         t.persist()
 
@@ -670,6 +759,7 @@ def close_pause(t, preparation, entry, operation, park_path, before_precision, a
     try:
         game_identity(focus(), parked['frame'])
         final_logout_history(ready, current[1], parked)
+        require(snapshot() == after, 'all-six offline boundary changed immediately before client stop')
         lab.stop('client')
         stopped = snapshot()
         with scout_peer_primary():
@@ -728,7 +818,7 @@ def main():
     with scout():
         if a.action == 'start':
             require(all(getattr(a, k) for k in ('resume', 'closure', 'remote', 'checkpoint')),
-                'start requires actual closed UI171 remote authority')
+                'start requires the actual excluded UI172 closed remote authority')
             start(a.resume, a.output, a.closure, a.remote, a.checkpoint)
             return
         from .interaction_trial import Trial

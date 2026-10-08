@@ -1,4 +1,4 @@
-"""Pure, exact login settlement proof for the original occupied-swap owner."""
+"""Pure, exact stationary startup proof for one occupied-swap owner login."""
 from copy import deepcopy
 import json
 import math
@@ -174,6 +174,23 @@ def login_sync(rows, events, session, since, until, baseline_pose):
 def _login_sync(rows, events, session, since, until, baseline_pose):
     scoped = shared.packet_rows(rows, session, since, until)
     require(type(events) is list and all(type(e) is dict for e in events), 'original login event rows required')
+    logins = [r for r in rows if r.get('name') == 'CMSG_PLAYER_LOGIN']
+    require(all(finite(r.get('time')) and set(r) == WIRE_FIELDS and
+        type(r.get('session')) is str and r['session'] and
+        type(r.get('direction')) is str and r['direction'] in WIRE_DIRECTIONS for r in logins),
+        'login requests require finite canonical attribution before filtering')
+    for row in logins:
+        body(row)
+    require(all(r['session'] == session for r in logins if since <= r['time'] <= until),
+        'another connection logged in during the owned login window')
+    # Actor attribution must precede either time or session filtering. A second
+    # physical connection cannot hide a malformed actor2 event outside the owner.
+    attributed = [e for e in events if e.get('session') == session or
+        e.get('account_id') == 2 or e.get('guid') == 2]
+    require(all(finite(e.get('time')) and type(e.get('session')) is str and e['session'] and
+        (e.get('account_id') != 2 or type(e['account_id']) is int) and
+        (e.get('guid') != 2 or type(e['guid']) is int) for e in attributed),
+        'actor2 login metadata requires a finite time and typed physical/native attribution')
     require(all(set(r) == WIRE_FIELDS and type(r.get('name')) is str and r['name'] and
         type(r.get('direction')) is str and r['direction'] in WIRE_DIRECTIONS for r in scoped),
         'original login requires canonical raw wire rows')
@@ -227,6 +244,12 @@ def _login_sync(rows, events, session, since, until, baseline_pose):
         login['modern']['time'] <= instances[0]['time'] <= login['request']['time'],
         'one original actor2 physical instance must bind the native login')
     physical = instances[0]['session']
+    actor_window = [e for e in attributed if since <= e['time'] <= until]
+    require(all(e['session'] in (session, physical) and
+        (e.get('event') != 'native_player_created' or e['session'] == session) and
+        (e.get('event') not in ('movement_forwarded', 'native_active_mover_confirmed',
+            'active_mover_deferred_until_player_create') or e['session'] == physical)
+        for e in actor_window), 'actor2 login metadata belongs to another physical/native connection')
     relevant = [e for e in events if e.get('session') in (session, physical)]
     require(all(finite(e.get('time')) for e in relevant), 'owned login event time must be finite')
     relevant = [e for e in relevant if since <= e['time'] <= until]

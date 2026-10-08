@@ -24,7 +24,27 @@ MAX_ROWS, MAX_BYTES = 250000, 128 * 1024 * 1024
 class Sources:
     def __init__(self, data, digests, local=False):
         self.data, self.digests, self.local = data, digests, local
-        self.maps = [v for v in data.values() if type(v) is dict and v.get('schema') == ANCESTRY_SCHEMA]
+        self.maps = [v for v in data.values() if type(v) is dict and v.get('schema') in
+            (ANCESTRY_SCHEMA, 'client442_bag_swap_fresh_ancestry_v1')]
+
+    def member(self, ref, seen=None):
+        reference(ref)
+        path = Path(ref['path'])
+        require(path.is_relative_to(lab.ROOT / 'evidence'), 'swap source must be original private evidence')
+        member = str(path.relative_to(lab.ROOT))
+        if self.digests.get(member) == ref['sha256']:
+            return member
+        seen = set() if seen is None else seen
+        identity = (ref['path'], ref['sha256'])
+        require(identity not in seen and len(seen) < 8, 'carried source ancestry cycles or exceeds its exact bound')
+        seen.add(identity)
+        rows = [row for value in self.maps for row in [*value.get('members', []), *value.get('authorities', [])] if type(row) is dict and
+            row.get('original_path') == ref['path'] and row.get('sha256') == ref['sha256']]
+        require(len(rows) == 1 and type(rows[0].get('copy_member')) is str,
+            'immutable swap source absent or ambiguous in carried graph')
+        copy = rows[0]['copy_member']
+        require(not Path(copy).is_absolute() and '..' not in Path(copy).parts, 'ordinary carried source member required')
+        return self.member({'path': str(lab.ROOT / copy), 'sha256': ref['sha256']}, seen)
 
     def get(self, ref, successful=True):
         reference(ref)
@@ -35,12 +55,7 @@ class Sources:
             require(bound(path) == ref, 'local immutable swap source changed')
             self.data[member] = json.loads(path.read_text())
             self.digests[member] = ref['sha256']
-        key = member
-        if self.digests.get(key) != ref['sha256'] or key not in self.data:
-            require(len(self.maps) == 1, 'one exact occupied-swap ancestry map required')
-            rows = [r for r in self.maps[0]['members'] if r['original_path'] == ref['path'] and r['sha256'] == ref['sha256']]
-            require(len(rows) == 1, 'immutable swap source absent or ambiguous in carried graph')
-            key = rows[0]['copy_member']
+        key = self.member(ref)
         require(key in self.data and self.digests.get(key) == ref['sha256'], 'exact carried swap source bytes differ')
         value = self.data[key]
         return shared.accepted(value) if successful else value
@@ -81,21 +96,26 @@ def predecessor(store, ready, *, live=False):
     ref = ready.get('authority_source')
     compact_ref = ready.get('runtime_authority_source')
     compact = store.get(compact_ref, False)
+    from .interaction_bag_swap_continuation import authority_sources
+    provider = authority_sources(compact.get('schema'))
+    fresh = compact.get('schema') == 'client442_bag_swap_fresh_runtime_authority_v1'
     if live:
-        from .bag_swap_sources import cached_runtime
         require(store.local and bound(compact_ref['path']) == compact_ref,
             'live compact authority must retain its exact source-owned bytes')
-        old = cached_runtime(compact_ref['path'], ref)
+        old = provider.cached_runtime(compact_ref['path'], ref)
         require(compact.get('core') == old, 'live compact source differs from its exact admitted core')
     else:
         cache = store.get(ref, False)
-        require(type(cache) is dict and set(cache) == {'schema', 'values', 'refs', 'graph'} and
-            cache['schema'] == 'client442_bag_swap_predecessor_authority_v1', 'exact actual UI171 cache required')
-        old = validate_bundle(cache['values'], cache['refs'], cache['graph'])
-        require(compact == compact_authority(old, ref), 'compact live authority differs from the full admitted source graph')
+        if fresh:
+            old = provider.validate_cache(cache)
+        else:
+            require(type(cache) is dict and set(cache) == {'schema', 'values', 'refs', 'graph'} and
+                cache['schema'] == 'client442_bag_swap_predecessor_authority_v1', 'exact actual UI171 cache required')
+            old = validate_bundle(cache['values'], cache['refs'], cache['graph'])
+        require(compact == provider.compact_authority(old, ref), 'compact live authority differs from the full admitted source graph')
     require(ready.get('predecessor') == old['predecessor'] and
         ready.get('predecessor_dvc_pointer') == old['dvc_pointer'] and
-        ready.get('all_offline_snapshot') == old['snapshot'], 'fresh swap authority differs from actual UI171 pause')
+        ready.get('all_offline_snapshot') == old['snapshot'], 'fresh swap authority differs from its latest actual offline pause')
     resume = store.get(ready['resume_source'], False)
     require(resume.get('schema') == 'client442_bag_swap_scout_resume_v1' and
         resume.get('phase') == 'bags_swap_scout_launched' and resume.get('completed') is True and
@@ -110,6 +130,8 @@ def predecessor(store, ready, *, live=False):
         type(resume.get('available_memory_kib_before')) is int and resume['available_memory_kib_before'] >= 6 * 1024 * 1024 and
         old['closure']['finished_at'] < resume['started_at'] < resume['launch_finished_at'] < ready['started_at'],
         'one fresh owned scout and unchanged native/bridge lifetime required')
+    if fresh:
+        current_code_epoch(store, resume, ready, old['closure'])
     exact_checks(resume, 'checks', ('native_unchanged', 'bridge_unchanged', 'fresh_scout',
         'all_six_saved_snapshots', 'primary_stopped', 'HDMI_1', 'private_input'))
     auth = ready.get('realm_authentication', {})
@@ -120,6 +142,43 @@ def predecessor(store, ready, *, live=False):
     require((selected.get('selected_character'), selected.get('selected_level')) == ('Harnesstwo', 1),
         'fresh original scout selection differs')
     return old
+
+
+def current_code_epoch(store, resume, ready, closure):
+    """Prove current raw code bytes while retaining all immutable parent epochs."""
+    from .checkpoint_bag_swap import CURRENT_CODE_SCHEMA, FRESH_CODE_FILES
+    from .bag_swap_failed_evidence import PUBLICATION_FILES, PUBLICATION_DEPENDENCIES
+    from .bag_swap_failed_sources import CODE_FIELDS, CODE_SCHEMA, CONFIG, MAX_TOTAL_BYTES, _raw, _commit, _vector
+    ref = ready.get('current_code_epoch_source')
+    reference(ref)
+    require(resume.get('current_code_epoch_source') == ref, 'fresh resume and ready must bind one current raw code epoch')
+    epoch = store.get(ref, False)
+    require(type(epoch) is dict and set(epoch) == {'schema', 'code_commit', 'committed_sources', 'carried_sources'} and
+        epoch.get('schema') == CURRENT_CODE_SCHEMA and epoch.get('code_commit') == ready.get('code_commit') and
+        epoch.get('committed_sources') == ready.get('committed_sources'), 'current raw code epoch differs from frozen gameplay identity')
+    _commit(epoch['code_commit'])
+    remote = store.get(ready['predecessor']['remote'], False)
+    publication = remote.get('proof', {}).get('publication_code', {})
+    _commit(publication.get('code_commit'))
+    configs = [Path(row['path']) for row in closure['committed_sources'] if row['path'].endswith('/' + CONFIG)]
+    require(len(configs) == 1, 'one original occupied-swap repository source required')
+    repo = configs[0].parents[3]
+    wanted = sorted({row['path'] for row in closure['committed_sources']} | {
+        str(repo / member) for member in (*PUBLICATION_FILES, *PUBLICATION_DEPENDENCIES, *FRESH_CODE_FILES)})
+    require(_vector(epoch['committed_sources'], repo) == [str(Path(member).relative_to(repo)) for member in wanted] and
+        epoch['code_commit'] != publication['code_commit'], 'exact complete fresh current source membership and distinct publication epoch required')
+    copies = epoch['carried_sources']
+    require(type(copies) is list and len(copies) == len(wanted) and
+        len({row.get('path') for row in copies if type(row) is dict}) == len(copies), 'one raw current source envelope per member required')
+    total = 0
+    for original, copy in zip(epoch['committed_sources'], copies):
+        value = store.get(copy, False)
+        require(type(value) is dict and set(value) == CODE_FIELDS and value.get('schema') == CODE_SCHEMA and
+            value.get('code_commit') == epoch['code_commit'] and value.get('original_path') == original['path'] and
+            value.get('sha256') == original['sha256'], 'current source envelope differs from exact frozen epoch')
+        total += len(_raw(value['raw_hex'], value['sha256'], value['bytes']))
+        require(total <= MAX_TOTAL_BYTES, 'bounded current raw source epoch exceeded')
+    return {'code_commit': epoch['code_commit'], 'complete_raw_source_members': len(wanted)}
 
 
 def stage_chain(store, operation):
@@ -208,6 +267,17 @@ def lifecycle(store, refs, *, live=False):
     predecessor(store, ready, live=live)
     baseline = ready['all_offline_snapshot']
     contract.owned_snapshot(baseline)
+    fresh = store.get(ready['runtime_authority_source'], False).get('schema') == 'client442_bag_swap_fresh_runtime_authority_v1'
+    from .interaction_bag_swap_continuation import entry_settlement
+    if fresh:
+        require(entry.get('native_before_entry') == baseline['2']['native'] and
+            type(entry.get('raw_entry_packets')) is list and type(entry.get('raw_entry_events')) is list,
+            'fresh entry must retain actual prelogin native state and complete wire/metadata sources')
+    boot = entry_settlement(entry, entry.get('raw_entry_packets', []), entry.get('raw_entry_events', []), required=fresh)
+    if boot is not None:
+        owner = contract.native_replay(entry['raw_entry_packets'], ready['native_session'],
+            entry['started_at'], entry['finished_at'], login_sync=boot)
+        require(strict_equal(entry.get('native_owner_proof'), owner), 'fresh entry owner proof differs from complete actual source packets')
     require(all(value.get('actor') == ready['actor'] and value.get('runtime') == ready['runtime'] and
         value.get('code_commit') == ready['code_commit'] and value.get('committed_sources') == ready['committed_sources'] and
         value.get('controller') == 'code' and value.get('model') is None and value.get('revision') is None and
@@ -296,7 +366,8 @@ def lifecycle(store, refs, *, live=False):
     require(strict_equal(park.get('pre_logout_native_state'), base['native_state']),
         'ordinary logout must retain the actual original native pose, target and AFK')
     closed = contract.native_replay(park['raw_native_logout_history'], ready['native_session'],
-        entry['started_at'], park['logout_packets'][1]['time'], rest_threshold=entry['native_owner_proof']['rest_threshold'])
+        entry['started_at'], park['logout_packets'][1]['time'],
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
     require(park.get('native_logout_proof') == closed and len(closed['native_inventory_transitions']) == 3,
         'whole owner/item history through actual native logout completion differs')
     frame(store, entry, entry['frame'], refs['entry'])
@@ -333,8 +404,8 @@ def collect(member, lines, data, tracking):
     tracking['members'].add(member)
     for row in lines:
         require(type(row) is dict, 'actual journal must contain objects')
-        if row.get('session') == ready['native_session']:
-            require(finite(row.get('time')), 'owned journal time must be finite and typed')
+        if row.get('session') == ready['native_session'] or row.get('account_id') == 2 or row.get('guid') == 2:
+            require(finite(row.get('time')), 'attributable journal time must be finite and typed')
         if not finite(row.get('time')) or not ready['started_at'] <= row['time'] <= closures[0]['finished_at']:
             continue
         destination.append(row)
@@ -370,9 +441,26 @@ def actual_journals(store, closure, tracking, current):
         require(type(rows) is list and store.digests.get(member) == ref['sha256'], 'exact raw current journal absent')
         raw[kind] = rows
     require(strict_equal(raw['events'], tracking['events']), 'current raw event journal differs from actual generic archived events')
+    instances = [r for r in raw['events'] if r.get('event') == 'instance_authenticated' and r.get('account_id') == 2]
+    require(len(instances) == 1 and finite(instances[0].get('time')) and
+        entry['started_at'] <= instances[0]['time'] <= entry['finished_at'], 'one fresh actor2 physical instance required')
+    sessions = {owner, instances[0]['session']}
+    for row in raw['packets'] + raw['events']:
+        require(type(row) is dict, 'actual whole gameplay journals require objects')
+        if row.get('session') in sessions or row.get('account_id') == 2 or row.get('guid') == 2:
+            require(finite(row.get('time')), 'malformed attributable gameplay time cannot be filtered out')
     wire = [r for r in raw['packets'] if r.get('session') == owner]
-    contract.forbidden_packets(wire, owner, entry['started_at'], closure['finished_at'])
-    contract.roundtrip_packets(wire, owner, entry['started_at'], closure['finished_at'])
+    from .interaction_bag_swap_continuation import entry_settlement
+    compact = store.get(ready['runtime_authority_source'], False) if ready.get('runtime_authority_source') else {}
+    boot = entry_settlement(entry, wire, raw['events'], required=compact.get('schema') ==
+        'client442_bag_swap_fresh_runtime_authority_v1')
+    if boot is not None:
+        require(strict_equal(entry.get('raw_entry_packets'), contract.packet_rows(wire, owner, entry['started_at'], entry['finished_at'])) and
+            strict_equal(entry.get('raw_entry_events'), [row for row in raw['events'] if
+                finite(row.get('time')) and entry['started_at'] <= row['time'] <= entry['finished_at']]),
+            'actual full journals must contain the exact retained complete fresh entry sources')
+    contract.forbidden_packets(wire, owner, entry['started_at'], closure['finished_at'], login_sync=boot)
+    contract.roundtrip_packets(wire, owner, entry['started_at'], closure['finished_at'], login_sync=boot)
     login = contract.login_packets(wire, owner, entry['started_at'], entry['finished_at'])
     require(entry['login_packets'] == [login[k] for k in ('modern', 'request', 'verify', 'delivered')] and
         len([r for r in wire if r.get('name') in ('CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD')]) == 4,
@@ -382,16 +470,12 @@ def actual_journals(store, closure, tracking, current):
     require(logout == park['logout_packets'] and len([r for r in wire if r.get('name') in
         ('CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE')]) == 4, 'actual current journal requires one ordinary logout')
     replay = contract.native_replay(wire, owner, entry['started_at'], logout[1]['time'],
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
     require(park.get('raw_native_logout_history') == contract.packet_rows(wire, owner, entry['started_at'], logout[1]['time']) and
         park.get('native_logout_proof') == replay, 'retained pre-stop history differs from actual complete native logout journal')
     require(replay['native_inventory_states'] == [[contract.SOURCE['guid'], contract.DESTINATION['guid']],
         [contract.DESTINATION['guid'], contract.SOURCE['guid']], [contract.SOURCE['guid'], contract.DESTINATION['guid']]],
         'actual native inventory must exchange and exactly restore both GUIDs')
-    instances = [r for r in raw['events'] if r.get('event') == 'instance_authenticated' and r.get('account_id') == 2]
-    require(len(instances) == 1 and entry['started_at'] <= instances[0]['time'] <= entry['finished_at'],
-        'one fresh actor2 physical instance required')
-    sessions = {owner, instances[0]['session']}
     events = [r for r in raw['events'] if r.get('session') in sessions]
     chain = stage_chain(store, operation)
     forward = next(stage for stage in chain if stage.get('phase') == 'bags_swap_forward')
@@ -422,9 +506,9 @@ def actual_journals(store, closure, tracking, current):
             ('to_native', 'from_native') else 'modern_packet'), 'unique actual physical/native packet metadata attribution differs')
     require(len([row for row in events if row.get('name') == contract.ACTION and row.get('direction') in
         ('from_client', 'to_native')]) == 4, 'actual packet metadata contains another occupied inventory request')
-    contract.forbidden_packets(events, owner, entry['started_at'], closure['finished_at'])
+    contract.forbidden_packets(events, owner, entry['started_at'], closure['finished_at'], login_sync=boot)
     for physical in sessions:
-        contract.forbidden_packets(events, physical, entry['started_at'], closure['finished_at'])
+        contract.forbidden_packets(events, physical, entry['started_at'], closure['finished_at'], login_sync=boot)
     return {'actual_packet_journals_verified': True, 'native_item_fields_unchanged': replay['native_item_fields_preserved']}
 
 

@@ -14,6 +14,44 @@ from tools.client_compatibility.world.tests.test_bag_swap_projection import pack
 from tools.client_compatibility.world.tests.test_item_actionbar_contract import login_packets
 
 
+def test_carried_authority_resolves_original_ui171_through_ui172_to_fresh_member(tmp_path, monkeypatch):
+    monkeypatch.setattr(e.lab, 'ROOT', tmp_path)
+    old, middle, current = ('evidence/ui171/frame.json', 'evidence/ui172/carried.json', 'evidence/ui173/carried.json')
+    sha = 'a' * 64
+    data = {'evidence/ui172/map.json': {'schema': e.ANCESTRY_SCHEMA, 'members': [
+        {'original_path': str(tmp_path / old), 'sha256': sha, 'copy_member': middle}]},
+        'evidence/ui173/map.json': {'schema': 'client442_bag_swap_fresh_ancestry_v1', 'members': [
+            {'original_path': str(tmp_path / middle), 'sha256': sha, 'copy_member': current}], 'authorities': []},
+        current: {'source_owned': True}}
+    store = e.Sources(data, {current: sha})
+    assert store.get({'path': str(tmp_path / old), 'sha256': sha}, False) == {'source_owned': True}
+    assert store.member({'path': str(tmp_path / middle), 'sha256': sha}) == current
+    remote = 'evidence/ui172_remote.json'
+    store.maps[1]['authorities'].append({'original_path': str(tmp_path / remote), 'sha256': sha, 'copy_member': current})
+    assert store.get({'path': str(tmp_path / remote), 'sha256': sha}, False) == {'source_owned': True}
+
+
+@pytest.mark.parametrize('fault', ['cycle', 'duplicate', 'wrong_sha', 'escaping_copy'])
+def test_carried_authority_chain_refuses_ambiguity_cycle_or_changed_member(tmp_path, monkeypatch, fault):
+    monkeypatch.setattr(e.lab, 'ROOT', tmp_path)
+    original, copied, sha = 'evidence/old/source.json', 'evidence/current/source.json', 'a' * 64
+    row = {'original_path': str(tmp_path / original), 'sha256': sha, 'copy_member': copied}
+    data = {'evidence/current/map.json': {'schema': 'client442_bag_swap_fresh_ancestry_v1', 'members': [row]},
+        copied: {'source_owned': True}}
+    digests = {copied: sha}
+    if fault == 'cycle':
+        row['copy_member'] = original
+        digests = {}
+    elif fault == 'duplicate':
+        data['evidence/current/map.json']['members'].append(deepcopy(row))
+    elif fault == 'wrong_sha':
+        digests[copied] = 'b' * 64
+    else:
+        row['copy_member'] = '../outside.json'
+    with pytest.raises(RuntimeError):
+        e.Sources(data, digests).get({'path': str(tmp_path / original), 'sha256': sha}, False)
+
+
 def fixture(tmp_path, monkeypatch):
     monkeypatch.setattr(e.lab, 'ROOT', tmp_path)
     wire = login_packets()

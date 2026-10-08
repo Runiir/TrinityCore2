@@ -4,6 +4,7 @@ from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import tarfile
 from urllib.request import urlopen
 
@@ -13,6 +14,55 @@ from .item_actionbar_contract import require, strict_equal
 from .bag_swap_evidence import ANCESTRY_SCHEMA
 from .checkpoint_item_actionbar import write_exclusive
 from .review_hunter_learn_checkpoint import DigestReader, remote_options, remote_request
+
+CURRENT_CODE_SCHEMA = 'client442_bag_swap_current_code_epoch_v1'
+FRESH_CODE_FILES = (
+    'tools/client_compatibility/bag_swap_fresh_sources.py',
+    'tools/client_compatibility/world/tests/test_bag_swap_fresh_sources.py',
+    'tools/client_compatibility/world/tests/test_bag_swap_fresh_unit.py')
+
+
+def current_code_epoch(directory, old):
+    """Carry the actual committed current package before the sole fresh launch."""
+    from .bag_swap_projection import source_identities
+    from .bag_swap_failed_sources import CODE_SCHEMA, MAX_SOURCE_BYTES, MAX_TOTAL_BYTES
+    directory = Path(directory)
+    require(directory.is_absolute() and directory.is_relative_to(lab.ROOT / 'evidence') and
+        directory.is_dir() and '..' not in directory.parts and
+        not any(path.is_symlink() for path in (directory, *directory.parents)),
+        'ordinary new private current source directory required')
+    parent = [value for value in old['graph']['data'].values() if type(value) is dict and
+        value.get('schema') == 'client442_bag_swap_failed_journals_v1']
+    require(len(parent) == 1, 'one actual latest excluded publication code epoch required')
+    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip()
+    refs = source_identities(lab.REPO)
+    expected = {ref['path'] for ref in parent[0]['code_source_epoch']['committed_sources']} | {
+        str(lab.REPO / member) for member in FRESH_CODE_FILES}
+    require(commit != parent[0]['code_commit'] and [ref['path'] for ref in refs] == sorted(expected),
+        'fresh current package must exactly extend the actual excluded parent source membership')
+    prepared, total = [], 0
+    for ref in refs:
+        member = str(Path(ref['path']).relative_to(lab.REPO))
+        raw = subprocess.check_output(['git', 'show', commit + ':' + member], cwd=lab.REPO)
+        total += len(raw)
+        require(len(raw) <= MAX_SOURCE_BYTES and total <= MAX_TOTAL_BYTES and
+            hashlib.sha256(raw).hexdigest() == ref['sha256'], 'current source must match actual committed Git bytes')
+        prepared.append((ref, raw))
+    target = directory / 'code_sources'
+    require(not target.exists(), 'current source epoch never overwrites prior carried bytes')
+    target.mkdir(mode=0o700)
+    copies = []
+    for index, (ref, raw) in enumerate(prepared):
+        value = {'schema': CODE_SCHEMA, 'code_commit': commit, 'original_path': ref['path'],
+            'sha256': ref['sha256'], 'bytes': len(raw), 'raw_hex': raw.hex()}
+        path = target / (f'{index:03d}_' + ref['sha256'] + '.json')
+        write_exclusive(path, (json.dumps(value, separators=(',', ':'), allow_nan=False) + '\n').encode())
+        copies.append(bound(path))
+    epoch = {'schema': CURRENT_CODE_SCHEMA, 'code_commit': commit,
+        'committed_sources': refs, 'carried_sources': copies}
+    path = directory / 'current_code_epoch.json'
+    write_exclusive(path, (json.dumps(epoch, separators=(',', ':'), allow_nan=False) + '\n').encode())
+    return bound(path)
 
 
 def required_members(graph):
@@ -65,6 +115,10 @@ def carry(directory, preparation):
     reference(ready.get('authority_source'))
     require(ready.get('phase') == 'bags_swap_scout_ready' and bound(ready['authority_source']['path']) == ready['authority_source'],
         'carry requires the actual source-bound original scout ready authority')
+    cache = json.loads(Path(ready['authority_source']['path']).read_text())
+    if cache.get('schema') == 'client442_bag_swap_fresh_predecessor_authority_v1':
+        from .bag_swap_fresh_sources import carry_authority as fresh_carry
+        return fresh_carry(directory, ready['authority_source'])
     return carry_authority(directory, ready['authority_source'])
 
 
@@ -148,9 +202,12 @@ def carry_authority(directory, authority_source, *, admitted=None):
 
 
 def validate_carry(store, ready):
+    cache = store.get(ready['authority_source'], False)
+    if cache.get('schema') == 'client442_bag_swap_fresh_predecessor_authority_v1':
+        from .bag_swap_fresh_sources import validate_carry as fresh_carry
+        return fresh_carry(store, ready)
     require(len(store.maps) == 1, 'one strict carried UI171 proof map required')
     value = store.maps[0]
-    cache = store.get(ready['authority_source'], False)
     from .bag_swap_sources import validate_bundle
     old = validate_bundle(cache['values'], cache['refs'], cache['graph'])
     require(value.get('authority_source') == ready['authority_source'] and value.get('archive') == old['archive'] and
@@ -213,13 +270,17 @@ def journal_snapshot(directory, closure):
     directory, closure = Path(directory), Path(closure)
     value = closed(closure)
     ready = local_store().get(value['sources']['preparation'])
+    entry = local_store().get(value['sources']['entry'])
     target = directory / 'journals'
     require(value.get('phase') == 'bags_swap_closed_paused' and not target.exists(), 'one new closed current journal capture required')
     target.mkdir(mode=0o700)
     refs = {}
+    from .checkpoint_bag_swap_failed import selected_rows
+    sessions = {ready['native_session']}
+    if entry.get('login_sync') is not None:
+        sessions.add(entry['login_sync']['instance_session'])
     for kind, path in (('packets', lab.ROOT / 'evidence/world_packets.jsonl'), ('events', lab.ROOT / 'logs/modern_world.jsonl')):
-        selected = [r for r in entries(path) if type(r.get('time')) in (int, float) and
-            ready['started_at'] <= r['time'] <= value['finished_at']]
+        selected = selected_rows(path, ready['started_at'], value['finished_at'], sessions)
         require(selected and len(selected) <= 250000 and not any('AUTH_SESSION' in str(r.get('name', '')) and
             'body' in r for r in selected), 'current journal capture must be bounded gameplay without authentication bodies')
         copy = target / (kind + '.jsonl')
@@ -235,7 +296,9 @@ def journal_snapshot(directory, closure):
 
 def checkpoint(directory, name):
     from .checkpoint_interactions import checkpoint as publish
-    return publish(Path(directory), name)
+    from .checkpoint_bag_swap_failed import complete_tracking_manifest
+    publish(Path(directory), name)
+    return complete_tracking_manifest(Path(directory))
 
 
 def main():

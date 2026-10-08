@@ -310,6 +310,84 @@ def test_full_history_roundtrip_and_native_replay_share_the_exact_login_allowanc
         [c.DESTINATION['guid'], c.SOURCE['guid']], [c.SOURCE['guid'], c.DESTINATION['guid']]]
 
 
+def fresh_roundtrip():
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import fresh_login
+    value = fresh_login()
+    start = value['until'] + 1
+    additions = packets(start=start) + [native_packet(slot_fields(True), creation=False, time=start + .2)]
+    additions += packets(True, start + 1) + [native_packet(slot_fields(), creation=False, time=start + 1.2)]
+    additions += [{'time': start + 2 + i * .1, 'name': name, 'direction': direction, 'body': raw}
+        for i, (name, direction, raw) in enumerate((('CMSG_LOGOUT_REQUEST', 'from_client', '80'),
+            ('CMSG_LOGOUT_REQUEST', 'to_native', ''), ('SMSG_LOGOUT_RESPONSE', 'from_native', '0000000000'),
+            ('SMSG_LOGOUT_RESPONSE', 'to_client', '0000000000'), ('SMSG_LOGOUT_COMPLETE', 'from_native', ''),
+            ('SMSG_LOGOUT_COMPLETE', 'to_client', '00')))]
+    value['rows'] += [{**row, 'session': value['session']} for row in additions]
+    value['until'] = start + 3
+    return value
+
+
+def test_serialized_fresh_boot_occupied_roundtrip_and_logout_replay_preserve_every_native_item():
+    from tools.client_compatibility.bag_swap_login_sync import login_sync, validate_login_sync
+    value = json.loads(json.dumps(fresh_roundtrip(), allow_nan=False))
+    result = login_sync(*(value[k] for k in ('rows', 'events', 'session', 'since', 'until', 'baseline_pose')))
+    entry = json.loads(json.dumps({'login_sync': result, 'raw_packets': value['rows'], 'raw_events': value['events']}))
+    assert validate_login_sync(entry['login_sync']) == result
+    interval = (value['session'], value['since'], value['until'])
+    replay = c.native_replay(entry['raw_packets'], *interval, login_sync=entry['login_sync'])
+    assert c.roundtrip_packets(entry['raw_packets'], *interval, login_sync=entry['login_sync'])['exactly_two_unique_pairs']
+    for session in (result['session'], result['instance_session']):
+        assert c.forbidden_packets(entry['raw_events'], session, value['since'], value['until'],
+            login_sync=result)['no_forbidden_input']
+    assert replay['native_inventory_states'] == [[c.SOURCE['guid'], c.DESTINATION['guid']],
+        [c.DESTINATION['guid'], c.SOURCE['guid']], [c.SOURCE['guid'], c.DESTINATION['guid']]]
+    assert replay['native_item_fields_preserved'] is True
+    assert set(replay['item_fields']) == {str(c.SOURCE['guid']), str(c.DESTINATION['guid'])}
+    assert any(row['name'] == 'SMSG_UPDATE_OBJECT' for row in replay['packets'])
+    assert len([row for row in entry['raw_packets'] if row['name'] == 'SMSG_LOGOUT_COMPLETE']) == 2
+
+
+@pytest.mark.parametrize('fault', ['late_heartbeat', 'late_initializer', 'repeated_native_land',
+    'altered_boot_body', 'extra_directionless_effect'])
+def test_fresh_whole_history_replay_cannot_filter_later_or_changed_movement(fault):
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import proof, packet
+    from tools.client_compatibility import bag_swap_login_sync as sync
+    value = fresh_roundtrip()
+    result = proof(value)
+    rows = deepcopy(value['rows'])
+    if fault == 'extra_directionless_effect':
+        events = value['events'] + [{**next(e for e in value['events'] if e['event'] == 'movement_forwarded'),
+            'time': value['until'] - .01}]
+        with pytest.raises(RuntimeError):
+            c.forbidden_packets(events, result['instance_session'], value['since'], value['until'], login_sync=result)
+        return
+    if fault == 'altered_boot_body':
+        next(r for r in rows if r['name'] == sync.HEARTBEAT)['body'] += '00'
+    else:
+        name, direction = {'late_heartbeat': (sync.HEARTBEAT, 'from_client'),
+            'late_initializer': (sync.INITIALIZE, 'from_client'),
+            'repeated_native_land': ('MSG_MOVE_FALL_LAND', 'to_native')}[fault]
+        rows.append({**packet(value, name, direction), 'time': value['until'] - .01})
+    with pytest.raises(RuntimeError):
+        c.native_replay(rows, value['session'], value['since'], value['until'], login_sync=result)
+
+
+@pytest.mark.parametrize('kind', ['raw_heartbeat', 'forwarded_metadata'])
+def test_actual_caller_cannot_duplicate_a_valid_proof_allowed_boot_row(kind):
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import proof, packet
+    from tools.client_compatibility import bag_swap_login_sync as sync
+    value = fresh_roundtrip()
+    result = proof(value)
+    if kind == 'raw_heartbeat':
+        rows = value['rows'] + [deepcopy(packet(value, sync.HEARTBEAT))]
+        with pytest.raises(RuntimeError, match='allowance row is repeated'):
+            c.native_replay(rows, value['session'], value['since'], value['until'], login_sync=result)
+    else:
+        duplicate = next(e for e in value['events'] if e['event'] == 'movement_forwarded')
+        events = value['events'] + [deepcopy(duplicate)]
+        with pytest.raises(RuntimeError, match='allowance row is repeated'):
+            c.forbidden_packets(events, result['instance_session'], value['since'], value['until'], login_sync=result)
+
+
 @pytest.mark.parametrize('kind', ['drop', 'forwarded', 'confirmation'])
 def test_reconstructed_boot_proof_does_not_hide_extra_directionless_movement_metadata(kind):
     from tools.client_compatibility.world.tests.test_bag_swap_login_sync import recorded, proof

@@ -9,12 +9,23 @@ from urllib.request import urlopen
 
 from . import lab_runtime as lab
 from . import bag_swap_evidence as evidence
-from .bag_swap_sources import private_json
+from .bag_swap_sources import private_json, bound
 from .item_actionbar_contract import require
 from .review_hunter_learn_checkpoint import DigestReader, manifest, dvc_object, remote_request, remote_options
 
 
 def inspect_archive(raw, checkpoint, prefix):
+    if any(row.get('path') == 'tracking/checkpoint.json' for row in checkpoint.get('file_manifest', [])
+        if type(row) is dict):
+        from .review_bag_swap_failed_checkpoint import inspect_archive as inspect_complete
+        data, digests, whole, count = inspect_complete(raw, checkpoint, prefix)
+        tracking = evidence.tracking_state()
+        tracking.update(digests=digests, manifest=whole['manifest'], raw_journals=whole['raw_journals'],
+            archived_metadata=whole['archived_metadata'], compressed_md5=whole['compressed_md5'],
+            complete_manifest_verified=True)
+        for member in evidence.TRACKING_MEMBERS:
+            evidence.collect(member, whole['raw_journals'][member], data, tracking)
+        return data, digests, tracking, count
     selected = manifest(checkpoint, prefix)
     selected.update({row['path']: row for row in checkpoint['file_manifest'] if row['path'].startswith(prefix) and
         row['path'].endswith('.jsonl')})
@@ -64,12 +75,24 @@ def inspect_archive(raw, checkpoint, prefix):
 
 
 def review(directory, output):
-    directory, output = Path(directory).resolve(), Path(output).resolve()
-    require(directory.parent == lab.ROOT / 'evidence' and output.is_relative_to(lab.ROOT / 'evidence') and
-        not output.is_relative_to(directory) and not output.exists(), 'new private review outside the immutable swap batch required')
-    checkpoint = private_json(directory / 'checkpoint_receipt.json', False)
+    directory, output = Path(directory), Path(output)
+    require(directory.is_absolute() and output.is_absolute() and '..' not in directory.parts and '..' not in output.parts and
+        directory.parent == lab.ROOT / 'evidence' and output.is_relative_to(lab.ROOT / 'evidence') and
+        not output.is_relative_to(directory) and not output.exists() and
+        not any(path.is_symlink() for path in (directory, output, *directory.parents, *output.parents)),
+        'new ordinary private review outside the immutable swap batch required')
+    checkpoint_path = directory / 'checkpoint_receipt.json'
+    checkpoint_ref = bound(checkpoint_path)
+    checkpoint = private_json(checkpoint_path, False)
     require(checkpoint.get('cloud_verified') is True, 'swap checkpoint has not been synchronized')
+    require(all(any(row.get('path') == member for row in checkpoint.get('file_manifest', []) if type(row) is dict)
+        for member in (*evidence.TRACKING_MEMBERS, 'tracking/checkpoint.json')),
+        'new swap checkpoint requires complete source-bound generic tracking manifest')
     pointer, oid = dvc_object(lab.REPO, checkpoint)
+    pointer_path = lab.REPO / pointer
+    require(pointer_path.stat().st_size <= 1024 * 1024 and
+        not any(path.is_symlink() for path in (pointer_path, *pointer_path.parents)), 'ordinary actual DVC pointer required')
+    pointer_raw = pointer_path.read_bytes()
     md5 = hashlib.md5()
 
     class ObjectReader:
@@ -86,9 +109,14 @@ def review(directory, output):
             str(directory.relative_to(lab.ROOT)) + '/')
     require(md5.hexdigest() == oid, 'actual swap compressed DVC object key differs')
     result = evidence.proof(data, digests, tracking)
+    require(bound(checkpoint_path) == checkpoint_ref and dvc_object(lab.REPO, checkpoint) == (pointer, oid) and
+        pointer_path.read_bytes() == pointer_raw, 'actual checkpoint or pointer changed during complete remote verification')
     report = {'schema': 'client442_bag_swap_remote_review_v1', 'reviewed_at': time.time(),
+        'checkpoint_source': checkpoint_ref, 'pointer_sha256': hashlib.sha256(pointer_raw).hexdigest(), 'object_md5': oid,
         'pointer': pointer, 'archive_sha256': checkpoint['sha256'], 'bytes': count,
         'actual_remote_verified': True, 'complete_json_png_verified': True,
+        'complete_manifest_verified': tracking.get('complete_manifest_verified') is True,
+        'complete_json_png_jsonl_verified': True,
         'json_members': sum(p.endswith('.json') for p in digests), 'png_members': sum(p.endswith('.png') for p in digests),
         'journal_members': sum(p.endswith('.jsonl') for p in digests), 'local_archive_created': False,
         'qualification_added': False, 'proof': result}

@@ -22,6 +22,67 @@ def authority(tmp_path, monkeypatch, *, transition=False, journal_edges=False):
     return batch, paths, values, admit(paths)
 
 
+def current_epoch_inputs(tmp_path, monkeypatch):
+    from tools.client_compatibility import bag_swap_failed_sources as failed
+    from tools.client_compatibility import bag_swap_failed_evidence as parent
+    from tools.client_compatibility import bag_swap_projection as projection
+    repo, root = tmp_path / 'repo', tmp_path / 'lab'
+    out = root / 'evidence/ui173/resume'
+    out.mkdir(parents=True)
+    monkeypatch.setattr(publication.lab, 'REPO', repo)
+    monkeypatch.setattr(publication.lab, 'ROOT', root)
+    prior = sorted(set(failed.CURRENT_REQUIRED) | set(failed.OLD_MEMBERS) |
+        set(parent.PUBLICATION_FILES) | set(parent.PUBLICATION_DEPENDENCIES))
+    members = sorted(set(prior) | set(publication.FRESH_CODE_FILES))
+    raw = {member: ('actual Git adapter bytes for ' + member + '\n').encode() for member in members}
+    refs = [{'path': str(repo / member), 'sha256': hashlib.sha256(raw[member]).hexdigest()} for member in members]
+    prior_refs = [ref for ref in refs if str(Path(ref['path']).relative_to(repo)) in prior]
+    old = {'graph': {'data': {'parent.json': {'schema': 'client442_bag_swap_failed_journals_v1',
+        'code_commit': 'a' * 40, 'code_source_epoch': {'committed_sources': prior_refs}}}}}
+    monkeypatch.setattr(projection, 'source_identities', lambda path: refs)
+    def git(args, **kwargs):
+        assert kwargs['cwd'] == repo
+        if args == ['git', 'rev-parse', 'HEAD']:
+            return 'b' * 40
+        assert args[:2] == ['git', 'show'] and args[2].startswith('b' * 40 + ':')
+        return raw[args[2].split(':', 1)[1]]
+    monkeypatch.setattr(publication.subprocess, 'check_output', git)
+    return out, old, refs, raw
+
+
+def test_current_epoch_writer_carries_every_actual_git_member_before_launch_and_never_overwrites(tmp_path, monkeypatch):
+    out, old, refs, raw = current_epoch_inputs(tmp_path, monkeypatch)
+    result = publication.current_code_epoch(out, old)
+    epoch = json.loads(Path(result['path']).read_text())
+    assert publication.bound(result['path']) == result
+    assert epoch['code_commit'] == 'b' * 40 and epoch['committed_sources'] == refs
+    assert len(refs) == len(epoch['carried_sources']) == 89
+    for original, copy in zip(refs, epoch['carried_sources']):
+        envelope = json.loads(Path(copy['path']).read_text())
+        member = str(Path(original['path']).relative_to(publication.lab.REPO))
+        assert bytes.fromhex(envelope['raw_hex']) == raw[member]
+        assert envelope['bytes'] == len(raw[member]) and envelope['sha256'] == original['sha256']
+        assert publication.bound(copy['path']) == copy
+    with pytest.raises(RuntimeError, match='never overwrites'):
+        publication.current_code_epoch(out, old)
+
+
+@pytest.mark.parametrize('fault', ['same_parent_commit', 'uncommitted_bytes', 'missing_member', 'extra_member'])
+def test_current_epoch_writer_refuses_reused_publication_or_uncommitted_incomplete_package(tmp_path, monkeypatch, fault):
+    out, old, refs, raw = current_epoch_inputs(tmp_path, monkeypatch)
+    if fault == 'same_parent_commit':
+        monkeypatch.setattr(publication.subprocess, 'check_output', lambda *args, **kwargs: 'a' * 40)
+    elif fault == 'uncommitted_bytes':
+        raw[next(iter(raw))] += b'changed in Git adapter'
+    elif fault == 'missing_member':
+        refs.pop()
+    else:
+        refs.append({'path': str(publication.lab.REPO / 'unrelated.py'), 'sha256': 'c' * 64})
+    with pytest.raises(RuntimeError):
+        publication.current_code_epoch(out, old)
+    assert not (out / 'code_sources').exists() and not (out / 'current_code_epoch.json').exists()
+
+
 @pytest.mark.parametrize('transition', [False, True], ids=['ordinary', 'pure_C_to_D'])
 def test_required_members_retains_closure_ancestry_and_proof_frames_but_excludes_unused_png(tmp_path, monkeypatch, transition):
     _, paths, _, old = authority(tmp_path, monkeypatch, transition=transition)

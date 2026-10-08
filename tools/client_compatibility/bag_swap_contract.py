@@ -153,9 +153,14 @@ def forbidden_packets(rows, session, since, until, *, login_sync=None):
             'login settlement allowance belongs to another physical/native session')
         allowed.update(proof['allowed_packet_keys'])
         allowed.update(proof['allowed_metadata_keys'])
-    bad = []
+    bad, seen_allowed = [], set()
     for row in scoped:
         name = row.get('name')
+        if login_sync is not None:
+            key = packet_key(row)
+            if key in allowed:
+                require(key not in seen_allowed, 'exact login allowance row is repeated in the actual caller window')
+                seen_allowed.add(key)
         if (login_sync is not None) and 'event' not in row:
             from .bag_swap_login_sync import WIRE_DIRECTIONS, WIRE_FIELDS
             require(set(row) == WIRE_FIELDS and type(name) is str and name and
@@ -306,8 +311,15 @@ def native_replay(rows, session, since, until, *, rest_threshold=None, login_syn
         else:
             chain = roundtrip_packets(rows, session, since, until, login_sync=login_sync)
             forward, reverse = chain['forward'], chain['reverse']
-    filtered = [r for r in rows if not (r.get('session') == session and r.get('name') == ACTION and
-        finite(r.get('time')) and since <= r['time'] <= until)]
+    inert_boot = set()
+    if login_sync is not None:
+        from .bag_swap_login_sync import packet_key, validate_login_sync
+        inert_boot = set(validate_login_sync(login_sync)['allowed_packet_keys'])
+    # This wrapper has already validated each exact boot row. The shared item
+    # replay receives every owner creation/update and login row unchanged.
+    filtered = [r for r in rows if not (r.get('session') == session and
+        finite(r.get('time')) and since <= r['time'] <= until and
+        (r.get('name') == ACTION or (inert_boot and packet_key(r) in inert_boot)))]
     owner = shared.native_replay(filtered, session, since, until, rest_threshold=rest_threshold)
     selected = {i['guid']: i for i in (SOURCE, DESTINATION)}
     created, current, owner_fields, owner_inventory, inventory_states = {}, {}, {}, None, []

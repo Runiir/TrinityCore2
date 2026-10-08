@@ -55,9 +55,10 @@ SOURCE_FILES = (
 def source_identities(repo):
     """Freeze the narrow controller, tests, contract, and wire-layout sources."""
     repo = Path(repo)
+    from .bag_swap_failed_evidence import PUBLICATION_DEPENDENCIES
     paths = sorted([str(p.relative_to(repo)) for p in (repo / 'tools/client_compatibility').glob('*bag_swap*.py')] +
         [str(p.relative_to(repo)) for p in (repo / 'tools/client_compatibility/world/tests').glob('test_bag_swap*.py')] +
-        ['experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json'] + list(SOURCE_FILES))
+        ['experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json'] + list(SOURCE_FILES) + list(PUBLICATION_DEPENDENCIES))
     require(len(paths) == len(set(paths)) and len(paths) >= 16, 'complete swap source identities are required')
     result = []
     for relative in paths:

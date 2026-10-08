@@ -25,26 +25,45 @@ from tools.client_compatibility.world.tests.test_item_actionbar_evidence import 
 from tools.client_compatibility.world.tests.test_item_actionbar_preservation import precision as precise
 
 
-def complete_fixture(tmp_path, monkeypatch):
+def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None, code_epoch_builder=None):
     original_snapshot = prior_snapshot.snapshot
     def occupied_snapshot():
         value = original_snapshot()
         value['2']['inventory'] = inventory()
         return value
-    monkeypatch.setattr(prior_snapshot, 'snapshot', occupied_snapshot)
-    carried, carried_ready, ancestry = carried_fixture(tmp_path, monkeypatch)
+    if authority is None:
+        monkeypatch.setattr(prior_snapshot, 'snapshot', occupied_snapshot)
+        carried, carried_ready, ancestry = carried_fixture(tmp_path, monkeypatch)
+    else:
+        carried, old, carried_ready, ancestry = authority
     root, repo = e.lab.ROOT, e.lab.REPO
     cache_member = str(Path(carried_ready['authority_source']['path']).relative_to(root))
     cache = carried.data[cache_member]
-    old = sources.validate_bundle(cache['values'], cache['refs'], cache['graph'])
+    if authority is None:
+        old = sources.validate_bundle(cache['values'], cache['refs'], cache['graph'])
+    else:
+        repo = next(Path(row['path']).parents[3] for row in old['closure']['committed_sources']
+            if row['path'].endswith('/experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json'))
     baseline = deepcopy(old['snapshot'])
     c.owned_snapshot(baseline)
-    batch = root / 'evidence/client_interactions_20990101_ui172'
-    data, digests, files = dict(carried.data), dict(carried.digests), {}
+    batch = root / ('evidence/client_interactions_20990101_ui173' if authority else
+        'evidence/client_interactions_20990101_ui172')
+    offset = int(old['closure']['finished_at']) + 10 - 1130 if authority else 0
+    def tm(value):
+        return value + offset + (13 if boot_builder and value >= 1201 else 0)
+    if authority:
+        members = [cache_member, str(Path(carried_ready['runtime_authority_source']['path']).relative_to(root))]
+        members += [row['copy_member'] for row in ancestry['members'] + ancestry['authorities']]
+        data = {member: carried.data[member] for member in members if member in carried.data}
+        digests = {member: carried.digests[member] for member in members}
+        files = {member: carried.files[member] for member in members}
+    else:
+        data, digests, files = dict(carried.data), dict(carried.digests), {}
     files[cache_member] = Path(carried_ready['authority_source']['path']).read_bytes()
     for row in ancestry['members'] + ancestry['authorities']:
-        files[row['copy_member']] = Path(row['original_path']).read_bytes()
-    for row in ancestry['journals']:
+        if not authority:
+            files[row['copy_member']] = Path(row['original_path']).read_bytes()
+    for row in ancestry.get('journals', []):
         files[row['copy_member']] = b''.join((json.dumps(line) + '\n').encode()
             for line in carried.raw_journals[row['copy_member']])
         assert hashlib.sha256(files[row['copy_member']]).hexdigest() == row['sha256']
@@ -59,12 +78,13 @@ def complete_fixture(tmp_path, monkeypatch):
         return {'path': str(path), 'sha256': digests[member]}
 
     write('ancestry_manifest.json', ancestry)
-    compact_ref = write('runtime_authority.json', sources.compact_authority(old, carried_ready['authority_source']))
+    compact_ref = carried_ready['runtime_authority_source'] if authority else write(
+        'runtime_authority.json', sources.compact_authority(old, carried_ready['authority_source']))
     actor = deepcopy(old['origin_actor'])
     runtime = deepcopy(old['runtime'])
-    runtime['client'] = {'pid': 30, 'start_ticks': '3000'}
-    monitor = {'second_monitor_verified': True, 'monitor': {'name': 'HDMI-1'}, 'pid': 30,
-        'input_isolation': {'actor': 'scout', 'host_activation_sent': False, 'game_pid': 31,
+    runtime['client'] = {'pid': 50, 'start_ticks': '5000'} if authority else {'pid': 30, 'start_ticks': '3000'}
+    monitor = {'second_monitor_verified': True, 'monitor': {'name': 'HDMI-1'}, 'pid': runtime['client']['pid'],
+        'input_isolation': {'actor': 'scout', 'host_activation_sent': False, 'game_pid': 51 if authority else 31,
             'display': ':2', 'window_id': 37748738, 'actor_lock': 'scout'}}
     png = b'\x89PNG\r\n\x1a\nsynthetic-owned-swap-frame'
     def frame(name):
@@ -83,42 +103,53 @@ def complete_fixture(tmp_path, monkeypatch):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes((source_root / relative).read_bytes())
         committed_sources.append(sources.bound(path))
+    epoch_ref = None
+    if code_epoch_builder:
+        committed_sources, epoch_ref = code_epoch_builder(old, repo, write)
     def trial(name, phase, start, finish, **fields):
         return {'schema': 'client442_laya_interactions_v1', 'phase': phase, 'completed': True, 'failure': None,
             'started_at': start, 'finished_at': finish, 'actor': deepcopy(actor), 'runtime': deepcopy(runtime),
-            'controller': 'code', 'model': None, 'revision': None, 'code_commit': 'e' * 40,
+            'controller': 'code', 'model': None, 'revision': None, 'code_commit': ('d' if authority else 'e') * 40,
             'committed_sources': deepcopy(committed_sources), 'cases': [], 'cleanup': [],
             'custom_script_permission': 'blocked_by_user', 'softTargetInteract': deepcopy(e.shared.SCRIPT_BOUNDARY),
             'qualification_added': False, 'input_sent': False, 'mutation_sent': False, **fields}
 
     resume = {'schema': 'client442_bag_swap_scout_resume_v1', 'phase': 'bags_swap_scout_launched',
-        'completed': True, 'failure': None, 'installed': True, 'started_at': 1130,
-        'launch_finished_at': 1131, 'finished_at': 1131, 'authority_source': carried_ready['authority_source'],
+        'completed': True, 'failure': None, 'installed': True, 'started_at': tm(1130),
+        'launch_finished_at': tm(1131), 'finished_at': tm(1131), 'authority_source': carried_ready['authority_source'],
         'runtime_authority_source': compact_ref,
         'predecessor': old['predecessor'], 'all_offline_snapshot': baseline, 'origin_actor': actor,
         'runtime': runtime, 'previous_runtime': old['runtime'], 'available_memory_kib_before': 6 * 1024 * 1024,
         'checks': dict.fromkeys(('native_unchanged', 'bridge_unchanged', 'fresh_scout',
             'all_six_saved_snapshots', 'primary_stopped', 'HDMI_1', 'private_input'), True)}
+    if epoch_ref:
+        resume['current_code_epoch_source'] = epoch_ref
     resume_ref = write('resume/report.json', resume)
-    selection = trial('selection', 'bags_swap_scout_captured', 1131.1, 1131.2, frame=frame('selection'))
+    selection = trial('selection', 'bags_swap_scout_captured', tm(1131.1), tm(1131.2), frame=frame('selection'))
     selection_ref = write('selection/episode.json', selection)
     selection_review = {'reviewed': True, 'control': 'Harnesstwo', 'source': selection_ref,
         'frame': selection['frame'], 'selected_character': 'Harnesstwo', 'selected_level': 1}
     selection_review_ref = write('selection_review/review.json', selection_review)
-    authentication = {'event': 'world_authenticated', 'account_id': 2, 'session': 'scout', 'time': 1131.5}
-    ready = trial('ready', 'bags_swap_scout_ready', 1132, 1133, authority_source=carried_ready['authority_source'],
+    authentication = {'event': 'world_authenticated', 'account_id': 2, 'session': 'scout', 'time': tm(1131.5)}
+    ready = trial('ready', 'bags_swap_scout_ready', tm(1132), tm(1133), authority_source=carried_ready['authority_source'],
         runtime_authority_source=compact_ref,
         predecessor=old['predecessor'], predecessor_dvc_pointer=old['dvc_pointer'], all_offline_snapshot=baseline,
         native_session='scout', resume_source=resume_ref, selection_source=selection_ref,
         realm_authentication=authentication, frame=frame('ready'),
         screen_review={**selection_review_ref, 'frame': selection['frame']})
+    if epoch_ref:
+        ready['current_code_epoch_source'] = epoch_ref
     ready_ref = write('ready/episode.json', ready)
-    prior_precision = next(value for value in old['graph']['data'].values() if
+    prior_precision = old['closure']['exact_precision'] if authority else next(value for value in old['graph']['data'].values() if
         value.get('phase') == 'item_actionbar_rest_precision_complete' and value.get('after') == baseline)
     exact_before = prior_precision['row']['exact_rest_bonus']
-    exact_after, text = preservation.native_rest(exact_before, 1200 - baseline['2']['native']['logout_time'])
-    binding = deepcopy(prior_precision['rest_sources'])
-    before = trial('before_precision', 'bags_swap_rest_precision_complete', 1134, 1135,
+    exact_after, text = preservation.native_rest(exact_before, tm(1200) - baseline['2']['native']['logout_time'])
+    if authority:
+        member = str(Path(old['closure']['before_precision_source']['path']).relative_to(root))
+        binding = deepcopy(old['graph']['data'][member]['rest_sources'])
+    else:
+        binding = deepcopy(prior_precision['rest_sources'])
+    before = trial('before_precision', 'bags_swap_rest_precision_complete', tm(1134), tm(1135),
         source=ready_ref, before=baseline, after=baseline, query=preservation.PRECISION_QUERY,
         row=precise(baseline['2']['native'], exact_before), rest_sources=binding,
         checks=dict.fromkeys(e.shared.PRECISION_CHECKS, True))
@@ -133,17 +164,28 @@ def complete_fixture(tmp_path, monkeypatch):
     native_resources['money'] = baseline['2']['native'].get('money', 0)
     native_original = {**native_state, 'selection': {'native_guid': 0}, 'resources': native_resources,
         'actions': baseline['2']['saved']['actions']}
-    login = [{**row, 'time': row['time'] + 100} for row in login_packets()]
-    creations = [native_packet({**owner_fields(), **slot_fields()}, time=1200.5),
-        native_packet(item_fields(c.SOURCE), guid=c.SOURCE['guid'], kind=1, time=1200.6),
-        native_packet(item_fields(c.DESTINATION), guid=c.DESTINATION['guid'], kind=1, time=1200.7)]
-    owner_proof = c.native_replay(login + creations, 'scout', 1199, 1201)
-    entry = trial('entry', 'bags_swap_entered', 1199, 1201, preparation_source=ready_ref,
+    boot = None
+    login = [{**row, 'time': row['time'] + 100 + offset} for row in login_packets()]
+    creations = [native_packet({**owner_fields(), **slot_fields()}, time=tm(1200.5)),
+        native_packet(item_fields(c.SOURCE), guid=c.SOURCE['guid'], kind=1, time=tm(1200.6)),
+        native_packet(item_fields(c.DESTINATION), guid=c.DESTINATION['guid'], kind=1, time=tm(1200.7))]
+    if boot_builder:
+        boot, native_resources = boot_builder(baseline, exact_after, tm(1200), tm(1199), tm(1201))
+        state['world_position'] = boot['baseline_pose']
+        native_state['pose']['sheath'] = 0
+        native_original.update(pose=native_state['pose'], resources=native_resources)
+        login = boot['login_packets']
+        creations = [row for row in boot['rows'] if row not in login]
+    owner_proof = c.native_replay(login + creations, 'scout', tm(1199), tm(1201),
+        login_sync=boot['proof'] if boot else None)
+    entry = trial('entry', 'bags_swap_entered', tm(1199), tm(1201), preparation_source=ready_ref,
         precision_source=before_ref, all_offline_snapshot=baseline, native_session='scout',
         native_before_entry=baseline['2']['native'], entered_native={**baseline['2']['native'], 'online': 1},
         login_packets=login, owner_packets=owner_proof['packets'], native_owner_proof=owner_proof,
         saved=baseline['2']['saved'], resources=native_resources, active_spec=0,
         public=stock_public(baseline['2']['saved']['actions']), state=state, frame=frame('entry'), native_original=native_original)
+    if boot:
+        entry.update(login_sync=boot['proof'], raw_entry_packets=boot['rows'], raw_entry_events=boot['events'])
     entry_ref = write('entry/episode.json', entry)
     base = {'snapshot': baseline, 'saved': entry['saved'], 'resources': native_resources, 'public': entry['public'],
         'state': state, 'frame': entry['frame'], 'active_spec': 0, 'entry_source': entry_ref,
@@ -155,24 +197,25 @@ def complete_fixture(tmp_path, monkeypatch):
     opening_ref = write('opening_review/review.json', {'reviewed': True, 'control': 'MainMenuBarBackpackButton',
         'source': entry_ref, 'frame': entry['frame'], 'pickup_point_inside_button': True, 'point': [1200, 690]})
     opened = {**state, **bag_public()}
-    first = trial('forward_ready', 'bags_swap_forward_ready', 1202, 1203, **common, state=opened,
+    first = trial('forward_ready', 'bags_swap_forward_ready', tm(1202), tm(1203), **common, state=opened,
         frame=frame('forward_ready'), resources=native_resources, snapshot=online, public=entry['public'], native_state=native_state,
         backpack_open_review=opening_ref, backpack_open_input={'kind': 'click', 'value': [1200, 690]})
     first_ref = write('forward_ready/episode.json', first)
-    wire = login + creations
-    forward_wire = packets(start=1204) + [native_packet(slot_fields(True), creation=False, time=1204.2),
-        {'session': 'scout', 'time': 1204.3, 'name': 'SMSG_UPDATE_OBJECT', 'direction': 'to_client',
+    wire = boot['rows'] if boot else login + creations
+    forward_wire = packets(start=tm(1204)) + [native_packet(slot_fields(True), creation=False, time=tm(1204.2)),
+        {'session': 'scout', 'time': tm(1204.3), 'name': 'SMSG_UPDATE_OBJECT', 'direction': 'to_client',
             'body': delivered_packet(inventory_block()).hex()}]
-    reverse_wire = packets(True, 1208) + [native_packet(slot_fields(), creation=False, time=1208.2),
-        {'session': 'scout', 'time': 1208.3, 'name': 'SMSG_UPDATE_OBJECT', 'direction': 'to_client',
+    reverse_wire = packets(True, tm(1208)) + [native_packet(slot_fields(), creation=False, time=tm(1208.2)),
+        {'session': 'scout', 'time': tm(1208.3), 'name': 'SMSG_UPDATE_OBJECT', 'direction': 'to_client',
             'body': delivered_packet(inventory_block(swapped=False)).hex()}]
-    logout = [{'session': 'scout', 'time': 1215 + i * .1, 'name': name, 'direction': direction, 'body': raw}
+    logout = [{'session': 'scout', 'time': tm(1215) + i * .1, 'name': name, 'direction': direction, 'body': raw}
         for i, (name, direction, raw) in enumerate((('CMSG_LOGOUT_REQUEST', 'to_native', ''),
             ('SMSG_LOGOUT_COMPLETE', 'from_native', ''), ('SMSG_LOGOUT_COMPLETE', 'to_client', '00')))]
-    wire += forward_wire + reverse_wire + [{'session': 'scout', 'time': 1214.99, 'name': 'CMSG_LOGOUT_REQUEST',
+    wire += forward_wire + reverse_wire + [{'session': 'scout', 'time': tm(1214.99), 'name': 'CMSG_LOGOUT_REQUEST',
         'direction': 'from_client', 'body': '00'}] + logout
-    wire.sort(key=lambda row: row['time'])
-    replay = c.native_replay(wire, 'scout', 1199, 1215.1)
+    if not boot:
+        wire.sort(key=lambda row: row['time'])
+    replay = c.native_replay(wire, 'scout', tm(1199), tm(1215.1), login_sync=boot['proof'] if boot else None)
 
     def drag(kind, review_source, reviewed, inverse, start, finish, raw, inherited=None):
         intent = {'kind': 'drag', 'start': [20, 20] if not inverse else [60, 20],
@@ -208,36 +251,36 @@ def complete_fixture(tmp_path, monkeypatch):
             kind + '_snapshot': snapshot, kind + '_cursor': False})
         return stage
 
-    forward = drag('forward', first_ref, first, False, 1204, 1205, forward_wire)
+    forward = drag('forward', first_ref, first, False, tm(1204), tm(1205), forward_wire)
     forward['autosave'] = {'mechanism': 'native_PlayerSaveInterval', 'bound_seconds': 150, 'heartbeat_seconds': 2,
         'persisted': True, 'saveall_sent': False, 'sql_write_sent': False, 'elapsed_seconds': 1,
         'configured_interval_ms': 90000, 'first_timer_ms': [45000, 135000],
         'config_source': binding['config_source'], 'native_timer_source': binding['native_formula_source']}
     forward_ref = write('forward/episode.json', forward)
     inherited = {key: value for key, value in forward.items() if key.startswith('forward') or key == 'autosave'}
-    reverse_ready = trial('reverse_ready', 'bags_swap_reverse_ready', 1206, 1207, **common,
+    reverse_ready = trial('reverse_ready', 'bags_swap_reverse_ready', tm(1206), tm(1207), **common,
         source=forward_ref, state=forward['state'], frame=frame('reverse_ready'), snapshot=forward['snapshot'],
         resources=forward['resources'], public=entry['public'], native_state=native_state, **inherited)
     reverse_ready_ref = write('reverse_ready/episode.json', reverse_ready)
-    reverse = drag('reverse', reverse_ready_ref, reverse_ready, True, 1208, 1209, reverse_wire, inherited)
+    reverse = drag('reverse', reverse_ready_ref, reverse_ready, True, tm(1208), tm(1209), reverse_wire, inherited)
     reverse_ref = write('reverse/episode.json', reverse)
     inherited.update({key: value for key, value in reverse.items() if key.startswith('reverse')})
-    operation = trial('operation', 'bags_swap_restored', 1210, 1212, **common, source=reverse_ref,
+    operation = trial('operation', 'bags_swap_restored', tm(1210), tm(1212), **common, source=reverse_ref,
         after_resources=native_resources, after_saved=baseline['2']['saved'], inventory_restored=True,
         actionbar_restored=True, state=state, public=entry['public'], native_state=native_state,
         snapshot=online, frame=frame('operation'), cursor_cancellations=[], **inherited,
         layout_restoration_checks=dict.fromkeys(e.shared.LAYOUT_CHECKS, True))
     operation_ref = write('operation/episode.json', operation)
     final = deepcopy(baseline)
-    final['2']['native'].update(rest_bonus=text, logout_time=1216,
+    final['2']['native'].update(rest_bonus=text, logout_time=tm(1216),
         totaltime=baseline['2']['native']['totaltime'] + 20, leveltime=baseline['2']['native']['leveltime'] + 20)
-    whole = c.packet_rows(wire, 'scout', 1199, 1215.1)
-    park = trial('park', 'bags_swap_parked', 1214, 1217, **common, source=operation_ref,
-        all_offline_snapshot=final, logout_started_at=1214.9, logout_finished_at=1216.9,
+    whole = c.packet_rows(wire, 'scout', tm(1199), tm(1215.1))
+    park = trial('park', 'bags_swap_parked', tm(1214), tm(1217), **common, source=operation_ref,
+        all_offline_snapshot=final, logout_started_at=tm(1214.9), logout_finished_at=tm(1216.9),
         logout_packets=logout, pre_logout_native_state=native_state, raw_native_logout_history=whole,
         native_logout_proof=replay, checks=dict.fromkeys(e.shared.PARK_CHECKS, True), frame=frame('park'))
     park_ref = write('park/episode.json', park)
-    after = trial('after_precision', 'bags_swap_rest_precision_complete', 1220, 1221,
+    after = trial('after_precision', 'bags_swap_rest_precision_complete', tm(1220), tm(1221),
         source=park_ref, before=final, after=final, query=preservation.PRECISION_QUERY,
         row=precise(final['2']['native'], exact_after), rest_sources=binding,
         checks=dict.fromkeys(e.shared.PRECISION_CHECKS, True))
@@ -250,19 +293,24 @@ def complete_fixture(tmp_path, monkeypatch):
     assert restored == final and publication.validate_carry(store, ready)
     final_review_ref = write('final_review/review.json', {'reviewed': True, 'control': 'Harnesstwo',
         'source': park_ref, 'frame': park['frame'], 'selected_character': 'Harnesstwo', 'selected_level': 1})
-    closure = trial('final', e.PHASE, 1225, 1226, sources=refs, proof=result,
+    closure = trial('final', e.PHASE, tm(1225), tm(1226), sources=refs, proof=result,
         before=final, after=final, all_offline_snapshot=final, authority_source=ready['authority_source'],
         primary_stop_source=ready['predecessor']['primary_stop'], shutdown_checks=dict.fromkeys(e.shared.SHUTDOWN_CHECKS, True),
         action='stop_parked_scout_after_bag_swap_roundtrip', stop_attempted=True,
-        game_before={'pid': 31, 'start_ticks': '3100'}, screen_review={**final_review_ref, 'frame': park['frame']},
+        game_before={'pid': 51 if authority else 31, 'start_ticks': '5100' if authority else '3100'}, screen_review={**final_review_ref, 'frame': park['frame']},
         frame=frame('final'))
     closure_ref = write('final/episode.json', closure)
     # Current source-owned journals start at ready.started_at; the prior realm
     # authentication is retained in ready but lies outside that archive window.
-    events = [{'event': 'instance_authenticated', 'account_id': 2, 'session': 'physical', 'time': 1200.15}]
+    events = deepcopy(boot['events']) if boot else [
+        {'event': 'instance_authenticated', 'account_id': 2, 'session': 'physical', 'time': tm(1200.15)}]
     for row in wire:
         physical = 'scout' if row['direction'] in ('to_native', 'from_native') or row['name'] in (
             'CMSG_PLAYER_LOGIN', 'SMSG_LOGOUT_COMPLETE') else 'physical'
+        if any(event.get('session') == physical and event.get('name') == row['name'] and
+            event.get('direction') == row['direction'] and event.get('bytes') == len(bytes.fromhex(row['body'])) and
+            0 <= row['time'] - event['time'] < .1 for event in events):
+            continue
         events.append({'event': 'native_packet' if row['direction'] in ('to_native', 'from_native') else 'modern_packet',
             'session': physical, 'time': row['time'] - .01, 'name': row['name'],
             'direction': row['direction'], 'bytes': len(bytes.fromhex(row['body']))})

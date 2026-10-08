@@ -112,6 +112,166 @@ def test_pre_stop_whole_logout_history_failure_prevents_client_stop(tmp_path, mo
     assert stops == []
 
 
+def test_final_all_six_snapshot_is_rechecked_after_history_before_stop(tmp_path, monkeypatch):
+    t, paths, stops, _ = setup(tmp_path, monkeypatch)
+    original = m.snapshot()
+    changed = deepcopy(original)
+    changed['2']['native']['online'] = 1
+    reads = iter([original, changed])
+    monkeypatch.setattr(m, 'snapshot', lambda: next(reads))
+    with pytest.raises(RuntimeError, match='immediately before client stop'):
+        close(t, paths)
+    assert stops == []
+
+
+def test_live_journals_retain_only_fresh_bounded_rows_and_validate_before_filter(monkeypatch):
+    events = [{'event': 'world_authenticated', 'account_id': 2, 'session': 'owner', 'time': 100},
+        {'event': 'instance_authenticated', 'account_id': 2, 'session': 'physical', 'time': 101},
+        {'event': 'modern_packet', 'session': 'physical', 'time': 102}]
+    def metadata():
+        yield from ({'session': 'older', 'time': i} for i in range(100))
+        yield from events
+        yield {'session': 'physical', 'time': 110}
+    def packets():
+        yield from ({'session': 'other', 'time': i} for i in range(100000))
+        yield {'session': 'owner', 'time': 99}
+        yield {'session': 'owner', 'time': 102, 'body': '00'}
+        yield {'session': 'physical', 'time': 103, 'body': '01'}
+        yield {'session': 'owner', 'time': 110}
+    monkeypatch.setattr(m, 'metadata', metadata)
+    monkeypatch.setattr(m, 'packets', packets)
+    assert m.history_events(None, 100, 105) == events
+    assert m.history_packets('owner', 100, 105, instance='physical') == [
+        {'session': 'owner', 'time': 102, 'body': '00'}, {'session': 'physical', 'time': 103, 'body': '01'}]
+
+
+@pytest.mark.parametrize('kind', ['events', 'packets'])
+@pytest.mark.parametrize('attribution', [{'session': 'owner'}, {'session': 'physical'},
+    {'session': 'foreign', 'account_id': 2}, {'session': 'foreign', 'guid': 2}])
+@pytest.mark.parametrize('bad', [None, True, '1', float('nan'), float('inf'), -float('inf')])
+def test_live_journal_malformed_attributable_time_refuses_before_range_filter(monkeypatch, kind, attribution, bad):
+    auth = {'event': 'instance_authenticated', 'account_id': 2, 'session': 'physical', 'time': 101}
+    malformed = {**attribution, 'time': bad, 'event': 'modern_packet'}
+    monkeypatch.setattr(m, 'metadata', lambda: iter([auth, malformed] if kind == 'events' else [auth]))
+    monkeypatch.setattr(m, 'packets', lambda: iter([malformed]))
+    with pytest.raises(RuntimeError, match='attributable'):
+        if kind == 'events':
+            m.history_events('owner', 100, 105)
+        else:
+            m.history_packets('owner', 100, 105, instance='physical')
+
+
+def fresh_entry_history():
+    from tools.client_compatibility.world.tests.test_bag_swap_contract import fresh_roundtrip
+    from tools.client_compatibility.bag_swap_login_sync import login_sync
+    value = fresh_roundtrip()
+    until = value['until'] - 4
+    entry = {'native_session': value['session'], 'started_at': value['since'], 'finished_at': until,
+        'native_before_entry': dict(zip(('position_x', 'position_y', 'position_z', 'orientation'), value['baseline_pose']))}
+    entry['login_sync'] = login_sync(value['rows'], value['events'], value['session'], value['since'], until,
+        value['baseline_pose'])
+    entry['native_owner_proof'] = m.native_replay(value['rows'], value['session'], value['since'], until,
+        login_sync=entry['login_sync'])
+    return entry, value
+
+
+def test_fresh_whole_logout_rederives_boot_from_actual_raw_and_both_session_metadata(monkeypatch):
+    from tools.client_compatibility import bag_swap_contract as contract
+    entry, value = fresh_entry_history()
+    monkeypatch.setattr(m, 'metadata', lambda: iter(value['events']))
+    ordered = m.logout_packets(value['rows'], value['session'], entry['finished_at'], value['until'])
+    raw, replay = m.whole_logout_history(value['rows'], entry, value['session'], ordered)
+    source, destination = contract.SOURCE['guid'], contract.DESTINATION['guid']
+    assert replay['native_inventory_states'] == [[source, destination], [destination, source], [source, destination]]
+    assert raw[-1]['name'] == 'SMSG_LOGOUT_COMPLETE'
+    assert m.entry_settlement(entry, value['rows'], value['events'], required=True) == entry['login_sync']
+
+
+@pytest.mark.parametrize('fault', ['later_physical_movement', 'duplicate_forward_event', 'wrong_pose', 'wrong_sync'])
+def test_fresh_whole_logout_refuses_unbound_boot_or_later_physical_movement(monkeypatch, fault):
+    entry, value = fresh_entry_history()
+    if fault == 'later_physical_movement':
+        value['events'].append({'session': entry['login_sync']['instance_session'], 'time': entry['finished_at'] + .5,
+            'event': 'modern_packet', 'name': 'CMSG_MOVE_HEARTBEAT', 'direction': 'from_client', 'bytes': 54})
+    elif fault == 'duplicate_forward_event':
+        value['events'].append(deepcopy(next(row for row in value['events'] if row.get('event') == 'movement_forwarded')))
+    elif fault == 'wrong_pose':
+        entry['native_before_entry']['position_x'] += 1
+    else:
+        entry['login_sync']['instance_session'] = 'different'
+    monkeypatch.setattr(m, 'metadata', lambda: iter(value['events']))
+    ordered = m.logout_packets(value['rows'], value['session'], entry['finished_at'], value['until'])
+    with pytest.raises(RuntimeError):
+        m.whole_logout_history(value['rows'], entry, value['session'], ordered)
+
+
+@pytest.mark.parametrize('fault', [None, 'protected_actor', 'owner_health'])
+def test_fresh_enter_producer_retains_actual_boot_and_honest_online_accounting(tmp_path, monkeypatch, fault):
+    from tools.client_compatibility import bag_swap_contract as contract
+    from tools.client_compatibility.bag_swap_login_sync import login_sync
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import fresh_login
+    from tools.client_compatibility.world.tests.test_bag_swap_preservation import fixture
+    from tools.client_compatibility.world.tests.test_item_actionbar_contract import public
+    from tools.client_compatibility.world.tests.test_bag_swap_contract import resources
+    value = fresh_login()
+    before, _, *_ = fixture()
+    before['2']['native']['rest_bonus'] = 53.4382
+    before['2']['native']['logout_time'] = int(value['since']) - 10
+    after = deepcopy(before)
+    after['2']['native'].update(online=1, rest_bonus=53.5, latency=100,
+        totaltime=before['2']['native']['totaltime'] + 10, leveltime=before['2']['native']['leveltime'] + 10)
+    if fault == 'protected_actor': after['5']['native']['online'] = 1
+    elif fault == 'owner_health': after['2']['native']['health'] -= 1
+    preparation, precision = tmp_path / 'ready.json', tmp_path / 'precision.json'
+    preparation.write_text('{}')
+    precision.write_text('{}')
+    root = tmp_path / 'lab'
+    out = root / 'evidence/entry'
+    out.mkdir(parents=True)
+    monkeypatch.setattr(m.lab, 'ROOT', root)
+    image = {'file': 'entered.png', 'sha256': 'a' * 64, 'monitor': monitor(),
+        'movement': {'dead': False, 'in_combat': False, 'speed': 0}}
+    ready = {'frame': image, 'native_session': value['session'], 'all_offline_snapshot': before}
+    threshold = contract.native_replay(value['rows'], value['session'], value['since'], value['until'],
+        login_sync=login_sync(*(value[k] for k in ('rows', 'events', 'session', 'since', 'until', 'baseline_pose'))))['rest_threshold']
+    state = {'player': 'Harnesstwo', 'level': 1, 'guid': 'Player-0-2', 'xp': 0, 'xp_max': 400,
+        'xp_exhaustion': 2 * threshold, 'bags': [], 'panels': [], 'cursor_info': {}}
+    inputs, writes = [], []
+    t = SimpleNamespace(out=out, fixture={'guid': 2}, guid='Player-0-2',
+        receipt={'started_at': value['since'], 'native_session': value['session'],
+            'runtime': {'client': {'pid': 22}}, 'completed': False, 'failure': None},
+        io=SimpleNamespace(click=lambda *args, **kwargs: inputs.append(args)), observe=lambda *args, **kwargs: (state, image))
+    t.persist = lambda: writes.append(deepcopy(t.receipt))
+    monkeypatch.setattr(m, 'prepared', lambda *args: ready)
+    monkeypatch.setattr(m, 'precision_source', lambda *args: {'finished_at': value['since'] - 1})
+    monkeypatch.setattr(m, 'review', lambda *args: ({'source': m.sources().bound(preparation),
+        'selected_character': 'Harnesstwo', 'selected_level': 1, 'point': [640, 660]}, {}))
+    monkeypatch.setattr(m, 'focus', monitor)
+    monkeypatch.setattr(m.time, 'time', lambda: value['until'])
+    monkeypatch.setattr(m.time, 'sleep', lambda seconds: None)
+    monkeypatch.setattr(m, 'session', lambda actor: value['session'])
+    monkeypatch.setattr(m, 'packets', lambda: iter(value['rows']))
+    monkeypatch.setattr(m, 'metadata', lambda: iter(value['events']))
+    monkeypatch.setattr(m, 'snapshot', lambda: deepcopy(after))
+    monkeypatch.setattr(m, 'oracle', lambda owner: {'current': True})
+    monkeypatch.setattr(m, 'resources', lambda native: resources())
+    monkeypatch.setattr(m, 'bars', lambda *args: public(before['2']['saved']['actions']))
+    monkeypatch.setattr(m, 'native_baseline', lambda trial: {'pose': {'stand': 0, 'sheath': 0},
+        'afk': False, 'selection': {'native_guid': 0}})
+    if fault:
+        with pytest.raises(RuntimeError): m.enter(t, preparation, precision, tmp_path / 'review.json')
+        assert t.receipt['completed'] is False and t.receipt['failure']
+    else:
+        m.enter(t, preparation, precision, tmp_path / 'review.json')
+        assert t.receipt['completed'] is True and t.receipt['phase'] == 'bags_swap_entered'
+        assert t.receipt['entered_native'] == after['2']['native']
+        assert t.receipt['online_preservation']['rest_attribution_pending'] is True
+        assert t.receipt['raw_entry_packets'] == value['rows'] and t.receipt['raw_entry_events'] == value['events']
+        assert m.entry_settlement(t.receipt, value['rows'], value['events'], required=True) == t.receipt['login_sync']
+    assert inputs == [(640, 660)] and writes
+    assert t.receipt['raw_entry_packets'] == value['rows'] and t.receipt['raw_entry_events'] == value['events']
+
+
 def test_whole_native_logout_replay_includes_owner_and_items_through_actual_completion(tmp_path, monkeypatch):
     from tools.client_compatibility.world.tests.test_bag_swap_evidence import fixture
     from tools.client_compatibility import bag_swap_contract as contract
