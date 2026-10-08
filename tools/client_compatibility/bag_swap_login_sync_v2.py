@@ -263,8 +263,10 @@ def _login_sync(rows, events, session, since, until, baseline_pose):
         gap, = reader.unpack('I')
         reader.end()
         gaps.append(gap)
+    # Skipped client-clock intervals include loading time; they are not the
+    # physical delivery duration. Keep exact uint32 steps here and enforce the
+    # two-second physical prefix below using the original packet timestamps.
     require(0 < clock < heart['movement']['time'] < land['movement']['time'] and
-        land['movement']['time'] - clock <= 2000 and
         gaps == [heart['movement']['time'] - clock, land['movement']['time'] - heart['movement']['time']],
         'ignored login clock gaps do not equal the actual initializer/heartbeat/landing steps')
     modern_boot = [initial, turn, skipped[0], heartbeat, skipped[1], landing]

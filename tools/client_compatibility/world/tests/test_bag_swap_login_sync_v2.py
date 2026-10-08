@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib
 import json
+import struct
 
 import pytest
 
@@ -541,3 +542,94 @@ def test_native_raw_cannot_append_before_its_own_request_when_sampled_times_stay
         for direction, stream in streams.items())
     with pytest.raises(RuntimeError, match='native RAW must follow its own modern RAW'):
         proof(value)
+
+
+UI174_CLOCKS = (603247621, 603249911, 603250161)
+
+
+def replace_login_clocks(value, clocks, gaps=None):
+    """Vary exact wire clocks while preserving the native movement encoding."""
+    retained.change_body(packet(value, sync.INITIALIZE), 0, 'I', clocks[0])
+    for name, clock in zip((sync.HEARTBEAT, sync.LANDING), clocks[1:]):
+        modern = packet(value, name)
+        retained.change_body(modern, len(sync.ACTOR_GUID) + 12, 'I', clock)
+        native_name, raw = sync.encode(name, 2, sync.parse(bytes.fromhex(modern['body']), 2))
+        packet(value, native_name, 'to_native')['body'] = raw.hex()
+    skipped = [r for r in value['rows'] if (r['name'], r['direction']) == (sync.SKIPPED, 'from_client')]
+    actual = [b - a for a, b in zip(clocks, clocks[1:])] if gaps is None else gaps
+    for row, gap in zip(skipped, actual):
+        retained.change_body(row, len(sync.ACTOR_GUID), 'I', gap)
+
+
+@pytest.mark.parametrize('clocks', [UI174_CLOCKS, (1, 1751, 2001), (1, 1752, 2002),
+    (1, 2, 0xffffffff), (0xffffffff - 2540, 0xffffffff - 250, 0xffffffff)])
+def test_exact_skipped_client_clock_steps_use_the_physical_prefix_bound(clocks):
+    # UI174's actual 2290/250-ms steps total 2540 ms during a 0.387-s
+    # physical prefix. This wire-only regression does not replace the separate
+    # full immutable UI174 receipt evaluation with all raw rows and metadata.
+    value = fresh_login()
+    replace_login_clocks(value, clocks)
+    result = proof(value)
+    assert result['initialization']['clock'] == clocks[0]
+    assert result['clock_deltas'] == [b - a for a, b in zip(clocks, clocks[1:])]
+    assert result['landing']['native']['time'] <= result['login_packets'][-1]['time'] + 2
+    assert sync.validate_login_sync(json.loads(json.dumps(result)), events=value['events']) == result
+    for owner in (value['session'], result['instance_session']):
+        contract.forbidden_packets(value['events'], owner, value['since'], value['until'], login_sync=result)
+    contract.native_replay(value['rows'], value['session'], value['since'], value['until'],
+        login_sync=result, events=value['events'])
+
+
+@pytest.mark.parametrize('step', [0, 1])
+@pytest.mark.parametrize('delta', [-1, 1])
+def test_loading_clock_gaps_must_still_equal_each_exact_unsigned_step(step, delta):
+    value = fresh_login()
+    gaps = [2290, 250]
+    gaps[step] += delta
+    replace_login_clocks(value, UI174_CLOCKS, gaps)
+    with pytest.raises(RuntimeError, match='clock gaps do not equal'):
+        proof(value)
+
+
+@pytest.mark.parametrize('clocks,gaps', [((0, 2290, 2540), [2290, 250]),
+    ((100, 100, 350), [0, 250]), ((100, 2390, 2390), [2290, 0]),
+    ((0xffffffff - 100, 0xffffffff - 50, 199), [50, 250]),
+    ((0xffffffff - 100, 2189, 2439), [2290, 250])])
+def test_zero_repeated_and_wrapped_uint32_clocks_are_still_refused(clocks, gaps):
+    value = fresh_login()
+    replace_login_clocks(value, clocks, gaps)
+    with pytest.raises(RuntimeError, match='clock gaps do not equal'):
+        proof(value)
+
+
+@pytest.mark.parametrize('field', ['initializer', 'heartbeat', 'landing', 'skipped'])
+def test_clock_fields_cannot_overflow_their_exact_uint32_wire_width(field):
+    value = fresh_login()
+    replace_login_clocks(value, UI174_CLOCKS)
+    name = {'initializer': sync.INITIALIZE, 'heartbeat': sync.HEARTBEAT,
+        'landing': sync.LANDING, 'skipped': sync.SKIPPED}[field]
+    row = packet(value, name)
+    offset = 0 if field == 'initializer' else len(sync.ACTOR_GUID) + (12 if field in ('heartbeat', 'landing') else 0)
+    raw = bytes.fromhex(row['body'])
+    row['body'] = (raw[:offset] + struct.pack('<Q', 1 << 32) + raw[offset + 4:]).hex()
+    with pytest.raises(RuntimeError):
+        proof(value)
+
+
+@pytest.mark.parametrize('offset', [-.000001, 0, .000001])
+def test_physical_two_second_prefix_boundary_is_unchanged_with_loading_clocks(offset):
+    value = fresh_login()
+    replace_login_clocks(value, UI174_CLOCKS)
+    result = proof(value)
+    modern, native = packet(value, sync.LANDING), packet(value, 'MSG_MOVE_FALL_LAND', 'to_native')
+    forward_delay = native['time'] - modern['time']
+    target = result['login_packets'][-1]['time'] + 2 + offset
+    retime_packet_and_metadata(value, modern, target - forward_delay)
+    retime_packet_and_metadata(value, native, target)
+    if offset > 0:
+        with pytest.raises(RuntimeError, match='ordered two-second initial prefix'):
+            proof(value)
+    else:
+        complete = proof(value)
+        assert complete['boot_finished_at'] == target
+        assert sync.validate_login_sync(complete, events=value['events']) == complete
