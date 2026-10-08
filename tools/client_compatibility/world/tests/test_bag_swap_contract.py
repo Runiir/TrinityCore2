@@ -254,18 +254,27 @@ def test_native_replay_rejects_hidden_transient_item_inventory_target_and_combat
 
 
 def test_pure_modules_do_not_import_live_runtime_sql_ui_or_crypto():
-    script = '''
-import importlib, sys
+    import importlib
+    modules = ('bag_swap_contract', 'bag_swap_preservation', 'bag_swap_login_sync', 'bag_swap_login_sync_v2')
+    sources = {name: importlib.import_module('tools.client_compatibility.' + name).__file__ for name in modules}
+    script = "sources = " + repr(sources) + '\n' + '''
+import importlib.util, sys
+import tools.client_compatibility as package
 class Block:
     def find_spec(self, fullname, path=None, target=None):
         if fullname.startswith(('Crypto', 'google', 'PIL', 'pymysql', 'requests',
             'tools.client_compatibility.interaction_', 'tools.client_compatibility.lab_runtime')):
             raise AssertionError('live dependency imported: ' + fullname)
 sys.meta_path.insert(0, Block())
-for name in ('bag_swap_contract', 'bag_swap_preservation', 'bag_swap_login_sync'):
-    importlib.import_module('tools.client_compatibility.' + name)
+for name, path in sources.items():
+    spec = importlib.util.spec_from_file_location('tools.client_compatibility.' + name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    setattr(package, name, module)
 '''
-    subprocess.run([sys.executable, '-B', '-c', script], cwd=Path(__file__).resolve().parents[4], check=True,
+    subprocess.run([sys.executable, '-B', '-c', script],
+        cwd=Path(c.shared.__file__).resolve().parents[2], check=True,
         capture_output=True, env={**__import__('os').environ, 'PYTHONDONTWRITEBYTECODE': '1'})
 
 
@@ -430,3 +439,64 @@ def test_original_native_owner_creation_requires_standing_non_afk_baseline(field
     rows[0] = native_packet({**owner_fields(), **slot_fields(), c.INDEX[field]: value}, time=9)
     with pytest.raises(RuntimeError):
         c.native_replay(rows, 'scout', 9, 12)
+
+
+@pytest.mark.parametrize('ui,fixture_name', [(172, 'recorded'), (173, 'recorded_ui173')])
+def test_contract_dispatch_retains_exact_published_v1_replay_and_empty_physical_guard(ui, fixture_name):
+    from tools.client_compatibility.world.tests import test_bag_swap_login_sync as fixtures
+    value = getattr(fixtures, fixture_name)()
+    proof = fixtures.proof(value)
+    assert proof['schema'] == 'client442_bag_swap_login_sync_v1'
+    c.forbidden_packets([], proof['instance_session'], value['since'], value['until'], login_sync=proof)
+    replay = c.native_replay(value['rows'], value['session'], value['since'], value['until'], login_sync=proof)
+    assert replay['native_inventory_states'] == [[c.SOURCE['guid'], c.DESTINATION['guid']]]
+
+
+@pytest.mark.parametrize('schema', [None, '', 'client442_bag_swap_login_sync_v0',
+    'client442_bag_swap_login_sync_v3', True])
+def test_contract_dispatch_refuses_unknown_proof_epoch(schema):
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import recorded, proof
+    value = recorded()
+    result = proof(value)
+    result['schema'] = schema
+    with pytest.raises(RuntimeError, match='epoch'):
+        c.forbidden_packets(value['rows'], value['session'], value['since'], value['until'], login_sync=result)
+
+
+@pytest.mark.parametrize('method', ['forbidden_packets', 'native_replay', 'swap_packets', 'roundtrip_packets'])
+def test_v2_raw_authority_has_no_context_free_fallback(method):
+    from tools.client_compatibility import bag_swap_login_sync_v2 as sync
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import fresh_login
+    value = fresh_login()
+    proof = sync.login_sync(*(value[k] for k in ('rows', 'events', 'session', 'since', 'until', 'baseline_pose')))
+    assert sync.validate_login_sync(proof) == proof  # exact serialized reconstruction only
+    with pytest.raises(RuntimeError, match='complete actual metadata'):
+        getattr(c, method)(value['rows'], value['session'], value['since'], value['until'], login_sync=proof)
+
+
+def test_v2_context_is_propagated_through_occupied_swap_roundtrip_and_native_logout():
+    from tools.client_compatibility import bag_swap_login_sync_v2 as sync
+    value = fresh_roundtrip()
+    physical = next(e['session'] for e in value['events'] if e.get('event') == 'instance_authenticated')
+    # Complete producer-shaped metadata includes both swaps/effects and logout,
+    # rather than passing an entry-only array as a whole-history source.
+    start = min(r['time'] for r in value['rows'] if r['name'] == c.ACTION)
+    for row in value['rows']:
+        if row['time'] >= start:
+            native = row['direction'] in ('to_native', 'from_native')
+            value['events'].append({'session': value['session'] if native else physical,
+                'time': row['time'] - .00001, 'name': row['name'], 'direction': row['direction'],
+                'event': 'native_packet' if native else 'modern_packet', 'bytes': len(bytes.fromhex(row['body']))})
+    value['events'].sort(key=lambda e: e['time'])
+    value = json.loads(json.dumps(value, allow_nan=False))
+    proof = sync.login_sync(*(value[k] for k in ('rows', 'events', 'session', 'since', 'until', 'baseline_pose')))
+    interval = (value['session'], value['since'], value['until'])
+    c.forbidden_packets(value['rows'], *interval, login_sync=proof, events=value['events'])
+    assert c.roundtrip_packets(value['rows'], *interval, login_sync=proof,
+        events=value['events'])['exactly_two_unique_pairs'] is True
+    replay = c.native_replay(value['rows'], *interval, login_sync=proof, events=value['events'])
+    assert replay['native_inventory_states'] == [[c.SOURCE['guid'], c.DESTINATION['guid']],
+        [c.DESTINATION['guid'], c.SOURCE['guid']], [c.SOURCE['guid'], c.DESTINATION['guid']]]
+    assert replay['native_item_fields_preserved'] is True
+    assert set(replay['item_fields']) == {str(c.SOURCE['guid']), str(c.DESTINATION['guid'])}
+    assert len([row for row in value['rows'] if row['name'] == 'SMSG_LOGOUT_COMPLETE']) == 2

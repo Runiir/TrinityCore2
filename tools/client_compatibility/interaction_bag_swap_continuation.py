@@ -11,6 +11,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+import re
 import time
 
 from . import lab_runtime as lab
@@ -37,6 +38,9 @@ def sources():
 def authority_sources(schema):
     if schema == sources().RUNTIME_SCHEMA:
         return sources()
+    if schema == 'client442_bag_swap_indexed_runtime_authority_v1':
+        from . import bag_swap_indexed_sources
+        return bag_swap_indexed_sources
     require(schema == 'client442_bag_swap_fresh_runtime_authority_v1',
         'one recognized source-bound predecessor runtime schema required')
     from . import bag_swap_fresh_sources
@@ -45,10 +49,31 @@ def authority_sources(schema):
 
 def fresh_authority(ready):
     ref = ready['runtime_authority_source']
-    require(sources().bound(ref['path']) == ref, 'runtime authority source bytes changed')
-    schema = sources().private_json(ref['path'], False).get('schema')
+    schema = read_runtime_authority(ref).get('schema')
     authority_sources(schema)
-    return schema == 'client442_bag_swap_fresh_runtime_authority_v1'
+    return schema in ('client442_bag_swap_fresh_runtime_authority_v1',
+        'client442_bag_swap_indexed_runtime_authority_v1')
+
+
+def login_sync_schema(ready):
+    ref = ready['runtime_authority_source']
+    provider = authority_sources(read_runtime_authority(ref).get('schema'))
+    return getattr(provider, 'LOGIN_SYNC_SCHEMA', 'client442_bag_swap_login_sync_v1')
+
+
+def read_runtime_authority(ref):
+    """Share the exact one-open one-MiB reader across all compact schemas."""
+    from .bag_swap_indexed_sources import read_runtime_source
+    return read_runtime_source(ref, root=lab.ROOT)
+
+
+def login_sync_provider(schema):
+    if schema == 'client442_bag_swap_login_sync_v1':
+        from . import bag_swap_login_sync
+        return bag_swap_login_sync
+    require(schema == 'client442_bag_swap_login_sync_v2', 'one recognized exact login proof version required')
+    from . import bag_swap_login_sync_v2
+    return bag_swap_login_sync_v2
 
 
 def identity(kind):
@@ -143,13 +168,16 @@ def history_packets(owner, since, until, *, instance=None):
     return result
 
 
-def entry_settlement(entry, rows, events, *, required=False):
+def entry_settlement(entry, rows, events, *, required=False, required_schema=None):
     """Reconstruct a retained startup allowance from the actual wire and metadata."""
     supplied = entry.get('login_sync')
     if supplied is None:
         require(required is False, 'fresh offline continuation requires exact stationary login settlement')
         return None
-    from .bag_swap_login_sync import login_sync
+    schema = supplied.get('schema') if type(supplied) is dict else None
+    if required_schema is not None:
+        require(schema == required_schema, 'entry proof cannot downgrade its source-bound classifier version')
+    login_sync = login_sync_provider(schema).login_sync
     pose = [float(entry['native_before_entry'][key]) for key in
         ('position_x', 'position_y', 'position_z', 'orientation')]
     actual = login_sync(rows, events, entry['native_session'], entry['started_at'], entry['finished_at'], pose)
@@ -204,19 +232,85 @@ def source_report(report):
     sources().reference(ref)
     compact = report.get('runtime_authority_source')
     sources().reference(compact)
-    require(sources().bound(compact['path']) == compact, 'compact UI171 runtime authority bytes changed')
-    compact_value = sources().private_json(compact['path'], False)
-    old = authority_sources(compact_value.get('schema')).cached_runtime(compact['path'], ref)
+    compact_value = read_runtime_authority(compact)
+    provider = authority_sources(compact_value.get('schema'))
+    options = {'compact_ref': compact} if compact_value.get('schema') == 'client442_bag_swap_indexed_runtime_authority_v1' else {}
+    old = provider.cached_runtime(compact['path'], ref, **options)
     require(report.get('predecessor') == old['predecessor'], 'latest offline predecessor roles differ')
     return {k: old[k] for k in ('closure', 'snapshot', 'predecessor', 'primary_stop_source',
         'dvc_pointer', 'runtime', 'origin_actor')}
 
 
 def create_resume(directory, output):
-    for path in (Path(directory), Path(output)):
-        require(not path.exists() and path.resolve().is_relative_to(lab.ROOT / 'evidence'),
-            'requires new private continuation directories')
-        path.mkdir(parents=True, mode=0o700)
+    paths = (Path(directory), Path(output))
+    require(paths[0] != paths[1], 'requires distinct new continuation directories')
+    for path in paths:
+        require(not path.exists() and path.is_absolute() and path.parent.is_dir() and
+            path.resolve().is_relative_to(lab.ROOT / 'evidence') and
+            not any(p.is_symlink() for p in (path, *path.parents)),
+            'requires new private continuation directories in an existing ordinary batch')
+    for path in paths:
+        path.mkdir(mode=0o700)
+
+
+def bounded_batch_source(path):
+    """Read initialize's small original bytes with the shared stable reader."""
+    from .bag_swap_indexed_sources import _json_file
+    path = Path(path)
+    require(path.is_file(), 'ordinary captured batch source required')
+    return _json_file(path, 1024 * 1024, root=lab.ROOT)
+
+
+def initialized_batch(directory, output, old, commit, requested_at, *, expected=None):
+    """Require initialize's original ordinary batch before admission and launch."""
+    directory, output = Path(directory), Path(output)
+    batch = directory.parent
+    require(directory.is_absolute() and output.is_absolute() and directory != output and
+        batch == output.parent and batch.parent == lab.ROOT / 'evidence' and batch.is_dir() and
+        re.fullmatch(r'[A-Za-z0-9_]+', batch.name) and str(batch.resolve()) == str(batch) and
+        not any(p.is_symlink() for p in (batch, *batch.parents)),
+        'indexed start requires its previously initialized canonical ordinary batch')
+    captured, batch_ref = bounded_batch_source(batch / 'batch.json')
+    native, native_ref = bounded_batch_source(batch / 'native_server_before.json')
+    require(set(captured) == {'schema', 'started_at', 'native_worldserver', 'code_commit'} and
+        captured.get('schema') == 'client442_interaction_batch_v1' and
+        set(native) == {'pid', 'start_ticks'} and type(native['pid']) is int and native['pid'] > 0 and
+        type(native['start_ticks']) is str and re.fullmatch(r'[1-9][0-9]*', native['start_ticks']) and
+        strict_equal(native, captured.get('native_worldserver')) and
+        strict_equal(native, old['runtime']['worldserver']) and
+        type(commit) is str and re.fullmatch(r'[0-9a-f]{40}', commit) and captured.get('code_commit') == commit and
+        finite(captured.get('started_at')) and finite(requested_at) and
+        old['closure']['finished_at'] < captured['started_at'] <= requested_at,
+        'original batch native identity, current code commit or initialization time differs')
+    refs = {'batch_source': batch_ref, 'native_server_before_source': native_ref}
+    require(expected is None or strict_equal(refs, expected), 'original batch initialization bytes changed before launch')
+    return refs
+
+
+def offline_preflight(old, *, indexed=False):
+    """Current checks authorize streaming only; they do not admit a predecessor."""
+    memory = available_memory_kib()
+    require(memory >= 6 * 1024 * 1024, 'one scout launch requires 6 GiB available memory')
+    if indexed:
+        root = lab.client_root()
+        require(lab.actor_name() == 'scout' and root == lab.ROOT / 'actors/scout' and
+            str(root.resolve()) == str(root) and not any(p.is_symlink() for p in (root, *root.parents)),
+            'offline launch requires the canonical private scout input identity')
+    stopped, before = old['closure'], old['snapshot']
+    current = snapshot()
+    owned_snapshot(current)
+    native, bridge = identity('worldserver'), identity('modern_world')
+    require(strict_equal(native, stopped['runtime']['worldserver']) and
+        strict_equal(bridge, stopped['runtime']['modern_world']) and strict_equal(current, before) and
+        strict_equal(registration(), old['origin_actor']) and
+        bool(primary_stopped(Path(old['primary_stop_source']['path']))) and
+        gone(stopped['runtime']['client']['pid'], stopped['runtime']['client']['start_ticks']) and
+        (not Path('/proc/' + str(stopped['owned_game_identity']['pid'])).exists() if indexed else
+            gone(stopped['game_before']['pid'], stopped['game_before']['start_ticks'])),
+        'unchanged latest all-six offline pause, owner registration or stopped clients differ')
+    from .review_hunter_revive_prerequisites import absent_clients
+    absent_clients()
+    return native, bridge, memory
 
 
 def launch():
@@ -232,37 +326,49 @@ def available_memory_kib():
         if line.startswith('MemAvailable:'))
 
 
-def start(directory, output, closure, remote, checkpoint):
+def start(directory, output, closure, remote, checkpoint, indexed_pins=None):
+    requested_at = time.time()
     require(available_memory_kib() >= 6 * 1024 * 1024,
         'predecessor streaming requires 6 GiB available memory before parsing')
-    from . import bag_swap_fresh_sources as fresh
-    old = fresh.source_bundle(closure, remote, checkpoint)
+    indexed = indexed_pins is not None
+    initialization = None
+    if indexed:
+        from . import bag_swap_indexed_sources as fresh
+        pins = fresh.read_admission_pins(indexed_pins)
+        preflight = fresh.preflight_bundle(closure, remote, checkpoint, pins=pins)
+        commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip()
+        initialization = initialized_batch(directory, output, preflight, commit, requested_at)
+        native, bridge, memory = offline_preflight(preflight, indexed=True)
+        old = fresh.source_bundle(closure, remote, checkpoint, pins=pins)
+        require(strict_equal(preflight, {k: old[k] for k in fresh.CORE_FIELDS}),
+            'complete admission differs from the bounded preflight roles')
+    else:
+        predecessor_value = sources().private_json(closure, False)
+        require(predecessor_value.get('schema') != 'client442_bag_swap_stopped_entry_closure_v1',
+            'indexed start requires actual published source pins')
+        from . import bag_swap_fresh_sources as fresh
+        old = fresh.source_bundle(closure, remote, checkpoint)
+        native, bridge, memory = offline_preflight(old)
     stopped, before = old['closure'], old['snapshot']
-    primary_stopped(Path(old['primary_stop_source']['path']))
-    from .review_hunter_revive_prerequisites import absent_clients
-    absent_clients()
-    native, bridge = identity('worldserver'), identity('modern_world')
-    require(native == stopped['runtime']['worldserver'] and bridge == stopped['runtime']['modern_world'] and
-        snapshot() == before and registration() == old['origin_actor'] and
-        gone(stopped['runtime']['client']['pid'], stopped['runtime']['client']['start_ticks']) and
-        gone(stopped['game_before']['pid'], stopped['game_before']['start_ticks']),
-        'unchanged latest all-six offline pause, owner registration or stopped clients differ')
-    memory = available_memory_kib()
-    require(memory >= 6 * 1024 * 1024, 'one scout launch requires 6 GiB available memory')
     create_resume(directory, output)
     require(Path(directory).parent == Path(output).parent and Path(directory).parent.parent == lab.ROOT / 'evidence',
         'fresh launch and cached authority must share the named ordinary batch')
-    authority_ref = fresh.write_cache(Path(directory), old)
-    fresh.carry_authority(Path(directory).parent, authority_ref, admitted=old)
+    if indexed:
+        carry_ref = fresh.carry_authority(Path(directory).parent, admitted=old)
+        authority_ref = fresh.write_cache(Path(directory), old, carry_ref)
+    else:
+        authority_ref = fresh.write_cache(Path(directory), old)
+        fresh.carry_authority(Path(directory).parent, authority_ref, admitted=old)
     compact_ref = fresh.write_runtime(Path(directory), old, authority_ref)
-    from .checkpoint_bag_swap import current_code_epoch
-    epoch_ref = current_code_epoch(Path(directory), old)
+    if indexed:
+        epoch_ref = fresh.current_code_epoch(Path(directory), old)
+    else:
+        from .checkpoint_bag_swap import current_code_epoch
+        epoch_ref = current_code_epoch(Path(directory), old)
     old = {k: old[k] for k in ('closure', 'snapshot', 'predecessor', 'primary_stop_source',
         'dvc_pointer', 'runtime', 'origin_actor')}
     gc.collect()
-    memory = available_memory_kib()
-    require(memory >= 6 * 1024 * 1024, 'one scout launch requires 6 GiB after predecessor streaming/carry')
-    report = {'schema': SCHEMA, 'started_at': time.time(), 'predecessor': old['predecessor'],
+    report = {'schema': SCHEMA, 'started_at': requested_at if indexed else time.time(), 'predecessor': old['predecessor'],
         'authority_source': authority_ref, 'runtime_authority_source': compact_ref,
         'current_code_epoch_source': epoch_ref,
         'predecessor_dvc_pointer': old['dvc_pointer'],
@@ -273,9 +379,21 @@ def start(directory, output, closure, remote, checkpoint):
     from .bag_swap_projection import source_identities
     report.update(code_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip(),
         committed_sources=source_identities(lab.REPO))
+    if indexed:
+        report.update(initialization)
+        epoch, exact_epoch = bounded_batch_source(epoch_ref['path'])
+        require(exact_epoch == epoch_ref and epoch.get('schema') == fresh.EPOCH_SCHEMA and
+            epoch.get('code_commit') == commit == report['code_commit'] and
+            strict_equal(epoch.get('committed_sources'), report['committed_sources']),
+            'captured batch must bind the exact current launch code epoch')
     persist(directory, report)
     try:
-        report['launch_attempted'] = True
+        if indexed:
+            initialized_batch(directory, output, old, report['code_commit'], requested_at, expected=initialization)
+        final_native, final_bridge, memory = offline_preflight(old, indexed=indexed)
+        require(final_native == native and final_bridge == bridge,
+            'current offline lifetimes must remain exact after all predecessor carry and source work')
+        report.update(available_memory_kib_before=memory, launch_attempted=True)
         persist(directory, report)
         launch()
         current, monitor = runtime(), focus()
@@ -381,6 +499,8 @@ def finish(t, directory, review_path):
         predecessor_dvc_pointer=report['predecessor_dvc_pointer'],
         realm_authentication=auth[0], frame=image, input_sent=False,
         checks={'original_selection': True, 'fresh_enumeration': True, 'all_six_offline': True}, completed=True)
+    if 'batch_source' in report:
+        t.receipt.update({k: report[k] for k in ('batch_source', 'native_server_before_source')})
     return report
 
 
@@ -469,6 +589,8 @@ def enter(t, preparation, precision_path, review_path):
         ('Harnesstwo', 1, [640, 660]) and exact['finished_at'] <= t.receipt['started_at'],
         'ordinary entry requires the fresh reviewed original ready screen and prior exact FLOAT')
     before, owner_session = ready['all_offline_snapshot']['2']['native'], ready['native_session']
+    expected_schema = login_sync_schema(ready)
+    login_sync = login_sync_provider(expected_schema).login_sync
     t.receipt.update(precision_source=sources().bound(precision_path), native_before_entry=before,
         entry_input_started_at=time.time(), input_sent=True, phase='bags_swap_entry_started')
     t.persist()
@@ -482,12 +604,11 @@ def enter(t, preparation, precision_path, review_path):
         require(session(t.fixture) == owner_session, 'ordinary login changed its owned realm session')
         until = time.time()
         raw = history_packets(owner_session, t.receipt['started_at'], until)
-        from .bag_swap_login_sync import login_sync
         events = history_events(owner_session, t.receipt['started_at'], until)
         pose = [float(before[key]) for key in ('position_x', 'position_y', 'position_z', 'orientation')]
         boot = login_sync(raw, events, owner_session, t.receipt['started_at'], until, pose)
         chain = login_packets(raw, owner_session, t.receipt['started_at'], until)
-        owner = native_replay(raw, owner_session, t.receipt['started_at'], until, login_sync=boot)
+        owner = native_replay(raw, owner_session, t.receipt['started_at'], until, login_sync=boot, events=events)
         t.receipt['login_sync'] = boot
         now = snapshot()
         from .bag_swap_preservation import online_preservation
@@ -526,7 +647,7 @@ def enter(t, preparation, precision_path, review_path):
             if t.receipt.get('completed') is True:
                 boot = login_sync(complete_rows, complete_events, owner_session, t.receipt['started_at'], until, pose)
                 complete = native_replay(complete_rows, owner_session, t.receipt['started_at'], until,
-                    rest_threshold=t.receipt['native_owner_proof']['rest_threshold'], login_sync=boot)
+                    rest_threshold=t.receipt['native_owner_proof']['rest_threshold'], login_sync=boot, events=complete_events)
                 t.receipt.update(login_sync=boot, native_owner_proof=complete,
                     owner_packets=complete['packets'], finished_at=until)
         except BaseException as error:
@@ -558,29 +679,33 @@ def logout_packets(rows, owner_session, since, until):
     return ordered
 
 
-def whole_logout_history(rows, entry, owner, ordered, recovery=False):
+def whole_logout_history(rows, entry, owner, ordered, recovery=False, *, with_events=False, required_schema=None):
     from .bag_swap_contract import packet_rows
     until = ordered[1]['time']
     raw = packet_rows(rows, owner, entry['started_at'], until)
     events = history_events(owner, entry['started_at'], until) if entry.get('login_sync') is not None else []
-    boot = entry_settlement(entry, raw, events)
-    forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot)
+    boot = entry_settlement(entry, raw, events, required=required_schema == 'client442_bag_swap_login_sync_v2',
+        required_schema=required_schema)
+    forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot, events=events)
     if boot is not None:
-        forbidden_packets(events, boot['instance_session'], entry['started_at'], until, login_sync=boot)
+        forbidden_packets(events, boot['instance_session'], entry['started_at'], until, login_sync=boot, events=events)
     replay = native_replay(raw, owner, entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot,
+        events=events if boot is not None else None)
     require(len(replay['native_inventory_transitions']) in ((1, 3) if recovery else (3,)),
         'ordinary logout requires the whole native occupied swap and exact inverse history')
-    return raw, replay
+    return (raw, replay, events) if with_events else (raw, replay)
 
 
 def final_logout_history(ready, entry, parked):
     rows = history_packets(ready['native_session'], entry['started_at'], parked['logout_packets'][1]['time'],
         instance=entry.get('login_sync', {}).get('instance_session'))
-    raw, replay = whole_logout_history(rows, entry, ready['native_session'], parked['logout_packets'],
-        recovery=parked.get('recovery_only') is True)
+    raw, replay, events = whole_logout_history(rows, entry, ready['native_session'], parked['logout_packets'],
+        recovery=parked.get('recovery_only') is True, with_events=True)
     require(raw == parked['raw_native_logout_history'] and replay == parked['native_logout_proof'],
         'actual whole owner/item history through native logout changed before stop')
+    if entry.get('login_sync', {}).get('schema') == 'client442_bag_swap_login_sync_v2':
+        require(events == parked.get('raw_native_logout_events'), 'complete v2 logout event context differs before stop')
     return replay
 
 
@@ -624,12 +749,13 @@ def park(t, preparation, source, recovery=False):
     raw = history_packets(ready['native_session'], entry['started_at'], until,
         instance=entry.get('login_sync', {}).get('instance_session'))
     events = history_events(ready['native_session'], entry['started_at'], until)
-    boot = entry_settlement(entry, raw, events, required=fresh_authority(ready))
-    forbidden_packets(raw, ready['native_session'], entry['started_at'], until, login_sync=boot)
+    boot = entry_settlement(entry, raw, events, required=fresh_authority(ready), required_schema=login_sync_schema(ready))
+    forbidden_packets(raw, ready['native_session'], entry['started_at'], until, login_sync=boot, events=events)
     for owner in {ready['native_session'], boot['instance_session']} if boot is not None else {ready['native_session']}:
-        forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot)
+        forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot, events=events)
     native_replay(raw, ready['native_session'], entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot,
+        events=events if boot is not None else None)
     t.receipt.update(source=sources().bound(source), entry_source=restored['entry_source'],
         before=before, logout_started_at=time.time(), input_sent=True, phase='bags_swap_parking_started')
     t.persist()
@@ -650,12 +776,15 @@ def park(t, preparation, source, recovery=False):
         rows = history_packets(ready['native_session'], entry['started_at'], time.time(),
             instance=entry.get('login_sync', {}).get('instance_session'))
         ordered = logout_packets(rows, ready['native_session'], t.receipt['logout_started_at'], time.time())
-        whole, replay = whole_logout_history(rows, entry, ready['native_session'], ordered, recovery=recovery)
+        whole, replay, logout_events = whole_logout_history(rows, entry, ready['native_session'], ordered,
+            recovery=recovery, with_events=True, required_schema=login_sync_schema(ready))
         parked_frame = shot(t.out / 'original_selection.png')
         frame_identity(parked_frame, t.receipt['runtime'], restored['frame'])
         t.receipt.update(logout_packets=ordered, frame=parked_frame, raw_native_logout_history=whole,
             native_logout_proof=replay, pre_logout_native_state=pre_logout_state,
             checks={k: True for k in PARK_CHECKS}, completed=True, phase='bags_swap_parked')
+        if login_sync_schema(ready) == 'client442_bag_swap_login_sync_v2':
+            t.receipt['raw_native_logout_events'] = logout_events
     finally:
         t.receipt['logout_finished_at'] = time.time()
         t.receipt['raw_logout_packets'] = [p for p in history_packets(ready['native_session'],
@@ -811,15 +940,15 @@ def main():
         'park', 'park-recovery', 'close-pause', 'pause-recovery'])
     parser.add_argument('--output', type=Path, required=True)
     for name in ('resume', 'closure', 'remote', 'checkpoint', 'review', 'source',
-        'preparation', 'entry', 'operation', 'park', 'precision', 'before-precision', 'after-precision'):
+        'preparation', 'entry', 'operation', 'park', 'precision', 'before-precision', 'after-precision', 'indexed-pins'):
         parser.add_argument('--' + name, type=Path)
     parser.add_argument('--stage', choices=['dismiss', 'reconnect', 'realm', 'character'])
     a = parser.parse_args()
     with scout():
         if a.action == 'start':
             require(all(getattr(a, k) for k in ('resume', 'closure', 'remote', 'checkpoint')),
-                'start requires the actual excluded UI172 closed remote authority')
-            start(a.resume, a.output, a.closure, a.remote, a.checkpoint)
+                'start requires the actual published closure, remote review and checkpoint')
+            start(a.resume, a.output, a.closure, a.remote, a.checkpoint, indexed_pins=a.indexed_pins)
             return
         from .interaction_trial import Trial
         t = Trial(a.output, controller='code', chat_key_hold=1.2, chat_open_retry=True)

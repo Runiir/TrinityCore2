@@ -226,10 +226,11 @@ REQUIRED_SHARED_SOURCES = (
 )
 
 from tools.client_compatibility.bag_swap_failed_evidence import PUBLICATION_DEPENDENCIES
+from tools.client_compatibility.bag_swap_indexed_sources import INDEXED_DEPENDENCIES
 
 
 def source_fixture(tmp_path, monkeypatch):
-    relatives = list(p.SOURCE_FILES) + list(PUBLICATION_DEPENDENCIES) + ['tools/client_compatibility/bag_swap_projection.py',
+    relatives = list(p.SOURCE_FILES) + list(p.STOPPED_SOURCE_FILES) + list(PUBLICATION_DEPENDENCIES) + list(INDEXED_DEPENDENCIES) + ['tools/client_compatibility/bag_swap_projection.py',
         'tools/client_compatibility/bag_swap_contract.py',
         'tools/client_compatibility/world/tests/test_bag_swap_projection.py',
         'experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json']
@@ -253,13 +254,15 @@ def test_source_identities_bind_shared_contract_native_parser_and_modern_guid_se
     paths = {str(Path(r['path']).relative_to(tmp_path)) for r in identities}
     assert set(REQUIRED_SHARED_SOURCES) <= paths
     assert set(PUBLICATION_DEPENDENCIES) <= paths
+    assert set(INDEXED_DEPENDENCIES) <= paths
+    assert set(p.STOPPED_SOURCE_FILES) <= paths
     assert paths == set(committed)
     for identity in identities:
         relative = str(Path(identity['path']).relative_to(tmp_path))
         assert identity['sha256'] == hashlib.sha256(committed[relative]).hexdigest()
 
 
-@pytest.mark.parametrize('relative', (*REQUIRED_SHARED_SOURCES, *PUBLICATION_DEPENDENCIES))
+@pytest.mark.parametrize('relative', (*REQUIRED_SHARED_SOURCES, *PUBLICATION_DEPENDENCIES, *p.STOPPED_SOURCE_FILES, *INDEXED_DEPENDENCIES))
 def test_changed_shared_dependency_cannot_reuse_other_committed_source_identities(relative, tmp_path, monkeypatch):
     source_fixture(tmp_path, monkeypatch)
     (tmp_path / relative).write_bytes(b'changed uncommitted bytes')

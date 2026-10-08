@@ -24,6 +24,9 @@ FRESH_CODE_FILES = (
 
 def current_code_epoch(directory, old):
     """Carry the actual committed current package before the sole fresh launch."""
+    if old.get('closure', {}).get('schema') == 'client442_bag_swap_stopped_entry_closure_v1':
+        from .bag_swap_indexed_sources import current_code_epoch as indexed_epoch
+        return indexed_epoch(directory, old)
     from .bag_swap_projection import source_identities
     from .bag_swap_failed_sources import CODE_SCHEMA, MAX_SOURCE_BYTES, MAX_TOTAL_BYTES
     directory = Path(directory)
@@ -115,6 +118,17 @@ def carry(directory, preparation):
     reference(ready.get('authority_source'))
     require(ready.get('phase') == 'bags_swap_scout_ready' and bound(ready['authority_source']['path']) == ready['authority_source'],
         'carry requires the actual source-bound original scout ready authority')
+    from .interaction_bag_swap_continuation import authority_sources
+    compact_ref = ready.get('runtime_authority_source')
+    reference(compact_ref)
+    from .bag_swap_indexed_sources import read_runtime_source
+    compact = read_runtime_source(compact_ref)
+    provider = authority_sources(compact.get('schema'))
+    if compact.get('schema') == 'client442_bag_swap_indexed_runtime_authority_v1':
+        descriptor = provider.read_descriptor(ready['authority_source'])
+        require(Path(descriptor['carry_source']['path']).parent == Path(directory), 'actual indexed carry belongs to another batch')
+        provider.cached_bundle(ready['authority_source']['path'])
+        return provider.read_carry(descriptor['carry_source'])
     cache = json.loads(Path(ready['authority_source']['path']).read_text())
     if cache.get('schema') == 'client442_bag_swap_fresh_predecessor_authority_v1':
         from .bag_swap_fresh_sources import carry_authority as fresh_carry
@@ -203,6 +217,9 @@ def carry_authority(directory, authority_source, *, admitted=None):
 
 def validate_carry(store, ready):
     cache = store.get(ready['authority_source'], False)
+    if cache.get('schema') == 'client442_bag_swap_indexed_predecessor_authority_v1':
+        from .bag_swap_indexed_sources import validate_carry as indexed_carry
+        return indexed_carry(store, ready)
     if cache.get('schema') == 'client442_bag_swap_fresh_predecessor_authority_v1':
         from .bag_swap_fresh_sources import validate_carry as fresh_carry
         return fresh_carry(store, ready)
@@ -253,9 +270,9 @@ def validate_carry(store, ready):
             'complete original predecessor journal differs from first-stream authority')
         lines = raw_journals.get(row['copy_member'])
         if lines is None and store.local:
+            from .bag_swap_evidence import local_journal
             path = lab.ROOT / row['copy_member']
-            require(bound(path)['sha256'] == row['sha256'] and path.stat().st_size == row['bytes'], 'local carried journal changed')
-            lines = [json.loads(line) for line in path.read_text().splitlines()]
+            lines, _ = local_journal(path, {'path': str(path), 'sha256': row['sha256']}, size=row['bytes'])
         require(type(lines) is list, 'actual carried raw predecessor journal absent')
         evidence.collect(row['original_member'], lines, graph['data'], tracking)
     require(evidence.proof(graph['data'], graph['digests'], tracking) == old['remote_proof'],

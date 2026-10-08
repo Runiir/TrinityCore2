@@ -143,12 +143,41 @@ def modern_swap(raw):
         'native_destination': native[0], 'native_source': native[1]}
 
 
-def forbidden_packets(rows, session, since, until, *, login_sync=None):
+def _login_sync_module(proof):
+    """Dispatch a proof by exact epoch; successor admission must require v2."""
+    require(type(proof) is dict, 'exact versioned login settlement proof is required')
+    if proof.get('schema') == 'client442_bag_swap_login_sync_v1':
+        from . import bag_swap_login_sync as module
+    elif proof.get('schema') == 'client442_bag_swap_login_sync_v2':
+        from . import bag_swap_login_sync_v2 as module
+    else:
+        raise RuntimeError('unknown login settlement proof epoch')
+    return module
+
+
+def forbidden_packets(rows, session, since, until, *, login_sync=None, events=None):
     scoped = packet_rows(rows, session, since, until)
     allowed = set()
     if login_sync is not None:
-        from .bag_swap_login_sync import packet_key, validate_login_sync
-        proof = validate_login_sync(login_sync)
+        module = _login_sync_module(login_sync)
+        packet_key = module.packet_key
+        if module.SCHEMA == 'client442_bag_swap_login_sync_v2':
+            require(type(rows) is list and rows and all(type(row) is dict for row in rows),
+                'proof-bound input guard requires a nonempty typed source array')
+            kinds = {'metadata' if 'event' in row and 'body' not in row else
+                'wire' if 'event' not in row and 'body' in row else 'invalid' for row in rows}
+            require(len(kinds) == 1 and 'invalid' not in kinds,
+                'proof-bound input guard cannot mix raw wire and packet metadata')
+            if kinds == {'wire'}:
+                require(events is not None, 'v2 raw input authority requires complete actual metadata')
+            if kinds == {'metadata'}:
+                require(events is None or strict_equal(events, rows), 'metadata caller cannot substitute another context array')
+                events = rows
+            proof = module.validate_login_sync(login_sync, events=events)
+        else:
+            # Published v1 replays retain their original serialized proof and
+            # ingress semantics. Future source authority must select v2.
+            proof = module.validate_login_sync(login_sync)
         require(session in (proof['session'], proof['instance_session']),
             'login settlement allowance belongs to another physical/native session')
         allowed.update(proof['allowed_packet_keys'])
@@ -203,15 +232,15 @@ def _pair(requests, *, reverse=False):
     return {'reverse': reverse, 'modern': deepcopy(modern), 'native': deepcopy(native), 'decoded': parsed}
 
 
-def swap_packets(rows, session, since, until, *, reverse=False, login_sync=None):
+def swap_packets(rows, session, since, until, *, reverse=False, login_sync=None, events=None):
     scoped = packet_rows(rows, session, since, until)
-    forbidden_packets(rows, session, since, until, login_sync=login_sync)
+    forbidden_packets(rows, session, since, until, login_sync=login_sync, events=events)
     return _pair([r for r in scoped if r.get('name') == ACTION], reverse=reverse)
 
 
-def roundtrip_packets(rows, session, since, until, *, login_sync=None):
+def roundtrip_packets(rows, session, since, until, *, login_sync=None, events=None):
     scoped = packet_rows(rows, session, since, until)
-    forbidden_packets(rows, session, since, until, login_sync=login_sync)
+    forbidden_packets(rows, session, since, until, login_sync=login_sync, events=events)
     requests = [r for r in scoped if r.get('name') == ACTION]
     require(len(requests) == 4, 'exactly two unique modern/native swap pairs total are required')
     forwards, reverses = [], []
@@ -299,22 +328,31 @@ def public_items(public, resources, *, swapped=False):
         'public_guid_source': 'delivered_inventory_packets', 'items': deepcopy(rows)}
 
 
-def native_replay(rows, session, since, until, *, rest_threshold=None, login_sync=None):
-    """Inspect every owner state and preserve both occupied items' complete native fields."""
+def native_replay(rows, session, since, until, *, rest_threshold=None, login_sync=None, events=None):
+    """Replay native fields with the exact proof epoch.
+
+    V2 requires complete actual metadata. V1 retains published raw-only replay
+    semantics; successor source authority must require the v2 schema itself.
+    """
     scoped = packet_rows(rows, session, since, until)
-    forbidden_packets(rows, session, since, until, login_sync=login_sync)
+    forbidden_packets(rows, session, since, until, login_sync=login_sync, events=events)
+    if events is not None:
+        require(login_sync is not None, 'explicit login metadata requires its canonical settlement proof')
+        for owner in (session, login_sync['instance_session']):
+            forbidden_packets(events, owner, since, until, login_sync=login_sync)
     swaps = [r for r in scoped if r.get('name') == ACTION]
     forward, reverse = None, None
     if swaps:
         if len(swaps) == 2:
             forward = _pair(swaps)
         else:
-            chain = roundtrip_packets(rows, session, since, until, login_sync=login_sync)
+            chain = roundtrip_packets(rows, session, since, until, login_sync=login_sync, events=events)
             forward, reverse = chain['forward'], chain['reverse']
     inert_boot = set()
     if login_sync is not None:
-        from .bag_swap_login_sync import packet_key, validate_login_sync
-        inert_boot = set(validate_login_sync(login_sync)['allowed_packet_keys'])
+        module = _login_sync_module(login_sync)
+        packet_key = module.packet_key
+        inert_boot = set(module.validate_login_sync(login_sync)['allowed_packet_keys'])
     # This wrapper has already validated each exact boot row. The shared item
     # replay receives every owner creation/update and login row unchanged.
     filtered = [r for r in rows if not (r.get('session') == session and

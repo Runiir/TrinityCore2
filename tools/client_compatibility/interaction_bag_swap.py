@@ -55,7 +55,8 @@ def context(t, preparation):
     require(owner == ready['native_session'], 'occupied swap must use its fresh prepared owner session')
     require(ready.get('committed_sources') == source_identities(lab.REPO) == t.receipt.get('committed_sources'),
         'occupied swap requires its exact frozen controller/source identities')
-    t.receipt.update(preparation_source=bound(preparation), native_session=owner,
+    preparation_ref = bound(preparation)
+    t.receipt.update(preparation_source=preparation_ref, fixture_source=preparation_ref, native_session=owner,
         authority_source=ready['authority_source'], predecessor=ready['predecessor'])
     t.persist()
     return ready, owner
@@ -72,10 +73,12 @@ def entry_authority(t, preparation, path, ready, owner):
         entry.get('native_before_entry') == ready['all_offline_snapshot']['2']['native'] and
         entry['finished_at'] <= t.receipt['started_at'], 'exact frozen ordinary swap entry differs')
     raw = packets(owner, entry['started_at'], entry['finished_at'])
-    from .interaction_bag_swap_continuation import fresh_authority
-    boot = settled_history(entry, raw, entry['finished_at'], required=fresh_authority(ready))
+    from .interaction_bag_swap_continuation import fresh_authority, login_sync_schema
+    boot, events = settled_history(entry, raw, entry['finished_at'], required=fresh_authority(ready),
+        required_schema=login_sync_schema(ready), with_events=True)
     chain = contract.login_packets(raw, owner, entry['started_at'], entry['finished_at'])
-    replay = contract.native_replay(raw, owner, entry['started_at'], entry['finished_at'], login_sync=boot)
+    replay = contract.native_replay(raw, owner, entry['started_at'], entry['finished_at'],
+        login_sync=boot, events=events if boot is not None else None)
     require(entry.get('login_packets') == [chain[k] for k in ('modern', 'request', 'verify', 'delivered')] and
         entry.get('native_owner_proof') == replay, 'retained swap entry differs from actual raw journal')
     contract.item_resources(entry['resources'])
@@ -84,14 +87,14 @@ def entry_authority(t, preparation, path, ready, owner):
     return entry
 
 
-def settled_history(entry, rows, until, *, required=False):
+def settled_history(entry, rows, until, *, required=False, required_schema=None, with_events=False):
     from .interaction_bag_swap_continuation import history_events, entry_settlement
     events = history_events(entry['native_session'], entry['started_at'], until) if entry.get('login_sync') is not None else []
-    boot = entry_settlement(entry, rows, events, required=required)
+    boot = entry_settlement(entry, rows, events, required=required, required_schema=required_schema)
     if boot is not None:
         for owner in (entry['native_session'], boot['instance_session']):
-            contract.forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot)
-    return boot
+            contract.forbidden_packets(events, owner, entry['started_at'], until, login_sync=boot, events=events)
+    return (boot, events) if with_events else boot
 
 
 def current(t, base, owner, *, swapped, allow_cursor=False, closed_layout=False, label='swap_current'):
@@ -132,10 +135,11 @@ def current(t, base, owner, *, swapped, allow_cursor=False, closed_layout=False,
 def guard(base, owner, until, t=None):
     entry = linked(base['entry_source'])
     raw = packets(owner, entry['started_at'], until)
-    boot = settled_history(entry, raw, until)
-    safe = contract.forbidden_packets(raw, owner, entry['started_at'], until, login_sync=boot)
+    boot, events = settled_history(entry, raw, until, with_events=True)
+    safe = contract.forbidden_packets(raw, owner, entry['started_at'], until, login_sync=boot, events=events)
     native = contract.native_replay(raw, owner, entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot,
+        events=events if boot is not None else None)
     if t is not None:
         t.receipt.update(forbidden_input_proof=safe, native_owner_proof=native, owner_packets=native['packets'])
         t.persist()
@@ -145,9 +149,10 @@ def guard(base, owner, until, t=None):
 def native_effect(base, owner, until, *, swapped):
     entry = linked(base['entry_source'])
     raw = packets(owner, entry['started_at'], until)
-    boot = settled_history(entry, raw, until)
+    boot, events = settled_history(entry, raw, until, with_events=True)
     replay = contract.native_replay(raw, owner, entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot,
+        events=events if boot is not None else None)
     transition = replay['native_inventory_transitions'][-1]
     expected = [contract.DESTINATION['guid'], contract.SOURCE['guid']] if swapped else [
         contract.SOURCE['guid'], contract.DESTINATION['guid']]
@@ -337,8 +342,11 @@ def autosave(t, base, owner):
 
 
 def retain_raw(t, owner, since, label):
-    facts = {'observed_at': time.time(), 'input_replayed': False}
-    for key, read in (('packets', lambda: packets(owner, since, time.time())), ('snapshot', snapshot),
+    from .interaction_bag_swap_continuation import history_events
+    until = time.time()
+    facts = {'observed_at': until, 'since': since, 'until': until, 'input_replayed': False}
+    for key, read in (('packets', lambda: packets(owner, since, until)),
+            ('events', lambda: history_events(owner, since, until)), ('snapshot', snapshot),
             ('resources', lambda: resources(owner)), ('native_state', lambda: native_state(owner)),
             ('rendered', lambda: t.observe(label))):
         try:
@@ -467,8 +475,9 @@ def restore(t, preparation, source):
     raw = packets(owner, linked(base['entry_source'])['started_at'], time.time())
     entry = linked(base['entry_source'])
     until = time.time()
-    boot = settled_history(entry, raw, until)
-    whole = contract.roundtrip_packets(raw, owner, entry['started_at'], until, login_sync=boot) if old.get('forward') else None
+    boot, events = settled_history(entry, raw, until, with_events=True)
+    whole = contract.roundtrip_packets(raw, owner, entry['started_at'], until,
+        login_sync=boot, events=events) if old.get('forward') else None
     require(whole is not None or old.get('recovery_only') is True, 'successful restore requires both exact swap pairs')
     t.receipt.update(**found, reverse=old.get('reverse'), roundtrip=whole, layout_restoration_checks=checks,
         after_saved=found['snapshot']['2']['saved'], after_resources=found['resources'],

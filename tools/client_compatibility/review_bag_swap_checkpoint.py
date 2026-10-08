@@ -15,6 +15,23 @@ from .review_hunter_learn_checkpoint import DigestReader, manifest, dvc_object, 
 
 
 def inspect_archive(raw, checkpoint, prefix):
+    indexed = [row for row in checkpoint.get('file_manifest', []) if type(row) is dict and
+        row.get('path') == prefix + 'predecessor_ui173.json']
+    if indexed:
+        require(len(indexed) == 1, 'one distinct indexed predecessor carry manifest required')
+        from .bag_swap_indexed_archive import inspect_archive as inspect_indexed
+        data, digests, whole, count = inspect_indexed(raw, checkpoint, prefix)
+        tracking = evidence.tracking_state()
+        tracking.update(digests=digests, manifest=whole['manifest'], raw_journals=whole['raw_journals'],
+            paths=whole['paths'], archived_metadata=whole['archived_metadata'],
+            compressed_md5=whole['compressed_md5'], complete_manifest_verified=True, _spool=whole['_spool'])
+        try:
+            for member in evidence.TRACKING_MEMBERS:
+                evidence.collect(member, whole['raw_journals'][member], data, tracking)
+        except BaseException:
+            tracking['_spool'].cleanup()
+            raise
+        return data, digests, tracking, count
     if any(row.get('path') == 'tracking/checkpoint.json' for row in checkpoint.get('file_manifest', [])
         if type(row) is dict):
         from .review_bag_swap_failed_checkpoint import inspect_archive as inspect_complete
@@ -104,11 +121,16 @@ def review(directory, output):
             md5.update(raw)
             return raw
 
-    with urlopen(remote_request(remote_options(lab.REPO), oid), timeout=60) as raw:
-        data, digests, tracking, count = inspect_archive(ObjectReader(raw), checkpoint,
-            str(directory.relative_to(lab.ROOT)) + '/')
-    require(md5.hexdigest() == oid, 'actual swap compressed DVC object key differs')
-    result = evidence.proof(data, digests, tracking)
+    tracking = None
+    try:
+        with urlopen(remote_request(remote_options(lab.REPO), oid), timeout=60) as raw:
+            data, digests, tracking, count = inspect_archive(ObjectReader(raw), checkpoint,
+                str(directory.relative_to(lab.ROOT)) + '/')
+        require(md5.hexdigest() == oid, 'actual swap compressed DVC object key differs')
+        result = evidence.proof(data, digests, tracking)
+    finally:
+        if tracking is not None and tracking.get('_spool') is not None:
+            tracking['_spool'].cleanup()
     require(bound(checkpoint_path) == checkpoint_ref and dvc_object(lab.REPO, checkpoint) == (pointer, oid) and
         pointer_path.read_bytes() == pointer_raw, 'actual checkpoint or pointer changed during complete remote verification')
     report = {'schema': 'client442_bag_swap_remote_review_v1', 'reviewed_at': time.time(),

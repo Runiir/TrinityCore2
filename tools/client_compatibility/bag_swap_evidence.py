@@ -22,46 +22,111 @@ MAX_ROWS, MAX_BYTES = 250000, 128 * 1024 * 1024
 
 
 class Sources:
-    def __init__(self, data, digests, local=False):
+    def __init__(self, data, digests, local=False, *, paths=None):
         self.data, self.digests, self.local = data, digests, local
-        self.maps = [v for v in data.values() if type(v) is dict and v.get('schema') in
-            (ANCESTRY_SCHEMA, 'client442_bag_swap_fresh_ancestry_v1')]
+        self.paths, self.root = paths or {}, lab.ROOT
+        self._refresh_maps()
 
-    def member(self, ref, seen=None):
+    def _refresh_maps(self):
+        self.maps = [v for v in self.data.values() if type(v) is dict and v.get('schema') in
+            (ANCESTRY_SCHEMA, 'client442_bag_swap_fresh_ancestry_v1', 'client442_bag_swap_indexed_ancestry_v1')]
+        self.logical_kinds, self.copy_kinds = {}, {}
+        from .bag_swap_indexed_archive import SCHEMA, validate_carry_manifest
+        for value in self.maps:
+            if value.get('schema') != SCHEMA:
+                continue
+            copies = validate_carry_manifest(value, self.root)
+            for row in [*value['members'], *value['authorities']]:
+                identity, kinds = (row['original_path'], row['sha256']), frozenset((row['kind'],))
+                require(identity not in self.logical_kinds or self.logical_kinds[identity] == kinds,
+                    'original indexed source has conflicting logical classes')
+                self.logical_kinds[identity] = kinds
+            for member, (sha, _, kinds) in copies.items():
+                identity = (str(self.root / member), sha)
+                self.copy_kinds[identity] = self.copy_kinds.get(identity, frozenset()) | kinds
+
+    def _rows(self, ref):
+        return [row for value in self.maps for row in [*value.get('members', []), *value.get('authorities', [])]
+            if type(row) is dict and row.get('original_path') == ref['path'] and row.get('sha256') == ref['sha256']]
+
+    def _json_view(self, ref):
+        identity = (ref['path'], ref['sha256'])
+        kinds = self.logical_kinds.get(identity, self.copy_kinds.get(identity))
+        require(kinds is None or 'json' in kinds, 'logical source is not an ordinary JSON view')
+
+    def _json_limit(self, ref):
+        from . import bag_swap_indexed_sources as indexed
+        from .bag_swap_sources import MAX_JSON_BYTES
+        limits = [MAX_JSON_BYTES]
+        values = [value for value in self.data.values() if type(value) is dict]
+        owners = [value for value in values if value.get('schema') == 'client442_bag_swap_scout_resume_v1' or
+            value.get('schema') == 'client442_laya_interactions_v1' and value.get('phase') == 'bags_swap_scout_ready']
+        for value in owners:
+            if value.get('runtime_authority_source') == ref:
+                limits.append(indexed.MAX_RUNTIME_BYTES)
+        for value in values:
+            if value.get('schema') == indexed.RUNTIME_SCHEMA and value.get('authority_source') == ref:
+                limits.append(indexed.MAX_DESCRIPTOR_BYTES)
+            if value.get('schema') == indexed.CACHE_SCHEMA and value.get('carry_source') == ref:
+                limits.append(indexed.MAX_CARRY_BYTES)
+        if min(limits) == MAX_JSON_BYTES:
+            for value in owners:
+                if value.get('authority_source') == ref and type(value.get('runtime_authority_source')) is dict:
+                    compact = self.get(value['runtime_authority_source'], False)
+                    if compact.get('schema') == indexed.RUNTIME_SCHEMA:
+                        limits.append(indexed.MAX_DESCRIPTOR_BYTES)
+        return min(limits)
+
+    def member(self, ref, seen=None, *, json_view=False, json_limit=None):
         reference(ref)
+        if seen is None:
+            self._refresh_maps()
+        if json_view:
+            self._json_view(ref)
+            if self.local:
+                current_limit = self._json_limit(ref)
+                json_limit = current_limit if json_limit is None else min(json_limit, current_limit)
         path = Path(ref['path'])
         require(path.is_relative_to(lab.ROOT / 'evidence'), 'swap source must be original private evidence')
         member = str(path.relative_to(lab.ROOT))
+        if json_view and self.local and member not in self.data and not self._rows(ref):
+            from .bag_swap_indexed_sources import _json_file
+            options = {'root': self.root, 'expected_ref': ref}
+            if path.suffix == '.blob' and 'json' in self.copy_kinds.get((ref['path'], ref['sha256']), ()):
+                options['allow_raw_json'] = True
+            self.data[member], actual = _json_file(path, json_limit, **options)
+            self.digests[member] = actual['sha256']
+            self._refresh_maps()
         if self.digests.get(member) == ref['sha256']:
             return member
         seen = set() if seen is None else seen
         identity = (ref['path'], ref['sha256'])
         require(identity not in seen and len(seen) < 8, 'carried source ancestry cycles or exceeds its exact bound')
         seen.add(identity)
-        rows = [row for value in self.maps for row in [*value.get('members', []), *value.get('authorities', [])] if type(row) is dict and
-            row.get('original_path') == ref['path'] and row.get('sha256') == ref['sha256']]
+        rows = self._rows(ref)
         require(len(rows) == 1 and type(rows[0].get('copy_member')) is str,
             'immutable swap source absent or ambiguous in carried graph')
         copy = rows[0]['copy_member']
         require(not Path(copy).is_absolute() and '..' not in Path(copy).parts, 'ordinary carried source member required')
-        return self.member({'path': str(lab.ROOT / copy), 'sha256': ref['sha256']}, seen)
+        return self.member({'path': str(lab.ROOT / copy), 'sha256': ref['sha256']}, seen,
+            json_view=json_view, json_limit=json_limit)
 
     def get(self, ref, successful=True):
         reference(ref)
+        self._refresh_maps()
+        self._json_view(ref)
         path = Path(ref['path'])
         require(path.is_relative_to(lab.ROOT / 'evidence'), 'swap source must be original private evidence')
-        member = str(path.relative_to(lab.ROOT))
-        if member not in self.data and self.local:
-            require(bound(path) == ref, 'local immutable swap source changed')
-            self.data[member] = json.loads(path.read_text())
-            self.digests[member] = ref['sha256']
-        key = self.member(ref)
+        key = self.member(ref, set(), json_view=True)
         require(key in self.data and self.digests.get(key) == ref['sha256'], 'exact carried swap source bytes differ')
         value = self.data[key]
         return shared.accepted(value) if successful else value
 
 
 def local_store(directory=None):
+    if directory is not None and (Path(directory) / 'predecessor_ui173.json').is_file():
+        from .bag_swap_indexed_archive import local_sources
+        return local_sources(Path(directory))
     data, digests = {}, {}
     if directory is not None:
         for path in Path(directory).rglob('*.json'):
@@ -92,21 +157,63 @@ def frame(store, value, image, source):
     return shared.frame(store, value, image, source)
 
 
+def indexed_initialization(store, ready, resume, old):
+    """Replay the exact ordinary batch originals captured before indexed startup."""
+    batch = Path(ready['resume_source']['path']).parent.parent
+    require(batch.parent == store.root / 'evidence' and re.fullmatch(r'[A-Za-z0-9_]+', batch.name),
+        'indexed original batch must be an ordinary named evidence batch')
+    refs = {}
+    for key, filename in (('batch_source', 'batch.json'),
+            ('native_server_before_source', 'native_server_before.json')):
+        ref = ready.get(key)
+        reference(ref)
+        require(ref['path'] == str(batch / filename) and resume.get(key) == ref,
+            'indexed ready/resume must bind the same canonical original batch sources')
+        refs[key] = ref
+    captured = store.get(refs['batch_source'], False)
+    native = store.get(refs['native_server_before_source'], False)
+    require(type(captured) is dict and set(captured) ==
+        {'schema', 'started_at', 'native_worldserver', 'code_commit'} and
+        captured.get('schema') == 'client442_interaction_batch_v1' and type(native) is dict and
+        set(native) == {'pid', 'start_ticks'} and type(native['pid']) is int and native['pid'] > 0 and
+        type(native['start_ticks']) is str and re.fullmatch(r'[1-9][0-9]*', native['start_ticks']) and
+        strict_equal(native, captured.get('native_worldserver')) and
+        strict_equal(native, old['runtime']['worldserver']) and
+        finite(captured.get('started_at')) and finite(resume.get('started_at')) and
+        finite(ready.get('started_at')) and old['closure']['finished_at'] < captured['started_at'] <=
+        resume['started_at'] < ready['started_at'] and
+        type(captured.get('code_commit')) is str and re.fullmatch(r'[0-9a-f]{40}', captured['code_commit']) and
+        captured['code_commit'] == resume.get('code_commit') == ready.get('code_commit'),
+        'indexed original initialization must predate startup and bind exact native/code identities')
+    epoch = store.get(ready.get('current_code_epoch_source'), False)
+    require(epoch.get('schema') == 'client442_bag_swap_indexed_code_epoch_v1' and
+        epoch.get('code_commit') == captured['code_commit'], 'original indexed batch code epoch differs')
+    return refs
+
+
 def predecessor(store, ready, *, live=False):
     ref = ready.get('authority_source')
     compact_ref = ready.get('runtime_authority_source')
-    compact = store.get(compact_ref, False)
+    if live:
+        from .interaction_bag_swap_continuation import read_runtime_authority
+        compact = read_runtime_authority(compact_ref)
+    else:
+        compact = store.get(compact_ref, False)
     from .interaction_bag_swap_continuation import authority_sources
     provider = authority_sources(compact.get('schema'))
     fresh = compact.get('schema') == 'client442_bag_swap_fresh_runtime_authority_v1'
+    indexed = compact.get('schema') == 'client442_bag_swap_indexed_runtime_authority_v1'
     if live:
         require(store.local and bound(compact_ref['path']) == compact_ref,
             'live compact authority must retain its exact source-owned bytes')
-        old = provider.cached_runtime(compact_ref['path'], ref)
+        options = {'compact_ref': compact_ref} if indexed else {}
+        old = provider.cached_runtime(compact_ref['path'], ref, **options)
         require(compact.get('core') == old, 'live compact source differs from its exact admitted core')
     else:
         cache = store.get(ref, False)
-        if fresh:
+        if indexed:
+            old = provider.validate_cache(cache, store=store)
+        elif fresh:
             old = provider.validate_cache(cache)
         else:
             require(type(cache) is dict and set(cache) == {'schema', 'values', 'refs', 'graph'} and
@@ -130,8 +237,10 @@ def predecessor(store, ready, *, live=False):
         type(resume.get('available_memory_kib_before')) is int and resume['available_memory_kib_before'] >= 6 * 1024 * 1024 and
         old['closure']['finished_at'] < resume['started_at'] < resume['launch_finished_at'] < ready['started_at'],
         'one fresh owned scout and unchanged native/bridge lifetime required')
-    if fresh:
+    if fresh or indexed:
         current_code_epoch(store, resume, ready, old['closure'])
+    if indexed:
+        indexed_initialization(store, ready, resume, old)
     exact_checks(resume, 'checks', ('native_unchanged', 'bridge_unchanged', 'fresh_scout',
         'all_six_saved_snapshots', 'primary_stopped', 'HDMI_1', 'private_input'))
     auth = ready.get('realm_authentication', {})
@@ -146,6 +255,9 @@ def predecessor(store, ready, *, live=False):
 
 def current_code_epoch(store, resume, ready, closure):
     """Prove current raw code bytes while retaining all immutable parent epochs."""
+    if closure.get('schema') == 'client442_bag_swap_stopped_entry_closure_v1':
+        from .bag_swap_indexed_sources import validate_current_code_epoch
+        return validate_current_code_epoch(store, resume, ready, closure)
     from .checkpoint_bag_swap import CURRENT_CODE_SCHEMA, FRESH_CODE_FILES
     from .bag_swap_failed_evidence import PUBLICATION_FILES, PUBLICATION_DEPENDENCIES
     from .bag_swap_failed_sources import CODE_FIELDS, CODE_SCHEMA, CONFIG, MAX_TOTAL_BYTES, _raw, _commit, _vector
@@ -267,16 +379,24 @@ def lifecycle(store, refs, *, live=False):
     predecessor(store, ready, live=live)
     baseline = ready['all_offline_snapshot']
     contract.owned_snapshot(baseline)
-    fresh = store.get(ready['runtime_authority_source'], False).get('schema') == 'client442_bag_swap_fresh_runtime_authority_v1'
+    if live:
+        from .interaction_bag_swap_continuation import read_runtime_authority
+        compact_schema = read_runtime_authority(ready['runtime_authority_source']).get('schema')
+    else:
+        compact_schema = store.get(ready['runtime_authority_source'], False).get('schema')
+    indexed = compact_schema == 'client442_bag_swap_indexed_runtime_authority_v1'
+    fresh = compact_schema in ('client442_bag_swap_fresh_runtime_authority_v1',
+        'client442_bag_swap_indexed_runtime_authority_v1')
     from .interaction_bag_swap_continuation import entry_settlement
     if fresh:
         require(entry.get('native_before_entry') == baseline['2']['native'] and
             type(entry.get('raw_entry_packets')) is list and type(entry.get('raw_entry_events')) is list,
             'fresh entry must retain actual prelogin native state and complete wire/metadata sources')
-    boot = entry_settlement(entry, entry.get('raw_entry_packets', []), entry.get('raw_entry_events', []), required=fresh)
+    boot = entry_settlement(entry, entry.get('raw_entry_packets', []), entry.get('raw_entry_events', []), required=fresh,
+        required_schema='client442_bag_swap_login_sync_v2' if indexed else None)
     if boot is not None:
         owner = contract.native_replay(entry['raw_entry_packets'], ready['native_session'],
-            entry['started_at'], entry['finished_at'], login_sync=boot)
+            entry['started_at'], entry['finished_at'], login_sync=boot, events=entry['raw_entry_events'])
         require(strict_equal(entry.get('native_owner_proof'), owner), 'fresh entry owner proof differs from complete actual source packets')
     require(all(value.get('actor') == ready['actor'] and value.get('runtime') == ready['runtime'] and
         value.get('code_commit') == ready['code_commit'] and value.get('committed_sources') == ready['committed_sources'] and
@@ -367,7 +487,8 @@ def lifecycle(store, refs, *, live=False):
         'ordinary logout must retain the actual original native pose, target and AFK')
     closed = contract.native_replay(park['raw_native_logout_history'], ready['native_session'],
         entry['started_at'], park['logout_packets'][1]['time'],
-        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot,
+        events=park.get('raw_native_logout_events') if indexed else None)
     require(park.get('native_logout_proof') == closed and len(closed['native_inventory_transitions']) == 3,
         'whole owner/item history through actual native logout completion differs')
     frame(store, entry, entry['frame'], refs['entry'])
@@ -389,6 +510,21 @@ def local_lifecycle(refs):
     return lifecycle(local_store(), refs, live=True)
 
 
+def local_journal(path, ref=None, *, size=None):
+    """Return rows bound to the exact capped bytes of one ordinary opened file."""
+    from .bag_swap_indexed_archive import _read, MAX_JOURNAL
+    from .bag_swap_source_index import _file
+    path = _file(path)
+    actual_size = path.stat().st_size
+    require(actual_size <= MAX_JOURNAL and (size is None or actual_size == size),
+        'local whole journal size differs or exceeds its unchanged bound')
+    if ref is None:
+        ref = bound(path)
+    reference(ref)
+    require(ref['path'] == str(path), 'local journal must retain its exact canonical source path')
+    return _read(path, 'journal', actual_size, expected_sha=ref['sha256']), ref
+
+
 def tracking_state():
     return {'members': set(), 'packets': [], 'events': [], 'journal_counts':
         {member: {'rows': 0, 'serialized_bytes': 0} for member in TRACKING_MEMBERS}}
@@ -398,7 +534,7 @@ def collect(member, lines, data, tracking):
     require(member in TRACKING_MEMBERS and member not in tracking['members'], 'two distinct actual current journals required')
     closures = [v for v in data.values() if type(v) is dict and v.get('phase') == PHASE]
     require(len(closures) == 1, 'one closed swap pause must precede current journals')
-    store = Sources(data, tracking['digests'])
+    store = Sources(data, tracking['digests'], paths=tracking.get('paths', {}))
     ready = store.get(closures[0]['sources']['preparation'])
     destination = tracking['packets' if member == TRACKING_MEMBERS[0] else 'events']
     tracking['members'].add(member)
@@ -436,8 +572,7 @@ def actual_journals(store, closure, tracking, current):
         member = str(Path(ref['path']).relative_to(lab.ROOT))
         rows = tracking.get('raw_journals', {}).get(member)
         if rows is None and store.local:
-            require(bound(ref['path']) == ref, 'current raw journal bytes differ')
-            rows = [json.loads(line) for line in Path(ref['path']).read_text().splitlines()]
+            rows, _ = local_journal(ref['path'], ref)
         require(type(rows) is list and store.digests.get(member) == ref['sha256'], 'exact raw current journal absent')
         raw[kind] = rows
     require(strict_equal(raw['events'], tracking['events']), 'current raw event journal differs from actual generic archived events')
@@ -452,15 +587,17 @@ def actual_journals(store, closure, tracking, current):
     wire = [r for r in raw['packets'] if r.get('session') == owner]
     from .interaction_bag_swap_continuation import entry_settlement
     compact = store.get(ready['runtime_authority_source'], False) if ready.get('runtime_authority_source') else {}
-    boot = entry_settlement(entry, wire, raw['events'], required=compact.get('schema') ==
-        'client442_bag_swap_fresh_runtime_authority_v1')
+    indexed = compact.get('schema') == 'client442_bag_swap_indexed_runtime_authority_v1'
+    boot = entry_settlement(entry, wire, raw['events'], required=compact.get('schema') in (
+        'client442_bag_swap_fresh_runtime_authority_v1', 'client442_bag_swap_indexed_runtime_authority_v1'),
+        required_schema='client442_bag_swap_login_sync_v2' if indexed else None)
     if boot is not None:
         require(strict_equal(entry.get('raw_entry_packets'), contract.packet_rows(wire, owner, entry['started_at'], entry['finished_at'])) and
             strict_equal(entry.get('raw_entry_events'), [row for row in raw['events'] if
                 finite(row.get('time')) and entry['started_at'] <= row['time'] <= entry['finished_at']]),
             'actual full journals must contain the exact retained complete fresh entry sources')
-    contract.forbidden_packets(wire, owner, entry['started_at'], closure['finished_at'], login_sync=boot)
-    contract.roundtrip_packets(wire, owner, entry['started_at'], closure['finished_at'], login_sync=boot)
+    contract.forbidden_packets(wire, owner, entry['started_at'], closure['finished_at'], login_sync=boot, events=raw['events'])
+    contract.roundtrip_packets(wire, owner, entry['started_at'], closure['finished_at'], login_sync=boot, events=raw['events'])
     login = contract.login_packets(wire, owner, entry['started_at'], entry['finished_at'])
     require(entry['login_packets'] == [login[k] for k in ('modern', 'request', 'verify', 'delivered')] and
         len([r for r in wire if r.get('name') in ('CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD')]) == 4,
@@ -470,9 +607,14 @@ def actual_journals(store, closure, tracking, current):
     require(logout == park['logout_packets'] and len([r for r in wire if r.get('name') in
         ('CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE')]) == 4, 'actual current journal requires one ordinary logout')
     replay = contract.native_replay(wire, owner, entry['started_at'], logout[1]['time'],
-        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot)
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], login_sync=boot,
+        events=raw['events'] if boot is not None else None)
     require(park.get('raw_native_logout_history') == contract.packet_rows(wire, owner, entry['started_at'], logout[1]['time']) and
         park.get('native_logout_proof') == replay, 'retained pre-stop history differs from actual complete native logout journal')
+    if indexed:
+        require(strict_equal(park.get('raw_native_logout_events'), [row for row in raw['events'] if
+            finite(row.get('time')) and entry['started_at'] <= row['time'] <= logout[1]['time']]),
+            'retained complete v2 native logout event window differs from actual journal')
     require(replay['native_inventory_states'] == [[contract.SOURCE['guid'], contract.DESTINATION['guid']],
         [contract.DESTINATION['guid'], contract.SOURCE['guid']], [contract.SOURCE['guid'], contract.DESTINATION['guid']]],
         'actual native inventory must exchange and exactly restore both GUIDs')
@@ -506,14 +648,14 @@ def actual_journals(store, closure, tracking, current):
             ('to_native', 'from_native') else 'modern_packet'), 'unique actual physical/native packet metadata attribution differs')
     require(len([row for row in events if row.get('name') == contract.ACTION and row.get('direction') in
         ('from_client', 'to_native')]) == 4, 'actual packet metadata contains another occupied inventory request')
-    contract.forbidden_packets(events, owner, entry['started_at'], closure['finished_at'], login_sync=boot)
+    contract.forbidden_packets(raw['events'], owner, entry['started_at'], closure['finished_at'], login_sync=boot, events=raw['events'])
     for physical in sessions:
-        contract.forbidden_packets(events, physical, entry['started_at'], closure['finished_at'], login_sync=boot)
+        contract.forbidden_packets(raw['events'], physical, entry['started_at'], closure['finished_at'], login_sync=boot, events=raw['events'])
     return {'actual_packet_journals_verified': True, 'native_item_fields_unchanged': replay['native_item_fields_preserved']}
 
 
 def proof(data, digests, tracking):
-    store = Sources(data, digests)
+    store = Sources(data, digests, paths=tracking.get('paths', {}))
     store.raw_journals = tracking.get('raw_journals', {})
     closures = [(m, v) for m, v in data.items() if type(v) is dict and v.get('phase') == PHASE]
     require(len(closures) == 1, 'one distinct successful occupied-swap closed pause required')
@@ -555,14 +697,17 @@ def proof(data, digests, tracking):
 def local(directory):
     store = local_store(directory)
     tracking = tracking_state()
-    tracking.update(digests=store.digests, raw_journals={})
+    tracking.update(digests=store.digests, raw_journals=dict(getattr(store, 'raw_journals', {})), paths=store.paths)
     from .observation.journal import entries
     for member, path in zip(TRACKING_MEMBERS, (lab.ROOT / 'evidence/world_packets.jsonl', lab.ROOT / 'logs/modern_world.jsonl')):
         collect(member, entries(path), store.data, tracking)
     for path in Path(directory).rglob('*.jsonl'):
         member = str(path.relative_to(lab.ROOT))
-        store.digests[member] = bound(path)['sha256']
-        tracking['raw_journals'][member] = [json.loads(line) for line in path.read_text().splitlines()]
+        if member not in tracking['raw_journals']:
+            ref = {'path': str(path), 'sha256': store.digests[member]} if member in store.digests else None
+            rows, ref = local_journal(path, ref)
+            store.digests[member] = ref['sha256']
+            tracking['raw_journals'][member] = rows
     return proof(store.data, store.digests, tracking)
 
 

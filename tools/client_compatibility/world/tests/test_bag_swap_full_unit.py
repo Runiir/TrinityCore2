@@ -25,13 +25,32 @@ from tools.client_compatibility.world.tests.test_item_actionbar_evidence import 
 from tools.client_compatibility.world.tests.test_item_actionbar_preservation import precision as precise
 
 
-def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None, code_epoch_builder=None):
+
+def capture_initialization(tmp_path, native, commit, started_at):
+    """Execute ordinary initialize with fake process/Git/time; no live authority."""
+    from tools.client_compatibility import checkpoint_interactions as initializer
+    root = Path(tmp_path) / 'fake_initialization_lab'
+    (root / 'evidence').mkdir(parents=True)
+    batch = root / 'evidence/ordinary_batch'
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(initializer.lab, 'ROOT', root)
+        patch.setattr(initializer.lab, 'owned_process', lambda kind: deepcopy(native) if kind == 'worldserver' else None)
+        patch.setattr(initializer.subprocess, 'check_output', lambda *a, **k: commit)
+        patch.setattr(initializer.time, 'time', lambda: started_at)
+        initializer.initialize(batch)
+    return {name: (batch / name).read_bytes() for name in ('batch.json', 'native_server_before.json')}
+
+def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None, code_epoch_builder=None,
+        indexed=None):
     original_snapshot = prior_snapshot.snapshot
     def occupied_snapshot():
         value = original_snapshot()
         value['2']['inventory'] = inventory()
         return value
-    if authority is None:
+    if indexed is not None:
+        carried, old, carried_ready, ancestry = indexed['authority']
+        authority = indexed['authority']
+    elif authority is None:
         monkeypatch.setattr(prior_snapshot, 'snapshot', occupied_snapshot)
         carried, carried_ready, ancestry = carried_fixture(tmp_path, monkeypatch)
     else:
@@ -46,12 +65,16 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
             if row['path'].endswith('/experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json'))
     baseline = deepcopy(old['snapshot'])
     c.owned_snapshot(baseline)
-    batch = root / ('evidence/client_interactions_20990101_ui173' if authority else
+    batch = root / ('evidence/client_interactions_20990101_ui174' if indexed is not None else
+        'evidence/client_interactions_20990101_ui173' if authority else
         'evidence/client_interactions_20990101_ui172')
     offset = int(old['closure']['finished_at']) + 10 - 1130 if authority else 0
     def tm(value):
         return value + offset + (13 if boot_builder and value >= 1201 else 0)
-    if authority:
+    paths = dict(carried.paths) if indexed is not None else {}
+    if indexed is not None:
+        data, digests, files = dict(carried.data), dict(carried.digests), dict(carried.paths)
+    elif authority:
         members = [cache_member, str(Path(carried_ready['runtime_authority_source']['path']).relative_to(root))]
         members += [row['copy_member'] for row in ancestry['members'] + ancestry['authorities']]
         data = {member: carried.data[member] for member in members if member in carried.data}
@@ -59,8 +82,9 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
         files = {member: carried.files[member] for member in members}
     else:
         data, digests, files = dict(carried.data), dict(carried.digests), {}
-    files[cache_member] = Path(carried_ready['authority_source']['path']).read_bytes()
-    for row in ancestry['members'] + ancestry['authorities']:
+    if indexed is None:
+        files[cache_member] = Path(carried_ready['authority_source']['path']).read_bytes()
+    for row in ancestry['members'] + ancestry['authorities'] if indexed is None else []:
         if not authority:
             files[row['copy_member']] = Path(row['original_path']).read_bytes()
     for row in ancestry.get('journals', []):
@@ -68,16 +92,32 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
             for line in carried.raw_journals[row['copy_member']])
         assert hashlib.sha256(files[row['copy_member']]).hexdigest() == row['sha256']
 
-    def write(name, value):
+    def insert(name, raw):
         path = batch / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        raw = (json.dumps(value, indent=2) + '\n').encode()
-        path.write_bytes(raw)
+        physical = indexed['directory'] / name if indexed is not None else path
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(raw)
         member = str(path.relative_to(root))
         data[member], files[member], digests[member] = json.loads(raw), raw, hashlib.sha256(raw).hexdigest()
+        paths[member] = str(physical)
         return {'path': str(path), 'sha256': digests[member]}
 
-    write('ancestry_manifest.json', ancestry)
+    def write(name, value):
+        return insert(name, (json.dumps(value, indent=2) + '\n').encode())
+
+    # Initialization executes before resume/preparation. The indexed driver must
+    # retain the originals it captured before admission/carry; it cannot backfill
+    # an experiment's missing ordinary batch identity at this late stage.
+    initialization = indexed['initialization'] if indexed is not None else capture_initialization(
+        tmp_path, old['runtime']['worldserver'], ('d' if authority else 'e') * 40, tm(1129))
+    assert set(initialization) == {'batch.json', 'native_server_before.json'}
+    initialization_refs = {key: insert(name, initialization[name]) for key, name in (
+        ('batch_source', 'batch.json'), ('native_server_before_source', 'native_server_before.json'))}
+    initialized = json.loads(initialization['batch.json'])
+    assert initialized['native_worldserver'] == json.loads(initialization['native_server_before.json']) == old['runtime']['worldserver']
+    assert initialized['code_commit'] == ('d' if authority else 'e') * 40
+    assert old['closure']['finished_at'] < initialized['started_at'] < tm(1130)
+    if indexed is None: write('ancestry_manifest.json', ancestry)
     compact_ref = carried_ready['runtime_authority_source'] if authority else write(
         'runtime_authority.json', sources.compact_authority(old, carried_ready['authority_source']))
     actor = deepcopy(old['origin_actor'])
@@ -89,16 +129,18 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
     png = b'\x89PNG\r\n\x1a\nsynthetic-owned-swap-frame'
     def frame(name):
         path = batch / name / 'screen.png'
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(png)
+        physical = indexed['directory'] / name / 'screen.png' if indexed is not None else path
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(png)
         member = str(path.relative_to(root))
         files[member] = png
+        paths[member] = str(physical)
         digests[member] = hashlib.sha256(png).hexdigest()
         return {'file': 'screen.png', 'sha256': digests[member], 'monitor': deepcopy(monitor)}
 
     committed_sources = []
     source_root = Path(__file__).resolve().parents[4]
-    for relative in projection.SOURCE_FILES:
+    for relative in projection.SOURCE_FILES if indexed is None else ():
         path = repo / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes((source_root / relative).read_bytes())
@@ -122,6 +164,9 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
         'runtime': runtime, 'previous_runtime': old['runtime'], 'available_memory_kib_before': 6 * 1024 * 1024,
         'checks': dict.fromkeys(('native_unchanged', 'bridge_unchanged', 'fresh_scout',
             'all_six_saved_snapshots', 'primary_stopped', 'HDMI_1', 'private_input'), True)}
+    if indexed is not None:
+        resume.update(initialization_refs, code_commit='d' * 40,
+            committed_sources=deepcopy(committed_sources))
     if epoch_ref:
         resume['current_code_epoch_source'] = epoch_ref
     resume_ref = write('resume/report.json', resume)
@@ -137,14 +182,18 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
         native_session='scout', resume_source=resume_ref, selection_source=selection_ref,
         realm_authentication=authentication, frame=frame('ready'),
         screen_review={**selection_review_ref, 'frame': selection['frame']})
+    if indexed is not None:
+        ready.update(initialization_refs)
     if epoch_ref:
         ready['current_code_epoch_source'] = epoch_ref
     ready_ref = write('ready/episode.json', ready)
-    prior_precision = old['closure']['exact_precision'] if authority else next(value for value in old['graph']['data'].values() if
+    prior_precision = {'row': old['closure']['exact_precision']['after_row']} if indexed is not None else old['closure']['exact_precision'] if authority else next(value for value in old['graph']['data'].values() if
         value.get('phase') == 'item_actionbar_rest_precision_complete' and value.get('after') == baseline)
     exact_before = prior_precision['row']['exact_rest_bonus']
     exact_after, text = preservation.native_rest(exact_before, tm(1200) - baseline['2']['native']['logout_time'])
-    if authority:
+    if indexed is not None:
+        binding = deepcopy(indexed['binding'])
+    elif authority:
         member = str(Path(old['closure']['before_precision_source']['path']).relative_to(root))
         binding = deepcopy(old['graph']['data'][member]['rest_sources'])
     else:
@@ -177,7 +226,7 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
         login = boot['login_packets']
         creations = [row for row in boot['rows'] if row not in login]
     owner_proof = c.native_replay(login + creations, 'scout', tm(1199), tm(1201),
-        login_sync=boot['proof'] if boot else None)
+        login_sync=boot['proof'] if boot else None, events=boot['events'] if indexed is not None else None)
     entry = trial('entry', 'bags_swap_entered', tm(1199), tm(1201), preparation_source=ready_ref,
         precision_source=before_ref, all_offline_snapshot=baseline, native_session='scout',
         native_before_entry=baseline['2']['native'], entered_native={**baseline['2']['native'], 'online': 1},
@@ -215,7 +264,24 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
         'direction': 'from_client', 'body': '00'}] + logout
     if not boot:
         wire.sort(key=lambda row: row['time'])
-    replay = c.native_replay(wire, 'scout', tm(1199), tm(1215.1), login_sync=boot['proof'] if boot else None)
+    def complete_events():
+        events = deepcopy(boot['events']) if boot else [
+            {'event': 'instance_authenticated', 'account_id': 2, 'session': 'physical', 'time': tm(1200.15)}]
+        for row in wire:
+            physical = 'scout' if row['direction'] in ('to_native', 'from_native') or row['name'] in (
+                'CMSG_PLAYER_LOGIN', 'SMSG_LOGOUT_COMPLETE') else 'physical'
+            if any(event.get('session') == physical and event.get('name') == row['name'] and
+                event.get('direction') == row['direction'] and event.get('bytes') == len(bytes.fromhex(row['body'])) and
+                0 <= row['time'] - event['time'] < .1 for event in events):
+                continue
+            events.append({'event': 'native_packet' if row['direction'] in ('to_native', 'from_native') else 'modern_packet',
+                'session': physical, 'time': row['time'] - .01, 'name': row['name'],
+                'direction': row['direction'], 'bytes': len(bytes.fromhex(row['body']))})
+        events.sort(key=lambda row: row['time'])
+        return events
+    full_events = complete_events() if indexed is not None else None
+    replay = c.native_replay(wire, 'scout', tm(1199), tm(1215.1), login_sync=boot['proof'] if boot else None,
+        events=full_events)
 
     def drag(kind, review_source, reviewed, inverse, start, finish, raw, inherited=None):
         intent = {'kind': 'drag', 'start': [20, 20] if not inverse else [60, 20],
@@ -279,6 +345,8 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
         all_offline_snapshot=final, logout_started_at=tm(1214.9), logout_finished_at=tm(1216.9),
         logout_packets=logout, pre_logout_native_state=native_state, raw_native_logout_history=whole,
         native_logout_proof=replay, checks=dict.fromkeys(e.shared.PARK_CHECKS, True), frame=frame('park'))
+    if indexed is not None:
+        park['raw_native_logout_events'] = [row for row in full_events if tm(1199) <= row['time'] <= tm(1215.1)]
     park_ref = write('park/episode.json', park)
     after = trial('after_precision', 'bags_swap_rest_precision_complete', tm(1220), tm(1221),
         source=park_ref, before=final, after=final, query=preservation.PRECISION_QUERY,
@@ -287,10 +355,11 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
     after_ref = write('after_precision/episode.json', after)
     refs = {'preparation': ready_ref, 'entry': entry_ref, 'operation': operation_ref, 'park': park_ref,
         'before_precision': before_ref, 'after_precision': after_ref}
-    store = e.Sources(data, digests)
+    store = e.Sources(data, digests, paths=paths)
     store.raw_journals = carried.raw_journals
     result, restored, _ = e.lifecycle(store, refs)
-    assert restored == final and publication.validate_carry(store, ready)
+    assert restored == final
+    if indexed is None: assert publication.validate_carry(store, ready)
     final_review_ref = write('final_review/review.json', {'reviewed': True, 'control': 'Harnesstwo',
         'source': park_ref, 'frame': park['frame'], 'selected_character': 'Harnesstwo', 'selected_level': 1})
     closure = trial('final', e.PHASE, tm(1225), tm(1226), sources=refs, proof=result,
@@ -302,19 +371,7 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
     closure_ref = write('final/episode.json', closure)
     # Current source-owned journals start at ready.started_at; the prior realm
     # authentication is retained in ready but lies outside that archive window.
-    events = deepcopy(boot['events']) if boot else [
-        {'event': 'instance_authenticated', 'account_id': 2, 'session': 'physical', 'time': tm(1200.15)}]
-    for row in wire:
-        physical = 'scout' if row['direction'] in ('to_native', 'from_native') or row['name'] in (
-            'CMSG_PLAYER_LOGIN', 'SMSG_LOGOUT_COMPLETE') else 'physical'
-        if any(event.get('session') == physical and event.get('name') == row['name'] and
-            event.get('direction') == row['direction'] and event.get('bytes') == len(bytes.fromhex(row['body'])) and
-            0 <= row['time'] - event['time'] < .1 for event in events):
-            continue
-        events.append({'event': 'native_packet' if row['direction'] in ('to_native', 'from_native') else 'modern_packet',
-            'session': physical, 'time': row['time'] - .01, 'name': row['name'],
-            'direction': row['direction'], 'bytes': len(bytes.fromhex(row['body']))})
-    events.sort(key=lambda row: row['time'])
+    events = full_events if indexed is not None else complete_events()
     journal_refs = {}
     raw_journals = dict(carried.raw_journals)
     for kind, rows in (('packets', wire), ('events', events)):
@@ -325,7 +382,7 @@ def complete_fixture(tmp_path, monkeypatch, *, authority=None, boot_builder=None
     write('journal_receipt.json', {'schema': 'client442_bag_swap_journals_v1', 'closure_source': closure_ref,
         'journal_sources': journal_refs})
     tracking = e.tracking_state()
-    tracking.update(digests=digests, raw_journals=raw_journals)
+    tracking.update(digests=digests, raw_journals=raw_journals, paths=paths)
     for member, rows in zip(e.TRACKING_MEMBERS, (wire, events)):
         e.collect(member, rows, data, tracking)
         files[member] = b''.join((json.dumps(row) + '\n').encode() for row in rows)
@@ -414,3 +471,25 @@ def test_full_proof_accepts_actual_observer_empty_dictionary_cursor(tmp_path, mo
         operation['state']['cursor_info'] = {}
     changed, hashes, actual, _ = rebound_current_receipts(data, digests, tracking, files, prefix, mutate)
     assert e.proof(changed, hashes, actual) == expected
+
+
+
+def test_complete_fake_fixture_executes_initialize_before_any_preparation(tmp_path, monkeypatch):
+    from tools.client_compatibility import checkpoint_interactions as initializer
+    calls = []
+    ordinary = initializer.initialize
+    def observed(directory):
+        calls.append(directory)
+        return ordinary(directory)
+    monkeypatch.setattr(initializer, 'initialize', observed)
+    data, digests, _, files, _, prefix = complete_fixture(tmp_path, monkeypatch)
+    assert len(calls) == 1 and 'fake_initialization_lab' in str(calls[0])
+    original = (calls[0] / 'batch.json').read_bytes()
+    assert files[prefix + 'batch.json'] == original
+    batch = data[prefix + 'batch.json']
+    native = data[prefix + 'native_server_before.json']
+    ready = data[prefix + 'ready/episode.json']
+    assert batch['native_worldserver'] == native == ready['runtime']['worldserver']
+    assert batch['code_commit'] == ready['code_commit']
+    assert batch['started_at'] < ready['started_at']
+    assert digests[prefix + 'batch.json'] == hashlib.sha256(original).hexdigest()
