@@ -33,3 +33,5 @@ The [DVC pointer](../../artifacts/client_harness/442_interactions_20261008_171.t
 After that verification, all 123 local PNGs (194,851,764 bytes), the exact workspace archive and its exact DVC cache object are removed. JSON receipts and external proofs remain local. Scoped DVC status reports the expected absent local archive/cache; push reports up to date. No global cache collection occurs.
 
 Scripts remain blocked. The original `softTargetInteract=0` stays explicitly unrestored at stock `1`. New trials use a code controller with model/revision null. Other items, pages, occupied action cells, casts and the rest of the interaction family remain open.
+
+Post-publication acceptance, remote review, checkpoint, offload records and DVC logs are retained in the [supplemental metadata checkpoint](../../artifacts/client_harness/442_interactions_20261008_171_publication.tar.gz.dvc). Its actual remote object verifies all 17 members and 106,322 compressed bytes, SHA256 `ac7abc5c52d5a024c269bcadd022253a9901e5de9d3c6c5293d7a6950cf80bc5`.
