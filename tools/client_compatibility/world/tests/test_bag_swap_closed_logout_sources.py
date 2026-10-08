@@ -832,3 +832,79 @@ def test_production_source_bundle_uses_private_evidence_spool_and_cleans_after_p
     else:assert call()['source_proof']=='fixture_verified'
     assert len(allocated)==1 and allocated[0].parent==c['root']/'evidence'
     assert not allocated[0].exists()
+
+
+@pytest.mark.parametrize('local',[True,False])
+@pytest.mark.parametrize('name,raw',[
+    ('retained/round03/systemd_scope_oom.jsonl',b'{"MESSAGE":"Memory cgroup out of memory","_REALTIME_TIMESTAMP":"1791477936123456"}\n'),
+    ('retained/diagnosis/matched_packets_redacted.jsonl',b'{"time":1,"body_sha256":"redacted"}\n')])
+def test_current_retained_diagnostic_jsonl_is_byte_bound_and_never_a_game_journal(flat,local,name,raw):
+    c=flat;path=c['batch']/'diagnostics'/name;path.parent.mkdir(parents=True);path.write_bytes(raw)
+    ref=source.bound(path);member=str(path.relative_to(c['root']))
+    before=(path.read_bytes(),ref,path.stat().st_size)
+    store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
+    assert store.digests[member]==ref['sha256'] and store.paths[member]==str(path)
+    assert store.current_diagnostic_jsonl==frozenset((member,))
+    assert member not in store.raw_journals and member not in store.data
+    with pytest.raises(RuntimeError,match='typed raw journal view required'):store.journal(ref)
+    assert (path.read_bytes(),source.bound(path),path.stat().st_size)==before
+
+
+@pytest.mark.parametrize('relative',['tracking/packets.jsonl','full_closed_journals01/events.jsonl',
+    'packets.jsonl','diagnostics_sibling/systemd.jsonl'])
+@pytest.mark.parametrize('bad_time',[None,True,float('inf')])
+def test_non_diagnostic_current_game_journals_keep_strict_finite_time_checks(flat,relative,bad_time):
+    c=flat;path=c['batch']/relative;path.parent.mkdir(parents=True,exist_ok=True)
+    path.write_bytes(encoded({'time':bad_time,'MESSAGE':'diagnostic-looking row'}))
+    with pytest.raises(RuntimeError,match='whole raw journal time/bytes differ|nonfinite JSON constant'):
+        source.local_store(c['batch'],c['root'])
+
+
+@pytest.mark.parametrize('relative',['diagnostics/../packets.jsonl',
+    'diagnostics/../../sibling/diagnostics/packets.jsonl',
+    '../sibling/diagnostics/packets.jsonl','diagnostics_sibling/packets.jsonl'])
+def test_diagnostic_classification_does_not_escape_its_exact_current_batch(relative):
+    batch=Path('evidence/current_batch')
+    assert source._current_kind(str(batch/relative),batch)=='journal'
+    assert source._current_kind('evidence/old_batch/diagnostics/packets.jsonl',batch)=='journal'
+
+
+def test_retained_diagnostic_jsonl_keeps_the_existing_journal_byte_cap(flat):
+    c=flat;path=c['batch']/'diagnostics'/'systemd.jsonl';path.parent.mkdir();path.write_bytes(b'{"MESSAGE":"scope"}\n')
+    paths={str(p.relative_to(c['root'])):str(p) for p in c['batch'].rglob('*') if p.is_file()}
+    digests={m:source.bound(p)['sha256'] for m,p in paths.items()};sizes={m:Path(p).stat().st_size for m,p in paths.items()}
+    sizes[str(path.relative_to(c['root']))]=archive.MAX_JOURNAL+1
+    with pytest.raises(RuntimeError,match='retained raw source size exceeds its bound'):
+        source.materialize(paths,digests,sizes,c['carry'],c['root'])
+
+
+def test_bad_digest_diagnostic_jsonl_is_rejected_even_as_a_byte_observation(flat):
+    c=flat;path=c['batch']/'diagnostics'/'systemd.jsonl';path.parent.mkdir();path.write_bytes(b'{"MESSAGE":"scope"}\n')
+    paths={str(p.relative_to(c['root'])):str(p) for p in c['batch'].rglob('*') if p.is_file()}
+    digests={m:source.bound(p)['sha256'] for m,p in paths.items()};sizes={m:Path(p).stat().st_size for m,p in paths.items()}
+    digests[str(path.relative_to(c['root']))]='a'*64
+    with pytest.raises(RuntimeError,match='decoded raw bytes differ from the pinned source SHA'):
+        source.materialize(paths,digests,sizes,c['carry'],c['root'])
+
+
+def test_diagnostic_current_classes_remain_binary_when_flat_carries_are_built(flat):
+    c=flat;path=c['batch']/'diagnostics'/'scope.jsonl';path.parent.mkdir();path.write_bytes(b'{"MESSAGE":"scope"}\n')
+    paths={str(p.relative_to(c['root'])):str(p) for p in c['batch'].rglob('*') if p.is_file()}
+    digests={m:source.bound(p)['sha256'] for m,p in paths.items()};sizes={m:Path(p).stat().st_size for m,p in paths.items()}
+    classes=source._classes(paths,digests,sizes,c['carry'],c['root'])
+    assert classes[str(path.relative_to(c['root']))]==frozenset(('binary',))
+    for row in [*c['carry']['members'],*c['carry']['authorities']]:
+        assert classes[row['copy_member']]>=frozenset(row['kinds'])
+
+
+def test_adjacent_local_proof_loader_uses_real_byte_bound_provider_diagnostic_ownership(flat,monkeypatch):
+    c=flat;path=c['batch']/'diagnostics'/'systemd.jsonl';path.parent.mkdir();raw=b'{"MESSAGE":"scope"}\n';path.write_bytes(raw)
+    packet=c['batch']/'journals'/'packets.jsonl';packet.parent.mkdir();packet.write_bytes(encoded({'time':201,'current':True}))
+    from tools.client_compatibility.observation import journal
+    monkeypatch.setattr(journal,'entries',lambda *_:[])
+    monkeypatch.setattr(evidence,'collect',lambda *_:None)
+    monkeypatch.setattr(evidence,'local_journal',lambda *_:pytest.fail('preloaded protocol/validated diagnostic must not be reopened'))
+    monkeypatch.setattr(evidence,'proof',lambda data,digests,tracking:tracking)
+    tracking=evidence.local(c['batch'])
+    assert tracking['raw_journals']=={str(packet.relative_to(c['root'])):[{'time':201,'current':True}]}
+    assert path.read_bytes()==raw and source.bound(path)['sha256']==digest(raw)

@@ -739,6 +739,7 @@ def proof(data, digests, tracking):
 
 def local(directory):
     store = local_store(directory)
+    diagnostic_jsonl = getattr(store, 'current_diagnostic_jsonl', frozenset())
     tracking = tracking_state()
     tracking.update(digests=store.digests, raw_journals=dict(getattr(store, 'raw_journals', {})), paths=store.paths)
     from .observation.journal import entries
@@ -746,7 +747,7 @@ def local(directory):
         collect(member, entries(path), store.data, tracking)
     for path in Path(directory).rglob('*.jsonl'):
         member = str(path.relative_to(lab.ROOT))
-        if member not in tracking['raw_journals']:
+        if member not in tracking['raw_journals'] and member not in diagnostic_jsonl:
             ref = {'path': str(path), 'sha256': store.digests[member]} if member in store.digests else None
             rows, ref = local_journal(path, ref)
             store.digests[member] = ref['sha256']

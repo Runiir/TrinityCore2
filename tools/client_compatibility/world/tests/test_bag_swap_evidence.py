@@ -259,3 +259,43 @@ def test_original_backpack_opening_requires_exact_review_and_source_owned_frame(
     else:
         with pytest.raises(RuntimeError, match='ordinary backpack opening'):
             e.opening_review(store, stage, ref, entry)
+
+
+@pytest.mark.parametrize('relative',['diagnostics/scope.jsonl','diagnostics/matched_packets_redacted.jsonl'])
+def test_local_loader_preserves_only_the_validated_current_diagnostic_jsonl_set(tmp_path,monkeypatch,relative):
+    # Use the real provider in the provider-side integration test; this unit
+    # isolates the adjacent loader's exact membership decision.
+    monkeypatch.setattr(e.lab,'ROOT',tmp_path)
+    directory=tmp_path/'evidence/current';path=directory/relative;path.parent.mkdir(parents=True)
+    path.write_bytes(b'{"MESSAGE":"scope"}\n');member=str(path.relative_to(tmp_path))
+    sha=hashlib.sha256(path.read_bytes()).hexdigest()
+    game=directory/'packets.jsonl';game.write_bytes(b'{"time":1}\n');game_member=str(game.relative_to(tmp_path))
+    store=SimpleNamespace(data={},digests={member:sha},paths={member:str(path)},raw_journals={},
+        current_diagnostic_jsonl=frozenset((member,)))
+    monkeypatch.setattr(e,'local_store',lambda *_:store)
+    from tools.client_compatibility.observation import journal
+    monkeypatch.setattr(journal,'entries',lambda *_:[])
+    monkeypatch.setattr(e,'collect',lambda *_:None)
+    called=[]
+    def loaded(target,ref):
+        assert target==game;called.append(target)
+        return [{'time':1}],{'path':str(target),'sha256':hashlib.sha256(target.read_bytes()).hexdigest()}
+    monkeypatch.setattr(e,'local_journal',loaded)
+    monkeypatch.setattr(e,'proof',lambda data,digests,tracking:tracking)
+    result=e.local(directory)
+    assert called==[game] and result['raw_journals']=={game_member:[{'time':1}]}
+    assert member not in result['raw_journals'] and path.read_bytes()==b'{"MESSAGE":"scope"}\n'
+
+
+@pytest.mark.parametrize('relative',['diagnostics_sibling/scope.jsonl','journals/packets.jsonl','scope.jsonl'])
+def test_local_loader_does_not_infer_diagnostic_ownership_from_names(tmp_path,monkeypatch,relative):
+    monkeypatch.setattr(e.lab,'ROOT',tmp_path)
+    directory=tmp_path/'evidence/current';path=directory/relative;path.parent.mkdir(parents=True)
+    path.write_bytes(b'{"MESSAGE":"scope"}\n');member=str(path.relative_to(tmp_path))
+    store=SimpleNamespace(data={},digests={},paths={},raw_journals={},
+        current_diagnostic_jsonl=frozenset(('evidence/old/diagnostics/scope.jsonl',)))
+    monkeypatch.setattr(e,'local_store',lambda *_:store)
+    from tools.client_compatibility.observation import journal
+    monkeypatch.setattr(journal,'entries',lambda *_:[])
+    monkeypatch.setattr(e,'collect',lambda *_:None)
+    with pytest.raises(RuntimeError,match='whole raw journal time/bytes differ'):e.local(directory)

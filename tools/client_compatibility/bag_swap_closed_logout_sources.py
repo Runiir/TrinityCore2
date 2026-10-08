@@ -57,6 +57,8 @@ LATER_CHANGED = frozenset((
     'tools/client_compatibility/world/tests/test_bag_swap_closed_logout_sources.py',
     'tools/client_compatibility/world/tests/test_bag_swap_closed_logout_contract.py',
     'tools/client_compatibility/observation/journal.py',
+    'tools/client_compatibility/bag_swap_evidence.py',
+    'tools/client_compatibility/world/tests/test_bag_swap_evidence.py',
     'tools/client_compatibility/bag_swap_indexed_archive.py',
     'tools/client_compatibility/world/tests/test_bag_swap_indexed_archive.py'))
 bound, reference = indexed.bound, indexed.reference
@@ -538,8 +540,9 @@ def _classes(paths, digests, sizes, old, root):
     else:
         classes = archive.validate_carry_manifest(old, root)
         classes.update(archive._crash_copies(paths, digests, dict(classes), root, sizes))
+    current_batch = Path(next(iter(classes))).parent.parent
     return {member: frozenset(classes[member][2]) if member in classes else frozenset((
-        archive.index._opaque_kind(digests[member], sizes[member]) or archive.index._ordinary_kind(member),))
+        archive.index._opaque_kind(digests[member], sizes[member]) or _current_kind(member, current_batch),))
         for member in paths}
 
 
@@ -685,6 +688,15 @@ def carry_authority(batch, *, admitted, root=None, repo=None):
     return bound(batch / CARRY_NAME)
 
 
+def _current_kind(member, batch):
+    """Retained current diagnostics are byte observations, never game journals."""
+    kind = archive.index._ordinary_kind(member)
+    path, diagnostic = Path(member), Path(batch) / 'diagnostics'
+    if kind == 'journal' and path.is_relative_to(diagnostic) and '..' not in path.parts:
+        return 'binary'
+    return kind
+
+
 def materialize(paths, digests, sizes, carry, root, *, role_refs=None, local=False):
     """Keep current documents and raw predecessor mappings; replay it only once."""
     from .bag_swap_evidence import Sources
@@ -710,14 +722,19 @@ def materialize(paths, digests, sizes, carry, root, *, role_refs=None, local=Fal
     classes = _classes(original_paths, original_digests, original_sizes, old, root)
     require(all(frozenset(row['kinds']) == classes[row['original_member']] for row in carry['members']),
         'flat types must preserve the unchanged original indexed/crash classes')
-    data, journals = {}, {}
+    current_batch = Path(next(iter(copies))).parent.parent
+    carry_member = str(current_batch / CARRY_NAME)
+    data, journals, diagnostic_jsonl = {}, {}, set()
     for member, path in paths.items():
         if member in copies: continue
-        kind = archive.index._opaque_kind(digests[member], sizes[member]) or archive.index._ordinary_kind(member)
-        value = archive._read(path, kind, sizes[member], limits.get(member), digests[member])
+        kind = archive.index._opaque_kind(digests[member], sizes[member]) or _current_kind(member, current_batch)
+        limit = limits.get(member)
+        if kind == 'binary' and Path(member).suffix == '.jsonl':
+            limit = archive.MAX_JOURNAL if limit is None else min(limit, archive.MAX_JOURNAL)
+        value = archive._read(path, kind, sizes[member], limit, digests[member])
         if kind == 'json': data[member] = value
         elif kind == 'journal': journals[member] = value
-    carry_member = str(Path(next(iter(copies))).parent.parent / CARRY_NAME)
+        elif kind == 'binary' and Path(member).suffix == '.jsonl': diagnostic_jsonl.add(member)
     require(strict_equal(data.get(carry_member), carry),
         'flat aliases must use the exact current physically retained carry map')
     active_carry = deepcopy(carry)
@@ -760,6 +777,7 @@ def materialize(paths, digests, sizes, carry, root, *, role_refs=None, local=Fal
             return self.raw_journals[member]
     store = FlatSources(data, digests, local=local, paths=paths)
     store.root, store.raw_journals = root, journals
+    store.current_diagnostic_jsonl = frozenset(diagnostic_jsonl)
     return store
 
 
