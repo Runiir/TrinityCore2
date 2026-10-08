@@ -230,10 +230,16 @@ def _login_sync(rows, events, session, since, until, baseline_pose):
         land['movement']['time'] - clock <= 2000 and
         gaps == [heart['movement']['time'] - clock, land['movement']['time'] - heart['movement']['time']],
         'ignored login clock gaps do not equal the actual initializer/heartbeat/landing steps')
-    boot = [initial, active, turn, skipped[0], heartbeat, heart['native'], skipped[1], landing, land['native']]
-    require(all(a['time'] < b['time'] for a, b in zip(boot, boot[1:])) and
+    modern_boot = [initial, turn, skipped[0], heartbeat, skipped[1], landing]
+    native_boot = [active, heart['native'], land['native']]
+    # Native::send posts onto its channel strand. Its emission can therefore
+    # follow a subsequent modern packet; retain each stream's order and the
+    # exact modern/native pairs instead of inventing a cross-stream edge.
+    require(all(a['time'] < b['time'] for stream in (modern_boot, native_boot)
+        for a, b in zip(stream, stream[1:])) and
         login['delivered']['time'] < initial['time'] and land['native']['time'] <= login['delivered']['time'] + 2,
         'login settlement must be one ordered two-second initial prefix')
+    boot = sorted([*modern_boot, *native_boot], key=lambda r: r['time'])
     incoming = [r for r in scoped if r.get('direction') in ('from_client', 'to_native') and
         (str(r.get('name', '')).startswith(('CMSG_MOVE_', 'MSG_MOVE_')) or r.get('name') == ACTIVE)]
     require(incoming == boot, 'extra, repeated, forwarded metadata or late movement is forbidden')
