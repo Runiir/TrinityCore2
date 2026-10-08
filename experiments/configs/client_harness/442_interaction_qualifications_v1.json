@@ -1,6 +1,6 @@
 {
   "schema": "client442_interaction_qualifications_v1",
-  "reviewed_at": 1791413288.5164428,
+  "reviewed_at": 1791418885.9946256,
   "policy": "Explicit reviewed operation mappings. A checked box qualifies the stated fixture variant only. Failures, unmapped variants and whole-family acceptance are not inferred.",
   "qualifications": [
     {
@@ -7459,6 +7459,143 @@
       ],
       "archive_sha256": "7d29ce3dcf310fa3287870f117492d13ce225506949d7cbe66e116e84cffa32c",
       "actual_remote_review_sha256": "7b85cd41775cdedb2b27032f2e1aa892b5d164278ec0554ba694f35723d34453"
+    },
+    {
+      "id": "owned_warrior_hearthstone_item_actionbar_drag",
+      "operations": [
+        "actionbars.drag_item"
+      ],
+      "scope": "Original level 1 Harnesstwo (GUID 2) drags the existing Hearthstone (6948, SQL GUID 41) from backpack 0, slot 1 to empty effective main-bar button 3, public slot 75/native slot 74, on active page 7/spec 0. One modern 241b00804a/native 4a241b0080 assignment creates only saved row [0,74,6948,128], with the rendered item icon and an empty cursor. One ordinary Shift pickup and reviewed cursor cancellation sends the sole modern 000000004a/native 4a00000000 clear. All saved action rows, inventory, item GUIDs/counts, health/power/XP, pose, target, layout and five protected actors are restored. Exact float32 rest accrual follows the sole ordinary login. One ordinary logout leaves all six actors offline, then the original scout stops with all eight shutdown checks. Actual remote bytes verify all 126 JSON/123 PNG members and both complete packet journals.",
+      "limits": "Only this existing Hearthstone, empty button 3 on effective page 7 and level 1 Warrior fixture variant is qualified. Item use/cast, occupied action cells, other items/pages/specs and other operations remain open. Initial recon01, observer reload01, clear01 and close_pause01 remain whole failed and excluded. Clear01 and close_pause01 fail before input or stop; fresh reviewed sources complete the remaining authorized actions. Unattributed stand/AFK changes and both excluded restorations remain recorded. Completed gameplay uses C235c10e2f5ca299452f44d11552fae2017cb8791. Later read-only proof and shutdown use Da60300d44460debad572c04b13722f917ebac276, with exact six-file source bytes and unchanged runtime sources. Earlier cursor-probe ordering, logout-body, fixture-call and CLI import failures stay preserved. Final 240 focused and independent 123/117 tests pass; the codec-enabled suite passes 6,556, and the root-only archive test passes separately. An ignored Xlib destructor warning follows successful owned-display shutdown. Native/bridge lifetimes remain unchanged. Scripts remain blocked; original softTargetInteract 0 remains unrestored at stock 1. Controller is code; model and revision are null.",
+      "evidence": [
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/scout_ready01/episode.json",
+          "sha256": "00acddefab2f86eead52ce296ddb5a05c11ca37fe7f2f2b243b48497b64711b4"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_precision_before01/episode.json",
+          "sha256": "dfb42a92228fefaa634aa3752b021e8c608a28c1e2998ce68f7224eed3198550"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_entry01/episode.json",
+          "sha256": "71dc8636d0d48fa799bca84699c4b1e4ea836154c1f5f9f53d73569aaee17483"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_recon01/episode.json",
+          "sha256": "ce0cec89af267e551ff5928edf3e00ef1645ce8e440eb81ed912e474e11f38b9"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_pre_recon_recovery01/episode.json",
+          "sha256": "93a1bcd61fc6d67d4d8089c87bba25413050ff5eda2bd73d790551a3814b0950"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_observer_reload01/episode.json",
+          "sha256": "3199894d82ed084f6c154742d85bdc21c781b61a2d2fde6401a950fde1c133ce"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_idle_renewal01/episode.json",
+          "sha256": "7493866ddf92f180ba2f0a13c0f0e6e07f76f4d397fe0e221e5e44a167ea0293"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_observer_reload02/episode.json",
+          "sha256": "4f3e8f669c00a0b5f88a23a08c2f6f3d5cc52ff1a9dd37cbf876d31ba7d47cdd"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_entry_screen01/episode.json",
+          "sha256": "863db53d86e73546927741a6de21ac60f79732b184114c24a6b0154aeb50a5c0"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_recon02/episode.json",
+          "sha256": "ffcb19a16297716cabe78cb0bad2ae26989951a68fbbd86e6a3639bdc1e2d9d3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_drag_ready01/episode.json",
+          "sha256": "1f48fd887f301708b0b16b727e242786ff0fca6f1d03836e7ae2821140f30d91"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_drag01/episode.json",
+          "sha256": "c0ff8ec9902702a4e6bba9614a14519879869a80ed54d256f1287df939f46400"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_clear01/episode.json",
+          "sha256": "2434e51c55d4e4baea0f6f5001f40e3d0e02efe8ac8e56424c7479374ef91b3f"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_clear_ready02/episode.json",
+          "sha256": "7444c943a797f32042771bb5a27375406f889774d8abe70214ede6e1c9494d8c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_clear02/episode.json",
+          "sha256": "23eb512683e5bf0970f75dd9dcb4a0c77e9b2c680d54fa6dbd32c3927263cfc3"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_park01/episode.json",
+          "sha256": "4a8ac2c7d7ffba6bfce4ae050a43fb28c74b3d73c15d962de96e07f2bdd374c5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_precision_after01/episode.json",
+          "sha256": "68f4ecb1668352b7bc800579d497895348a25d2d0dfa2eb1ac86b7c365e4aa0c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_close_pause01/episode.json",
+          "sha256": "905cd6ef188eef792fb71c019ceb58ca7a910c484436583b1bbc10bdb50b8051"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_parked_selection_capture01/episode.json",
+          "sha256": "039ef5175db265a4d2179aef75341e23603f009993cb10ca3855f2050438e65c"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_parked_selection_capture01/review.json",
+          "sha256": "7c8a616589078bc95909f7296619b440472349f2944ddd390451fe6cd531280e"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/item_close_pause02/episode.json",
+          "sha256": "8d5bda25693f94b4658f5c04a1b9c29d1bbe288c21a74c030c56590dd421bcb5"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/renewal_loader_actual_review01/review.json",
+          "sha256": "85e61f6a60a12ea5808078aba17beb4e3a8d3ce006c4a6714b5a2f1da7722fcf"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/pure_d_review_retention01.json",
+          "sha256": "11bd4755799f8eda134d31a64b42c78c76d7cc680c1eea5ae1eba66b9a53c75b"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/pure_d_actual_closure_retention01.json",
+          "sha256": "c8f68da6a76a571db1ab41b62b28d46651d5c611cefee66dc96385ef01bf8f42"
+        },
+        {
+          "pointer": "artifacts/client_harness/442_interactions_20261008_171.tar.gz.dvc",
+          "member": "evidence/client_interactions_20261008_ui171/final_closed_proof_retention01.json",
+          "sha256": "1f13208e490f4c099e0e185623ca3736ca983ee2ccabbf2ac483b1be6791b8c9"
+        }
+      ],
+      "archive_sha256": "a73daaafc3524eb99361889ee1af6163c22920ab65ffe720699fd37267b20501",
+      "actual_remote_review_sha256": "ddee63708620a0877b08790e19d23ead0bff74f052573c829598a6b2cd7c2f60"
     }
   ]
 }
