@@ -591,7 +591,24 @@ def materialize(paths, digests, sizes, carry, root, *, role_refs=None, local=Fal
         value = archive._read(path, kind, sizes[member], limits.get(member), digests[member])
         if kind == 'json': data[member] = value
         elif kind == 'journal': journals[member] = value
+    carry_member = str(Path(next(iter(copies))).parent.parent / CARRY_NAME)
+    require(strict_equal(data.get(carry_member), carry),
+        'flat aliases must use the exact current physically retained carry map')
+    active_carry = deepcopy(carry)
     class FlatSources(Sources):
+        def _refresh_maps(self):
+            # Diagnostic JSON and lazily decoded historical maps are retained
+            # data. Only this physically validated outer map owns live aliases;
+            # historical maps are interpreted later in their restored keyspace.
+            self.maps = [active_carry]
+            self.logical_kinds, self.copy_kinds = {}, {}
+            for row in [*active_carry['members'], *active_carry['authorities']]:
+                identity = (row['original_path'], row['sha256'])
+                kinds = frozenset(row['kinds'])
+                self.logical_kinds[identity] = self.logical_kinds.get(identity, frozenset()) | kinds
+                copy = (str(root / row['copy_member']), row['sha256'])
+                self.copy_kinds[copy] = self.copy_kinds.get(copy, frozenset()) | kinds
+
         def get(self, ref, successful=True):
             self._refresh_maps(); self._json_view(ref)
             member = self.member(ref)

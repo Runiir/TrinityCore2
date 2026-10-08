@@ -88,6 +88,143 @@ def load_portable(c):
     return source.materialize(paths,digests,sizes,c['carry'],c['root'])
 
 
+def diagnostic_carries(c, count):
+    """Retain valid maps whose aliases deliberately name absent sibling copies."""
+    refs=[]
+    for number in range(count):
+        value=deepcopy(c['carry'])
+        for row in [*value['members'],*value['authorities']]:
+            row['copy_member']=str(Path('evidence')/f'ui177_candidate_diagnostic_{number}'/
+                source.RAW_DIRECTORY/(row['sha256']+'.blob'))
+            assert not (c['root']/row['copy_member']).exists()
+        source.validate_manifest(value,c['root'])
+        path=c['batch']/'diagnostics'/f'actual_flat_manifest{number}.json'
+        path.parent.mkdir(exist_ok=True);path.write_bytes(encoded(value))
+        refs.append((source.bound(path),value))
+    return refs
+
+
+def ready_ref(c):
+    member=source.BATCH+'scout_ready01/episode.json'
+    return {'path':str(c['root']/member),'sha256':digest(c['files'][member])}
+
+
+@pytest.mark.parametrize('local',[True,False])
+@pytest.mark.parametrize('count',[1,2,3])
+def test_diagnostic_maps_are_readable_without_promoting_competing_aliases(flat,local,count):
+    c=flat;diagnostics=diagnostic_carries(c,count)
+    store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
+    actual=ready_ref(c);expected=json.loads(c['files'][source.BATCH+'scout_ready01/episode.json'])
+    actual_row=next(r for r in c['carry']['members'] if r['original_path']==actual['path'])
+    for ref,value in diagnostics:
+        assert store.get(ref,False)==value
+    for member in (None,'resume/authority.json',archive.CARRY_NAME,'crash_ancestry.json',None):
+        if member is None:
+            assert store.get(actual,False)==expected
+        else:
+            original=source.BATCH+member
+            assert store.get({'path':str(c['root']/original),'sha256':digest(c['files'][original])},False)
+        store._refresh_maps()
+        assert store.maps==[c['carry']]
+        assert store._rows(actual)==[actual_row]
+        assert store.member(actual)==actual_row['copy_member']
+    # Lazy historical-map decoding must not extend the current outer keyspace.
+    historical={'path':c['historical_row']['original_path'],'sha256':c['historical_row']['sha256']}
+    with pytest.raises(RuntimeError,match='absent or ambiguous'):
+        store.get(historical,False)
+    binary=next(r for r in c['carry']['members'] if r['original_member'].endswith('.bin'))
+    with pytest.raises(RuntimeError,match='not an ordinary JSON'):
+        store.get({'path':binary['original_path'],'sha256':binary['sha256']},False)
+
+
+@pytest.mark.parametrize('local',[True,False])
+@pytest.mark.parametrize('damage',['wrong_sha','absent_logical_ref'])
+def test_diagnostic_maps_cannot_rescue_bad_logical_sources(flat,local,damage):
+    c=flat;diagnostic_carries(c,2)
+    store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
+    ref=ready_ref(c)
+    if damage=='wrong_sha':ref['sha256']='f'*64
+    else:ref['path']=str(c['root']/source.BATCH/'scout_ready01/absent.json')
+    with pytest.raises(RuntimeError,match='absent or ambiguous'):
+        store.get(ref,False)
+
+
+@pytest.mark.parametrize('local',[True,False])
+def test_readable_diagnostic_maps_do_not_replace_damaged_actual_copy(flat,local):
+    c=flat;diagnostic_carries(c,2);actual=ready_ref(c)
+    row=next(r for r in c['carry']['members'] if r['original_path']==actual['path'])
+    path=c['root']/row['copy_member'];raw=path.read_bytes()
+    path.write_bytes(raw.replace(b'bags_swap_scout_ready',b'bags_swap_scout_reado'))
+    with pytest.raises(RuntimeError,match='complete flat physical copies differ'):
+        source.local_store(c['batch'],c['root']) if local else load_portable(c)
+
+
+@pytest.mark.parametrize('damage',['passed_carry','physical_carry','missing_physical_carry'])
+def test_materialize_requires_exact_current_carry_even_with_valid_diagnostics(flat,damage):
+    c=flat;diagnostic_carries(c,3);path=c['batch']/source.CARRY_NAME
+    if damage=='passed_carry':c['carry']['pointer_raw_hex']='00'
+    elif damage=='physical_carry':
+        different=deepcopy(c['carry']);different['pointer_raw_hex']='00';path.write_bytes(encoded(different))
+    else:path.unlink()
+    with pytest.raises(RuntimeError,match='exact current physically retained carry map'):
+        load_portable(c)
+
+
+@pytest.mark.parametrize('local',[True,False])
+@pytest.mark.parametrize('location,message',[
+    ('member','typed bounded flat original member'),
+    ('authority','typed bounded flat original member'),
+    ('manifest','unique typed actual checkpoint manifest row'),
+    ('tracking','unique typed actual checkpoint manifest row'),
+    ('archive','actual compressed checkpoint SHA256 and bytes'),
+])
+def test_physical_canonical_map_cannot_substitute_equal_float_for_integer(flat,local,location,message):
+    c=flat;physical=deepcopy(c['carry'])
+    row={'member':physical['members'][0],'authority':physical['authorities'][0],
+        'manifest':physical['archive']['manifest'][0],
+        'tracking':physical['archive']['tracking_manifest'][0],
+        'archive':physical['archive']}[location]
+    assert type(row['bytes']) is int
+    row['bytes']=float(row['bytes'])
+    assert type(row['bytes']) is float
+    # Python equality accepts this mutation; exact typed authority must refuse it.
+    assert physical==c['carry']
+    with pytest.raises(RuntimeError,match=message):
+        source.validate_manifest(physical,c['root'])
+    (c['batch']/source.CARRY_NAME).write_bytes(encoded(physical))
+    with pytest.raises(RuntimeError,match=message if local else 'exact current physically retained carry map'):
+        store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
+        assert store.get(ready_ref(c),False)['phase']=='bags_swap_scout_ready'
+
+
+@pytest.mark.parametrize('damage',['boolean_bytes','missing_kinds'])
+def test_materialize_cannot_use_physically_untyped_canonical_member(flat,damage):
+    c=flat;physical=deepcopy(c['carry']);row=physical['members'][0]
+    if damage=='boolean_bytes':row['bytes']=True
+    else:row.pop('kinds')
+    with pytest.raises(RuntimeError,match='typed bounded flat original member'):
+        source.validate_manifest(physical,c['root'])
+    (c['batch']/source.CARRY_NAME).write_bytes(encoded(physical))
+    with pytest.raises(RuntimeError,match='exact current physically retained carry map'):
+        load_portable(c)
+
+
+@pytest.mark.parametrize('local',[True,False])
+def test_alias_map_is_pinned_against_later_readable_data_mutation(flat,local):
+    c=flat;diagnostics=diagnostic_carries(c,1)
+    store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
+    actual=ready_ref(c);expected=json.loads(c['files'][source.BATCH+'scout_ready01/episode.json'])
+    active=deepcopy(c['carry'])
+    diagnostic=store.get(diagnostics[0][0],False)
+    canonical=store.get(source.bound(c['batch']/source.CARRY_NAME),False)
+    for value in (c['carry'],diagnostic,canonical):
+        row=next(r for r in value['members'] if r['original_path']==actual['path'])
+        row['copy_member']='evidence/absent/predecessor_ui176_raw/'+row['sha256']+'.blob'
+    store._refresh_maps()
+    assert store.maps==[active]
+    assert store.get(actual,False)==expected
+
+
 @pytest.mark.parametrize('local',[True,False])
 def test_flat_mixed_view_keeps_original_keys_binary_and_historical_roles(flat,local):
     c=flat;store=source.local_store(c['batch'],c['root']) if local else load_portable(c)
