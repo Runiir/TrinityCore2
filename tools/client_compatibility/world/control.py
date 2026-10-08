@@ -61,13 +61,16 @@ def native_command(workers=4, maximum=64):
         '--workers', str(workers), '--maximum-connections', str(maximum)], receipt
 
 
-def start(engine='cpp', workers=4, maximum=64):
+def start(engine='cpp', workers=4, maximum=64, existing_schema_only=False):
     if lab.owned_process("modern_world"):
         raise RuntimeError("owned modern world endpoint already running")
     if not lab.owned_process("worldserver"):
         raise RuntimeError("owned native worldserver is absent")
     lab.free_port(joins.PORT)
-    joins.migrate()
+    if existing_schema_only:
+        joins.verify_schema()
+    else:
+        joins.migrate()
     receipt = {}
     if engine == 'cpp':
         executable, receipt = native_command(workers, maximum)
@@ -106,6 +109,8 @@ def main():
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--build-jobs', type=int, default=1, help='compile jobs; default1 to preserve client memory headroom')
     parser.add_argument('--maximum-connections', type=int, default=64)
+    parser.add_argument('--existing-schema-only', action='store_true',
+        help='verify the installed world-join schema without issuing migration DDL')
     parser.add_argument('--sanitizers', action='store_true', help='use the independent ASan/UBSan debug target')
     args = parser.parse_args()
     if args.sanitizers:
@@ -115,7 +120,7 @@ def main():
         RECEIPT = BUILD / 'build_receipt.json'
     action = args.action
     if action == "start":
-        start(args.engine, args.workers, args.maximum_connections)
+        start(args.engine, args.workers, args.maximum_connections, existing_schema_only=args.existing_schema_only)
     elif action == 'build':
         build(args.build_jobs)
     elif action == "stop":

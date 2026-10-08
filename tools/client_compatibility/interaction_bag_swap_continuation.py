@@ -41,6 +41,9 @@ def authority_sources(schema):
     if schema == 'client442_bag_swap_indexed_runtime_authority_v1':
         from . import bag_swap_indexed_sources
         return bag_swap_indexed_sources
+    if schema == 'client442_bag_swap_offline_runtime_authority_v1':
+        from . import bag_swap_offline_sources
+        return bag_swap_offline_sources
     require(schema == 'client442_bag_swap_fresh_runtime_authority_v1',
         'one recognized source-bound predecessor runtime schema required')
     from . import bag_swap_fresh_sources
@@ -52,7 +55,7 @@ def fresh_authority(ready):
     schema = read_runtime_authority(ref).get('schema')
     authority_sources(schema)
     return schema in ('client442_bag_swap_fresh_runtime_authority_v1',
-        'client442_bag_swap_indexed_runtime_authority_v1')
+        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1')
 
 
 def login_sync_schema(ready):
@@ -234,7 +237,8 @@ def source_report(report):
     sources().reference(compact)
     compact_value = read_runtime_authority(compact)
     provider = authority_sources(compact_value.get('schema'))
-    options = {'compact_ref': compact} if compact_value.get('schema') == 'client442_bag_swap_indexed_runtime_authority_v1' else {}
+    options = {'compact_ref': compact} if compact_value.get('schema') in (
+        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1') else {}
     old = provider.cached_runtime(compact['path'], ref, **options)
     require(report.get('predecessor') == old['predecessor'], 'latest offline predecessor roles differ')
     return {k: old[k] for k in ('closure', 'snapshot', 'predecessor', 'primary_stop_source',
@@ -300,11 +304,12 @@ def offline_preflight(old, *, indexed=False):
     current = snapshot()
     owned_snapshot(current)
     native, bridge = identity('worldserver'), identity('modern_world')
-    require(strict_equal(native, stopped['runtime']['worldserver']) and
-        strict_equal(bridge, stopped['runtime']['modern_world']) and strict_equal(current, before) and
+    previous = old['runtime']
+    require(strict_equal(native, previous['worldserver']) and
+        strict_equal(bridge, previous['modern_world']) and strict_equal(current, before) and
         strict_equal(registration(), old['origin_actor']) and
         bool(primary_stopped(Path(old['primary_stop_source']['path']))) and
-        gone(stopped['runtime']['client']['pid'], stopped['runtime']['client']['start_ticks']) and
+        gone(previous['client']['pid'], previous['client']['start_ticks']) and
         (not Path('/proc/' + str(stopped['owned_game_identity']['pid'])).exists() if indexed else
             gone(stopped['game_before']['pid'], stopped['game_before']['start_ticks'])),
         'unchanged latest all-six offline pause, owner registration or stopped clients differ')
@@ -326,20 +331,26 @@ def available_memory_kib():
         if line.startswith('MemAvailable:'))
 
 
-def start(directory, output, closure, remote, checkpoint, indexed_pins=None):
+def start(directory, output, closure, remote, checkpoint, indexed_pins=None, offline_boundary=None):
     requested_at = time.time()
     require(available_memory_kib() >= 6 * 1024 * 1024,
         'predecessor streaming requires 6 GiB available memory before parsing')
     indexed = indexed_pins is not None
+    require(offline_boundary is None or indexed, 'crash recovery requires actual indexed predecessor pins')
     initialization = None
     if indexed:
-        from . import bag_swap_indexed_sources as fresh
-        pins = fresh.read_admission_pins(indexed_pins)
-        preflight = fresh.preflight_bundle(closure, remote, checkpoint, pins=pins)
+        from . import bag_swap_indexed_sources as indexed_sources
+        if offline_boundary is None:
+            fresh, options = indexed_sources, {}
+        else:
+            from . import bag_swap_offline_sources as fresh
+            options = {'offline_boundary': offline_boundary}
+        pins = indexed_sources.read_admission_pins(indexed_pins)
+        preflight = fresh.preflight_bundle(closure, remote, checkpoint, pins=pins, **options)
         commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip()
         initialization = initialized_batch(directory, output, preflight, commit, requested_at)
         native, bridge, memory = offline_preflight(preflight, indexed=True)
-        old = fresh.source_bundle(closure, remote, checkpoint, pins=pins)
+        old = fresh.source_bundle(closure, remote, checkpoint, pins=pins, **options)
         require(strict_equal(preflight, {k: old[k] for k in fresh.CORE_FIELDS}),
             'complete admission differs from the bounded preflight roles')
     else:
@@ -372,7 +383,7 @@ def start(directory, output, closure, remote, checkpoint, indexed_pins=None):
         'authority_source': authority_ref, 'runtime_authority_source': compact_ref,
         'current_code_epoch_source': epoch_ref,
         'predecessor_dvc_pointer': old['dvc_pointer'],
-        'previous_runtime': stopped['runtime'], 'all_offline_snapshot': before, 'origin_actor': old['origin_actor'],
+        'previous_runtime': old['runtime'], 'all_offline_snapshot': before, 'origin_actor': old['origin_actor'],
         'available_memory_kib_before': memory, 'launch_attempted': False, 'installed': False,
         'completed': False, 'failure': None, 'input_sent': False, 'qualification_added': False,
         'controller': 'code', 'model': None}
@@ -399,7 +410,7 @@ def start(directory, output, closure, remote, checkpoint, indexed_pins=None):
         current, monitor = runtime(), focus()
         checks = {'native_unchanged': current['worldserver'] == native,
             'bridge_unchanged': current['modern_world'] == bridge,
-            'fresh_scout': current['client'] != stopped['runtime']['client'],
+            'fresh_scout': current['client'] != old['runtime']['client'],
             'all_six_saved_snapshots': snapshot() == before,
             'primary_stopped': bool(primary_stopped(Path(old['primary_stop_source']['path']))),
             'HDMI_1': monitor.get('second_monitor_verified') is True and monitor.get('monitor', {}).get('name') == 'HDMI-1',
@@ -940,7 +951,8 @@ def main():
         'park', 'park-recovery', 'close-pause', 'pause-recovery'])
     parser.add_argument('--output', type=Path, required=True)
     for name in ('resume', 'closure', 'remote', 'checkpoint', 'review', 'source',
-        'preparation', 'entry', 'operation', 'park', 'precision', 'before-precision', 'after-precision', 'indexed-pins'):
+        'preparation', 'entry', 'operation', 'park', 'precision', 'before-precision', 'after-precision', 'indexed-pins',
+        'offline-boundary'):
         parser.add_argument('--' + name, type=Path)
     parser.add_argument('--stage', choices=['dismiss', 'reconnect', 'realm', 'character'])
     a = parser.parse_args()
@@ -948,7 +960,8 @@ def main():
         if a.action == 'start':
             require(all(getattr(a, k) for k in ('resume', 'closure', 'remote', 'checkpoint')),
                 'start requires the actual published closure, remote review and checkpoint')
-            start(a.resume, a.output, a.closure, a.remote, a.checkpoint, indexed_pins=a.indexed_pins)
+            start(a.resume, a.output, a.closure, a.remote, a.checkpoint, indexed_pins=a.indexed_pins,
+                offline_boundary=a.offline_boundary)
             return
         from .interaction_trial import Trial
         t = Trial(a.output, controller='code', chat_key_hold=1.2, chat_open_retry=True)

@@ -13,12 +13,12 @@
   },
   "predecessor": {
     "phase": "bags_swap_stopped_entry_closed_excluded",
-    "source": "Actual UI173 stopped closure, checkpoint and complete streamed remote proof supply the latest six-actor offline baseline; accepted UI171 ancestry and original primary stop are independently replayed through unchanged UI172/UI173 raw scopes.",
+    "source": "Actual UI173 stopped closure, checkpoint and complete streamed remote proof retain accepted UI171 ancestry and the original primary stop through unchanged UI172/UI173 raw scopes. A separately pinned excluded UI174 crash boundary may extend that authority after exact stale-online to offline preservation across ordinary native startup and a verified new bridge lifetime.",
     "future_hashes_permitted": false,
     "independent_actual_archive_verification": true,
     "latest_batch_admitted_operations": 0,
     "fresh_batch": "UI174",
-    "authority": "Complete offline raw replay and SHA-deduplicated carry, then a small source-bound indexed descriptor and runtime core. Original source-index v1 and two legacy opaque artifacts remain byte-identical.",
+    "authority": "Complete offline raw replay and SHA-deduplicated indexed carry, plus a small distinct crash descriptor when recovery is required. The crash layer preserves immutable failed entry, idle observation and complete rotated interval journals; it names current services separately from the historical absent client. Original source-index v1 and two legacy opaque artifacts remain byte-identical.",
     "actual_publication_pins": {
       "closure": {
         "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui173/stopped_closure01/closure.json",

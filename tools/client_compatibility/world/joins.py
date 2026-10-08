@@ -18,6 +18,27 @@ def migrate():
             consumed BOOLEAN NOT NULL DEFAULT FALSE, INDEX (expires))""")
 
 
+def verify_schema():
+    """Verify the installed join table without issuing DDL or reading secrets."""
+    with lab.connection() as conn, conn.cursor() as cursor:
+        cursor.execute("SELECT COLUMN_NAME,DATA_TYPE,COLUMN_TYPE,IS_NULLABLE,CHARACTER_MAXIMUM_LENGTH,COLUMN_DEFAULT "
+            "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='client442_auth' "
+            "AND TABLE_NAME='lab_world_joins' ORDER BY ORDINAL_POSITION")
+        rows = cursor.fetchall()
+        cursor.execute("SELECT INDEX_NAME,COLUMN_NAME,NON_UNIQUE,SEQ_IN_INDEX FROM information_schema.STATISTICS "
+            "WHERE TABLE_SCHEMA='client442_auth' AND TABLE_NAME='lab_world_joins' ORDER BY INDEX_NAME,SEQ_IN_INDEX")
+        indexes = cursor.fetchall()
+    expected = [('ticket_hash', 'binary', 32), ('native_id', 'int', None), ('key_data', 'binary', 64),
+        ('expires', 'bigint', None), ('consumed', 'tinyint', None)]
+    if len(rows) != len(expected) or any(tuple(row[i] for i in (0, 1, 4)) != wanted or row[3] != 'NO'
+            for row, wanted in zip(rows, expected)) or any('unsigned' not in rows[i][2] for i in (1, 3)) or rows[4][5] != '0':
+        raise RuntimeError('existing owned world-join schema differs; migration is refused')
+    if list(indexes) != [('expires', 'expires', 1, 1), ('PRIMARY', 'ticket_hash', 0, 1)]:
+        raise RuntimeError('existing owned world-join indexes differ; migration is refused')
+    return {'schema': 'client442_world_join_existing_schema_v1', 'columns': [row[0] for row in rows],
+        'ddl_sent': False, 'mutation_sent': False}
+
+
 def ready():
     return bool(lab.owned_process("modern_world") and lab.owned_process("worldserver"))
 

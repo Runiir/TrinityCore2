@@ -66,10 +66,12 @@ def source_identities(repo):
     repo = Path(repo)
     from .bag_swap_failed_evidence import PUBLICATION_DEPENDENCIES
     from .bag_swap_indexed_sources import INDEXED_DEPENDENCIES
+    from .bag_swap_offline_sources import DEPENDENCIES as OFFLINE_DEPENDENCIES
     paths = sorted([str(p.relative_to(repo)) for p in (repo / 'tools/client_compatibility').glob('*bag_swap*.py')] +
         [str(p.relative_to(repo)) for p in (repo / 'tools/client_compatibility/world/tests').glob('test_bag_swap*.py')] +
         ['experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json'] + list(SOURCE_FILES) +
-        list(PUBLICATION_DEPENDENCIES) + list(STOPPED_SOURCE_FILES) + list(INDEXED_DEPENDENCIES))
+        list(PUBLICATION_DEPENDENCIES) + list(STOPPED_SOURCE_FILES) + list(INDEXED_DEPENDENCIES) +
+        list(OFFLINE_DEPENDENCIES))
     require(len(paths) == len(set(paths)) and len(paths) >= 16, 'complete swap source identities are required')
     result = []
     for relative in paths:

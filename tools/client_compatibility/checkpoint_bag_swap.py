@@ -24,6 +24,9 @@ FRESH_CODE_FILES = (
 
 def current_code_epoch(directory, old):
     """Carry the actual committed current package before the sole fresh launch."""
+    if old.get('closure', {}).get('schema') == 'client442_bag_swap_offline_boundary_v1':
+        from .bag_swap_offline_sources import current_code_epoch as offline_epoch
+        return offline_epoch(directory, old)
     if old.get('closure', {}).get('schema') == 'client442_bag_swap_stopped_entry_closure_v1':
         from .bag_swap_indexed_sources import current_code_epoch as indexed_epoch
         return indexed_epoch(directory, old)
@@ -124,6 +127,10 @@ def carry(directory, preparation):
     from .bag_swap_indexed_sources import read_runtime_source
     compact = read_runtime_source(compact_ref)
     provider = authority_sources(compact.get('schema'))
+    if compact.get('schema') == 'client442_bag_swap_offline_runtime_authority_v1':
+        provider.cached_bundle(ready['authority_source']['path'])
+        descriptor = provider.parent._json_file(ready['authority_source']['path'], provider.MAX_DESCRIPTOR_BYTES)[0]
+        return provider.parent._json_file(descriptor['carry_source']['path'], provider.MAX_DESCRIPTOR_BYTES)[0]
     if compact.get('schema') == 'client442_bag_swap_indexed_runtime_authority_v1':
         descriptor = provider.read_descriptor(ready['authority_source'])
         require(Path(descriptor['carry_source']['path']).parent == Path(directory), 'actual indexed carry belongs to another batch')
@@ -217,6 +224,9 @@ def carry_authority(directory, authority_source, *, admitted=None):
 
 def validate_carry(store, ready):
     cache = store.get(ready['authority_source'], False)
+    if cache.get('schema') == 'client442_bag_swap_offline_predecessor_authority_v1':
+        from .bag_swap_offline_sources import validate_carry as offline_carry
+        return offline_carry(store, ready)
     if cache.get('schema') == 'client442_bag_swap_indexed_predecessor_authority_v1':
         from .bag_swap_indexed_sources import validate_carry as indexed_carry
         return indexed_carry(store, ready)
