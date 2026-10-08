@@ -51,6 +51,15 @@ SOURCE_FILES = (
     'src/server/game/Handlers/ItemHandler.cpp',
 )
 
+# Keep the legacy vectors above intact. The next stopped-entry epoch also binds
+# the asynchronous native queue and the actual socket-loss expiry source.
+STOPPED_SOURCE_FILES = (
+    'tools/client_compatibility/native_bridge/native.cpp',
+    'tools/client_compatibility/native_bridge/channel.cpp',
+    'tools/client_compatibility/native_bridge/main.cpp',
+    'src/server/game/Server/WorldSession.cpp',
+)
+
 
 def source_identities(repo):
     """Freeze the narrow controller, tests, contract, and wire-layout sources."""
@@ -58,7 +67,8 @@ def source_identities(repo):
     from .bag_swap_failed_evidence import PUBLICATION_DEPENDENCIES
     paths = sorted([str(p.relative_to(repo)) for p in (repo / 'tools/client_compatibility').glob('*bag_swap*.py')] +
         [str(p.relative_to(repo)) for p in (repo / 'tools/client_compatibility/world/tests').glob('test_bag_swap*.py')] +
-        ['experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json'] + list(SOURCE_FILES) + list(PUBLICATION_DEPENDENCIES))
+        ['experiments/configs/client_harness/442_bag_swap_roundtrip_v1.json'] + list(SOURCE_FILES) +
+        list(PUBLICATION_DEPENDENCIES) + list(STOPPED_SOURCE_FILES))
     require(len(paths) == len(set(paths)) and len(paths) >= 16, 'complete swap source identities are required')
     result = []
     for relative in paths:
