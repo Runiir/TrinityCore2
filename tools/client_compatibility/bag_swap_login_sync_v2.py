@@ -265,7 +265,8 @@ def _login_sync(rows, events, session, since, until, baseline_pose):
         gaps.append(gap)
     # Skipped client-clock intervals include loading time; they are not the
     # physical delivery duration. Keep exact uint32 steps here and enforce the
-    # two-second physical prefix below using the original packet timestamps.
+    # two-second physical prefix below starts with the client's initializer;
+    # delivered-world to initializer includes client asset loading.
     require(0 < clock < heart['movement']['time'] < land['movement']['time'] and
         gaps == [heart['movement']['time'] - clock, land['movement']['time'] - heart['movement']['time']],
         'ignored login clock gaps do not equal the actual initializer/heartbeat/landing steps')
@@ -276,7 +277,7 @@ def _login_sync(rows, events, session, since, until, baseline_pose):
     # exact modern/native pairs instead of inventing a cross-stream edge.
     require(all(a['time'] < b['time'] for stream in (modern_boot, native_boot)
         for a, b in zip(stream, stream[1:])) and
-        login['delivered']['time'] < initial['time'] and land['native']['time'] <= login['delivered']['time'] + 2,
+        login['delivered']['time'] < initial['time'] and land['native']['time'] <= initial['time'] + 2,
         'login settlement must be one ordered two-second initial prefix')
     incoming = [r for r in scoped if r.get('direction') in ('from_client', 'to_native') and
         (str(r.get('name', '')).startswith(('CMSG_MOVE_', 'MSG_MOVE_')) or r.get('name') == ACTIVE)]
