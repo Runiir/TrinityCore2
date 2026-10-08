@@ -16,7 +16,7 @@ from .review_hunter_learn_checkpoint import DigestReader, manifest, dvc_object, 
 
 def inspect_archive(raw, checkpoint, prefix):
     indexed = [row for row in checkpoint.get('file_manifest', []) if type(row) is dict and
-        row.get('path') == prefix + 'predecessor_ui173.json']
+        row.get('path') in (prefix + 'predecessor_ui173.json', prefix + 'predecessor_ui176.json')]
     if indexed:
         require(len(indexed) == 1, 'one distinct indexed predecessor carry manifest required')
         from .bag_swap_indexed_archive import inspect_archive as inspect_indexed

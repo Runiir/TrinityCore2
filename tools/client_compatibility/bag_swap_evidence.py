@@ -30,10 +30,19 @@ class Sources:
     def _refresh_maps(self):
         self.maps = [v for v in self.data.values() if type(v) is dict and v.get('schema') in
             (ANCESTRY_SCHEMA, 'client442_bag_swap_fresh_ancestry_v1', 'client442_bag_swap_indexed_ancestry_v1',
-                'client442_bag_swap_offline_ancestry_v1')]
+                'client442_bag_swap_offline_ancestry_v1', 'client442_bag_swap_closed_logout_ancestry_v1')]
         self.logical_kinds, self.copy_kinds = {}, {}
         from .bag_swap_indexed_archive import SCHEMA, validate_carry_manifest
         for value in self.maps:
+            if value.get('schema') == 'client442_bag_swap_closed_logout_ancestry_v1':
+                from .bag_swap_closed_logout_sources import validate_manifest
+                validate_manifest(value, self.root)
+                for row in [*value.get('members', []), *value.get('authorities', [])]:
+                    identity, kinds = (row['original_path'], row['sha256']), frozenset(row['kinds'])
+                    self.logical_kinds[identity] = self.logical_kinds.get(identity, frozenset()) | kinds
+                    copy = (str(self.root / row['copy_member']), row['sha256'])
+                    self.copy_kinds[copy] = self.copy_kinds.get(copy, frozenset()) | kinds
+                continue
             if value.get('schema') == 'client442_bag_swap_offline_ancestry_v1':
                 from .bag_swap_offline_sources import validate_manifest
                 validate_manifest(value, self.root)
@@ -78,17 +87,19 @@ class Sources:
             if value.get('runtime_authority_source') == ref:
                 limits.append(indexed.MAX_RUNTIME_BYTES)
         for value in values:
-            if value.get('schema') in (indexed.RUNTIME_SCHEMA, 'client442_bag_swap_offline_runtime_authority_v1') and value.get('authority_source') == ref:
+            if value.get('schema') in (indexed.RUNTIME_SCHEMA, 'client442_bag_swap_offline_runtime_authority_v1', 'client442_bag_swap_closed_logout_runtime_v1') and value.get('authority_source') == ref:
                 limits.append(indexed.MAX_DESCRIPTOR_BYTES)
             if value.get('schema') == indexed.CACHE_SCHEMA and value.get('carry_source') == ref:
                 limits.append(indexed.MAX_CARRY_BYTES)
             if value.get('schema') == 'client442_bag_swap_offline_predecessor_authority_v1' and value.get('carry_source') == ref:
                 limits.append(indexed.MAX_DESCRIPTOR_BYTES)
+            if value.get('schema') == 'client442_bag_swap_closed_logout_authority_v1' and value.get('carry_source') == ref:
+                limits.append(16 * 1024 * 1024)
         if min(limits) == MAX_JSON_BYTES:
             for value in owners:
                 if value.get('authority_source') == ref and type(value.get('runtime_authority_source')) is dict:
                     compact = self.get(value['runtime_authority_source'], False)
-                    if compact.get('schema') in (indexed.RUNTIME_SCHEMA, 'client442_bag_swap_offline_runtime_authority_v1'):
+                    if compact.get('schema') in (indexed.RUNTIME_SCHEMA, 'client442_bag_swap_offline_runtime_authority_v1', 'client442_bag_swap_closed_logout_runtime_v1'):
                         limits.append(indexed.MAX_DESCRIPTOR_BYTES)
         return min(limits)
 
@@ -139,6 +150,9 @@ class Sources:
 
 
 def local_store(directory=None):
+    if directory is not None and (Path(directory) / 'predecessor_ui176.json').is_file():
+        from .bag_swap_closed_logout_sources import local_store as closed_logout_store
+        return closed_logout_store(Path(directory))
     if directory is not None and (Path(directory) / 'crash_ancestry.json').is_file():
         from .bag_swap_offline_sources import local_store as offline_store
         return offline_store(Path(directory))
@@ -204,7 +218,7 @@ def indexed_initialization(store, ready, resume, old):
         captured['code_commit'] == resume.get('code_commit') == ready.get('code_commit'),
         'indexed original initialization must predate startup and bind exact native/code identities')
     epoch = store.get(ready.get('current_code_epoch_source'), False)
-    require(epoch.get('schema') in ('client442_bag_swap_indexed_code_epoch_v1', 'client442_bag_swap_offline_code_epoch_v1') and
+    require(epoch.get('schema') in ('client442_bag_swap_indexed_code_epoch_v1', 'client442_bag_swap_offline_code_epoch_v1', 'client442_bag_swap_closed_logout_code_epoch_v1') and
         epoch.get('code_commit') == captured['code_commit'], 'original indexed batch code epoch differs')
     return refs
 
@@ -221,7 +235,7 @@ def predecessor(store, ready, *, live=False):
     provider = authority_sources(compact.get('schema'))
     fresh = compact.get('schema') == 'client442_bag_swap_fresh_runtime_authority_v1'
     indexed = compact.get('schema') in ('client442_bag_swap_indexed_runtime_authority_v1',
-        'client442_bag_swap_offline_runtime_authority_v1')
+        'client442_bag_swap_offline_runtime_authority_v1', 'client442_bag_swap_closed_logout_runtime_v1')
     offline = compact.get('schema') == 'client442_bag_swap_offline_runtime_authority_v1'
     if live:
         require(store.local and bound(compact_ref['path']) == compact_ref,
@@ -275,6 +289,9 @@ def predecessor(store, ready, *, live=False):
 
 def current_code_epoch(store, resume, ready, closure):
     """Prove current raw code bytes while retaining all immutable parent epochs."""
+    if closure.get('schema') == 'client442_bag_swap_closed_logout_boundary_v1':
+        from .bag_swap_closed_logout_sources import validate_current_code_epoch
+        return validate_current_code_epoch(store, resume, ready, closure)
     if closure.get('schema') == 'client442_bag_swap_offline_boundary_v1':
         from .bag_swap_offline_sources import validate_current_code_epoch
         return validate_current_code_epoch(store, resume, ready, closure)
@@ -408,9 +425,9 @@ def lifecycle(store, refs, *, live=False):
     else:
         compact_schema = store.get(ready['runtime_authority_source'], False).get('schema')
     indexed = compact_schema in ('client442_bag_swap_indexed_runtime_authority_v1',
-        'client442_bag_swap_offline_runtime_authority_v1')
+        'client442_bag_swap_offline_runtime_authority_v1', 'client442_bag_swap_closed_logout_runtime_v1')
     fresh = compact_schema in ('client442_bag_swap_fresh_runtime_authority_v1',
-        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1')
+        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1', 'client442_bag_swap_closed_logout_runtime_v1')
     from .interaction_bag_swap_continuation import entry_settlement
     if fresh:
         require(entry.get('native_before_entry') == baseline['2']['native'] and
@@ -612,10 +629,10 @@ def actual_journals(store, closure, tracking, current):
     from .interaction_bag_swap_continuation import entry_settlement
     compact = store.get(ready['runtime_authority_source'], False) if ready.get('runtime_authority_source') else {}
     indexed = compact.get('schema') in ('client442_bag_swap_indexed_runtime_authority_v1',
-        'client442_bag_swap_offline_runtime_authority_v1')
+        'client442_bag_swap_offline_runtime_authority_v1', 'client442_bag_swap_closed_logout_runtime_v1')
     boot = entry_settlement(entry, wire, raw['events'], required=compact.get('schema') in (
         'client442_bag_swap_fresh_runtime_authority_v1', 'client442_bag_swap_indexed_runtime_authority_v1',
-        'client442_bag_swap_offline_runtime_authority_v1'),
+        'client442_bag_swap_offline_runtime_authority_v1', 'client442_bag_swap_closed_logout_runtime_v1'),
         required_schema='client442_bag_swap_login_sync_v2' if indexed else None)
     if boot is not None:
         require(strict_equal(entry.get('raw_entry_packets'), contract.packet_rows(wire, owner, entry['started_at'], entry['finished_at'])) and

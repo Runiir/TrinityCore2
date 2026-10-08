@@ -32,6 +32,9 @@ KINDS = frozenset(('json', 'png', 'journal', 'binary', *index._OPAQUE_SOURCES))
 ROLE_FIELDS = {'descriptor': 'authority_source', 'runtime': 'runtime_authority_source'}
 CRASH_DESCRIPTOR_SCHEMA = 'client442_bag_swap_offline_predecessor_authority_v1'
 CRASH_RUNTIME_SCHEMA = 'client442_bag_swap_offline_runtime_authority_v1'
+CLOSED_DESCRIPTOR_SCHEMA = 'client442_bag_swap_closed_logout_authority_v1'
+CLOSED_RUNTIME_SCHEMA = 'client442_bag_swap_closed_logout_runtime_v1'
+CLOSED_CARRY_SCHEMA = 'client442_bag_swap_closed_logout_ancestry_v1'
 _JSON_TOKEN = re.compile(rb'"[^"\\]*(?:\\.[^"\\]*)*"|[{}\[\],:]|[^{}\[\],:\s"]+')
 _JSON_TEXT_TOKEN = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"|[{}\[\],:]|[^{}\[\],:\s"]+')
 
@@ -66,6 +69,7 @@ def _role_fields(raw):
             if type(value) is str:
                 if key == 'schema' and value in (SCHEMA, provider.CACHE_SCHEMA,
                         provider.RUNTIME_SCHEMA, CRASH_DESCRIPTOR_SCHEMA, CRASH_RUNTIME_SCHEMA,
+                        CLOSED_DESCRIPTOR_SCHEMA, CLOSED_RUNTIME_SCHEMA, CLOSED_CARRY_SCHEMA,
                         'client442_bag_swap_scout_resume_v1',
                         'client442_laya_interactions_v1'):
                     recognized.add(value)
@@ -157,7 +161,9 @@ def _role_limits(paths, digests, copies, root, role_refs, sizes=None, crash_copi
     for role, ref in (role_refs or {}).items(): bind(role, ref)
     schemas = {SCHEMA: provider.MAX_CARRY_BYTES, provider.CACHE_SCHEMA: provider.MAX_DESCRIPTOR_BYTES,
         provider.RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
-        CRASH_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CRASH_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES}
+        CRASH_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CRASH_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
+        CLOSED_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CLOSED_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
+        CLOSED_CARRY_SCHEMA: provider.MAX_CARRY_BYTES}
     for member, path in paths.items():
         size = sizes[member] if sizes is not None else Path(path).stat().st_size
         kinds = copies[member][2] if member in copies else (
@@ -195,7 +201,9 @@ def _json(raw):
     fields, _, recognized, _ = _role_fields(raw)
     limits = {SCHEMA: provider.MAX_CARRY_BYTES, provider.CACHE_SCHEMA: provider.MAX_DESCRIPTOR_BYTES,
         provider.RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
-        CRASH_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CRASH_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES}
+        CRASH_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CRASH_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
+        CLOSED_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CLOSED_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
+        CLOSED_CARRY_SCHEMA: provider.MAX_CARRY_BYTES}
     applicable = [limits[s] for s in recognized if s in limits]
     require(not applicable or 0 < len(raw) <= min(applicable),
         'retained indexed JSON exceeds its exact raw byte bound before decode')
@@ -716,17 +724,29 @@ def inspect_archive(raw, cp, prefix, *, role_refs=None):
     spool = tempfile.TemporaryDirectory(prefix='client442-indexed-carry-')
     try:
         selected, paths, reader = _stream(raw, cp, prefix, Path(spool.name))
+        from . import bag_swap_closed_logout_sources as closed
+        closed_member = prefix + closed.CARRY_NAME
+        if closed_member in selected:
+            carry = _read(paths[closed_member], 'json', selected[closed_member]['bytes'],
+                closed.MAX_CARRY_BYTES, selected[closed_member]['sha256'])
+            digests = {member: row['sha256'] for member, row in selected.items()}
+            store = closed.materialize(paths, digests, {m: row['bytes'] for m, row in selected.items()},
+                carry, root, role_refs=role_refs)
+            data, digests, journals, paths = store.data, store.digests, store.raw_journals, store.paths
+        else:
+            store = None
         carry_member = prefix + CARRY_NAME
-        require(carry_member in selected and 0 < selected[carry_member]['bytes'] <= provider.MAX_CARRY_BYTES,
+        require(store is not None or carry_member in selected and 0 < selected[carry_member]['bytes'] <= provider.MAX_CARRY_BYTES,
             'one fixed raw-bounded successor carry manifest required')
-        carry = _read(paths[carry_member], 'json', selected[carry_member]['bytes'], provider.MAX_CARRY_BYTES, selected[carry_member]['sha256'])
-        copies = validate_carry_manifest(carry, root)
-        require(all(member.startswith(prefix) and member in selected and
-            selected[member]['sha256'] == sha and selected[member]['bytes'] == size
-            for member, (sha, size, _) in copies.items()), 'raw carry copies must belong to this complete successor archive')
-        digests = {member: row['sha256'] for member, row in selected.items()}
-        data, journals = _materialize(paths, digests, carry, root, role_refs=role_refs,
-            sizes={member: row['bytes'] for member, row in selected.items()})
+        if store is None:
+            carry = _read(paths[carry_member], 'json', selected[carry_member]['bytes'], provider.MAX_CARRY_BYTES, selected[carry_member]['sha256'])
+            copies = validate_carry_manifest(carry, root)
+            require(all(member.startswith(prefix) and member in selected and
+                selected[member]['sha256'] == sha and selected[member]['bytes'] == size
+                for member, (sha, size, _) in copies.items()), 'raw carry copies must belong to this complete successor archive')
+            digests = {member: row['sha256'] for member, row in selected.items()}
+            data, journals = _materialize(paths, digests, carry, root, role_refs=role_refs,
+                sizes={member: row['bytes'] for member, row in selected.items()})
         tracking = failed.tracking_state()
         tracking.update(manifest=selected, digests=digests, paths=paths, raw_journals=journals,
             batch_prefix=prefix, archived_metadata=_metadata(data, cp), compressed_md5=reader.md5.hexdigest(),

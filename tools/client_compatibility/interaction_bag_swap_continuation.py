@@ -44,6 +44,9 @@ def authority_sources(schema):
     if schema == 'client442_bag_swap_offline_runtime_authority_v1':
         from . import bag_swap_offline_sources
         return bag_swap_offline_sources
+    if schema == 'client442_bag_swap_closed_logout_runtime_v1':
+        from . import bag_swap_closed_logout_sources
+        return bag_swap_closed_logout_sources
     require(schema == 'client442_bag_swap_fresh_runtime_authority_v1',
         'one recognized source-bound predecessor runtime schema required')
     from . import bag_swap_fresh_sources
@@ -55,7 +58,8 @@ def fresh_authority(ready):
     schema = read_runtime_authority(ref).get('schema')
     authority_sources(schema)
     return schema in ('client442_bag_swap_fresh_runtime_authority_v1',
-        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1')
+        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1',
+        'client442_bag_swap_closed_logout_runtime_v1')
 
 
 def login_sync_schema(ready):
@@ -238,7 +242,8 @@ def source_report(report):
     compact_value = read_runtime_authority(compact)
     provider = authority_sources(compact_value.get('schema'))
     options = {'compact_ref': compact} if compact_value.get('schema') in (
-        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1') else {}
+        'client442_bag_swap_indexed_runtime_authority_v1', 'client442_bag_swap_offline_runtime_authority_v1',
+        'client442_bag_swap_closed_logout_runtime_v1') else {}
     old = provider.cached_runtime(compact['path'], ref, **options)
     require(report.get('predecessor') == old['predecessor'], 'latest offline predecessor roles differ')
     return {k: old[k] for k in ('closure', 'snapshot', 'predecessor', 'primary_stop_source',
@@ -305,13 +310,17 @@ def offline_preflight(old, *, indexed=False):
     owned_snapshot(current)
     native, bridge = identity('worldserver'), identity('modern_world')
     previous = old['runtime']
+    if stopped.get('schema') == 'client442_bag_swap_closed_logout_boundary_v1':
+        game_stopped = gone(stopped['game_before']['pid'], stopped['game_before']['start_ticks'])
+    else:
+        game_stopped = (not Path('/proc/' + str(stopped['owned_game_identity']['pid'])).exists() if indexed else
+            gone(stopped['game_before']['pid'], stopped['game_before']['start_ticks']))
     require(strict_equal(native, previous['worldserver']) and
         strict_equal(bridge, previous['modern_world']) and strict_equal(current, before) and
         strict_equal(registration(), old['origin_actor']) and
         bool(primary_stopped(Path(old['primary_stop_source']['path']))) and
         gone(previous['client']['pid'], previous['client']['start_ticks']) and
-        (not Path('/proc/' + str(stopped['owned_game_identity']['pid'])).exists() if indexed else
-            gone(stopped['game_before']['pid'], stopped['game_before']['start_ticks'])),
+        game_stopped,
         'unchanged latest all-six offline pause, owner registration or stopped clients differ')
     from .review_hunter_revive_prerequisites import absent_clients
     absent_clients()
@@ -331,21 +340,26 @@ def available_memory_kib():
         if line.startswith('MemAvailable:'))
 
 
-def start(directory, output, closure, remote, checkpoint, indexed_pins=None, offline_boundary=None):
+def start(directory, output, closure, remote, checkpoint, indexed_pins=None, offline_boundary=None, closed_logout=False):
     requested_at = time.time()
     require(available_memory_kib() >= 6 * 1024 * 1024,
         'predecessor streaming requires 6 GiB available memory before parsing')
     indexed = indexed_pins is not None
     require(offline_boundary is None or indexed, 'crash recovery requires actual indexed predecessor pins')
+    require(not closed_logout or indexed and offline_boundary is None,
+        'closed normal-logout successor requires its actual pins and a separate typed boundary')
     initialization = None
     if indexed:
         from . import bag_swap_indexed_sources as indexed_sources
-        if offline_boundary is None:
+        if closed_logout:
+            from . import bag_swap_closed_logout_sources as fresh
+            options = {}
+        elif offline_boundary is None:
             fresh, options = indexed_sources, {}
         else:
             from . import bag_swap_offline_sources as fresh
             options = {'offline_boundary': offline_boundary}
-        pins = indexed_sources.read_admission_pins(indexed_pins)
+        pins = fresh.read_admission_pins(indexed_pins)
         preflight = fresh.preflight_bundle(closure, remote, checkpoint, pins=pins, **options)
         commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=lab.REPO, text=True).strip()
         initialization = initialized_batch(directory, output, preflight, commit, requested_at)
@@ -955,13 +969,14 @@ def main():
         'offline-boundary'):
         parser.add_argument('--' + name, type=Path)
     parser.add_argument('--stage', choices=['dismiss', 'reconnect', 'realm', 'character'])
+    parser.add_argument('--closed-logout', action='store_true')
     a = parser.parse_args()
     with scout():
         if a.action == 'start':
             require(all(getattr(a, k) for k in ('resume', 'closure', 'remote', 'checkpoint')),
                 'start requires the actual published closure, remote review and checkpoint')
             start(a.resume, a.output, a.closure, a.remote, a.checkpoint, indexed_pins=a.indexed_pins,
-                offline_boundary=a.offline_boundary)
+                offline_boundary=a.offline_boundary, closed_logout=a.closed_logout)
             return
         from .interaction_trial import Trial
         t = Trial(a.output, controller='code', chat_key_hold=1.2, chat_open_retry=True)

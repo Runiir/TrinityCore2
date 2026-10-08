@@ -24,6 +24,9 @@ FRESH_CODE_FILES = (
 
 def current_code_epoch(directory, old):
     """Carry the actual committed current package before the sole fresh launch."""
+    if old.get('closure', {}).get('schema') == 'client442_bag_swap_closed_logout_boundary_v1':
+        from .bag_swap_closed_logout_sources import current_code_epoch as closed_logout_epoch
+        return closed_logout_epoch(directory, old)
     if old.get('closure', {}).get('schema') == 'client442_bag_swap_offline_boundary_v1':
         from .bag_swap_offline_sources import current_code_epoch as offline_epoch
         return offline_epoch(directory, old)
@@ -127,6 +130,14 @@ def carry(directory, preparation):
     from .bag_swap_indexed_sources import read_runtime_source
     compact = read_runtime_source(compact_ref)
     provider = authority_sources(compact.get('schema'))
+    if compact.get('schema') == 'client442_bag_swap_closed_logout_runtime_v1':
+        provider.cached_bundle(ready['authority_source']['path'])
+        from .bag_swap_indexed_sources import _json_file
+        descriptor = _json_file(ready['authority_source']['path'], 1024 * 1024,
+            expected_ref=ready['authority_source'])[0]
+        carry_ref = descriptor['carry_source']
+        require(Path(carry_ref['path']).parent == Path(directory), 'actual normal-logout carry belongs to another batch')
+        return _json_file(carry_ref['path'], 16 * 1024 * 1024, expected_ref=carry_ref)[0]
     if compact.get('schema') == 'client442_bag_swap_offline_runtime_authority_v1':
         provider.cached_bundle(ready['authority_source']['path'])
         descriptor = provider.parent._json_file(ready['authority_source']['path'], provider.MAX_DESCRIPTOR_BYTES)[0]
@@ -224,6 +235,9 @@ def carry_authority(directory, authority_source, *, admitted=None):
 
 def validate_carry(store, ready):
     cache = store.get(ready['authority_source'], False)
+    if cache.get('schema') == 'client442_bag_swap_closed_logout_authority_v1':
+        from .bag_swap_closed_logout_sources import validate_carry as closed_logout_carry
+        return closed_logout_carry(store, ready)
     if cache.get('schema') == 'client442_bag_swap_offline_predecessor_authority_v1':
         from .bag_swap_offline_sources import validate_carry as offline_carry
         return offline_carry(store, ready)
