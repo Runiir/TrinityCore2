@@ -1,0 +1,112 @@
+{
+  "schema": "client442_ui172_failed_bag_entry_publication_record_v1",
+  "operation": "bags.swap_item",
+  "verdict": "excluded_failed_entry",
+  "qualification_added": false,
+  "operations_admitted": 0,
+  "qualified_operations_before": 453,
+  "qualified_operations_after": 453,
+  "plan_operations": 916,
+  "original_failures": [
+    {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/entry01/episode.json",
+      "sha256": "cb64cec0472f9a23d176fbf1e98710aee72b0c195f03ca62b60355f7d994213f"
+    },
+    {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/idle_capture01/episode.json",
+      "sha256": "50a1e8db99fad07b0c49b6c4f71bf564663435c4d2934d0575211df05640bfcd"
+    },
+    {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/idle_capture02/episode.json",
+      "sha256": "990a1a9ad57d4d9e919c55abeabf52574cf319ebd871433c03f1993b2ec26ffb"
+    }
+  ],
+  "closed_pause_source": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/failed_pause01/episode.json",
+    "sha256": "723c3df1a161e70126bc1c062289f5628223490c12666ee5df3d69ed5ec30012"
+  },
+  "closed_code_commit": "97d0a2c77bc475db8c51d951e30760d8e7c85730",
+  "bag_swap_inputs_sent": false,
+  "housekeeping_inputs_sent": false,
+  "stopping_input_sent": false,
+  "ordinary_initial_login_occurred": true,
+  "logout": "actual automatic timed idle logout",
+  "all_six_offline_preserved": true,
+  "shutdown_checks": 8,
+  "both_owned_clients_stopped": true,
+  "native_rest": {
+    "exact_float32": 53.438228607177734,
+    "bits": "bfc05542",
+    "logout_time": 1791422949
+  },
+  "current_journal_source": {
+    "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/failed_journals01/journal_receipt.json",
+    "sha256": "6084f7a85700202d3f1db8746b7981fb26dece1e0061b17cae81c93bbbd672c5"
+  },
+  "publication_code_commit": "4d9cb257df4d42b113c0d87ad0caf2dcfec1d66d",
+  "publication_source_members": 86,
+  "main_checkpoint": {
+    "source": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/checkpoint_receipt.json",
+      "sha256": "2c26ecbe9599d5a38a61310fd8bb046670f05692a1176ad5069ac202bf261b50"
+    },
+    "remote_review": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui172_failed_entry_remote_review01.json",
+      "sha256": "0ac9d684b073b553fa2d4c127f4e44bf81b7a6783a55feae71c7fc4fd0645b98"
+    },
+    "pointer": "artifacts/client_harness/442_interactions_20261008_172.tar.gz.dvc",
+    "md5": "34c9aa534ec14b481ed45580121d018a",
+    "compressed_bytes": 127197223,
+    "sha256": "1298d24a596d3c4a54bf236da3882c0d6512e13f36cb3c2a28c340c5ab946c44",
+    "json_members": 632,
+    "png_members": 27,
+    "journal_members": 13,
+    "complete_manifest_verified": true,
+    "original_ui171_raw_ancestry_verified": true
+  },
+  "publication_metadata_checkpoint": {
+    "checkpoint_source": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui172_publication_metadata_checkpoint01.json",
+      "sha256": "9c0fc9dcb206f8c11c670306c9a1023a760cf7c506af3ec34ae85efc22fd126f"
+    },
+    "remote_review": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui172_publication_metadata_remote_review01.json",
+      "sha256": "3f2abba41b443dba1b5181da128d3d9408994c3f96ab20cdeb6dcdc9e81228a3"
+    },
+    "pointer": "artifacts/client_harness/442_interactions_20261008_172_publication.tar.gz.dvc",
+    "md5": "e79635343a6027fc9c7f16a4194205e3",
+    "compressed_bytes": 180463,
+    "sha256": "ad5175f71b55642a8fef0a259b21c51efc2250a48bbb111fabf921b1706d68b6",
+    "members": 32,
+    "all_member_bytes_verified": true
+  },
+  "offload": {
+    "frame_pruning": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui172/frame_pruning.json",
+      "sha256": "be8502ceadffee49108bf543b5d92398088de209524c9fe1d0903ff1f26cea5a"
+    },
+    "main_archive_eviction": {
+      "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui172_archive_eviction01.json",
+      "sha256": "76907d610ca7282a57ef9c2a5d89cf453f52a8ca6c6bc56a10417b75d326e14d"
+    }
+  },
+  "tests": {
+    "root": {
+      "passed": 147,
+      "failed": 0,
+      "skipped": 0
+    },
+    "native_independent": {
+      "passed": 124,
+      "failed": 0
+    },
+    "portable_independent": {
+      "passed": 50,
+      "failed": 0
+    }
+  },
+  "failed_tests_and_root_recorder_errors_retained": true,
+  "scripts_blocked": true,
+  "softTargetInteract_original_restored": false,
+  "next_required": "Fresh UI173 full/compact latest offline authority and complete canonical-login/swap/restoration/logout/pause unit before one scout launch"
+}
