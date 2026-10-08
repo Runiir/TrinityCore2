@@ -1,0 +1,269 @@
+"""Occupied swaps retain both items and reject any additional gameplay input."""
+from copy import deepcopy
+from pathlib import Path
+import struct
+import subprocess
+import sys
+
+import pytest
+import json
+
+from tools.client_compatibility import bag_swap_contract as c
+from tools.client_compatibility.world.buffer import Writer
+from tools.client_compatibility.world.tests.test_item_actionbar_contract import native_packet, owner_fields
+
+
+def modern(destination=36, source=35, hints=((255, 35), (255, 36))):
+    writer = Writer().bits(len(hints), 2).flush()
+    for bag, slot in hints:
+        writer.pack('2B', bag, slot)
+    return writer.pack('2B', destination, source).finish()
+
+
+def packets(reverse=False, start=10, hints=((255, 35), (255, 36))):
+    destination, source = (35, 36) if reverse else (36, 35)
+    actions = [('from_client', modern(destination, source, hints)),
+        ('to_native', bytes((c.native_slot(destination), c.native_slot(source))))]
+    return [{'session': 'scout', 'time': start + i * .1, 'name': c.ACTION, 'direction': direction, 'body': raw.hex()}
+        for i, (direction, raw) in enumerate(actions)]
+
+
+def inventory():
+    return [[2, 0, slot, guid, guid, item, 2, 0, 0, 1, 0, '0 0 0 0 0 ', 1, '', 0, 0, 0, 0, '']
+        for guid, item, slot in c.ITEMS]
+
+
+def resources(swapped=False):
+    empty = {'guid': 0, 'id': 0, 'count': 0}
+    value = {'money': 1, 'equipment': [deepcopy(empty) for _ in range(19)],
+        'backpack': [deepcopy(empty) for _ in range(16)],
+        'bags': [[deepcopy(empty) for _ in range(36)] for _ in range(4)]}
+    value['backpack'][:2] = deepcopy([c.DESTINATION, c.SOURCE] if swapped else [c.SOURCE, c.DESTINATION])
+    return value
+
+
+def public(swapped=False):
+    pair = [c.DESTINATION, c.SOURCE] if swapped else [c.SOURCE, c.DESTINATION]
+    return {'bags': [0], 'bag_items': [{'bag': 0, 'slot': slot, 'id': item['id'], 'count': item['count'], 'locked': False}
+        for slot, item in enumerate(pair, 1)]}
+
+
+def slot_fields(swapped=False):
+    pair = [c.DESTINATION, c.SOURCE] if swapped else [c.SOURCE, c.DESTINATION]
+    start = c.INDEX['PLAYER_FIELD_INV_SLOT_HEAD']
+    return {start + slot * 2 + part: item['guid'] >> (32 * part) & 0xffffffff
+        for slot, item in zip((23, 24), pair) for part in (0, 1)}
+
+
+def item_fields(item):
+    return {c.INDEX[k]: value for k, value in {'OBJECT_FIELD_ENTRY': item['id'],
+        'ITEM_FIELD_STACK_COUNT': 1, 'ITEM_FIELD_OWNER': 2, 'ITEM_FIELD_CONTAINED': 2,
+        'ITEM_FIELD_SPELL_CHARGES': 0xffffffff, 'ITEM_FIELD_FLAGS': 1}.items()}
+
+
+def native_rows(roundtrip=False):
+    rows = [native_packet({**owner_fields(), **slot_fields()}, time=9),
+        native_packet(item_fields(c.SOURCE), guid=c.SOURCE['guid'], kind=1, time=9.1),
+        native_packet(item_fields(c.DESTINATION), guid=c.DESTINATION['guid'], kind=1, time=9.2),
+        *packets(), native_packet(slot_fields(True), creation=False, time=10.2)]
+    if roundtrip:
+        rows += packets(True, 11) + [native_packet(slot_fields(), creation=False, time=11.2)]
+    return rows
+
+
+@pytest.mark.parametrize('hints', [(), ((255, 35),), ((255, 35), (255, 36)), ((255, 35), (30, 2), (255, 36))])
+def test_optional_two_bit_hint_count_and_every_position_are_consumed(hints):
+    decoded = c.modern_swap(modern(hints=hints))
+    assert decoded['hint_count'] == len(hints)
+    assert [r['modern'] for r in decoded['hints']] == [list(row) for row in hints]
+    proof = c.swap_packets(packets(hints=hints), 'scout', 9, 11)
+    assert proof['native']['body'] == '1817'
+    assert proof['decoded']['native_destination'] == 24
+
+
+@pytest.mark.parametrize('raw', [b'', b'\x80\xff\x23', b'\x40\xff\x23\x24',
+    b'\x40\xff\x34\x24\x23', b'\x40\x1d\x00\x24\x23', b'\x40\x1e\x24\x24\x23',
+    b'\x00\x24\x23\x00', b'\x00\x34\x23'])
+def test_truncated_invalid_hint_unmapped_slot_and_trailing_bytes_are_refused(raw):
+    with pytest.raises(RuntimeError):
+        c.modern_swap(raw)
+
+
+def test_exact_two_unique_pairs_include_ordinary_inverse_and_never_empty_destination():
+    proof = c.roundtrip_packets(packets() + packets(True, 11), 'scout', 9, 12)
+    assert proof['exactly_two_unique_pairs'] is True
+    assert proof['reverse']['native']['body'] == '1718'
+
+
+@pytest.mark.parametrize('fault', ['duplicate', 'extra_swap', 'extra_native', 'wrong_source', 'wrong_destination',
+    'native_reversed', 'modern_trailing', 'native_trailing', 'hint_bad_position', 'foreign', 'reverse_time',
+    'latency', 'bool_time', 'nan_time', 'uppercase_body', 'wrong_direction', 'incomplete_inverse'])
+def test_swap_pair_and_roundtrip_refuse_request_drift(fault):
+    rows = packets() + packets(True, 11)
+    if fault == 'duplicate': rows.append(deepcopy(rows[0]))
+    elif fault == 'extra_swap': rows += packets(start=11.4)
+    elif fault == 'extra_native': rows.append({**rows[1], 'body': '1917'})
+    elif fault == 'wrong_source': rows[0]['body'] = modern(36, 37).hex()
+    elif fault == 'wrong_destination': rows[0]['body'] = modern(37, 35).hex()
+    elif fault == 'native_reversed': rows[1]['body'] = '1718'
+    elif fault == 'modern_trailing': rows[0]['body'] += '00'
+    elif fault == 'native_trailing': rows[1]['body'] += '00'
+    elif fault == 'hint_bad_position': rows[0]['body'] = modern(hints=((255, 51),)).hex()
+    elif fault == 'foreign': rows[1]['session'] = 'other'
+    elif fault == 'reverse_time': rows[2]['time'] = 9.9
+    elif fault == 'latency': rows[1]['time'] = 12.1
+    elif fault == 'bool_time': rows[0]['time'] = True
+    elif fault == 'nan_time': rows[0]['time'] = float('nan')
+    elif fault == 'uppercase_body': rows[0]['body'] = rows[0]['body'].upper()
+    elif fault == 'wrong_direction': rows[1]['direction'] = 'to_client'
+    else: rows.pop()
+    with pytest.raises(RuntimeError): c.roundtrip_packets(rows, 'scout', 9, 13)
+
+
+@pytest.mark.parametrize('name', sorted(c.FORBIDDEN) + ['CMSG_MOVE_START_FORWARD', 'MSG_MOVE_HEARTBEAT',
+    'CMSG_PET_UNKNOWN_ACTION', 'CMSG_STABLE_UNKNOWN', 'CMSG_TRADE_ACCEPT', 'CMSG_LOOT_ITEM'])
+@pytest.mark.parametrize('direction', ['from_client', 'to_native'])
+def test_other_gameplay_input_is_refused_on_both_modern_and_native_sides(name, direction):
+    with pytest.raises(RuntimeError):
+        c.forbidden_packets([{'session': 'scout', 'time': 10, 'name': name, 'direction': direction}], 'scout', 9, 11)
+
+
+def test_login_mover_initialization_has_no_movement_semantics():
+    rows = [{'session': 'scout', 'time': 10, 'name': name, 'direction': 'to_native'} for name in c.MOVER_INITIALIZATION]
+    assert c.forbidden_packets(rows, 'scout', 9, 11)['no_forbidden_input'] is True
+
+
+@pytest.mark.parametrize('direction', ['from_native', 'to_client', 'unknown'])
+def test_inventory_failure_is_refused_even_when_result_code_is_success(direction):
+    row = {'session': 'scout', 'time': 10, 'name': 'SMSG_INVENTORY_CHANGE_FAILURE', 'direction': direction, 'body': '00'}
+    with pytest.raises(RuntimeError): c.forbidden_packets([row], 'scout', 9, 11)
+
+
+def test_saved_rows_exchange_only_the_two_slot_columns_and_all_fifteen_item_fields_are_exact():
+    before = inventory()
+    swapped = c.expected_inventory(before, swapped=True)
+    proof = c.inventory_rows(before, swapped, swapped=True)
+    assert proof['all_item_instance_fields_unchanged'] is True
+    assert swapped[0][3] == 33 and swapped[1][3] == 41
+    assert c.inventory_rows(before, before)['swapped'] is False
+
+
+@pytest.mark.parametrize('column', range(19))
+def test_every_saved_inventory_and_item_instance_column_is_guarded(column):
+    before, after = inventory(), c.expected_inventory(inventory(), swapped=True)
+    after[1][column] = after[1][column] + 1 if type(after[1][column]) is int else after[1][column] + 'x'
+    with pytest.raises(RuntimeError): c.inventory_rows(before, after, swapped=True)
+
+
+def test_full_native_resources_and_rendered_both_occupied_items_match_after_exchange():
+    before, after = resources(), resources(True)
+    assert c.native_resources(before, after, swapped=True)['all_other_native_resources_unchanged'] is True
+    assert c.public_items(public(True), after, swapped=True)['public_guid_source'] == 'delivered_inventory_packets'
+
+
+@pytest.mark.parametrize('fault', ['wrong_guid', 'low_guid', 'count', 'bool', 'empty_destination',
+    'extra_equipment', 'extra_backpack', 'extra_bag', 'money', 'duplicate_guid', 'missing_bag'])
+def test_native_resource_projection_is_complete_and_all_other_slots_remain_exact(fault):
+    before, after = resources(), resources(True)
+    if fault == 'wrong_guid': after['backpack'][0]['guid'] += 1
+    elif fault == 'low_guid': after['backpack'][0]['guid'] = 33
+    elif fault == 'count': after['backpack'][0]['count'] = 2
+    elif fault == 'bool': after['backpack'][0]['count'] = True
+    elif fault == 'empty_destination': after['backpack'][0] = {'guid': 0, 'id': 0, 'count': 0}
+    elif fault.startswith('extra_'):
+        destination = {'extra_equipment': after['equipment'], 'extra_backpack': after['backpack'], 'extra_bag': after['bags'][0]}[fault]
+        destination[-1] = {'guid': (0x4000 << 48) | 123, 'id': 39, 'count': 1}
+    elif fault == 'money': after['money'] += 1
+    elif fault == 'duplicate_guid': after['backpack'][2] = deepcopy(c.SOURCE)
+    else: after['bags'].pop()
+    with pytest.raises(RuntimeError): c.native_resources(before, after, swapped=True)
+
+
+@pytest.mark.parametrize('fault', ['wrong_id', 'wrong_count', 'locked', 'bool_bag', 'wrong_slot',
+    'duplicate', 'missing_item', 'hidden_backpack', 'unrelated_row', 'other_shown_bag_omitted'])
+def test_rendered_entries_counts_unlocked_and_every_shown_bag_are_guarded(fault):
+    state, native = public(True), resources(True)
+    if fault == 'wrong_id': state['bag_items'][0]['id'] += 1
+    elif fault == 'wrong_count': state['bag_items'][0]['count'] += 1
+    elif fault == 'locked': state['bag_items'][0]['locked'] = True
+    elif fault == 'bool_bag': state['bag_items'][0]['bag'] = False
+    elif fault == 'wrong_slot': state['bag_items'][0]['slot'] = 3
+    elif fault == 'duplicate': state['bag_items'].append(deepcopy(state['bag_items'][0]))
+    elif fault == 'missing_item': state['bag_items'].pop()
+    elif fault == 'hidden_backpack': state['bags'] = []
+    elif fault == 'unrelated_row': state['bag_items'].append({'bag': 0, 'slot': 3, 'id': 39, 'count': 1, 'locked': False})
+    else:
+        state['bags'].append(1)
+        native['bags'][0][0] = {'guid': (0x4000 << 48) | 123, 'id': 39, 'count': 1}
+    with pytest.raises(RuntimeError): c.public_items(state, native, swapped=True)
+
+
+def test_native_replay_proves_both_full_item_creations_and_every_intermediate_inventory_state():
+    proof = c.native_replay(native_rows(True), 'scout', 9, 12)
+    assert proof['native_item_fields_preserved'] is True
+    assert proof['native_inventory_states'] == [[c.SOURCE['guid'], c.DESTINATION['guid']],
+        [c.DESTINATION['guid'], c.SOURCE['guid']], [c.SOURCE['guid'], c.DESTINATION['guid']]]
+    assert [r['time'] for r in proof['native_inventory_transitions']] == [9, 10.2, 11.2]
+    assert proof['native_inventory_transitions'][1]['packet'] == native_rows(True)[5]
+    assert json.loads(json.dumps(proof)) == proof
+
+
+@pytest.mark.parametrize('index,effect_time', [(5, 9.3), (8, 10.3)])
+def test_native_inventory_exchange_cannot_precede_its_attributed_swap_request(index, effect_time):
+    rows = native_rows(True)
+    rows[index]['time'] = effect_time
+    rows.sort(key=lambda row: row['time'])
+    with pytest.raises(RuntimeError, match='exchange must|inverse must'):
+        c.native_replay(rows, 'scout', 9, 12)
+
+
+def test_reverse_only_request_cannot_reuse_an_unswapped_login_baseline():
+    rows = native_rows()
+    rows[3:5] = packets(True)
+    with pytest.raises(RuntimeError): c.native_replay(rows, 'scout', 9, 12)
+
+
+@pytest.mark.parametrize('fault', ['wrong_item', 'missing_item', 'duplicate_item', 'item_owner', 'count_transient',
+    'charge_transient', 'item_extra_field', 'destroy_item', 'remove_item', 'other_slot_transient',
+    'occupied_slot_empty', 'no_native_exchange', 'target_transient', 'combat_transient', 'extra_swap'])
+def test_native_replay_rejects_hidden_transient_item_inventory_target_and_combat_changes(fault):
+    rows = native_rows(True)
+    if fault == 'wrong_item': rows[1] = native_packet(item_fields(c.DESTINATION), guid=c.SOURCE['guid'], kind=1, time=9.1)
+    elif fault == 'missing_item': rows.pop(1)
+    elif fault == 'duplicate_item': rows.insert(2, deepcopy(rows[1]))
+    elif fault == 'item_owner':
+        rows[1] = native_packet({**item_fields(c.SOURCE), c.INDEX['ITEM_FIELD_OWNER']: 3}, guid=c.SOURCE['guid'], kind=1, time=9.1)
+    elif fault in ('count_transient', 'charge_transient', 'item_extra_field'):
+        field = c.INDEX[{'count_transient': 'ITEM_FIELD_STACK_COUNT', 'charge_transient': 'ITEM_FIELD_SPELL_CHARGES',
+            'item_extra_field': 'ITEM_FIELD_DURATION'}[fault]]
+        rows.insert(3, native_packet({field: 2}, guid=c.SOURCE['guid'], creation=False, time=9.3))
+    elif fault == 'destroy_item': rows.insert(3, {'session': 'scout', 'time': 9.3, 'name': 'SMSG_DESTROY_OBJECT',
+        'direction': 'from_native', 'body': struct.pack('<QB', c.SOURCE['guid'], 0).hex()})
+    elif fault == 'remove_item':
+        guid = c.SOURCE['guid']; octets = struct.pack('<Q', guid)
+        raw = Writer().pack('HIBI', 0, 1, 3, 1).pack('B', sum(bool(v) << i for i, v in enumerate(octets)))
+        raw.raw(bytes(v for v in octets if v))
+        rows.insert(3, {'session': 'scout', 'time': 9.3, 'name': 'SMSG_UPDATE_OBJECT', 'direction': 'from_native', 'body': raw.finish().hex()})
+    elif fault == 'other_slot_transient': rows.insert(3, native_packet({c.INDEX['PLAYER_FIELD_INV_SLOT_HEAD']: 1}, creation=False, time=9.3))
+    elif fault == 'occupied_slot_empty': rows[5] = native_packet({**slot_fields(True), c.INDEX['PLAYER_FIELD_INV_SLOT_HEAD'] + 48: 0}, creation=False, time=10.2)
+    elif fault == 'no_native_exchange': rows.pop(5)
+    elif fault == 'target_transient': rows.insert(3, native_packet({c.INDEX['UNIT_FIELD_TARGET']: 3}, creation=False, time=9.3))
+    elif fault == 'combat_transient': rows.insert(3, native_packet({c.INDEX['UNIT_FIELD_FLAGS']: 0x80000}, creation=False, time=9.3))
+    else: rows += packets(start=11.5)
+    with pytest.raises(RuntimeError): c.native_replay(rows, 'scout', 9, 12)
+
+
+def test_pure_modules_do_not_import_live_runtime_sql_ui_or_crypto():
+    script = '''
+import importlib, sys
+class Block:
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.startswith(('Crypto', 'google', 'PIL', 'pymysql', 'requests',
+            'tools.client_compatibility.interaction_', 'tools.client_compatibility.lab_runtime')):
+            raise AssertionError('live dependency imported: ' + fullname)
+sys.meta_path.insert(0, Block())
+for name in ('bag_swap_contract', 'bag_swap_preservation'):
+    importlib.import_module('tools.client_compatibility.' + name)
+'''
+    subprocess.run([sys.executable, '-B', '-c', script], cwd=Path(__file__).resolve().parents[4], check=True,
+        capture_output=True, env={**__import__('os').environ, 'PYTHONDONTWRITEBYTECODE': '1'})
