@@ -18,6 +18,8 @@ PHASE = 'item_actionbar_closed_paused'
 ANCESTRY_SCHEMA = 'client442_item_actionbar_ancestry_v1'
 ROLES = ('preparation', 'entry', 'operation', 'park', 'before_precision', 'after_precision')
 TRACKING_MEMBERS = ('tracking/packets.jsonl', 'tracking/events.jsonl')
+JOURNAL_MAX_ROWS = 250000
+JOURNAL_MAX_SERIALIZED_BYTES = 128 * 1024 * 1024
 PACKET_NAMES = frozenset(('CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD',
     'CMSG_SET_ACTION_BUTTON', 'SMSG_UPDATE_ACTION_BUTTONS', 'SMSG_UPDATE_OBJECT',
     'SMSG_DESTROY_OBJECT', 'CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE',
@@ -48,6 +50,11 @@ def checks(value, key, names):
     found = value.get(key)
     require(type(found) is dict and set(found) == set(names) and all(v is True for v in found.values()),
         'complete exact typed ' + key + ' checks are required')
+
+
+def empty_cursor(value):
+    """Accept only the JSON shapes emitted for an observed empty Lua cursor."""
+    return value is None or value is False or (type(value) in (list, dict) and len(value) == 0)
 
 
 def packet_key(row):
@@ -245,13 +252,15 @@ def input_review(store, value, source, ready_ref, stage, clear=False):
         require(review.get('empty_point_reviewed') is True and review.get('empty_point_world_space') is True and
             value.get('cursor_cancel_input_sent') is True and value.get('cursor_cancel_source') == intent['review'] and
             value.get('cursor_cancel_input') == {'kind': 'click', 'value': end, 'button': 3} and
-            value.get('cursor_after_cancel') in (None, False, []), 'one reviewed ordinary carried-cursor cancellation is required')
+            'cursor_after_cancel' in value and empty_cursor(value['cursor_after_cancel']),
+            'one reviewed ordinary carried-cursor cancellation is required')
         from .hunter_learn_autobar import PICKUP_SOURCE, BINDING_SOURCE
         require(value.get('stock_pickup_sources') == [PICKUP_SOURCE, BINDING_SOURCE],
             'installed source-bound stock Shift pickup handler differs')
     else:
         require(review.get('source_control') == stage.get('source_control') and
-            review.get('destination_point_inside_button') is True and value.get('cursor_after_placement') in (None, False, []),
+            review.get('destination_point_inside_button') is True and 'cursor_after_placement' in value and
+            empty_cursor(value['cursor_after_placement']),
             'actual observed item icon and empty action destination review differs')
         from .item_actionbar_contract import GRID_SOURCE
         require(value.get('stock_grid_sources') == [GRID_SOURCE], 'installed source-bound stock grid behavior is required')
@@ -454,7 +463,25 @@ def lifecycle(store, refs):
 
 
 def tracking_state():
-    return {'packets': [], 'events': [], 'members': set()}
+    return {'packets': [], 'events': [], 'members': set(), 'journal_counts':
+        {member: {'rows': 0, 'serialized_bytes': 0} for member in TRACKING_MEMBERS}}
+
+
+def serialized_row_bytes(row):
+    return len(json.dumps(row, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')) + 1
+
+
+def journal_counts(tracking):
+    result = {}
+    for member, key in zip(TRACKING_MEMBERS, ('packets', 'events')):
+        rows = tracking[key]
+        counts = {'rows': len(rows), 'serialized_bytes': sum(serialized_row_bytes(row) for row in rows)}
+        require(counts['rows'] <= JOURNAL_MAX_ROWS and counts['serialized_bytes'] <= JOURNAL_MAX_SERIALIZED_BYTES,
+            'item journal exceeds its bounded complete-stream row or serialized-byte budget')
+        require(tracking.get('journal_counts', {}).get(member) == counts,
+            'actual complete journal row or serialized-byte accounting differs')
+        result[member] = counts
+    return result
 
 
 def collect(member, lines, data, tracking):
@@ -475,7 +502,11 @@ def collect(member, lines, data, tracking):
         if member == TRACKING_MEMBERS[0] and (row.get('name') in PACKET_NAMES or
             str(row.get('name', '')).startswith(('CMSG_PET_', 'CMSG_STABLE_'))) or member == TRACKING_MEMBERS[1]:
             destination.append(row)
-            require(len(destination) <= 30000, 'item journal exceeds its bounded one-scout semantic interval')
+            counts = tracking['journal_counts'][member]
+            counts['rows'] += 1
+            counts['serialized_bytes'] += serialized_row_bytes(row)
+            require(counts['rows'] <= JOURNAL_MAX_ROWS and counts['serialized_bytes'] <= JOURNAL_MAX_SERIALIZED_BYTES,
+                'item journal exceeds its bounded complete-stream row or serialized-byte budget')
 
 
 def actual_packets(store, closure, tracking):
@@ -502,11 +533,14 @@ def actual_packets(store, closure, tracking):
     require(len([p for p in wire if p.get('name') in ('CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD')]) == 4,
         'actual item lifecycle contains another ordinary login or delivery')
     actual_logout = [p for p in wire if p.get('name') in ('CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE')]
-    require(len(actual_logout) == 4 and len([p for p in actual_logout if p.get('name') == 'CMSG_LOGOUT_REQUEST' and
-        p.get('direction') == 'from_client' and p.get('body') == '']) == 1,
+    modern_logout = [p for p in actual_logout if p.get('name') == 'CMSG_LOGOUT_REQUEST' and
+        p.get('direction') == 'from_client']
+    require(len(actual_logout) == 4 and len(modern_logout) == 1 and modern_logout[0].get('body') == '00',
         'actual item lifecycle must contain one ordinary modern/native logout only')
     from .interaction_item_actionbar_continuation import logout_packets
     completed_logout = logout_packets(wire, owner, park['logout_started_at'], park['logout_finished_at'])
+    require(park['logout_started_at'] <= modern_logout[0]['time'] <= completed_logout[0]['time'],
+        'actual modern logout must occur inside its owned ordinary logout interval before native submission')
     require([packet_key(p) for p in completed_logout] == [packet_key(p) for p in park['logout_packets']],
         'actual completed logout differs from the saved native/client triple')
     actual_owner = native_replay(wire, owner, entry['started_at'], completed_logout[1]['time'],
@@ -557,7 +591,7 @@ def actual_packets(store, closure, tracking):
         'actual complete action journal differs from the sole placement and sole clear')
     action_packets(wire, owner, placed['drag_started_at'], placed['drag_finished_at'], placed['placement']['slot0'])
     action_packets(wire, owner, operation['clear_started_at'], operation['clear_finished_at'], placed['placement']['slot0'], clear=True)
-    for p in claimed:
+    for p in [*claimed, modern_logout[0]]:
         event_session = (owner if p['direction'] in ('to_native', 'from_native') or
             p['name'] == 'CMSG_PLAYER_LOGIN' or p['name'] == 'SMSG_LOGOUT_COMPLETE' else physical)
         found = [e for e in relevant_events if e.get('session') == event_session and e.get('name') == p['name'] and
@@ -567,6 +601,39 @@ def actual_packets(store, closure, tracking):
             ('native_packet' if p['direction'] in ('to_native', 'from_native') else 'modern_packet'),
             'actual unique physical/native packet metadata attribution differs')
     return actual_owner
+
+
+def closure_selection_source(store, closure, current, closure_ref):
+    """A proof-only commit may supply a fresh parked frame through its exact source."""
+    runtime_commit = current[-1]['code_commit']
+    if 'parked_selection_source' not in closure:
+        require('proof_code_transition' not in closure and closure.get('code_commit') == runtime_commit,
+            'ordinary closure must retain its exact runtime code identity')
+        return closure['sources']['park']
+    from . import interaction_item_actionbar_parked_selection_capture as capture
+    ref = closure['parked_selection_source']
+    captured = store.get(ref)
+    roles = closure['sources']
+    refs = {'preparation': roles['preparation'], 'park': roles['park'],
+        'after_precision': roles['after_precision'], 'operation': roles['operation'],
+        'entry_screen': captured.get('entry_screen_source'), 'failed_close': captured.get('failed_close_source')}
+    transition = capture.validate_capture(captured, current[0], store.get(refs['park']),
+        store.get(refs['after_precision']), store.get(refs['operation']), store.get(refs['entry_screen']),
+        store.get(refs['failed_close'], False), refs)
+    park = store.get(refs['park'])
+    original_frame = park['frame']
+    frame(store, park, original_frame, refs['park'])
+    capture.frame_identity(closure.get('frame'), closure.get('runtime'), original_frame)
+    frame(store, closure, closure['frame'], closure_ref)
+    require(captured['finished_at'] <= closure['started_at'] and
+        0 <= closure['started_at'] - captured['started_at'] < 120 and
+        closure.get('code_commit') == captured['code_commit'] and
+        closure.get('proof_code_transition') == transition and
+        closure.get('game_before', {}).get('pid') == original_frame['monitor']['input_isolation']['game_pid'] and
+        transition.get('runtime_code_commit') == runtime_commit,
+        'closed pause must retain the exact fresh parked source and truthful pure proof code identity')
+    frame(store, captured, captured['frame'], ref)
+    return ref
 
 
 def proof(data, digests, tracking):
@@ -590,9 +657,11 @@ def proof(data, digests, tracking):
         member = str(Path(row['copy_path']).relative_to(lab.ROOT))
         require(digests.get(member) == row['sha256'] and tracking.get('manifest', {}).get(member, {}).get('bytes') == row['bytes'],
             'carried authority differs from actual complete bytes and SHA256')
-    closures = [e for e in data.values() if type(e) is dict and e.get('phase') == PHASE]
+    closures = [(member, episode) for member, episode in data.items() if type(episode) is dict and episode.get('phase') == PHASE]
     require(len(closures) == 1, 'one distinct successful item closed pause is required')
-    closure = accepted(closures[0], PHASE)
+    closure_member, closure_value = closures[0]
+    closure = accepted(closure_value, PHASE)
+    closure_ref = {'path': str(lab.ROOT / closure_member), 'sha256': digests.get(closure_member)}
     markers = [v for v in data.values() if type(v) is dict and v.get('schema') == 'client442_item_actionbar_consumed_attempt_v1']
     require(len(markers) == 2 and {m.get('kind') for m in markers} == {'drag', 'clear'},
         'one durable drag marker and one durable clear marker are required')
@@ -604,11 +673,11 @@ def proof(data, digests, tracking):
         'carried predecessor graph omits or substitutes a required immutable ancestor')
     pointer_observation(store, ready)
     checks(closure, 'shutdown_checks', SHUTDOWN_CHECKS)
+    review_source = closure_selection_source(store, closure, current, closure_ref)
     require(closure.get('proof') == result and closure.get('before') == closure.get('after') ==
         closure.get('all_offline_snapshot') == snapshot and closure.get('actor') == ready['actor'] and
         closure.get('runtime') == ready['runtime'] and closure.get('predecessor') == ready['predecessor'] and
         closure.get('primary_stop_source') == ready['predecessor']['primary_stop'] and
-        closure.get('code_commit') == current[-1]['code_commit'] and
         closure.get('controller') == 'code' and closure.get('model') is None and closure.get('revision') is None and
         closure.get('custom_script_permission') == 'blocked_by_user' and closure.get('softTargetInteract') == SCRIPT_BOUNDARY and
         closure.get('input_sent') is False and closure.get('mutation_sent') is False and closure.get('qualification_added') is False and
@@ -617,11 +686,14 @@ def proof(data, digests, tracking):
         type(closure['game_before'].get('start_ticks')) is str and
         re.fullmatch('[1-9][0-9]*', closure['game_before']['start_ticks']) and
         current[-1]['finished_at'] <= closure['started_at'], 'complete exact original scout closed resource pause differs')
-    review = screen_review(store, closure, closure['sources']['park'], 'Harnesstwo')
+    review = screen_review(store, closure, review_source, 'Harnesstwo')
     require((review.get('selected_character'), review.get('selected_level')) == ('Harnesstwo', 1),
         'final original selection differs')
+    counts = journal_counts(tracking)
     actual_packets(store, closure, tracking)
-    return {**result, 'shutdown_checks': 8, 'both_owned_clients_stopped': True, 'actual_packet_journals_verified': True}
+    return {**result, 'shutdown_checks': 8, 'both_owned_clients_stopped': True,
+        'actual_packet_journals_verified': True, 'actual_journal_counts': counts,
+        'runtime_code_commit': current[-1]['code_commit'], 'proof_code_commit': closure['code_commit']}
 
 
 def local(directory):

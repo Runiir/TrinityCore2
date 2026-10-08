@@ -28,7 +28,7 @@ def stock_public(rows, spec=0):
     return value
 
 
-def fixture(tmp_path, monkeypatch):
+def fixture(tmp_path, monkeypatch, cursor_value=False):
     root, repo, prior_paths, prior = prior_fixture(tmp_path)
     monkeypatch.setattr(e.lab, 'ROOT', root)
     monkeypatch.setattr(e.lab, 'REPO', repo)
@@ -58,7 +58,8 @@ def fixture(tmp_path, monkeypatch):
     runtime = deepcopy(prior['closure']['runtime'])
     runtime['client'] = {'pid': 20, 'start_ticks': '2000'}
     monitor = {'second_monitor_verified': True, 'monitor': {'name': 'HDMI-1'}, 'pid': 20,
-        'input_isolation': {'actor': 'scout', 'host_activation_sent': False, 'game_pid': 21}}
+        'input_isolation': {'actor': 'scout', 'host_activation_sent': False, 'game_pid': 21,
+            'display': ':2', 'window_id': 37748737, 'actor_lock': 'scout'}}
     png = b'\x89PNG\r\n\x1a\nsynthetic-pure-fixture'
     paths, values = {}, {}
 
@@ -181,7 +182,7 @@ def fixture(tmp_path, monkeypatch):
         geometry_proof={'exact_pixels': True, 'reviewed_frame': drag_ready['frame']},
         stock_grid_sources=[c.GRID_SOURCE],
         placement=placement, placement_saved=placed_saved, placement_resources=resources,
-        public_after_placement=placed_public, cursor_after_placement=False,
+        public_after_placement=placed_public, cursor_after_placement=deepcopy(cursor_value),
         cases=[{'id': 'actionbars.drag_item', 'status': 'item_actionbar_drag_pass', 'selected': 'drag',
             'selection_source': 'code', 'request': None, 'response': None, 'oracle': {'placement': placement}}])
     placed['drag_attempt_source'] = attempt('drag', placed, 1104)
@@ -207,7 +208,7 @@ def fixture(tmp_path, monkeypatch):
         geometry_proof={'exact_pixels': True, 'reviewed_frame': clear_ready['frame']},
         stock_pickup_sources=[PICKUP_SOURCE, BINDING_SOURCE], cursor_cancel_input_sent=True,
         cursor_cancel_source=clear_review_ref, cursor_cancel_input={'kind': 'click', 'value': [900, 500], 'button': 3},
-        cursor_after_cancel=False, after_saved=base['saved'], after_resources=resources,
+        cursor_after_cancel=deepcopy(cursor_value), after_saved=base['saved'], after_resources=resources,
         public_after_clear=base['public'], clear_proof=cleared, restored_public=base['public'],
         restored_native_state=original, actionbar_restored=True, layout_restoration_checks=dict.fromkeys(e.LAYOUT_CHECKS, True),
         restoration_checks={'full_saved_baseline': True, 'full_resources_baseline': True, 'protected_actors': True})
@@ -241,7 +242,7 @@ def fixture(tmp_path, monkeypatch):
     write('final', final)
     publication.carry(batch, paths['ready'])
     wire = [*login_packets(), creation, *drag_packets, *clear_packets, *logout,
-        {'session': 'scout', 'time': 1114.99, 'name': 'CMSG_LOGOUT_REQUEST', 'direction': 'from_client', 'body': ''}]
+        {'session': 'scout', 'time': 1114.99, 'name': 'CMSG_LOGOUT_REQUEST', 'direction': 'from_client', 'body': '00'}]
     events = [authentication, {'event': 'instance_authenticated', 'account_id': 2, 'session': 'physical', 'time': 1100.15}]
     for row in wire:
         physical = 'scout' if row['direction'] in ('to_native', 'from_native') or row['name'] in ('CMSG_PLAYER_LOGIN', 'SMSG_LOGOUT_COMPLETE') else 'physical'
@@ -274,8 +275,9 @@ def reviewed(batch, wire, events, extra=None):
     return e.proof(data, digests, tracking)
 
 
-def test_whole_actual_tarstream_proves_one_nonfixed_item_drag_clear_and_restored_pause(tmp_path, monkeypatch):
-    batch, paths, values, wire, events = fixture(tmp_path, monkeypatch)
+@pytest.mark.parametrize('cursor_value', [None, False, [], {}], ids=['null', 'false', 'empty-list', 'canonical-empty-lua-table'])
+def test_whole_actual_tarstream_proves_one_nonfixed_item_drag_clear_and_restored_pause(tmp_path, monkeypatch, cursor_value):
+    batch, paths, values, wire, events = fixture(tmp_path, monkeypatch, cursor_value)
     result = reviewed(batch, wire, events)
     assert result['operation'] == 'actionbars.drag_item' and result['slot0'] == 74
     assert result['native_item_requests'] == result['native_clear_requests'] == 1
@@ -283,7 +285,99 @@ def test_whole_actual_tarstream_proves_one_nonfixed_item_drag_clear_and_restored
     assert result['rest']['matches'][0]['native_login_second'] == 1100
 
 
-def repaired_fixture(tmp_path, monkeypatch, renewed=False):
+def test_complete_metadata_stream_above_old_cap_preserves_order_and_exposes_exact_counts(tmp_path, monkeypatch):
+    batch, _, _, wire, events = fixture(tmp_path, monkeypatch, {})
+    events.extend({'event': 'routine_metadata', 'session': 'other', 'time': 1113, 'sequence': n} for n in range(30001))
+    raw, checkpoint = archive_fixture(batch, wire, events)
+    data, digests, tracking, _ = reviewer.inspect_archive(io.BytesIO(raw), checkpoint, str(batch.relative_to(e.lab.ROOT)) + '/')
+    assert [row['sequence'] for row in tracking['events'] if row.get('event') == 'routine_metadata'] == list(range(30001))
+    result = e.proof(data, digests, tracking)
+    for member, key in zip(e.TRACKING_MEMBERS, ('packets', 'events')):
+        assert result['actual_journal_counts'][member] == {'rows': len(tracking[key]),
+            'serialized_bytes': sum(e.serialized_row_bytes(row) for row in tracking[key])}
+    assert result['actual_journal_counts'][e.TRACKING_MEMBERS[1]]['rows'] > 30000
+
+
+@pytest.mark.parametrize('member', e.TRACKING_MEMBERS)
+@pytest.mark.parametrize('budget', ['rows', 'serialized_bytes'])
+def test_complete_journal_overbudget_fails_honestly_without_dropping_rows(tmp_path, monkeypatch, member, budget):
+    batch, _, _, _, _ = fixture(tmp_path, monkeypatch)
+    data = {str(path.relative_to(e.lab.ROOT)): json.loads(path.read_text()) for path in batch.rglob('*.json')}
+    digests = {str(path.relative_to(e.lab.ROOT)): s.bound(path)['sha256'] for path in batch.rglob('*.json')}
+    row = {'session': 'scout', 'time': 1113, 'name': 'SMSG_UPDATE_OBJECT', 'direction': 'from_native', 'body': '', 'sequence': 0}
+    if budget == 'rows': monkeypatch.setattr(e, 'JOURNAL_MAX_ROWS', 1)
+    else: monkeypatch.setattr(e, 'JOURNAL_MAX_SERIALIZED_BYTES', e.serialized_row_bytes(row))
+    tracking = e.tracking_state()
+    tracking['digests'] = digests
+    with pytest.raises(RuntimeError, match='row or serialized-byte budget'):
+        e.collect(member, [row, {**row, 'sequence': 1}], data, tracking)
+    key = 'packets' if member == e.TRACKING_MEMBERS[0] else 'events'
+    assert tracking[key] == [row, {**row, 'sequence': 1}]
+    assert tracking['journal_counts'][member]['rows'] == 2
+
+
+def test_late_forbidden_metadata_after_clear_and_logout_is_still_rejected(tmp_path, monkeypatch):
+    batch, _, _, wire, events = fixture(tmp_path, monkeypatch, {})
+    events.append({'event': 'native_packet', 'session': 'scout', 'time': 1124,
+        'direction': 'to_native', 'name': 'CMSG_CAST_SPELL', 'bytes': 1})
+    with pytest.raises(RuntimeError, match='metadata contains'):
+        reviewed(batch, wire, events)
+
+
+@pytest.mark.parametrize('wrong_body', ['', '01', '80', '0000'])
+def test_modern_ordinary_logout_requires_actual_zero_bit_body_and_native_empty_request(tmp_path, monkeypatch, wrong_body):
+    batch, _, _, wire, events = fixture(tmp_path, monkeypatch, {})
+    native = next(row for row in wire if row['name'] == 'CMSG_LOGOUT_REQUEST' and row['direction'] == 'to_native')
+    assert native['body'] == ''
+    next(row for row in wire if row['name'] == 'CMSG_LOGOUT_REQUEST' and row['direction'] == 'from_client')['body'] = wrong_body
+    with pytest.raises(RuntimeError, match='one ordinary modern/native logout'):
+        reviewed(batch, wire, events)
+
+
+@pytest.mark.parametrize('fault', ['duplicate_request', 'foreign_session', 'outside_logout_window',
+    'missing_metadata', 'wrong_metadata_bytes', 'wrong_metadata_time', 'wrong_metadata_session', 'duplicate_metadata'])
+def test_modern_logout_requires_unique_owned_timed_one_byte_metadata(tmp_path, monkeypatch, fault):
+    batch, _, _, wire, events = fixture(tmp_path, monkeypatch, {})
+    packet = next(row for row in wire if row['name'] == 'CMSG_LOGOUT_REQUEST' and row['direction'] == 'from_client')
+    metadata = next(row for row in events if row.get('name') == 'CMSG_LOGOUT_REQUEST' and row.get('direction') == 'from_client')
+    assert packet['body'] == '00' and metadata['bytes'] == 1
+    if fault == 'duplicate_request': wire.append(deepcopy(packet))
+    elif fault == 'foreign_session': packet['session'] = 'foreign'
+    elif fault == 'outside_logout_window': packet['time'] = 1114.8
+    elif fault == 'missing_metadata': events.remove(metadata)
+    elif fault == 'wrong_metadata_bytes': metadata['bytes'] = 0
+    elif fault == 'wrong_metadata_time': metadata['time'] = packet['time'] + .1
+    elif fault == 'wrong_metadata_session': metadata['session'] = 'scout'
+    else: events.append(deepcopy(metadata))
+    with pytest.raises(RuntimeError, match='logout|metadata attribution'):
+        reviewed(batch, wire, events)
+
+
+@pytest.mark.parametrize('clear', [False, True], ids=['placement', 'cancellation'])
+@pytest.mark.parametrize('cursor_value', [True, 0, 0.0, '', 'item', [False], {'item': 6948}],
+    ids=['true', 'zero-int', 'zero-float', 'empty-string', 'string', 'nonempty-list', 'nonempty-dict'])
+def test_observed_empty_cursor_rejects_falsey_scalars_and_nonempty_json(tmp_path, monkeypatch, clear, cursor_value):
+    _, paths, values, _, _ = fixture(tmp_path, monkeypatch)
+    value, stage_name, key = (values['operation'], 'clear_ready', 'cursor_after_cancel') if clear else \
+        (values['placed'], 'drag_ready', 'cursor_after_placement')
+    value[key] = cursor_value
+    with pytest.raises(RuntimeError, match='cursor cancellation|empty action destination'):
+        e.input_review(e.Sources({}, {}, local=True), value, s.bound(paths[stage_name]),
+            s.bound(paths['ready']), values[stage_name], clear=clear)
+
+
+@pytest.mark.parametrize('clear', [False, True], ids=['placement', 'cancellation'])
+def test_observed_empty_cursor_requires_the_actual_field(tmp_path, monkeypatch, clear):
+    _, paths, values, _, _ = fixture(tmp_path, monkeypatch)
+    value, stage_name, key = (values['operation'], 'clear_ready', 'cursor_after_cancel') if clear else \
+        (values['placed'], 'drag_ready', 'cursor_after_placement')
+    value.pop(key)
+    with pytest.raises(RuntimeError, match='cursor cancellation|empty action destination'):
+        e.input_review(e.Sources({}, {}, local=True), value, s.bound(paths[stage_name]),
+            s.bound(paths['ready']), values[stage_name], clear=clear)
+
+
+def repaired_fixture(tmp_path, monkeypatch, renewed=False, cursor_value=False):
     from tools.client_compatibility.world.tests.test_item_actionbar_entry_capture import repair_fixture, renewal_fixture
     if renewed:
         batch, paths, values, wire, events, refs, _ = renewal_fixture(tmp_path, monkeypatch)
@@ -296,6 +390,8 @@ def repaired_fixture(tmp_path, monkeypatch, renewed=False):
     else:
         batch, paths, values, wire, events, refs = repair_fixture(tmp_path, monkeypatch)
     fresh = values['entry_screen']
+    values['placed']['cursor_after_placement'] = deepcopy(cursor_value)
+    values['operation']['cursor_after_cancel'] = deepcopy(cursor_value)
     fields = {key: deepcopy(fresh[key]) for key in ('first_failure_source', 'pre_recon_recovery_source',
         'observer_reload_source', 'repair_code_transition', 'committed_sources')}
     for key in ('prior_restoration_source', 'failed_observer_source'):
@@ -384,8 +480,75 @@ def test_whole_actual_tarstream_admits_one_roundtrip_after_exact_a_failed_b_c_re
     assert len(values['entry_screen']['housekeeping_attempts']) == 6 and paths['entry'].read_bytes() == original
 
 
+def proof_closure_fixture(tmp_path, monkeypatch):
+    from tools.client_compatibility.world.tests.test_item_actionbar_parked_selection_capture import fixture as parked_fixture
+    batch, paths, values, wire, events, _ = parked_fixture(tmp_path, monkeypatch)
+    captured = values['parked_selection']
+    final = values['final']
+    final.update(code_commit=captured['code_commit'], parked_selection_source=s.bound(paths['parked_selection']),
+        proof_code_transition=deepcopy(captured['proof_code_transition']))
+    review = values['final_review']
+    review.update(source=final['parked_selection_source'], frame=captured['frame'])
+    paths['final_review'].write_text(json.dumps(review))
+    final['screen_review'] = {**s.bound(paths['final_review']), 'frame': captured['frame']}
+    paths['final'].write_text(json.dumps(final))
+    return batch, paths, values, wire, events
+
+
+def test_whole_archive_binds_fresh_parked_review_and_truthful_proof_only_commit(tmp_path, monkeypatch):
+    batch, paths, values, wire, events = proof_closure_fixture(tmp_path, monkeypatch)
+    runtime_sources = {name: paths[name].read_bytes() for name in ('entry', 'entry_screen', 'placed', 'operation', 'park', 'after_precision', 'failed_close')}
+    assert values['placed']['cursor_after_placement'] == values['operation']['cursor_after_cancel'] == {}
+    result = reviewed(batch, wire, events)
+    assert result['runtime_code_commit'] == values['operation']['code_commit'] == 'c' * 40
+    assert result['proof_code_commit'] == values['parked_selection']['code_commit'] == 'f' * 40
+    assert values['final']['sources']['park'] == s.bound(paths['park'])
+    assert all(paths[name].read_bytes() == raw for name, raw in runtime_sources.items())
+
+
+@pytest.mark.parametrize('fault', ['missing_capture', 'missing_png', 'wrong_png', 'old_park_review',
+    'unlinked_commit', 'missing_transition', 'different_transition', 'capture_input', 'capture_snapshot',
+    'capture_code', 'runtime_bytes', 'late_closure', 'closure_game', 'closure_display', 'closure_window', 'closing_game_before',
+    'missing_closing_png', 'wrong_closing_png', 'missing_original_park_png', 'wrong_original_park_png'])
+def test_whole_archive_requires_exact_read_only_fresh_parked_proof_transition(tmp_path, monkeypatch, fault):
+    batch, paths, values, wire, events = proof_closure_fixture(tmp_path, monkeypatch)
+    final, captured = values['final'], values['parked_selection']
+    if fault == 'missing_capture': paths['parked_selection'].unlink()
+    elif fault == 'missing_png': (paths['parked_selection'].parent / captured['frame']['file']).unlink()
+    elif fault == 'wrong_png': (paths['parked_selection'].parent / captured['frame']['file']).write_bytes(b'different source PNG')
+    elif fault == 'missing_closing_png': (paths['final'].parent / final['frame']['file']).unlink()
+    elif fault == 'wrong_closing_png': (paths['final'].parent / final['frame']['file']).write_bytes(b'different closing source PNG')
+    elif fault == 'missing_original_park_png': (paths['park'].parent / values['park']['frame']['file']).unlink()
+    elif fault == 'wrong_original_park_png': (paths['park'].parent / values['park']['frame']['file']).write_bytes(b'different original parked source PNG')
+    elif fault == 'old_park_review':
+        review = values['final_review']
+        review.update(source=final['sources']['park'], frame=values['park']['frame'])
+        paths['final_review'].write_text(json.dumps(review))
+        final['screen_review'] = {**s.bound(paths['final_review']), 'frame': review['frame']}
+    elif fault == 'unlinked_commit':
+        final.pop('parked_selection_source'); final.pop('proof_code_transition')
+    elif fault == 'missing_transition': final.pop('proof_code_transition')
+    elif fault == 'different_transition': final['proof_code_transition']['code_commit'] = 'e' * 40
+    elif fault == 'late_closure': final['started_at'] += 120; final['finished_at'] += 120
+    elif fault in ('closure_game', 'closure_display', 'closure_window'):
+        key, wrong = {'closure_game': ('game_pid', 22), 'closure_display': ('display', ':3'),
+            'closure_window': ('window_id', 37748738)}[fault]
+        final['frame']['monitor']['input_isolation'][key] = wrong
+    elif fault == 'closing_game_before': final['game_before']['pid'] = 22
+    else:
+        if fault == 'capture_input': captured['input_sent'] = True
+        elif fault == 'capture_snapshot': captured['all_offline_snapshot']['2']['native']['health'] = 59
+        elif fault == 'capture_code': captured['code_commit'] = 'e' * 40
+        else: captured['proof_code_transition']['source_changes'][-2]['before_raw_hex'] += '00'
+        paths['parked_selection'].write_text(json.dumps(captured))
+        final['parked_selection_source'] = s.bound(paths['parked_selection'])
+    paths['final'].write_text(json.dumps(final))
+    with pytest.raises((RuntimeError, KeyError)):
+        reviewed(batch, wire, events)
+
+
 @pytest.mark.parametrize('fault', ['missing_prior_marker', 'missing_renewal_marker', 'missing_prior_idle_png',
-    'missing_renewal_png', 'missing_preflight_png', 'missing_failed_b_png', 'source_bytes_b', 'native_lifetime_event', 'native_lifetime_count',
+    'missing_renewal_png', 'missing_preflight_png', 'missing_failed_b_png', 'source_bytes_b', 'native_lifetime_event', 'native_lifetime_recreate', 'native_lifetime_count',
     'drop_prior_stage_ref', 'wrong_stand_binding'])
 def test_whole_renewal_archive_requires_all_actual_ancestors_frames_bytes_and_lifetime(tmp_path, monkeypatch, fault):
     batch, paths, values, wire, events = repaired_fixture(tmp_path, monkeypatch, renewed=True)
@@ -395,8 +558,9 @@ def test_whole_renewal_archive_requires_all_actual_ancestors_frames_bytes_and_li
     elif fault == 'missing_renewal_png': (paths['renewal'].parent / 'screen.png').unlink()
     elif fault == 'missing_preflight_png': (paths['renewal'].parent / 'before_stand.png').unlink()
     elif fault == 'missing_failed_b_png': (paths['failed_observer'].parent / 'screen.png').unlink()
-    elif fault == 'native_lifetime_event':
-        events.append({'event': 'native_stream_closed', 'session': 'scout', 'time': 1101.39})
+    elif fault in ('native_lifetime_event', 'native_lifetime_recreate'):
+        events.append({'event': 'native_player_created' if fault == 'native_lifetime_recreate' else 'native_stream_closed',
+            'session': 'scout', 'time': 1101.39})
         events.sort(key=lambda row: row['time'])
     elif fault == 'native_lifetime_count':
         events.append({'event': 'routine_metadata', 'session': 'scout', 'time': 1101.39})

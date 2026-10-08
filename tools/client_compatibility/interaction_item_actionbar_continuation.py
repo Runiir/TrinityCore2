@@ -4,6 +4,7 @@ Runtime dependencies are loaded only by executable helpers. Importing this modul
 does not open SQL, authenticate, focus a window, or load the UI/protocol stack.
 """
 import argparse
+from copy import deepcopy
 from contextlib import contextmanager
 import json
 import os
@@ -549,7 +550,8 @@ def pause_recovery(t, preparation, park_path, before_precision, after_precision,
         t.persist()
 
 
-def close_pause(t, preparation, entry, operation, park_path, before_precision, after_precision, review_path):
+def close_pause(t, preparation, entry, operation, park_path, before_precision, after_precision, review_path,
+        parked_selection_source=None):
     from . import item_actionbar_evidence as evidence
     refs = {k: sources().bound(p) for k, p in {'preparation': preparation, 'entry': entry,
         'operation': operation, 'park': park_path, 'before_precision': before_precision,
@@ -557,10 +559,35 @@ def close_pause(t, preparation, entry, operation, park_path, before_precision, a
     store = evidence.Sources({}, {}, local=True)
     result, after, current_rows = evidence.lifecycle(store, refs)
     ready = store.get(refs['preparation'])
+    from . import interaction_item_actionbar_parked_selection_capture as capture
+    parked = store.get(refs['park'])
     require(t.fixture == ready['actor'] == registration() and t.receipt['runtime'] == ready['runtime'] == runtime() and
         snapshot() == after, 'whole item roundtrip or current original selection differs')
+    selection_ref = refs['park']
+    proof_metadata = {}
+    if parked_selection_source is None:
+        require(t.receipt.get('code_commit') == current_rows[-1]['code_commit'] and
+            'proof_code_transition' not in t.receipt and 'parked_selection_source' not in t.receipt,
+            'ordinary closed pause must retain its exact completed runtime code identity')
+    else:
+        selection_ref = sources().bound(parked_selection_source)
+        selected_capture = store.get(selection_ref)
+        capture_refs = {'preparation': refs['preparation'], 'park': refs['park'],
+            'after_precision': refs['after_precision'], 'operation': refs['operation'],
+            'entry_screen': selected_capture.get('entry_screen_source'),
+            'failed_close': selected_capture.get('failed_close_source')}
+        parked, precision_value, restored, screen, failed = [store.get(capture_refs[k], k != 'failed_close')
+            for k in ('park', 'after_precision', 'operation', 'entry_screen', 'failed_close')]
+        transition = capture.validate_capture(selected_capture, ready, parked, precision_value,
+            restored, screen, failed, capture_refs)
+        evidence.frame(store, selected_capture, selected_capture['frame'], selection_ref)
+        require(selected_capture['finished_at'] <= t.receipt['started_at'] and
+            selected_capture['code_commit'] == t.receipt.get('code_commit') and
+            capture.proof_transition(t, capture_refs, parked, precision_value, screen) == transition,
+            'closed pause must retain the exact fresh parked source and committed pure proof code')
+        proof_metadata = {'parked_selection_source': selection_ref, 'proof_code_transition': deepcopy(transition)}
     checked, selected = review(t, review_path, 'Harnesstwo')
-    require(checked.get('source') == refs['park'] and
+    require(checked.get('source') == selection_ref and
         (checked.get('selected_character'), checked.get('selected_level')) == ('Harnesstwo', 1),
         'closed pause requires the fresh reviewed parked original selection')
     stop = primary_stopped(Path(ready['predecessor']['primary_stop']['path']))
@@ -570,11 +597,17 @@ def close_pause(t, preparation, entry, operation, park_path, before_precision, a
     monitor = focus()
     require(monitor.get('second_monitor_verified') is True and monitor.get('monitor', {}).get('name') == 'HDMI-1',
         'owned scout must remain on HDMI-1')
+    capture.game_identity(monitor, parked.get('frame'))
     game = monitor['input_isolation']['game_pid']
     ticks = lab.proc_start(game)
-    t.receipt.update(sources=refs, predecessor=ready['predecessor'], before=after, all_offline_snapshot=after,
+    closing_frame = shot(t.out / 'scout_parked.png')
+    t.receipt['frame'] = closing_frame
+    t.persist()
+    capture.frame_identity(closing_frame, t.receipt['runtime'], parked.get('frame'))
+    capture.game_identity(focus(), parked.get('frame'))
+    t.receipt.update(**proof_metadata, sources=refs, predecessor=ready['predecessor'], before=after, all_offline_snapshot=after,
         primary_stop_source=ready['predecessor']['primary_stop'], game_before={'pid': game, 'start_ticks': ticks},
-        frame=shot(t.out / 'scout_parked.png'), input_sent=False, mutation_sent=False,
+        frame=closing_frame, input_sent=False, mutation_sent=False,
         action='stop_parked_scout_after_item_roundtrip', proof=result, stop_attempted=True,
         phase='item_actionbar_pause_started')
     t.persist()
@@ -630,10 +663,13 @@ def main():
         'park', 'park-recovery', 'close-pause', 'pause-recovery'])
     parser.add_argument('--output', type=Path, required=True)
     for name in ('resume', 'closure', 'pause', 'remote', 'checkpoint', 'primary-stop', 'review', 'source',
-        'preparation', 'entry', 'operation', 'park', 'precision', 'before-precision', 'after-precision'):
+        'preparation', 'entry', 'operation', 'park', 'precision', 'before-precision', 'after-precision',
+        'parked-selection-source'):
         parser.add_argument('--' + name, type=Path)
     parser.add_argument('--stage', choices=['dismiss', 'reconnect', 'realm', 'character'])
     a = parser.parse_args()
+    require(a.parked_selection_source is None or a.action == 'close-pause',
+        'fresh parked selection source is reserved for the read-only closed pause')
     with scout():
         if a.action == 'start':
             require(all(getattr(a, k) for k in ('resume', 'closure', 'pause', 'remote', 'checkpoint', 'primary_stop')),
@@ -652,7 +688,8 @@ def main():
             elif a.action == 'enter': enter(t, a.preparation, a.precision, a.review)
             elif a.action in ('park', 'park-recovery'): park(t, a.preparation, a.source, recovery=a.action == 'park-recovery')
             elif a.action == 'pause-recovery': pause_recovery(t, a.preparation, a.park, a.before_precision, a.after_precision, a.review)
-            else: close_pause(t, a.preparation, a.entry, a.operation, a.park, a.before_precision, a.after_precision, a.review)
+            else: close_pause(t, a.preparation, a.entry, a.operation, a.park, a.before_precision, a.after_precision,
+                a.review, parked_selection_source=a.parked_selection_source)
         execute_trial(t, run)
         print(json.dumps({k: t.receipt.get(k) for k in ('completed', 'phase', 'failure')}), flush=True)
 

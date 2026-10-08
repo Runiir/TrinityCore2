@@ -187,6 +187,7 @@ def test_outer_writer_closes_actual_failure_and_retains_sealed_entry(tmp_path, m
 def test_closed_pause_stops_once_and_retains_source_intent_before_stop(tmp_path, monkeypatch, failure):
     batch, paths, values, wire, events = fixture(tmp_path, monkeypatch)
     t = Trial(batch / 'test_pause', values['ready'], start=1125)
+    t.receipt['code_commit'] = values['after_precision']['code_commit']
     snapshot = deepcopy(values['park']['all_offline_snapshot'])
     stopped = []
     monkeypatch.setattr(m, 'registration', lambda: t.fixture)
@@ -218,6 +219,124 @@ def test_closed_pause_stops_once_and_retains_source_intent_before_stop(tmp_path,
         assert t.receipt['before'] == t.receipt['after'] == snapshot
         assert all(t.receipt['shutdown_checks'].values())
     assert stopped == ['client'] and t.receipt['stop_finished_at'] <= t.receipt['finished_at']
+
+
+def parked_close_fixture(tmp_path, monkeypatch):
+    from tools.client_compatibility.world.tests.test_item_actionbar_parked_selection_capture import fixture as parked_fixture
+    from tools.client_compatibility import interaction_item_actionbar_parked_selection_capture as cap
+    batch, paths, values, _, _, refs = parked_fixture(tmp_path, monkeypatch)
+    t = Trial(batch / 'test_proof_code_pause', values['ready'], start=1125)
+    t.receipt['code_commit'] = values['parked_selection']['code_commit']
+    snapshot = deepcopy(values['park']['all_offline_snapshot'])
+    stopped = []
+    monkeypatch.setattr(m, 'registration', lambda: t.fixture)
+    monkeypatch.setattr(m, 'runtime', lambda: t.receipt['runtime'])
+    monkeypatch.setattr(m, 'snapshot', lambda: deepcopy(snapshot))
+    monkeypatch.setattr(m, 'primary_stopped', lambda _: {'after': snapshot['1']})
+    monkeypatch.setattr(m, 'review', lambda *_: ({'source': m.sources().bound(paths['parked_selection']),
+        'selected_character': 'Harnesstwo', 'selected_level': 1}, values['parked_selection']))
+    monkeypatch.setattr(m, 'focus', lambda: values['park']['frame']['monitor'])
+    monkeypatch.setattr(m.lab, 'proc_start', lambda _: '2100')
+    monkeypatch.setattr(m, 'gone', lambda *_: True)
+    monkeypatch.setattr(m, 'identity', lambda key: t.receipt['runtime'][key])
+    monkeypatch.setattr(m.lab, 'owned_process', lambda _: None)
+    monkeypatch.setattr(m, 'shot', lambda _: values['parked_selection']['frame'])
+    monkeypatch.setattr(cap, 'proof_transition', lambda *_: deepcopy(values['parked_selection']['proof_code_transition']))
+    def stop(kind):
+        stopped.append(kind)
+        assert t.writes[-1]['stop_attempted'] is True
+        assert t.writes[-1]['sources']['park'] == refs['park']
+        assert t.writes[-1]['parked_selection_source'] == m.sources().bound(paths['parked_selection'])
+        assert t.writes[-1]['proof_code_transition']['code_commit'] == t.receipt['code_commit']
+    monkeypatch.setattr(m.lab, 'stop', stop)
+    return t, paths, values, stopped
+
+
+def close_with_selection(t, paths, review, selection=True):
+    optional = {'parked_selection_source': paths['parked_selection']} if selection else {}
+    return m.close_pause(t, paths['ready'], paths['entry'], paths['operation'], paths['park'],
+        paths['before_precision'], paths['after_precision'], review, **optional)
+
+
+def test_closed_pause_proof_only_d_requires_fresh_selection_review_and_keeps_all_runtime_c_sources(tmp_path, monkeypatch):
+    t, paths, values, stopped = parked_close_fixture(tmp_path, monkeypatch)
+    original = {name: path.read_bytes() for name, path in paths.items()}
+    m.execute_trial(t, lambda: close_with_selection(t, paths, tmp_path / 'fresh_review.json'))
+    assert stopped == ['client'] and not t.clicks
+    assert t.receipt['completed'] is True and t.receipt['code_commit'] == 'f' * 40
+    assert t.receipt['proof_code_transition']['runtime_code_commit'] == 'c' * 40
+    assert t.receipt['sources']['after_precision'] == m.sources().bound(paths['after_precision'])
+    assert t.receipt['sources']['park'] == m.sources().bound(paths['park'])
+    assert all(path.read_bytes() == original[name] for name, path in paths.items())
+
+
+@pytest.mark.parametrize('fault', ['missing_selection', 'borrowed_park_review', 'selection_code', 'transition_code',
+    'source_bytes', 'wrong_precision', 'runtime_rewrite', 'failed_stop', 'current_source_changed',
+    'missing_capture_png', 'changed_capture_png'])
+def test_closed_pause_refuses_unbound_proof_code_or_old_review_before_any_stop(tmp_path, monkeypatch, fault):
+    t, paths, values, stopped = parked_close_fixture(tmp_path, monkeypatch)
+    selection = values['parked_selection']
+    if fault == 'borrowed_park_review':
+        monkeypatch.setattr(m, 'review', lambda *_: ({'source': m.sources().bound(paths['park']),
+            'selected_character': 'Harnesstwo', 'selected_level': 1}, values['park']))
+    elif fault == 'selection_code': selection['code_commit'] = 'c' * 40
+    elif fault == 'transition_code': selection['proof_code_transition']['code_commit'] = 'b' * 40
+    elif fault == 'source_bytes': selection['proof_code_transition']['source_changes'][0]['raw_hex'] += '00'
+    elif fault == 'wrong_precision': selection['precision_source'] = m.sources().bound(paths['park'])
+    elif fault == 'runtime_rewrite':
+        values['after_precision']['code_commit'] = t.receipt['code_commit']
+        paths['after_precision'].write_text(json.dumps(values['after_precision']))
+    elif fault == 'failed_stop':
+        values['failed_close']['stop_attempted'] = True
+        paths['failed_close'].write_text(json.dumps(values['failed_close']))
+    elif fault == 'missing_capture_png':
+        (paths['parked_selection'].parent / selection['frame']['file']).unlink()
+    elif fault == 'changed_capture_png':
+        (paths['parked_selection'].parent / selection['frame']['file']).write_bytes(b'changed captured screenshot')
+    elif fault == 'current_source_changed':
+        from tools.client_compatibility import interaction_item_actionbar_parked_selection_capture as cap
+        current = deepcopy(selection['proof_code_transition'])
+        current['source_changes'][0]['sha256'] = 'a' * 64
+        monkeypatch.setattr(cap, 'proof_transition', lambda *_: deepcopy(current))
+    if fault not in ('missing_selection', 'borrowed_park_review', 'runtime_rewrite', 'failed_stop', 'current_source_changed'):
+        paths['parked_selection'].write_text(json.dumps(selection))
+    m.execute_trial(t, lambda: close_with_selection(t, paths, tmp_path / 'review.json', fault != 'missing_selection'))
+    assert t.receipt['completed'] is False and t.receipt['failure']
+    assert not stopped and not t.clicks and t.receipt.get('stop_attempted', False) is False
+
+
+@pytest.mark.parametrize('selection', [False, True], ids=['ordinary_runtime_code', 'fresh_proof_code'])
+@pytest.mark.parametrize('when', ['current_focus', 'closing_frame', 'late_focus'])
+@pytest.mark.parametrize('field,replacement', [('game_pid', 22), ('display', ':3'), ('window_id', 37748738)])
+def test_closed_pause_refuses_replacement_game_child_display_or_window_before_stop(
+        tmp_path, monkeypatch, selection, when, field, replacement):
+    t, paths, values, stopped = parked_close_fixture(tmp_path, monkeypatch)
+    original = {name: path.read_bytes() for name, path in paths.items()}
+    if not selection:
+        t.receipt['code_commit'] = values['after_precision']['code_commit']
+        monkeypatch.setattr(m, 'review', lambda *_: ({'source': m.sources().bound(paths['park']),
+            'selected_character': 'Harnesstwo', 'selected_level': 1}, values['park']))
+    focus_calls = []
+    def focus():
+        monitor = deepcopy(values['park']['frame']['monitor'])
+        focus_calls.append(monitor)
+        if when == 'current_focus' or when == 'late_focus' and len(focus_calls) == 2:
+            monitor['input_isolation'][field] = replacement
+        return monitor
+    def shot(_):
+        frame = deepcopy(values['park']['frame'])
+        if when == 'closing_frame': frame['monitor']['input_isolation'][field] = replacement
+        return frame
+    monkeypatch.setattr(m, 'focus', focus)
+    monkeypatch.setattr(m, 'shot', shot)
+    # Record every stop invocation before any receipt assertion could mask it.
+    monkeypatch.setattr(m.lab, 'stop', lambda kind: stopped.append(kind))
+    m.execute_trial(t, lambda: close_with_selection(t, paths, tmp_path / 'review.json', selection))
+    assert t.receipt['completed'] is False and 'original game PID, private display and window' in t.receipt['failure']
+    assert not stopped and not t.clicks and t.receipt.get('stop_attempted', False) is False
+    assert len(focus_calls) == (2 if when == 'late_focus' else 1)
+    if when != 'current_focus': assert t.receipt['frame']
+    assert all(path.read_bytes() == original[name] for name, path in paths.items())
 
 
 @pytest.mark.parametrize('fault', [None, 'query_interrupt', 'after_read_drift'])
