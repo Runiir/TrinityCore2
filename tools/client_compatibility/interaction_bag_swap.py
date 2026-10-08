@@ -16,6 +16,7 @@ from .item_actionbar_contract import require, finite, strict_equal, public_assig
 from .bag_swap_sources import bound, closed, linked, reference
 from . import bag_swap_contract as contract
 from .bag_swap_projection import delivered_slots, source_identities
+from .bag_swap_renewal import PHASE as RENEWED_PHASE, login_interval
 
 AUTOSAVE_BOUND_SECONDS = 150
 AUTOSAVE_HEARTBEAT_SECONDS = 2
@@ -47,31 +48,61 @@ def packets(session, since, until):
     return runtime_helpers().packet_rows(session, since, until)
 
 
-def context(t, preparation):
+def context(t, preparation, entry_path=None):
     from .interaction_bag_swap_continuation import prepared, session
     ready = prepared(t, preparation, online=True)
     owner = session(t.fixture)
     require(owner == ready['native_session'], 'occupied swap must use its fresh prepared owner session')
-    require(ready.get('committed_sources') == source_identities(lab.REPO) == t.receipt.get('committed_sources'),
+    current_sources = source_identities(lab.REPO)
+    require(current_sources == t.receipt.get('committed_sources'),
         'occupied swap requires its exact frozen controller/source identities')
+    if ready.get('committed_sources') != current_sources or ready.get('code_commit') != t.receipt.get('code_commit'):
+        require(entry_path is not None, 'changed code requires its explicit source-bound renewed entry')
+        renewed = closed(entry_path)
+        require(renewed.get('phase') == RENEWED_PHASE and renewed.get('code_commit') == t.receipt.get('code_commit') and
+            renewed.get('committed_sources') == current_sources, 'current controller differs from the reviewed renewal epoch')
+        validate_renewal(ready, renewed, bound(preparation), bound(entry_path))
     t.receipt.update(preparation_source=bound(preparation), native_session=owner,
         authority_source=ready['authority_source'], predecessor=ready['predecessor'])
     t.persist()
     return ready, owner
 
 
+def validate_renewal(ready, entry, ready_ref, entry_ref):
+    from .bag_swap_evidence import local_store
+    from .bag_swap_renewal import validate_entry
+    precision_ref = entry['precision_source']
+    return validate_entry(local_store(), ready, entry, linked(precision_ref), ready_ref, entry_ref, precision_ref)
+
+
+def history(entry):
+    interval = login_interval(entry)
+    kwargs = {}
+    if entry.get('phase') == RENEWED_PHASE:
+        kwargs['login_sync'] = entry['login_sync']
+        if 'idle_housekeeping' in entry:
+            kwargs['idle_housekeeping'] = entry['idle_housekeeping']
+    return interval, kwargs
+
+
 def entry_authority(t, preparation, path, ready, owner):
     entry = closed(path)
-    require(entry.get('phase') == 'bags_swap_entered' and entry.get('actor') == t.fixture and
+    require(entry.get('phase') in ('bags_swap_entered', RENEWED_PHASE) and entry.get('actor') == t.fixture and
         entry.get('runtime') == t.receipt['runtime'] and entry.get('native_session') == owner and
         entry.get('preparation_source') == bound(preparation) and
         entry.get('all_offline_snapshot') == ready['all_offline_snapshot'] and
-        entry.get('committed_sources') == ready['committed_sources'] and
-        entry.get('code_commit') == ready.get('code_commit') == t.receipt.get('code_commit') and
+        entry.get('committed_sources') == t.receipt.get('committed_sources') and
+        entry.get('code_commit') == t.receipt.get('code_commit') and
         entry['finished_at'] <= t.receipt['started_at'], 'exact frozen ordinary swap entry differs')
-    raw = packets(owner, entry['started_at'], entry['finished_at'])
-    chain = contract.login_packets(raw, owner, entry['started_at'], entry['finished_at'])
-    replay = contract.native_replay(raw, owner, entry['started_at'], entry['finished_at'])
+    if entry.get('phase') == RENEWED_PHASE:
+        validate_renewal(ready, entry, bound(preparation), bound(path))
+    else:
+        require(entry.get('committed_sources') == ready['committed_sources'] and
+            entry.get('code_commit') == ready.get('code_commit'), 'original entry code epoch differs')
+    interval, kwargs = history(entry)
+    raw = packets(owner, interval['since'], entry['finished_at'])
+    chain = contract.login_packets(raw, owner, interval['since'], interval['until'])
+    replay = contract.native_replay(raw, owner, interval['since'], entry['finished_at'], **kwargs)
     require(entry.get('login_packets') == [chain[k] for k in ('modern', 'request', 'verify', 'delivered')] and
         entry.get('native_owner_proof') == replay, 'retained swap entry differs from actual raw journal')
     contract.item_resources(entry['resources'])
@@ -117,10 +148,11 @@ def current(t, base, owner, *, swapped, allow_cursor=False, closed_layout=False,
 
 def guard(base, owner, until, t=None):
     entry = linked(base['entry_source'])
-    raw = packets(owner, entry['started_at'], until)
-    safe = contract.forbidden_packets(raw, owner, entry['started_at'], until)
-    native = contract.native_replay(raw, owner, entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
+    interval, kwargs = history(entry)
+    raw = packets(owner, interval['since'], until)
+    safe = contract.forbidden_packets(raw, owner, interval['since'], until, **kwargs)
+    native = contract.native_replay(raw, owner, interval['since'], until,
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], **kwargs)
     if t is not None:
         t.receipt.update(forbidden_input_proof=safe, native_owner_proof=native, owner_packets=native['packets'])
         t.persist()
@@ -129,9 +161,10 @@ def guard(base, owner, until, t=None):
 
 def native_effect(base, owner, until, *, swapped):
     entry = linked(base['entry_source'])
-    raw = packets(owner, entry['started_at'], until)
-    replay = contract.native_replay(raw, owner, entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
+    interval, kwargs = history(entry)
+    raw = packets(owner, interval['since'], until)
+    replay = contract.native_replay(raw, owner, interval['since'], until,
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], **kwargs)
     transition = replay['native_inventory_transitions'][-1]
     expected = [contract.DESTINATION['guid'], contract.SOURCE['guid']] if swapped else [
         contract.SOURCE['guid'], contract.DESTINATION['guid']]
@@ -141,7 +174,7 @@ def native_effect(base, owner, until, *, swapped):
 
 
 def recon(t, preparation, entry_path, review_path):
-    ready, owner = context(t, preparation)
+    ready, owner = context(t, preparation, entry_path)
     entry = entry_authority(t, preparation, entry_path, ready, owner)
     state, frame = t.observe('swap_original')
     from .interaction_item_actionbar_parked_selection_capture import frame_identity
@@ -185,15 +218,15 @@ def valid_point(point):
 
 
 def prior(t, preparation, source, phases, *, failed=False):
-    ready, owner = context(t, preparation)
     value = linked(bound(source), not failed)
+    entry_ref = value.get('entry_source') or value.get('baseline', {}).get('entry_source')
+    reference(entry_ref)
+    ready, owner = context(t, preparation, Path(entry_ref['path']))
     require(value.get('phase') in phases and value.get('preparation_source') == bound(preparation) and
         value.get('actor') == t.fixture and value.get('runtime') == t.receipt['runtime'] and
         value.get('native_session') == owner and value.get('code_commit') == t.receipt.get('code_commit') and
         value.get('committed_sources') == t.receipt.get('committed_sources') and
         value['finished_at'] <= t.receipt['started_at'], 'exact source-bound occupied swap stage differs')
-    entry_ref = value.get('entry_source') or value.get('baseline', {}).get('entry_source')
-    reference(entry_ref)
     require(bound(entry_ref['path']) == entry_ref, 'occupied swap original entry bytes changed')
     entry = entry_authority(t, preparation, Path(entry_ref['path']), ready, owner)
     base = value['baseline']

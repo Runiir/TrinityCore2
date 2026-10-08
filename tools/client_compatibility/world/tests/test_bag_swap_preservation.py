@@ -89,3 +89,44 @@ def test_protected_actor_comparison_does_not_equate_boolean_to_numeric_zero():
     before['3']['saved']['skills'] = [[0, 1, 1]]
     after['3']['saved']['skills'] = [[False, 1, 1]]
     with pytest.raises(RuntimeError): p.preserve_six(before, after, entry, exact_before, exact_after)
+
+
+def renewed_fixture(tmp_path):
+    from tools.client_compatibility.world.tests.test_bag_swap_renewal import fixture as renewal_fixture
+    from tools.client_compatibility.world.tests.test_item_actionbar_preservation import precision
+    v = renewal_fixture(tmp_path)
+    entry = v['entry']
+    before = deepcopy(v['ready']['all_offline_snapshot'])
+    after = deepcopy(entry['current_snapshot'])
+    after['2']['native'].update(online=0, logout_time=int(entry['finished_at']) + 10)
+    exact = p.native_rest(v['precision']['row']['exact_rest_bonus'],
+        int(entry['login_packets'][1]['time']) - before['2']['native']['logout_time'])[0]
+    return before, after, entry, v['precision']['row'], precision(after['2']['native'], exact)
+
+
+def test_renewed_rest_uses_original_wire_time_and_actual_creation_without_inventing_old_sql(tmp_path):
+    values = renewed_fixture(tmp_path)
+    original = deepcopy(values[2])
+    result = p.preserve_six(*values)
+    match = result['native_rest']['matches'][0]
+    assert match['native_login_second'] == 1791421132
+    assert match['offline_seconds'] == 4151
+    assert match['exact_after'] == values[4]['exact_rest_bonus']
+    assert values[2] == original and 'entered_native' not in values[2]
+    assert values[2]['started_at'] > result['native_rest']['login']['delivered']['time']
+
+
+@pytest.mark.parametrize('fault', ['invented_old_sql', 'receipt_as_login', 'current_rest', 'current_health',
+    'current_pet', 'native_threshold', 'public_exhaustion', 'missing_original_events', 'changed_original_pose'])
+def test_renewed_rest_rejects_retiming_fabricated_old_sql_and_present_state_drift(tmp_path, fault):
+    before, after, entry, exact_before, exact_after = renewed_fixture(tmp_path)
+    if fault == 'invented_old_sql': entry['entered_native'] = {**before['2']['native'], 'online': 1}
+    elif fault == 'receipt_as_login': entry['original_login_interval'] = {'since': entry['started_at'], 'until': entry['finished_at']}
+    elif fault == 'current_rest': entry['current_snapshot']['2']['native']['rest_bonus'] += .01
+    elif fault == 'current_health': entry['current_snapshot']['2']['native']['health'] -= 1
+    elif fault == 'current_pet': entry['current_snapshot']['6']['pets'][0]['curhealth'] -= 1
+    elif fault == 'native_threshold': entry['native_owner_proof']['rest_threshold'] += 1
+    elif fault == 'public_exhaustion': entry['state']['xp_exhaustion'] += 2
+    elif fault == 'missing_original_events': entry.pop('raw_entry_events')
+    else: entry['native_before_entry']['orientation'] += .1
+    with pytest.raises(RuntimeError): p.preserve_six(before, after, entry, exact_before, exact_after)

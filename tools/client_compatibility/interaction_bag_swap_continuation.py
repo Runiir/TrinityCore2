@@ -485,10 +485,12 @@ def logout_packets(rows, owner_session, since, until):
 
 def whole_logout_history(rows, entry, owner, ordered, recovery=False):
     from .bag_swap_contract import packet_rows
+    from .interaction_bag_swap import history
+    interval, kwargs = history(entry)
     until = ordered[1]['time']
-    raw = packet_rows(rows, owner, entry['started_at'], until)
-    replay = native_replay(raw, owner, entry['started_at'], until,
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
+    raw = packet_rows(rows, owner, interval['since'], until)
+    replay = native_replay(raw, owner, interval['since'], until,
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], **kwargs)
     require(len(replay['native_inventory_transitions']) in ((1, 3) if recovery else (3,)),
         'ordinary logout requires the whole native occupied swap and exact inverse history')
     return raw, replay
@@ -507,6 +509,8 @@ def park(t, preparation, source, recovery=False):
     restored = sources().closed(source)
     require(restored.get('phase') == 'bags_swap_restored' and restored.get('runtime') == t.receipt['runtime'] and
         restored.get('actor') == t.fixture and restored.get('preparation_source') == sources().bound(preparation) and
+        restored.get('code_commit') == t.receipt.get('code_commit') and
+        restored.get('committed_sources') == t.receipt.get('committed_sources') and
         restored.get('native_session') == ready['native_session'] and type(recovery) is bool and
         (restored.get('recovery_only') is True if recovery else restored.get('recovery_only') is not True),
         'ordinary park requires the successful exact item roundtrip restoration')
@@ -538,10 +542,14 @@ def park(t, preparation, source, recovery=False):
     pre_logout_state = native_state(ready['native_session'])
     require(pre_logout_state == restored['baseline']['native_state'], 'ordinary logout native layout differs from original entry')
     entry = sources().linked(restored['entry_source'])
+    from .interaction_bag_swap import history, validate_renewal
+    if entry.get('phase') == 'bags_swap_entry_renewed':
+        validate_renewal(ready, entry, sources().bound(preparation), restored['entry_source'])
+    interval, kwargs = history(entry)
     raw = list(packets())
-    forbidden_packets(raw, ready['native_session'], entry['started_at'], time.time())
-    native_replay(raw, ready['native_session'], entry['started_at'], time.time(),
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
+    forbidden_packets(raw, ready['native_session'], interval['since'], time.time(), **kwargs)
+    native_replay(raw, ready['native_session'], interval['since'], time.time(),
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], **kwargs)
     t.receipt.update(source=sources().bound(source), entry_source=restored['entry_source'],
         before=before, logout_started_at=time.time(), input_sent=True, phase='bags_swap_parking_started')
     t.persist()
@@ -639,9 +647,11 @@ def close_pause(t, preparation, entry, operation, park_path, before_precision, a
         'after_precision': after_precision}.items()}
     result, after, current = evidence.local_lifecycle(refs)
     ready, parked = current[0], current[3]
+    active = [current[i] for i in (1, 2, 3, 5)] if current[1].get('phase') == 'bags_swap_entry_renewed' else current
     require(ready.get('runtime') == t.receipt['runtime'] == runtime() and
         ready.get('actor') == t.fixture == registration() and snapshot() == after and
-        all(v.get('code_commit') == t.receipt.get('code_commit') for v in current),
+        all(v.get('code_commit') == t.receipt.get('code_commit') and
+            v.get('committed_sources') == t.receipt.get('committed_sources') for v in active),
         'closed swap pause requires the exact frozen ordinary runtime and saved boundary')
     checked, _ = review(t, review_path, 'Harnesstwo')
     require(checked.get('source') == refs['park'] and

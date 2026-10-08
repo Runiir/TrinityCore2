@@ -262,8 +262,93 @@ class Block:
             'tools.client_compatibility.interaction_', 'tools.client_compatibility.lab_runtime')):
             raise AssertionError('live dependency imported: ' + fullname)
 sys.meta_path.insert(0, Block())
-for name in ('bag_swap_contract', 'bag_swap_preservation'):
+for name in ('bag_swap_contract', 'bag_swap_preservation', 'bag_swap_login_sync'):
     importlib.import_module('tools.client_compatibility.' + name)
 '''
     subprocess.run([sys.executable, '-B', '-c', script], cwd=Path(__file__).resolve().parents[4], check=True,
         capture_output=True, env={**__import__('os').environ, 'PYTHONDONTWRITEBYTECODE': '1'})
+
+
+def test_explicit_login_proof_allows_only_retained_boot_and_preserves_default_guard():
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import recorded, proof
+    value = recorded()
+    result = proof(value)
+    with pytest.raises(RuntimeError):
+        c.forbidden_packets(value['rows'], value['session'], value['since'], value['until'])
+    assert c.forbidden_packets(value['rows'], value['session'], value['since'], value['until'],
+        login_sync=result)['no_forbidden_input'] is True
+    legacy = {'session': 'scout', 'name': 'CMSG_MOVE_INIT_ACTIVE_MOVER_COMPLETE', 'time': 1,
+        'direction': 'from_client', 'body': ''}
+    assert c.forbidden_packets([legacy], 'scout', 0, 2)['no_forbidden_input'] is True
+
+
+@pytest.mark.parametrize('name', ['CMSG_MOVE_HEARTBEAT', 'CMSG_MOVE_FALL_LAND',
+    'CMSG_MOVE_INIT_ACTIVE_MOVER_COMPLETE', 'CMSG_SET_ACTIVE_MOVER', 'CMSG_MOVE_JUMP', 'CMSG_SET_SELECTION'])
+def test_valid_boot_receipt_never_allows_later_movement_or_initializer(name):
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import recorded, proof
+    value = recorded()
+    result = proof(value)
+    rows = value['rows'] + [{'session': value['session'], 'name': name, 'time': value['until'] + 1,
+        'direction': 'from_client', 'body': result['initialization']['modern']['body']}]
+    with pytest.raises(RuntimeError):
+        c.forbidden_packets(rows, value['session'], value['since'], value['until'] + 2, login_sync=result)
+
+
+def test_full_history_roundtrip_and_native_replay_share_the_exact_login_allowance():
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import recorded, proof
+    value = recorded()
+    result = proof(value)
+    start = value['until'] + 1
+    additions = packets(start=start) + [native_packet(slot_fields(True), creation=False, time=start + .2)]
+    additions += packets(True, start + 1) + [native_packet(slot_fields(), creation=False, time=start + 1.2)]
+    additions = [{**row, 'session': value['session']} for row in additions]
+    rows = value['rows'] + additions
+    interval = (value['session'], value['since'], start + 2)
+    assert c.roundtrip_packets(rows, *interval, login_sync=result)['exactly_two_unique_pairs'] is True
+    replay = c.native_replay(rows, *interval, login_sync=result)
+    assert replay['native_inventory_states'] == [[c.SOURCE['guid'], c.DESTINATION['guid']],
+        [c.DESTINATION['guid'], c.SOURCE['guid']], [c.SOURCE['guid'], c.DESTINATION['guid']]]
+
+
+@pytest.mark.parametrize('kind', ['drop', 'forwarded', 'confirmation'])
+def test_reconstructed_boot_proof_does_not_hide_extra_directionless_movement_metadata(kind):
+    from tools.client_compatibility.world.tests.test_bag_swap_login_sync import recorded, proof
+    value = recorded()
+    result = proof(value)
+    event = {'drop': 'unmapped_client_packet', 'forwarded': 'movement_forwarded',
+        'confirmation': 'native_active_mover_confirmed'}[kind]
+    extra = next(e for e in value['events'] if e.get('event') == event)
+    events = value['events'] + [{**extra, 'time': value['until'] - .01}]
+    with pytest.raises(RuntimeError):
+        c.forbidden_packets(events, result['instance_session'], value['since'], value['until'], login_sync=result)
+
+
+@pytest.mark.parametrize('name', ['CMSG_CHAT_MESSAGE_AFK', 'CMSG_MESSAGECHAT_AFK'])
+@pytest.mark.parametrize('direction', ['from_client', 'to_native'])
+def test_afk_input_requires_exact_idle_housekeeping_authority(name, direction):
+    row = {'session': 'scout', 'name': name, 'time': 10, 'direction': direction, 'body': '0000'}
+    with pytest.raises(RuntimeError):
+        c.forbidden_packets([row], 'scout', 9, 11)
+    with pytest.raises(RuntimeError):
+        c.native_replay(native_rows(True) + [row], 'scout', 9, 12)
+
+
+@pytest.mark.parametrize('field,value', [('UNIT_FIELD_BYTES_1', 1), ('PLAYER_FLAGS', 2),
+    ('UNIT_FIELD_BYTES_2', 1)])
+@pytest.mark.parametrize('transient', [False, True])
+def test_native_stand_afk_and_sheath_changes_cannot_hide_in_owner_replay(field, value, transient):
+    rows = native_rows(True)
+    rows.insert(3, native_packet({c.INDEX[field]: value}, creation=False, time=9.3))
+    if transient:
+        rows.insert(4, native_packet({c.INDEX[field]: 0}, creation=False, time=9.4))
+    with pytest.raises(RuntimeError):
+        c.native_replay(rows, 'scout', 9, 12)
+
+
+@pytest.mark.parametrize('field,value', [('UNIT_FIELD_BYTES_1', 1), ('PLAYER_FLAGS', 2),
+    ('UNIT_FIELD_BYTES_2', 1)])
+def test_original_native_owner_creation_requires_standing_non_afk_baseline(field, value):
+    rows = native_rows(True)
+    rows[0] = native_packet({**owner_fields(), **slot_fields(), c.INDEX[field]: value}, time=9)
+    with pytest.raises(RuntimeError):
+        c.native_replay(rows, 'scout', 9, 12)

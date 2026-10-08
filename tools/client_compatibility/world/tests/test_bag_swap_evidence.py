@@ -61,7 +61,7 @@ def fixture(tmp_path, monkeypatch):
             'sha256': digests[closure_member]}, 'journal_sources': refs}}
     store = SimpleNamespace(data=data, digests=digests, local=False)
     tracking = {'members': set(e.TRACKING_MEMBERS), 'raw_journals': raw_members, 'events': events}
-    entry = {'started_at': 1099, 'finished_at': 1101, 'native_owner_proof': {'rest_threshold': 24},
+    entry = {'phase': 'bags_swap_entered', 'started_at': 1099, 'finished_at': 1101, 'native_owner_proof': {'rest_threshold': 24},
         'login_packets': login_packets()}
     park = {'logout_started_at': 1103, 'logout_finished_at': 1103.3,
         'logout_packets': [value for value in wire if value['name'] in ('CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE') and

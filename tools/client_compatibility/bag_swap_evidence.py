@@ -11,6 +11,7 @@ from . import bag_swap_contract as contract
 from .bag_swap_sources import bound, reference, validate_bundle, compact_authority
 from .bag_swap_preservation import preserve_six, online_preservation, exact_precision, PRECISION_QUERY
 from .bag_swap_projection import delivered_slots
+from .bag_swap_renewal import PHASE as RENEWED_PHASE, login_interval, validate_entry
 from .item_actionbar_contract import require, finite, strict_equal, public_assignments
 from . import item_actionbar_evidence as shared
 
@@ -197,23 +198,44 @@ def stage_snapshots(baseline, chain):
                 online_preservation(baseline, saved, swapped=swapped)
 
 
+def wire_history(entry):
+    interval = login_interval(entry)
+    kwargs = {}
+    if entry.get('phase') == RENEWED_PHASE:
+        kwargs['login_sync'] = entry['login_sync']
+        if 'idle_housekeeping' in entry:
+            kwargs['idle_housekeeping'] = entry['idle_housekeeping']
+    return interval, kwargs
+
+
+def current_epoch(ready, entry):
+    return entry if entry.get('phase') == RENEWED_PHASE else ready
+
+
 def lifecycle(store, refs, *, live=False):
     require(type(refs) is dict and set(refs) == set(ROLES), 'all six occupied swap lifecycle roles required')
     current = [store.get(refs[k]) for k in ROLES]
     ready, entry, operation, park, before, after = current
-    for value, phase in zip(current, ('bags_swap_scout_ready', 'bags_swap_entered', 'bags_swap_restored',
+    entry_phase = RENEWED_PHASE if entry.get('phase') == RENEWED_PHASE else 'bags_swap_entered'
+    for value, phase in zip(current, ('bags_swap_scout_ready', entry_phase, 'bags_swap_restored',
             'bags_swap_parked', 'bags_swap_rest_precision_complete', 'bags_swap_rest_precision_complete')):
         shared.accepted(value, phase)
     require(type(live) is bool, 'local lifecycle mode must be an actual boolean')
     predecessor(store, ready, live=live)
     baseline = ready['all_offline_snapshot']
     contract.owned_snapshot(baseline)
+    epoch = current_epoch(ready, entry)
+    if entry_phase == RENEWED_PHASE:
+        validate_entry(store, ready, entry, before, refs['preparation'], refs['entry'], refs['before_precision'])
+    active = [current[i] for i in (1, 2, 3, 5)] if entry_phase == RENEWED_PHASE else current
     require(all(value.get('actor') == ready['actor'] and value.get('runtime') == ready['runtime'] and
-        value.get('code_commit') == ready['code_commit'] and value.get('committed_sources') == ready['committed_sources'] and
         value.get('controller') == 'code' and value.get('model') is None and value.get('revision') is None and
         value.get('qualification_added') is False and value.get('custom_script_permission') == 'blocked_by_user' and
         value.get('softTargetInteract') == shared.SCRIPT_BOUNDARY for value in current),
         'frozen ordinary controller/source/script identities differ')
+    require(all(value.get('code_commit') == epoch['code_commit'] and
+        value.get('committed_sources') == epoch['committed_sources'] for value in active),
+        'all current ordinary stages must use the exact renewed controller epoch')
     require(type(ready.get('committed_sources')) is list and len(ready['committed_sources']) >= 16 and
         len({v.get('path') for v in ready['committed_sources']}) == len(ready['committed_sources']),
         'complete distinct frozen swap source hashes required')
@@ -229,7 +251,7 @@ def lifecycle(store, refs, *, live=False):
     chain = stage_chain(store, operation)
     require(all(s.get('entry_source') == refs['entry'] and s.get('preparation_source') == refs['preparation'] and
         s.get('actor') == ready['actor'] and s.get('runtime') == ready['runtime'] and
-        s.get('code_commit') == ready['code_commit'] and s.get('committed_sources') == ready['committed_sources'] and
+        s.get('code_commit') == epoch['code_commit'] and s.get('committed_sources') == epoch['committed_sources'] and
         s.get('native_session') == ready['native_session'] and s.get('controller') == 'code' and
         s.get('model') is None and s.get('revision') is None and s.get('qualification_added') is False and
         s.get('custom_script_permission') == 'blocked_by_user' and s.get('softTargetInteract') == shared.SCRIPT_BOUNDARY and
@@ -295,8 +317,9 @@ def lifecycle(store, refs, *, live=False):
         'ordinary logout must follow full occupied-swap restoration')
     require(strict_equal(park.get('pre_logout_native_state'), base['native_state']),
         'ordinary logout must retain the actual original native pose, target and AFK')
+    interval, kwargs = wire_history(entry)
     closed = contract.native_replay(park['raw_native_logout_history'], ready['native_session'],
-        entry['started_at'], park['logout_packets'][1]['time'], rest_threshold=entry['native_owner_proof']['rest_threshold'])
+        interval['since'], park['logout_packets'][1]['time'], rest_threshold=entry['native_owner_proof']['rest_threshold'], **kwargs)
     require(park.get('native_logout_proof') == closed and len(closed['native_inventory_transitions']) == 3,
         'whole owner/item history through actual native logout completion differs')
     frame(store, entry, entry['frame'], refs['entry'])
@@ -371,9 +394,11 @@ def actual_journals(store, closure, tracking, current):
         raw[kind] = rows
     require(strict_equal(raw['events'], tracking['events']), 'current raw event journal differs from actual generic archived events')
     wire = [r for r in raw['packets'] if r.get('session') == owner]
-    contract.forbidden_packets(wire, owner, entry['started_at'], closure['finished_at'])
-    contract.roundtrip_packets(wire, owner, entry['started_at'], closure['finished_at'])
-    login = contract.login_packets(wire, owner, entry['started_at'], entry['finished_at'])
+    interval, kwargs = wire_history(entry)
+    since = interval['since']
+    contract.forbidden_packets(wire, owner, since, closure['finished_at'], **kwargs)
+    contract.roundtrip_packets(wire, owner, since, closure['finished_at'], **kwargs)
+    login = contract.login_packets(wire, owner, since, interval['until'])
     require(entry['login_packets'] == [login[k] for k in ('modern', 'request', 'verify', 'delivered')] and
         len([r for r in wire if r.get('name') in ('CMSG_PLAYER_LOGIN', 'SMSG_LOGIN_VERIFY_WORLD')]) == 4,
         'actual current journal requires exactly one retained ordinary login')
@@ -381,18 +406,35 @@ def actual_journals(store, closure, tracking, current):
     logout = logout_packets(wire, owner, park['logout_started_at'], park['logout_finished_at'])
     require(logout == park['logout_packets'] and len([r for r in wire if r.get('name') in
         ('CMSG_LOGOUT_REQUEST', 'SMSG_LOGOUT_COMPLETE')]) == 4, 'actual current journal requires one ordinary logout')
-    replay = contract.native_replay(wire, owner, entry['started_at'], logout[1]['time'],
-        rest_threshold=entry['native_owner_proof']['rest_threshold'])
-    require(park.get('raw_native_logout_history') == contract.packet_rows(wire, owner, entry['started_at'], logout[1]['time']) and
+    replay = contract.native_replay(wire, owner, since, logout[1]['time'],
+        rest_threshold=entry['native_owner_proof']['rest_threshold'], **kwargs)
+    require(park.get('raw_native_logout_history') == contract.packet_rows(wire, owner, since, logout[1]['time']) and
         park.get('native_logout_proof') == replay, 'retained pre-stop history differs from actual complete native logout journal')
     require(replay['native_inventory_states'] == [[contract.SOURCE['guid'], contract.DESTINATION['guid']],
         [contract.DESTINATION['guid'], contract.SOURCE['guid']], [contract.SOURCE['guid'], contract.DESTINATION['guid']]],
         'actual native inventory must exchange and exactly restore both GUIDs')
     instances = [r for r in raw['events'] if r.get('event') == 'instance_authenticated' and r.get('account_id') == 2]
-    require(len(instances) == 1 and entry['started_at'] <= instances[0]['time'] <= entry['finished_at'],
+    require(len(instances) == 1 and since <= instances[0]['time'] <= interval['until'],
         'one fresh actor2 physical instance required')
     sessions = {owner, instances[0]['session']}
     events = [r for r in raw['events'] if r.get('session') in sessions]
+    if entry.get('phase') == RENEWED_PHASE:
+        from .bag_swap_login_sync import login_sync
+        pose = [ready['all_offline_snapshot']['2']['native'][k] for k in
+            ('position_x', 'position_y', 'position_z', 'orientation')]
+        require(strict_equal(entry.get('raw_entry_packets'), contract.packet_rows(wire, owner, since, entry['finished_at'])) and
+            strict_equal(entry.get('raw_entry_events'), [r for r in events if since <= r['time'] <= entry['finished_at']]) and
+            strict_equal(entry.get('login_sync'), login_sync(wire, events, owner, since, interval['until'], pose)),
+            'renewed entry must rebind its complete actual original/current wire and metadata history')
+        if 'idle_housekeeping_source' in entry:
+            from .bag_swap_idle import receipt_chain
+            for _, house in receipt_chain(store, entry['idle_housekeeping_source']):
+                automatic = house['automatic_idle']
+                end = house['after']['observed_at']
+                failed = store.get(entry['original_entry_source'], False)
+                require(strict_equal(house['source_packets'], contract.packet_rows(wire, owner, failed['finished_at'], end)) and
+                    strict_equal(house['source_events'], [r for r in events if failed['finished_at'] < r['time'] <= end]),
+                    'excluded housekeeping must bind every exact actual raw gap packet and metadata row')
     chain = stage_chain(store, operation)
     forward = next(stage for stage in chain if stage.get('phase') == 'bags_swap_forward')
     reverse = next(stage for stage in chain if stage.get('phase') == 'bags_swap_reverse')
@@ -422,9 +464,9 @@ def actual_journals(store, closure, tracking, current):
             ('to_native', 'from_native') else 'modern_packet'), 'unique actual physical/native packet metadata attribution differs')
     require(len([row for row in events if row.get('name') == contract.ACTION and row.get('direction') in
         ('from_client', 'to_native')]) == 4, 'actual packet metadata contains another occupied inventory request')
-    contract.forbidden_packets(events, owner, entry['started_at'], closure['finished_at'])
+    contract.forbidden_packets(events, owner, since, closure['finished_at'], **kwargs)
     for physical in sessions:
-        contract.forbidden_packets(events, physical, entry['started_at'], closure['finished_at'])
+        contract.forbidden_packets(events, physical, since, closure['finished_at'], **kwargs)
     return {'actual_packet_journals_verified': True, 'native_item_fields_unchanged': replay['native_item_fields_preserved']}
 
 
@@ -437,7 +479,8 @@ def proof(data, digests, tracking):
     closure_ref = {'path': str(lab.ROOT / member), 'sha256': digests.get(member)}
     shared.accepted(closure, PHASE)
     result, final, current = lifecycle(store, closure['sources'])
-    ready, _, _, park, _, _ = current
+    ready, entry, _, park, _, _ = current
+    epoch = current_epoch(ready, entry)
     exact_checks(closure, 'shutdown_checks', shared.SHUTDOWN_CHECKS)
     require(closure.get('proof') == result and closure.get('before') == closure.get('after') ==
         closure.get('all_offline_snapshot') == final and closure.get('actor') == ready['actor'] and
@@ -446,8 +489,8 @@ def proof(data, digests, tracking):
         closure.get('mutation_sent') is False and closure.get('qualification_added') is False and
         closure.get('action') == 'stop_parked_scout_after_bag_swap_roundtrip' and closure.get('stop_attempted') is True and
         closure.get('controller') == 'code' and closure.get('model') is None and closure.get('revision') is None and
-        closure.get('code_commit') == ready['code_commit'] and closure.get('custom_script_permission') == 'blocked_by_user' and
-        closure.get('softTargetInteract') == shared.SCRIPT_BOUNDARY and closure.get('committed_sources') == ready['committed_sources'] and
+        closure.get('code_commit') == epoch['code_commit'] and closure.get('custom_script_permission') == 'blocked_by_user' and
+        closure.get('softTargetInteract') == shared.SCRIPT_BOUNDARY and closure.get('committed_sources') == epoch['committed_sources'] and
         current[-1]['finished_at'] <= closure['started_at'], 'whole closed occupied-swap resource pause differs')
     selected = shared.screen_review(store, closure, closure['sources']['park'], 'Harnesstwo')
     require((selected.get('selected_character'), selected.get('selected_level')) == ('Harnesstwo', 1), 'original final selection differs')
@@ -465,7 +508,7 @@ def proof(data, digests, tracking):
     validate_carry(store, ready)
     actual = actual_journals(store, closure, tracking, current)
     return {**result, **actual, 'shutdown_checks': 8, 'both_owned_clients_stopped': True,
-        'actual_journal_counts': tracking['journal_counts'], 'runtime_code_commit': ready['code_commit']}
+        'actual_journal_counts': tracking['journal_counts'], 'runtime_code_commit': epoch['code_commit']}
 
 
 def local(directory):
