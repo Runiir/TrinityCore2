@@ -3,9 +3,9 @@
   "inventory": "experiments/configs/client_harness/442_interactions_v1.json",
   "objective": "Qualify all available player interactions through ordinary inputs and attributable outcomes; repair compatibility failures and classify unavailable services. Opening a panel does not close its family.",
   "branch": "feature/442-compat",
-  "current": "453/916 qualified, 463 open. UI171 actionbars.drag_item remains the latest admitted operation; bags.swap_item is open. UI174 native startup preserved the saved state and reset only the stale actor2 online flag. UI175 failed before client launch on retained-role classification; reviewed repair6acbfb fixes it. UI176 launched one scout on HDMI-1 and reached the world, then failed the login timing guard before any bag input. Normal stock logout and eight shutdown checks passed, with all six saved snapshots and exact rest FLOAT preserved across client stop. The complete excluded batch is independently verified on DVC. The initializer-anchored timing repair75c80ee passes193 root checks. Next: commit the reviewed continuation from the latest normal logout state, then retry occupied GUID41/33 swap/reverse, autosave, restoration and ordinary logout with one client. Scripts remain blocked; original CVar0 is unrestored at stock1.",
+  "current": "453/916 qualified, 463 open. UI171 actionbars.drag_item remains the latest admitted operation; bags.swap_item is open. UI176 normal logout and eight shutdown checks retain all six offline snapshots and exact FLOAT bits77907242. UI177 failed before client launch or input because a diagnostic JSON map was promoted into current source lookup; all state stayed unchanged. Its complete excluded archive is independently verified on DVC. Reviewed continuation b0b653 and current-map repair c509a478 are committed; the root focused repair passes78 checks. Next: fresh UI178 from the actual UI176 normal logout boundary, occupied GUID41/33 swap/reverse, autosave, restoration and ordinary logout with one client on HDMI-1. Scripts remain blocked; original CVar0 is unrestored at stock1.",
   "queued": [
-    "Bind the fresh continuation to the actual UI176 normal logout AFTER snapshot and exact FLOAT, stop/checkpoint/remote refs, retaining complete UI173/UI174/UI175 ancestry and every failed receipt. Commit the reviewed successor before launching one scout on HDMI-1 for occupied GUID41/33 swap/reverse, autosave, full restoration and normal logout. Keep2 GiB task caps,4 GiB single-client cap, no swap, scoped DVC status/push and save_dvc_exp=False. bags.swap_item remains open; passing replay adds no qualification.",
+    "Run fresh UI178 from actual UI176 normal logout AFTER state/FLOAT and exact stop/checkpoint/remote refs. Retain all failed UI177 setup/publication/review receipts as diagnostics; never reuse its partial launch paths. Verify129 committed current sources, then launch one scout on HDMI-1 for occupied GUID41/33 swap/reverse, autosave, full restoration and normal logout. Keep2GiB task caps,4GiB single-client cap, no swap, scoped DVC status/push and save_dvc_exp=False. bags.swap_item remains open; replay adds no qualification.",
     "guild classic UI and offline account service boundary",
     "profession recipe selection search craft cancel and fishing/archaeology panels",
     "macro action-bar drag cast edit and character-specific persistence",
@@ -263,7 +263,8 @@
     "UI174 memory recovery: actual login-clock repair ab34187 passes full recorded startup context; original entry failure excluded and no bag input sent. OOM ended the desktop session without a kernel reboot. Safety c1f7c8d is independently reviewed, 30 root targeted plus7 independent checks pass and live cgroup proves2GiB/no swap/group OOM kill. Interrupted DVCLive residue restored from exact hash-checked backups. Incident archive published separately; no operation added.",
     "UI174 actual startup recovery: native existing-binary startup changes only actor2 online1->0; exact rest FLOAT, all6saved/protected5 and complete26181RAW/31683metadata retained. Independent actual recovery review approved; no normalLogout or bag admission.",
     "UI175 prelaunch failure: retained historical ready/resume roles were classified as current; no client launched or input sent. Two-file loader repair6acbfb is independently approved after the current-reference bypass finding was fixed. Initial163focused and final52+22checks retained. Original prelaunch failure remains excluded.",
-    "UI176 excluded ordinary entry: one scout on HDMI-1,1276RAW/1607metadata; pre-initializer delay2.383176565seconds triggers the old delivery-anchored2second guard before any bag request. Stock /logout completes exact native logout trio;8stop checks pass, all6offline/savedstate and exact60.64107894897461FLOAT bits77907242 preserved. Full17358RAW/21393event closed journals and unchanged source123/6acbfb ancestry published as442_interactions_20261008_176,257052081B. Independent remote review verifies all2,275 manifest files plus16 tracking files, source123 from6acbfb, old opaque pins and30 lifecycle checks. Qualification stays453/916."
+    "UI176 excluded ordinary entry: one scout on HDMI-1,1276RAW/1607metadata; pre-initializer delay2.383176565seconds triggers the old delivery-anchored2second guard before any bag request. Stock /logout completes exact native logout trio;8stop checks pass, all6offline/savedstate and exact60.64107894897461FLOAT bits77907242 preserved. Full17358RAW/21393event closed journals and unchanged source123/6acbfb ancestry published as442_interactions_20261008_176,257052081B. Independent remote review verifies all2,275 manifest files plus16 tracking files, source123 from6acbfb, old opaque pins and30 lifecycle checks. Qualification stays453/916.",
+    "UI177 excluded prelaunch setup: no client launch, input, operation or fresh source epoch. Current physical carry completed1660 copies/2293 logical bindings, then diagnostic alias ambiguity refused current lookup. All six saved snapshots and FLOAT bits77907242 match UI176 stop.after. Corrected only the existing controller label after first publication refused it; exact original receipts, setup failure and first publisher failure remain retained. Actual DVC177 archive253827573B/SHA4539c23c93d7773a275b5087b29bd1ae69f2887a28260b8eb0890288be1aa2e1 and all2447 files independently verified; remote review SHAf3265722aade58d894921ad31a8770f6618547410ffe302f5f2ba3d9a661cf61. Qualification stays453/916."
   ],
   "unqualified": "Everything without an evidence-linked case and oracle remains pending. UI104 accepts only one owned-name Who search/result. Positive race filters, cross-realm/enemy/arena/addon queries, non-ASCII exact-name folding, sorting/selection, invitations/whisper and missing-name/long-list Who results remain unqualified. The transient Who read cache is not cleared during cleanup. UI105 accepts only the original owned offline friend short ASCII note across normal character logout/reentry. Full-client restart, account-service persistence and online-note variants remain pending.",
   "open_failures": [
@@ -381,7 +382,8 @@
     "UI172 initial publisher fixtures: journal output-key fixture1fail/32pass and predecessor canonical-byte fixture1fail/16pass retained; final147root/124native/50portable pass. Expected precommit Git-membership refusal was read-only and required committing new source first. Root extra read-only publication preflight first used default pixi without google.protobuf and then the wrong checks key; both retained, corrected auth manifest/shutdown_checks preflight passes. No gameplay request or qualification accompanies those recorder errors. Original entry/H06/H07 failures remain immutable and excluded; future fresh UI173 must wire the exact first-two-seconds unchanged-pose login classifier throughout full-history proofs.",
     "UI173 closure review01 found missing final exact FLOAT and oversized index ingress; repaired and independently approved ROUND02,181focused+22original+15independent pass. Earlier fixture/import/test failures remain in immutable retention. Actual checkpoint01 lacked native_server_before.json and refused before archive; fresh post-closure baseline explicitly records missing original sidecar and matches original/completed native lifetime. Metadata attempt01 aggregate17MiB exceeded initial16MiB prewrite budget; retained, fits bounded32MiB package. Root queue update first used nonexistent next key and refused before writing; actual queued key inspected and corrected. Physical successor review01/02 findings remain prospective, separate from excluded historical closure.",
     "UI175 retained-role loader prelaunch refusal and reviewerROUND01 current-reference bypass finding remain recorded; ROUND02 rejects current references inside retained historical roles. Corrected full actual16physical/17logical crash roles pass. No oldopaque object is decoded and no failed receipt is relabeled.",
-    "UI176 original entry fails ordered-two-second-initial-prefix guard before bag input. Actual packets prove a2.383second delivery-to-initializer delay; its cause is not identified. Reviewed75c80ee anchors the same2second stationary deadline at initializer;193root and20independent tests pass, oldUI172/UI173 proof bytes unchanged. Original failed UI176 remains excluded. Auth-Pixi checkpoint invocation lacked dvclive and failed before archive/DVC writes; default repository Pixi succeeded. Post-stop Xlib destructor ConnectionClosedError is nonfatal, commandexit0/all8shutdown checks passed. Root read-only snapshot preflight first used nonexistent characters key; corrected GUID-keyed snapshot exactly matches stop.after and all six offline."
+    "UI176 original entry fails ordered-two-second-initial-prefix guard before bag input. Actual packets prove a2.383second delivery-to-initializer delay; its cause is not identified. Reviewed75c80ee anchors the same2second stationary deadline at initializer;193root and20independent tests pass, oldUI172/UI173 proof bytes unchanged. Original failed UI176 remains excluded. Auth-Pixi checkpoint invocation lacked dvclive and failed before archive/DVC writes; default repository Pixi succeeded. Post-stop Xlib destructor ConnectionClosedError is nonfatal, commandexit0/all8shutdown checks passed. Root read-only snapshot preflight first used nonexistent characters key; corrected GUID-keyed snapshot exactly matches stop.after and all six offline.",
+    "UI177 physical current lookup initially promoted retained diagnostic maps and refused before launch. Candidate01 review reproduced int/float equality bypass in physical manifest binding; candidate02 uses strict typed JSON equality. Both original failures retained. Separate reviewer78 tests plus original bypass probe and actual physical reader replay pass; root78 pass. Initial author import and freeze-hash transcription setup failures remain diagnostic. Failed4GiB scope exited on RuntimeError; final counters unavailable after scope disappearance. No OOM outcome or fresh epoch is inferred. Retry only fresh UI178 after committed c509a478 repair."
   ],
   "client_policy": {
     "default": "One owned scout client when a live test needs it; zero during resource-limited builds. Primary only for an actual two-client test.",
@@ -396,7 +398,7 @@
       "system_stop_only": false,
       "normal_logout_before_stop": true
     },
-    "scout": "stopped after excluded UI176 entry, ordinary logout and eight verified shutdown checks; retry one client on HDMI-1 after reviewed successor commit",
+    "scout": "stopped; UI177 never launched. Retry one client on HDMI-1 from the unchanged UI176 normal logout boundary with committed source-map repair.",
     "scout_closed_boundary": {
       "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui176/failed_entry_stop01/episode.json",
       "sha256": "e9c27efb463cf3726b38e3044c44c89410d9aedd9ae81fdeb04310c548f4c03f",
@@ -444,6 +446,25 @@
       "full_item_actionbar_restored": true,
       "qualification_added": false,
       "ledger_qualification_admitted": true
+    },
+    "excluded_prelaunch_boundary": {
+      "episode": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui177/failed_setup01/episode.json",
+      "sha256": "1cbde6b283d39ff044ea74de39ad579c8169eb51703e0c828010a8afb7dc3531",
+      "input_sent": false,
+      "client_launch_sent": false,
+      "all_six_saved_snapshots_preserved": true,
+      "exact_rest_bonus_bits": "77907242",
+      "checkpoint_source": {
+        "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/client_interactions_20261008_ui177/checkpoint_receipt.json",
+        "sha256": "d6d0342f6144f2eb0b902b26ee9cdfce42eff968805c3494b30281af93e3ec61"
+      },
+      "remote_review": {
+        "path": "/home/runiir/.local/share/trinity-client442-lab/evidence/ui177_excluded_prelaunch_remote_review01.json",
+        "sha256": "f3265722aade58d894921ad31a8770f6618547410ffe302f5f2ba3d9a661cf61"
+      },
+      "dvc_pointer": "artifacts/client_harness/442_interactions_20261008_177.tar.gz.dvc",
+      "qualification_added": false,
+      "operations_admitted": 0
     }
   }
 }
