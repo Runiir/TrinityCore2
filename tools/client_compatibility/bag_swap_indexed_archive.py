@@ -30,6 +30,8 @@ FIELDS = frozenset(('schema', 'predecessor', 'source_index_source', 'archive', '
 ROW_FIELDS = frozenset(('original_path', 'original_member', 'sha256', 'bytes', 'copy_member', 'kind'))
 KINDS = frozenset(('json', 'png', 'journal', 'binary', *index._OPAQUE_SOURCES))
 ROLE_FIELDS = {'descriptor': 'authority_source', 'runtime': 'runtime_authority_source'}
+CRASH_DESCRIPTOR_SCHEMA = 'client442_bag_swap_offline_predecessor_authority_v1'
+CRASH_RUNTIME_SCHEMA = 'client442_bag_swap_offline_runtime_authority_v1'
 _JSON_TOKEN = re.compile(rb'"[^"\\]*(?:\\.[^"\\]*)*"|[{}\[\],:]|[^{}\[\],:\s"]+')
 _JSON_TEXT_TOKEN = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"|[{}\[\],:]|[^{}\[\],:\s"]+')
 
@@ -63,7 +65,8 @@ def _role_fields(raw):
             except (UnicodeDecodeError, json.JSONDecodeError): return
             if type(value) is str:
                 if key == 'schema' and value in (SCHEMA, provider.CACHE_SCHEMA,
-                        provider.RUNTIME_SCHEMA, 'client442_bag_swap_scout_resume_v1',
+                        provider.RUNTIME_SCHEMA, CRASH_DESCRIPTOR_SCHEMA, CRASH_RUNTIME_SCHEMA,
+                        'client442_bag_swap_scout_resume_v1',
                         'client442_laya_interactions_v1'):
                     recognized.add(value)
                 if key == 'phase' and value == 'bags_swap_scout_ready': ready = True
@@ -119,7 +122,19 @@ def _fragment(raw, fields, name, limit, occurrence=-1):
         return None  # The unchanged complete JSON decoder rejects bad syntax.
 
 
-def _role_limits(paths, digests, copies, root, role_refs, sizes=None):
+def _receipt_roles(fields, lexical, maximum):
+    require(all(len(spans) == 1 for spans in fields.values()),
+        'source-owned indexed receipt must have unambiguous role declarations')
+    refs = {}
+    for role, field in ROLE_FIELDS.items():
+        ref = _fragment(lexical, fields, field, maximum[role])
+        require(ref is not None, 'source-owned indexed receipt must bind both descriptor/runtime roles')
+        provider.reference(ref)
+        refs[role] = ref
+    return refs
+
+
+def _role_limits(paths, digests, copies, root, role_refs, sizes=None, crash_copies=None):
     """Bind all current roles and schema caps before any document is decoded."""
     limits, refs = {}, {}
     maximum = {'descriptor': provider.MAX_DESCRIPTOR_BYTES, 'runtime': provider.MAX_RUNTIME_BYTES}
@@ -141,7 +156,8 @@ def _role_limits(paths, digests, copies, root, role_refs, sizes=None):
         'indexed role refs require only descriptor/runtime identities')
     for role, ref in (role_refs or {}).items(): bind(role, ref)
     schemas = {SCHEMA: provider.MAX_CARRY_BYTES, provider.CACHE_SCHEMA: provider.MAX_DESCRIPTOR_BYTES,
-        provider.RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES}
+        provider.RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
+        CRASH_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CRASH_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES}
     for member, path in paths.items():
         size = sizes[member] if sizes is not None else Path(path).stat().st_size
         kinds = copies[member][2] if member in copies else (
@@ -159,15 +175,18 @@ def _role_limits(paths, digests, copies, root, role_refs, sizes=None):
         require(limit is None or len(fields.get('schema', [])) == 1,
             'indexed schema declaration must be unambiguous before decode')
         if limit is not None: limits[member] = min(limits.get(member, limit), limit)
-        if member in copies: continue  # Parent roles keep their original keyspace.
-        if 'client442_bag_swap_scout_resume_v1' in recognized or (
-                'client442_laya_interactions_v1' in recognized and ready):
-            require(all(len(spans) == 1 for spans in fields.values()),
-                'source-owned indexed receipt must have unambiguous role declarations')
-            for role, field in ROLE_FIELDS.items():
-                ref = _fragment(lexical, fields, field, maximum[role])
-                require(ref is not None, 'source-owned indexed receipt must bind both descriptor/runtime roles')
-                bind(role, ref)
+        owner = 'client442_bag_swap_scout_resume_v1' in recognized or (
+            'client442_laya_interactions_v1' in recognized and ready)
+        if member in copies:
+            if member in (crash_copies or {}) and owner:
+                batch = root / Path(member).parent.parent
+                for ref in _receipt_roles(fields, lexical, maximum).values():
+                    provider._member(ref, root)
+                    require(not Path(ref['path']).is_relative_to(batch),
+                        'historical crash receipt cannot bind current-batch descriptor/runtime roles')
+            continue  # Parent roles keep their original keyspace.
+        if owner:
+            for role, ref in _receipt_roles(fields, lexical, maximum).items(): bind(role, ref)
     return limits
 
 
@@ -175,7 +194,8 @@ def _json(raw):
     require(len(raw) <= MAX_JSON, 'ordinary JSON retains its unchanged raw byte bound')
     fields, _, recognized, _ = _role_fields(raw)
     limits = {SCHEMA: provider.MAX_CARRY_BYTES, provider.CACHE_SCHEMA: provider.MAX_DESCRIPTOR_BYTES,
-        provider.RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES}
+        provider.RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES,
+        CRASH_DESCRIPTOR_SCHEMA: provider.MAX_DESCRIPTOR_BYTES, CRASH_RUNTIME_SCHEMA: provider.MAX_RUNTIME_BYTES}
     applicable = [limits[s] for s in recognized if s in limits]
     require(not applicable or 0 < len(raw) <= min(applicable),
         'retained indexed JSON exceeds its exact raw byte bound before decode')
@@ -551,13 +571,49 @@ class Sources:
         return rows
 
 
+def _crash_copies(paths, digests, copies, root, sizes):
+    """Classify only byte-bound historical copies in the separate crash map."""
+    from . import bag_swap_offline_sources as offline
+    batch = Path(next(iter(copies))).parent.parent
+    member = (batch / 'crash_ancestry.json').as_posix()
+    retained = {name for name in paths if Path(name).parent == batch / 'crash_sources'}
+    if member not in paths:
+        require(not retained, 'crash source copies require their exact ancestry map')
+        return {}
+    value = _read(paths[member], 'json', sizes[member], offline.MAX_DESCRIPTOR_BYTES, digests[member])
+    offline.validate_manifest(value, root)
+    indexed_member = (batch / CARRY_NAME).as_posix()
+    require(value['indexed_carry_source'] == {'path': str(root / indexed_member),
+        'sha256': digests.get(indexed_member)}, 'crash map must bind this exact indexed carry')
+    classified = {}
+    suffixes = {'json': '.json', 'journal': '.jsonl', 'png': '.png', 'binary': '.bin'}
+    for row in value['members']:
+        name = row['copy_member']
+        require(Path(name).parent == batch / 'crash_sources' and
+            Path(name).name == row['sha256'] + suffixes[row['kind']] and
+            not Path(row['original_path']).is_relative_to(root / batch),
+            'crash copies must preserve a separate historical source keyspace')
+        require(name in paths and digests[name] == row['sha256'] and sizes[name] == row['bytes'] and
+            Path(paths[name]).stat().st_size == row['bytes'], 'every crash copy must bind its exact raw bytes')
+        classified[name] = (row['sha256'], row['bytes'], frozenset((row['kind'],)))
+    require(retained == set(classified), 'crash source directory must match its complete typed map')
+    require(any(row['original_path'] == value['boundary_source']['path'] and
+        row['sha256'] == value['boundary_source']['sha256'] and row['kind'] == 'json'
+        for row in value['members']), 'closed crash boundary must retain its JSON view')
+    return classified
+
+
 def _materialize(paths, digests, carry, root, *, role_refs=None, sizes=None):
     copies = validate_carry_manifest(carry, root)
     require(all(member in paths and digests.get(member) == sha and Path(paths[member]).stat().st_size == size
         for member, (sha, size, _) in copies.items()), 'every raw carry copy must exist with exact source bytes')
     sizes = {member: copies[member][1] if member in copies else
         sizes[member] if sizes is not None else Path(path).stat().st_size for member, path in paths.items()}
-    limits = _role_limits(paths, digests, copies, root, role_refs, sizes)
+    # Current role discovery applies to current receipts. The two independently
+    # validated historical maps retain their original roles in separate keys.
+    crash_copies = _crash_copies(paths, digests, copies, root, sizes)
+    copies.update(crash_copies)
+    limits = _role_limits(paths, digests, copies, root, role_refs, sizes, crash_copies)
     data, journals, decoded, checked = {}, {}, {}, set()
     for member, path in paths.items():
         size = sizes[member]
