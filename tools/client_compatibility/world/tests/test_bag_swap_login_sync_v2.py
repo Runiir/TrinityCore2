@@ -617,13 +617,13 @@ def test_clock_fields_cannot_overflow_their_exact_uint32_wire_width(field):
 
 
 @pytest.mark.parametrize('offset', [-.000001, 0, .000001])
-def test_physical_two_second_prefix_boundary_is_unchanged_with_loading_clocks(offset):
+def test_physical_two_second_initializer_boundary_with_loading_clocks(offset):
     value = fresh_login()
     replace_login_clocks(value, UI174_CLOCKS)
     result = proof(value)
     modern, native = packet(value, sync.LANDING), packet(value, 'MSG_MOVE_FALL_LAND', 'to_native')
     forward_delay = native['time'] - modern['time']
-    target = result['login_packets'][-1]['time'] + 2 + offset
+    target = result['initialization']['modern']['time'] + 2 + offset
     retime_packet_and_metadata(value, modern, target - forward_delay)
     retime_packet_and_metadata(value, native, target)
     if offset > 0:
